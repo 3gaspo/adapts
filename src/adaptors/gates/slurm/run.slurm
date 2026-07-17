@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa_gates
-#SBATCH --output=logs/tsifa_gates_%j.out
-#SBATCH --error=logs/tsifa_gates_%j.err
+#SBATCH --job-name=gates
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 #SBATCH --time=04:00:00
-#SBATCH --partition=h100-bis
-#SBATCH --cpus-per-task=4
+#SBATCH --partition=a100
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=20000
 
 set -euo pipefail

@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa_extract_multi
+#SBATCH --job-name=multiextract
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/tsifa_extract_multi_%j.out
-#SBATCH --error=logs/tsifa_extract_multi_%j.err
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 #SBATCH --time=23:00:00
-#SBATCH --partition=h100-bis
-#SBATCH --cpus-per-task=8
+#SBATCH --partition=a100
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
 set -euo pipefail

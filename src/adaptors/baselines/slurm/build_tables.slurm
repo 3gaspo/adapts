@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa_full_tables
-#SBATCH --output=logs/tsifa_full_tables_%j.out
-#SBATCH --error=logs/tsifa_full_tables_%j.err
+#SBATCH --job-name=tables
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 #SBATCH --time=00:30:00
-#SBATCH --partition=h100-bis
+#SBATCH --partition=a100
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4000
 

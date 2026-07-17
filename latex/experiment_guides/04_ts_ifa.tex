@@ -1,0 +1,62 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{Adaptation Experiment 4: TS-IFA}
+\author{Thesis experiment note}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Theoretical overview and goal}
+TS-IFA is a trainable adapter around a frozen forecast backbone.  It forms four
+candidates: vanilla prediction $\hat y_0$, context-conditioned prediction
+$\hat y_c$, a residual-attention prediction $\hat y_r$, and a memory-attention
+prediction $\hat y_m$.  Cross-attention reads retrieved examples and the final
+forecast is a horizon-wise convex mixture
+\[
+ \hat y_h=\sum_{b\in\{0,c,r,m\}}\pi_{b,h}\hat y_{b,h},
+ \qquad \pi_{b,h}=\operatorname{softmax}_b(a_{b,h}).
+\]
+Residual attention uses neighbor backbone errors as values; memory attention
+uses neighbor futures.  A third attention block produces mixture logits from
+query and neighbor look-backs.
+
+\goal{Learn a small, backbone-agnostic adaptation mechanism that can exploit
+retrieved forecasts, outcomes, and errors while remaining anchored to the
+reliable vanilla forecast.}
+
+\section{Objective and initialization}
+With nMSE scaling, training minimizes
+\[
+ \mathcal L=\mathcal L_{\rm pred}
+ +\beta\lVert\hat y-\hat y_0\rVert^2_{\rm n}
+ +\gamma\bigl(\lVert\Delta_r-(y-\hat y_0)\rVert^2_{\rm n}
+ +\lVert\Delta_m-(y-\hat y_0)\rVert^2_{\rm n}\bigr).
+\]
+Correction heads are zero-initialized.  Non-vanilla mixture logits start at
+$-6$, so the initial adapter is close to the backbone and learns deviations
+only when supported by data.
+
+\section{Implementation details}
+Each attention block uses four heads of dimension 32, followed by a 128-unit
+GELU MLP.  Inputs are instance-normalized on the query scale.  AdamW uses
+learning rate $10^{-5}$, weight decay $10^{-4}$, gradient clipping 1,
+$\beta=\gamma=10^{-2}$, batch size 256, and 10,000 epochs.  Every epoch draws
+one random batch from \Tone.  Full deterministic \Ttwo validation and interval
+logging occur every 1,000 optimizer steps; \Tthree is evaluated only after
+training.
+
+The sweep covers Electricity/Solar, 168--24 and 672--168, raw/instance
+Euclidean retrieval, and $k\in\{1,3,10\}$.  Implementation is under
+\code{src/adaptors/ts\_ifa/}; the launcher is
+\code{src/adaptors/ts\_ifa/slurm/run.slurm}.  Saved artifacts include the model,
+resolved configuration, full step history, interval-average train and \Ttwo
+validation plot, \Tthree metrics, and branch predictions.
+
+\section{Interpretation}
+Report TS-IFA beside vanilla, context, residual, and memory branches.  This
+distinguishes gains from better candidates from gains due to mixture learning.
+Selection must use \Ttwo; the untouched \Tthree period is the only final test.
+Attention weights are diagnostics and should not be interpreted as causal
+feature importance.
+\end{document}
+

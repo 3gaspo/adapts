@@ -1,0 +1,62 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{Adaptation Experiment 3: Learned Context Gates}
+\author{Thesis experiment note}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Theoretical overview and goal}
+Retrieval can help some queries and harm others.  A gate chooses between the
+vanilla forecast $\hat y_0$ and the context forecast $\hat y_c$.  On \Ttwo the
+supervision signal is the loss advantage
+\[
+ \Delta_h=(y_h-\hat y_{0,h})^2-(y_h-\hat y_{c,h})^2,
+\]
+so $\Delta_h>0$ means context is preferable.  Scalar gates make one decision
+per window; horizon gates make one decision per forecast step.  Regressors
+estimate $\Delta$, while classifiers estimate the event $\Delta>0$.
+
+\goal{Learn when retrieval should be trusted, quantify the value of query-level
+features, and compare attainable gates with target-aware oracle upper bounds.}
+
+\section{Implementation details}
+The gate features summarize the context--vanilla difference, query mean and
+standard deviation, neighbor look-back statistics, same-user ratio, neighbor
+age, distance-weight concentration, and average distance.  Horizon gates also
+receive the full horizon-wise context difference.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Gate & Training target & Decision granularity \\
+\midrule
+Bayes no-feature & Mean \Ttwo advantage & Scalar / horizon \\
+CatBoost classifier & $\mathbb{1}[\Delta>0]$ & Scalar / horizon \\
+CatBoost regressor & $\Delta$ & Scalar / horizon \\
+Oracle & True target loss & Scalar / horizon \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
+and seed 1.  Models are trained only on \Ttwo and applied without refitting to
+\Tthree.  The retrieval grid is raw/instance Euclidean distance with
+$k\in\{1,3,10\}$ for Electricity and Solar at 168--24 and 672--168.
+
+\textbf{Launcher:} \code{src/adaptors/gates/slurm/run.slurm}\\
+\textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}\\
+\textbf{Standalone module:} \code{src/adaptors/gates/evaluate.py}
+
+Outputs
+include per-method metrics, prediction payloads, gate diagnostics, and feature
+importance plots.
+
+\section{Interpretation}
+The oracle gap measures headroom, not deployable performance.  The comparison
+between the no-feature Bayes gate and feature-based gates isolates the benefit
+of conditional decisions.  Final claims must use \Tthree and should report both
+mean error and user-tail error because a gate can improve the mean while
+systematically rejecting useful context for a subgroup.
+\end{document}

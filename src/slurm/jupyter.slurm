@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=Dynamics
-#SBATCH --output=logs/jupyter%j.out
-#SBATCH --error=logs/jupyter%j.err
+#SBATCH --job-name=jupyter
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00        
-#SBATCH --partition=h100
+#SBATCH --partition=a100
  
 # Charger votre environnement
 source .venv/bin/activate

@@ -51,6 +51,8 @@ python -m src.visu.sweep_results_table --help
 
 Remote launchers are grouped with their implementation. The TS-IFA job is `src/adaptors/ts_ifa/slurm/run.slurm`; baseline and gate jobs are in their sibling adaptor folders; extraction jobs are in `src/slurm/`. Submit from the project root so `python -m src...` resolves correctly.
 
+All Slurm launchers use the `a100` partition, one CPU per task, concise one-word job names, and `logs/%x_%j.{out,err}` for scheduler output.
+
 The dashboard notebook at `src/visu/retrieval_dashboard.ipynb` reads saved artifacts only and includes local and Google Drive/Colab setup branches.
 
 ## Lightweight checks
@@ -67,3 +69,10 @@ python src/tests/smoke/check_retrieval_dashboard.py
 ```
 
 Do not run full extraction, model inference, or training locally.
+
+## Experiment guides
+
+Concise one-page theoretical and implementation notes for the univariate
+control, retrieval baselines, learned gates, and TS-IFA are under
+`latex/experiment_guides/`, with each compiled PDF beside its `.tex` source.
+Copies are also written to `outputs/pdf/`.

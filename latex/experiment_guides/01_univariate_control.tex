@@ -1,0 +1,67 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{Adaptation Experiment 1: Univariate Control}
+\author{Thesis experiment note}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Theoretical overview and goal}
+A forecasting adapter is useful only if it improves a well-defined, untouched
+backbone.  For a look-back $x\in\mathbb{R}^{L}$, a pretrained forecaster produces
+$\hat y_0=f(x)\in\mathbb{R}^{H}$.  The univariate control evaluates $f$ directly,
+without retrieved neighbors, gates, or trainable adaptation.  It therefore
+separates backbone error from error introduced by the retrieval and adaptation
+pipeline.
+
+The main metrics are
+\[
+ \operatorname{MSE}=H^{-1}\lVert \hat y_0-y\rVert_2^2,
+ \qquad
+ \operatorname{nMSE}=H^{-1}\left\lVert
+ \frac{\hat y_0-y}{\sigma(x)+\varepsilon}\right\rVert_2^2.
+\]
+Per-user aggregation and the worst 10\% user mean reveal whether a good global
+mean hides systematic failures on a subset of series.
+
+\goal{Establish the no-adaptation reference, measure its temporal and user-wise
+heterogeneity, and provide the denominator against which every retrieval method
+must be compared.}
+
+\section{Implementation details}
+Dates are split chronologically as $(\Tzero,\Tone,\Ttwo,\Tthree)=(0.30,0.35,0.15,0.20)$.
+The control command maps \Tone, \Ttwo, and \Tthree to the labels
+\code{train}, \code{oracle}, and \code{eval}; the Slurm job evaluates the held-out
+\Tthree period.  Each query contains all users at one date, but the backbone is
+called as a univariate model with one channel per sample.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Component & Current sweep value \\
+\midrule
+Datasets & Electricity, Solar \\
+Look-back--horizon & 168--24, 672--168 \\
+Backbone & Chronos \\
+Input normalization & Instance normalization \\
+Evaluation stride & 128 dates \\
+Seed & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Implementation:} \code{src/experiments/experiment\_univariate.py}\\
+\textbf{Launcher:} \code{src/slurm/univariate.slurm}
+
+It writes window-level losses,
+a JSON summary, a tensor payload, error distributions, horizon-error curves,
+user scatter plots, and prediction examples.  The primary comparison is the
+same \Tthree MSE/nMSE later used by adapted methods.
+
+\section{Interpretation}
+This experiment is descriptive rather than trainable.  Any adapted method must
+beat the control on the same queries and aggregation rule.  Improvements on
+\Tone or \Ttwo alone are insufficient evidence because those periods are used
+to fit adapters or gates.
+\end{document}

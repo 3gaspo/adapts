@@ -1,10 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa_train
+#SBATCH --job-name=tsifa
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/tsifa_train_%j.out
-#SBATCH --error=logs/tsifa_train_%j.err
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 #SBATCH --time=23:00:00
-#SBATCH --partition=h100
+#SBATCH --partition=a100
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
 set -euo pipefail

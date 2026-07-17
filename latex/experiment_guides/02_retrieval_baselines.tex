@@ -1,0 +1,67 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{Adaptation Experiment 2: Retrieval Baselines}
+\author{Thesis experiment note}
+\date{}
+\begin{document}
+\maketitle
+
+\section{Theoretical overview and goal}
+Let $(x_c^{(j)},y_c^{(j)})_{j=1}^{k}$ be past windows retrieved for query $x$.
+After transferring each neighbor to the query scale, distance weights are
+\[
+ w_j=\frac{\exp(-\tilde d_j)}{\sum_{r=1}^{k}\exp(-\tilde d_r)},
+ \qquad \tilde d_j=\frac{d_j-\min_r d_r}{\operatorname{sd}(d)+\varepsilon}.
+\]
+The simplest memory forecast is $\hat y_K=\sum_jw_jy_c^{(j)}$.  If the frozen
+backbone's neighbor residual is $e_c^{(j)}=y_c^{(j)}-f(x_c^{(j)})$, residual
+adaptation instead uses $\hat y_R=\hat y_0+\sum_jw_je_c^{(j)}$.  Scalar mixtures
+and ridge regressions learn how strongly these signals should correct the
+vanilla forecast.
+
+\goal{Determine whether retrieval contains useful predictive information before
+introducing learned gates or the TS-IFA neural adapter, and identify whether
+neighbor horizons or neighbor residuals are the more effective memory.}
+
+\section{Implementation details}
+Shared extraction uses \Tzero as the datastore, \Tone to fit baseline
+coefficients, \Ttwo for oracle diagnostics, and untouched \Tthree for final
+evaluation.  Online retrieval is period-aligned: the store grows with time but
+uses only eligible history.  The current sweep uses Euclidean distance, raw and
+instance-normalized spaces, $k\in\{1,3,10\}$, daily period/stride 24, and at most
+30,000 store windows.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{.31\linewidth}p{.61\linewidth}}
+\toprule
+Family & Compared predictions \\
+\midrule
+Direct & Vanilla backbone; context-conditioned backbone \\
+Neighbor & Weighted/mean neighbor horizon; weighted neighbor residual \\
+Scalar fit & Convex horizon mixture; scaled residual correction \\
+Ridge fit & Shared or horizon-specific residual, horizon, and full mixtures \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ridge features are RMS-standardized without centering, and coefficients use
+$\ell_2=10^{-3}$.
+
+\textbf{Sources:} \code{src/experiments/extraction.py};
+\code{src/adaptors/baselines/evaluate.py}\\
+\textbf{Launchers:} \code{src/slurm/extract\_adaptation.slurm};
+\code{src/adaptors/baselines/slurm/run.slurm}
+
+The launcher also requests \code{--fit-baselines-on-eval}.  Methods suffixed
+\code{eval\_fit} are explicitly optimistic \Tthree in-sample fits: they are
+diagnostic upper bounds and must not be reported as causal test results.  The
+primary table should use coefficients fitted before \Tthree and report MSE,
+nMSE, equal-user metrics, and W10 where available.
+
+\section{Interpretation}
+If residual retrieval wins, the memory primarily estimates backbone bias.  If
+neighbor horizons win, local analog forecasting is sufficient.  A large gap
+between valid fits and \code{eval\_fit} indicates non-stationarity in the best
+mixture and motivates adaptive gating.
+\end{document}
