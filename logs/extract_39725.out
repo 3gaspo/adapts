@@ -1,0 +1,55 @@
+2026-07-17T17:12:30+02:00 job start kind=adaptation_extraction
+2026-07-17T17:12:30+02:00 setting start dataset=electricity lags=168 horizon=24
+2026-07-17T17:12:30+02:00 vanilla extraction start dataset=electricity lags=168 horizon=24
+2026-07-17 17:12:49,484 INFO [__main__] ========================================================================
+2026-07-17 17:12:49,484 INFO [__main__] experiment start kind=extraction dataset=electricity model=chronos lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-17 17:12:49,483 INFO [__main__] ========================================================================
+2026-07-17 17:12:49,483 INFO [__main__] experiment start kind=extraction dataset=electricity model=chronos lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-17 17:12:49,729 INFO [__main__] dataset load start
+2026-07-17 17:12:49,731 INFO [__main__] dataset load start
+2026-07-17 17:12:49,732 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['drop_users']
+2026-07-17 17:12:49,733 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['drop_users']
+2026-07-17 17:12:51,840 INFO [__main__] dataset load done dates=26304 users=313
+2026-07-17 17:12:51,840 INFO [__main__] dataset load done dates=26304 users=313
+2026-07-17 17:12:51,840 INFO [__main__] model load start
+2026-07-17 17:12:51,840 INFO [__main__] model load start
+2026-07-17 17:13:46,513 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-17 17:13:46,513 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-17 17:13:46,530 INFO [__main__] extraction start split=train queries=376
+2026-07-17 17:13:46,530 INFO [__main__] extraction start split=train queries=376
+2026-07-17 17:15:55,539 INFO [__main__] extraction done split=train
+2026-07-17 17:15:55,539 INFO [__main__] extraction start split=oracle queries=157
+2026-07-17 17:15:55,874 INFO [__main__] extraction done split=train
+2026-07-17 17:15:55,875 INFO [__main__] extraction start split=oracle queries=157
+2026-07-17 17:16:48,098 INFO [__main__] extraction done split=oracle
+2026-07-17 17:16:48,098 INFO [__main__] extraction start split=eval queries=40
+2026-07-17 17:16:48,578 INFO [__main__] extraction done split=oracle
+2026-07-17 17:16:48,578 INFO [__main__] extraction start split=eval queries=40
+2026-07-17 17:17:01,246 INFO [__main__] extraction done split=eval
+2026-07-17 17:17:01,659 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/electricity/168_24/chronos/vanilla/vanilla_metrics.json
+2026-07-17 17:17:01,660 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/electricity/168_24/chronos/vanilla
+2026-07-17 17:17:01,660 INFO [__main__] experiment done seconds=252.18
+2026-07-17 17:17:01,660 INFO [__main__] ========================================================================
+2026-07-17 17:17:01,741 INFO [__main__] extraction done split=eval
+2026-07-17 17:17:02,172 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/electricity/168_24/chronos/vanilla/vanilla_metrics.json
+2026-07-17 17:17:02,173 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/electricity/168_24/chronos/vanilla
+2026-07-17 17:17:02,173 INFO [__main__] experiment done seconds=252.69
+2026-07-17 17:17:02,173 INFO [__main__] ========================================================================
+2026-07-17T17:17:05+02:00 vanilla extraction done dataset=electricity lags=168 horizon=24
+2026-07-17T17:17:05+02:00 retrieval extraction start dataset=electricity lags=168 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-17 17:17:12,242 INFO [__main__] ========================================================================
+2026-07-17 17:17:12,243 INFO [__main__] ========================================================================
+2026-07-17 17:17:12,243 INFO [__main__] experiment start kind=extraction dataset=electricity model=chronos lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-17 17:17:12,243 INFO [__main__] experiment start kind=extraction dataset=electricity model=chronos lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-17 17:17:12,476 INFO [__main__] dataset load start
+2026-07-17 17:17:12,478 INFO [__main__] dataset load start
+2026-07-17 17:17:12,479 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['drop_users']
+2026-07-17 17:17:12,480 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['drop_users']
+2026-07-17 17:17:14,040 INFO [__main__] dataset load done dates=26304 users=313
+2026-07-17 17:17:14,041 INFO [__main__] model load start
+2026-07-17 17:17:14,051 INFO [__main__] dataset load done dates=26304 users=313
+2026-07-17 17:17:14,052 INFO [__main__] model load start
+2026-07-17 17:17:35,099 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-17 17:17:35,109 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-17 17:17:35,113 INFO [__main__] extraction start split=train queries=376
+2026-07-17 17:17:35,117 INFO [__main__] extraction start split=train queries=376

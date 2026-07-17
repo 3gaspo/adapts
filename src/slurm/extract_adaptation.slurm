@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa_extract_adapt
+#SBATCH --job-name=extract
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/tsifa_extract_adapt_%j.out
-#SBATCH --error=logs/tsifa_extract_adapt_%j.err
+#SBATCH --output=logs/extract_%j.out
+#SBATCH --error=logs/extract_%j.err
 #SBATCH --time=23:00:00
-#SBATCH --partition=h100-bis
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=40000
+#SBATCH --partition=a100
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4000
 
 set -euo pipefail
 source .venv/bin/activate
@@ -17,10 +17,10 @@ DATA_ROOT="${SHARED_ROOT}/datasets"
 OUT_ROOT="outputs/adaptation"
 CHRONOS_WEIGHTS_PATH="${SHARED_ROOT}/weights/chronos2"
 
-DATASETS=("electricity" "solar")
-SETTINGS=("168 24" "672 168")
-DISTANCE_SPACES=("raw" "instance")
-NEIGHBORS=(1 3 10)
+DATASETS=("electricity") # "solar")
+SETTINGS=("168 24") # "672 168")
+DISTANCE_SPACES=("raw") # "instance")
+NEIGHBORS=(1) # 3)
 
 SPLITS="0.3,0.35,0.15,0.2"
 RETRIEVAL_MODE="online"
