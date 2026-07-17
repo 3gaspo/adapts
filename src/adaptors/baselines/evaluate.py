@@ -1,0 +1,880 @@
+"""Evaluate baseline and gate families from extracted neighbor payloads."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+from pathlib import Path
+from time import perf_counter
+from typing import Any, Sequence
+
+import numpy as np
+import pandas as pd
+import torch
+from einops import rearrange
+
+from src.data.neighbors import neighbor_to_query_scale
+from src.experiments.runtime import log_experiment_separator, setup_logging
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def torch_load(path: str | Path) -> dict[str, Any]:
+    try:
+        return torch.load(Path(path), map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(Path(path), map_location="cpu")
+
+
+def softmax_np(x: np.ndarray, axis: int = -1) -> np.ndarray:
+    shifted = x - np.max(x, axis=axis, keepdims=True)
+    exp = np.exp(shifted)
+    return exp / np.maximum(exp.sum(axis=axis, keepdims=True), 1e-12)
+
+
+def flatten_payload(payload: dict[str, Any], prefix: str) -> dict[str, np.ndarray]:
+    x = payload[f"{prefix}_X_values"].float()
+    x_c = payload[f"{prefix}_Xc_values"].float()
+    y_c_raw = payload[f"{prefix}_Yc_values"].float()
+    e_raw = payload[f"{prefix}_E_values"].float()
+    pred_neighbors_raw = y_c_raw - e_raw
+    y_c = neighbor_to_query_scale(x, x_c, y_c_raw)
+    e = neighbor_to_query_scale(x, x_c, e_raw, residual=True)
+    pred_neighbors = neighbor_to_query_scale(x, x_c, pred_neighbors_raw)
+    query_t = payload[f"{prefix}_query_t"]
+    query_user = payload[f"{prefix}_query_user_idx"]
+    neighbor_t = payload[f"{prefix}_neighbor_t"]
+    neighbor_user = payload[f"{prefix}_neighbor_user_idx"]
+    return {
+        "pred": rearrange(payload[f"{prefix}_preds"].float(), "date user horizon -> (date user) horizon").numpy(),
+        "pred_c": rearrange(
+            payload[f"{prefix}_preds_context"].float(),
+            "date user horizon -> (date user) horizon",
+        ).numpy(),
+        "y": rearrange(payload[f"{prefix}_Y_values"].float(), "date user horizon -> (date user) horizon").numpy(),
+        "x": rearrange(x, "date user lags -> (date user) lags").numpy(),
+        "y_c": rearrange(y_c, "date user neighbor horizon -> (date user) neighbor horizon").numpy(),
+        "e": rearrange(e, "date user neighbor horizon -> (date user) neighbor horizon").numpy(),
+        "pred_neighbors": rearrange(
+            pred_neighbors,
+            "date user neighbor horizon -> (date user) neighbor horizon",
+        ).numpy(),
+        "distance": rearrange(
+            payload[f"{prefix}_distance_x_xc"].float(),
+            "date user neighbor -> (date user) neighbor",
+        ).numpy(),
+        "query_t": rearrange(query_t, "date user -> (date user)").numpy(),
+        "neighbor_lookback_mean": rearrange(
+            x_c.mean(dim=-1).mean(dim=-1),
+            "date user -> (date user)",
+        ).numpy(),
+        "neighbor_lookback_mean_std": rearrange(
+            x_c.mean(dim=-1).std(dim=-1, unbiased=False),
+            "date user -> (date user)",
+        ).numpy(),
+        "neighbor_lookback_std": rearrange(
+            x_c.std(dim=-1, unbiased=False).mean(dim=-1),
+            "date user -> (date user)",
+        ).numpy(),
+        "neighbor_lookback_std_std": rearrange(
+            x_c.std(dim=-1, unbiased=False).std(dim=-1, unbiased=False),
+            "date user -> (date user)",
+        ).numpy(),
+        "same_user_ratio": rearrange(
+            (neighbor_user == query_user.unsqueeze(-1)).float().mean(dim=-1),
+            "date user -> (date user)",
+        ).numpy(),
+        "neighbor_age_mean": rearrange(
+            (query_t.unsqueeze(-1) - neighbor_t).float().mean(dim=-1),
+            "date user -> (date user)",
+        ).numpy(),
+    }
+
+
+def distance_weights(arrays: dict[str, np.ndarray], eps: float = 1e-8) -> np.ndarray:
+    d = arrays["distance"].astype(np.float64)
+    d_std = d.std(axis=-1, keepdims=True)
+    d_norm = (d - d.min(axis=-1, keepdims=True)) / np.maximum(d_std, eps)
+    return softmax_np(-d_norm, axis=-1)
+
+
+def weighted_neighbor_horizon(arrays: dict[str, np.ndarray]) -> np.ndarray:
+    w = distance_weights(arrays)
+    return (w[:, :, None] * arrays["y_c"]).sum(axis=1)
+
+
+def weighted_neighbor_residual(arrays: dict[str, np.ndarray]) -> np.ndarray:
+    w = distance_weights(arrays)
+    return (w[:, :, None] * arrays["e"]).sum(axis=1)
+
+
+def ridge_no_intercept(x: np.ndarray, y: np.ndarray, l2: float) -> np.ndarray:
+    if x.shape[0] == 0:
+        raise ValueError("cannot fit ridge regression without observations")
+    if l2 < 0:
+        raise ValueError("l2 must be non-negative")
+    # RMS-standardize without centering so zero coefficients still mean zero
+    # correction. This makes the penalty invariant to dataset units while
+    # retaining the vanilla forecast as the ridge anchor.
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    feature_scale = np.sqrt(np.mean(x**2, axis=0))
+    feature_scale = np.maximum(feature_scale, 1e-12)
+    standardized = x / feature_scale
+    xtx = (standardized.T @ standardized) / x.shape[0]
+    xty = (standardized.T @ y) / x.shape[0]
+    reg = float(l2) * np.eye(xtx.shape[0], dtype=np.float64)
+    standardized_coef = np.linalg.solve(xtx + reg, xty)
+    return standardized_coef / feature_scale
+
+
+def fit_baseline_adapters(train: dict[str, np.ndarray], l2: float) -> dict[str, Any]:
+    pred = train["pred"]
+    y = train["y"]
+    y_c = train["y_c"]
+    e = train["e"]
+    pred_c = train["pred_c"]
+    if y.shape[0] == 0:
+        raise ValueError("cannot fit baseline adapters from an empty train payload")
+    weighted = weighted_neighbor_horizon(train)
+    weighted_e = weighted_neighbor_residual(train)
+    residual_target = y - pred
+
+    horizon_mix_direction = weighted - pred
+    lam = ridge_no_intercept(
+        rearrange(horizon_mix_direction, "sample horizon -> (sample horizon) 1"),
+        rearrange(residual_target, "sample horizon -> (sample horizon)"),
+        l2,
+    )[0]
+    lam = float(np.clip(lam, 0.0, 1.0))
+
+    residual_lam = ridge_no_intercept(
+        rearrange(weighted_e, "sample horizon -> (sample horizon) 1"),
+        rearrange(residual_target, "sample horizon -> (sample horizon)"),
+        l2,
+    )[0]
+    residual_lam = float(np.clip(residual_lam, 0.0, 1.0))
+
+    residual_ridge_shared_x = np.moveaxis(e, 1, 2)
+    residual_ridge_shared_coef = ridge_no_intercept(
+        rearrange(residual_ridge_shared_x, "sample horizon feature -> (sample horizon) feature"),
+        rearrange(residual_target, "sample horizon -> (sample horizon)"),
+        l2,
+    )
+
+    horizon_ridge_shared_x = np.concatenate([pred[:, :, None], np.moveaxis(y_c, 1, 2)], axis=-1)
+    horizon_ridge_shared_coef = ridge_no_intercept(
+        rearrange(horizon_ridge_shared_x, "sample horizon feature -> (sample horizon) feature"),
+        rearrange(residual_target, "sample horizon -> (sample horizon)"),
+        l2,
+    )
+
+    horizon = y.shape[1]
+    neighbors = y_c.shape[1]
+    residual_ridge_horizon_coef = np.zeros((horizon, neighbors), dtype=np.float64)
+    for h in range(horizon):
+        residual_ridge_horizon_coef[h] = ridge_no_intercept(e[:, :, h], residual_target[:, h], l2)
+
+    full_ridge_horizon_coef = np.zeros((horizon, neighbors + 2), dtype=np.float64)
+    for h in range(horizon):
+        x_h = np.concatenate(
+            [
+                pred[:, h : h + 1],
+                y_c[:, :, h],
+                pred_c[:, h : h + 1],
+            ],
+            axis=1,
+        )
+        full_ridge_horizon_coef[h] = ridge_no_intercept(x_h, residual_target[:, h], l2)
+
+    return {
+        "horizon_mix_scalar_lambda": lam,
+        "residual_mix_scalar_lambda": residual_lam,
+        "residual_ridge_shared_coef": residual_ridge_shared_coef,
+        "residual_ridge_horizon_coef": residual_ridge_horizon_coef,
+        "horizon_ridge_shared_coef": horizon_ridge_shared_coef,
+        "full_ridge_horizon_coef": full_ridge_horizon_coef,
+    }
+
+
+def predict_baseline_adapters(arrays: dict[str, np.ndarray], artifacts: dict[str, Any]) -> dict[str, np.ndarray]:
+    pred = arrays["pred"]
+    y_c = arrays["y_c"]
+    e = arrays["e"]
+    pred_c = arrays["pred_c"]
+    weighted = weighted_neighbor_horizon(arrays)
+    unweighted = y_c.mean(axis=1)
+    weighted_e = weighted_neighbor_residual(arrays)
+
+    predictions: dict[str, np.ndarray] = {
+        "vanilla": pred,
+        "context_forecast": pred_c,
+        "horizon_knn_weighted": weighted,
+        "horizon_knn_mean": unweighted,
+        "residual_knn_weighted": pred + weighted_e,
+        "horizon_mix_scalar": (
+            (1.0 - artifacts["horizon_mix_scalar_lambda"]) * pred
+            + artifacts["horizon_mix_scalar_lambda"] * weighted
+        ),
+        "residual_mix_scalar": pred + artifacts["residual_mix_scalar_lambda"] * weighted_e,
+    }
+
+    residual_ridge_shared_coef = artifacts["residual_ridge_shared_coef"]
+    residual_ridge_shared_x = np.moveaxis(e, 1, 2)
+    residual_correction = np.einsum("shf,f->sh", residual_ridge_shared_x, residual_ridge_shared_coef)
+    predictions["residual_ridge_shared"] = pred + residual_correction
+
+    residual_ridge_horizon_coef = artifacts["residual_ridge_horizon_coef"]
+    residual_full = np.empty_like(pred)
+    for h in range(pred.shape[1]):
+        residual_full[:, h] = pred[:, h] + e[:, :, h] @ residual_ridge_horizon_coef[h]
+    predictions["residual_ridge_horizon"] = residual_full
+
+    horizon_ridge_shared_coef = artifacts["horizon_ridge_shared_coef"]
+    horizon_ridge_shared_x = np.concatenate([pred[:, :, None], np.moveaxis(y_c, 1, 2)], axis=-1)
+    correction = np.einsum("shf,f->sh", horizon_ridge_shared_x, horizon_ridge_shared_coef)
+    predictions["horizon_ridge_shared"] = pred + correction
+
+    full_ridge_horizon_coef = artifacts["full_ridge_horizon_coef"]
+    full = np.empty_like(pred)
+    for h in range(pred.shape[1]):
+        x_h = np.concatenate([pred[:, h : h + 1], y_c[:, :, h], pred_c[:, h : h + 1]], axis=1)
+        full[:, h] = pred[:, h] + x_h @ full_ridge_horizon_coef[h]
+    predictions["full_ridge_horizon"] = full
+    return predictions
+
+
+TRAINABLE_BASELINES = (
+    "horizon_mix_scalar",
+    "residual_mix_scalar",
+    "residual_ridge_shared",
+    "residual_ridge_horizon",
+    "horizon_ridge_shared",
+    "full_ridge_horizon",
+)
+
+
+def add_eval_fitted_baselines(
+    predictions_by_split: dict[str, dict[str, np.ndarray]],
+    eval_arrays: dict[str, np.ndarray],
+    *,
+    l2: float,
+) -> dict[str, Any]:
+    """Add explicitly optimistic T3 in-sample fits for trainable mixtures."""
+    artifacts = fit_baseline_adapters(eval_arrays, l2)
+    eval_predictions = predict_baseline_adapters(eval_arrays, artifacts)
+    predictions_by_split["eval"].update(
+        {
+            f"{name}_eval_fit": eval_predictions[name]
+            for name in TRAINABLE_BASELINES
+        }
+    )
+    return artifacts
+
+
+COMMON_GATE_FEATURE_NAMES = (
+    "weighted_neighbor_minus_vanilla_mean",
+    "weighted_neighbor_residual_mean",
+    "query_mean",
+    "query_std",
+    "neighbor_lookback_means_mean_raw",
+    "neighbor_lookback_means_std_raw",
+    "neighbor_lookback_stds_mean_raw",
+    "neighbor_lookback_stds_std_raw",
+    "same_user_ratio",
+    "neighbor_age_mean",
+    "neighbor_weight_std",
+    "neighbor_weight_max",
+    "distance_mean",
+)
+
+SCALAR_GATE_FEATURE_NAMES = (
+    "context_minus_vanilla_mean",
+    "context_minus_vanilla_std",
+    *COMMON_GATE_FEATURE_NAMES,
+)
+
+
+def horizon_gate_feature_names(horizon: int) -> tuple[str, ...]:
+    return (
+        *(f"context_minus_vanilla_h{index}" for index in range(horizon)),
+        *COMMON_GATE_FEATURE_NAMES,
+    )
+
+
+def common_gate_features(arrays: dict[str, np.ndarray]) -> list[np.ndarray]:
+    pred = arrays["pred"]
+    x = arrays["x"]
+    weights = distance_weights(arrays)
+    weighted = weighted_neighbor_horizon(arrays)
+    weighted_e = weighted_neighbor_residual(arrays)
+    return [
+        (weighted - pred).mean(axis=1),
+        weighted_e.mean(axis=1),
+        x.mean(axis=1),
+        x.std(axis=1),
+        arrays["neighbor_lookback_mean"],
+        arrays["neighbor_lookback_mean_std"],
+        arrays["neighbor_lookback_std"],
+        arrays["neighbor_lookback_std_std"],
+        arrays["same_user_ratio"],
+        arrays["neighbor_age_mean"],
+        weights.std(axis=1),
+        weights.max(axis=1),
+        arrays["distance"].mean(axis=1),
+    ]
+
+
+def scalar_gate_features(arrays: dict[str, np.ndarray]) -> np.ndarray:
+    pred = arrays["pred"]
+    pred_c = arrays["pred_c"]
+    context_delta = pred_c - pred
+    cols = [
+        context_delta.mean(axis=1),
+        context_delta.std(axis=1),
+        *common_gate_features(arrays),
+    ]
+    return np.stack(cols, axis=1).astype(np.float32)
+
+
+def horizon_gate_features(arrays: dict[str, np.ndarray]) -> np.ndarray:
+    pred = arrays["pred"]
+    context_delta = arrays["pred_c"] - pred
+    common = np.stack(common_gate_features(arrays), axis=1)
+    return np.concatenate([context_delta, common], axis=1).astype(np.float32)
+
+
+def fit_loss_difference_regressor(
+    x_np: np.ndarray,
+    y_np: np.ndarray,
+    *,
+    iterations: int,
+    learning_rate: float,
+    depth: int,
+    seed: int,
+) -> dict[str, Any]:
+    target = np.asarray(y_np, dtype=np.float64).reshape(-1)
+    if np.ptp(target) <= 1e-12:
+        return {"constant": float(target.mean())}
+    try:
+        from catboost import CatBoostRegressor
+    except ModuleNotFoundError as exc:  # pragma: no cover - dependency error
+        raise ModuleNotFoundError(
+            "CatBoost gates require the `catboost` project dependency. Run `uv sync`."
+        ) from exc
+    model = CatBoostRegressor(
+        iterations=int(iterations),
+        learning_rate=float(learning_rate),
+        depth=int(depth),
+        loss_function="RMSE",
+        eval_metric="RMSE",
+        random_seed=int(seed),
+        verbose=False,
+        allow_writing_files=False,
+    )
+    model.fit(x_np, target)
+    return {"regressor": model}
+
+
+def fit_improvement_classifier(
+    x_np: np.ndarray,
+    y_np: np.ndarray,
+    *,
+    iterations: int,
+    learning_rate: float,
+    depth: int,
+    seed: int,
+) -> dict[str, Any]:
+    target = np.asarray(y_np, dtype=np.float64).reshape(-1) > 0.0
+    if np.unique(target).size == 1:
+        return {"constant": float(target[0]) - 0.5}
+    try:
+        from catboost import CatBoostClassifier
+    except ModuleNotFoundError as exc:  # pragma: no cover - dependency error
+        raise ModuleNotFoundError(
+            "CatBoost gates require the `catboost` project dependency. Run `uv sync`."
+        ) from exc
+    model = CatBoostClassifier(
+        iterations=int(iterations),
+        learning_rate=float(learning_rate),
+        depth=int(depth),
+        loss_function="Logloss",
+        eval_metric="AUC",
+        auto_class_weights="Balanced",
+        random_seed=int(seed),
+        verbose=False,
+        allow_writing_files=False,
+    )
+    model.fit(x_np, target.astype(np.int8))
+    return {"classifier": model}
+
+
+def fit_gate(
+    x_np: np.ndarray,
+    y_np: np.ndarray,
+    *,
+    iterations: int,
+    learning_rate: float,
+    depth: int,
+    seed: int,
+    objective: str = "regressor",
+) -> list[dict[str, Any]]:
+    if x_np.shape[0] == 0:
+        raise ValueError("cannot train baseline gates from an empty oracle-train slice")
+    targets = np.asarray(y_np)
+    if targets.ndim == 1:
+        targets = targets[:, None]
+    if objective not in {"classifier", "regressor"}:
+        raise ValueError(f"unknown gate objective {objective!r}")
+    fit_one = (
+        fit_improvement_classifier
+        if objective == "classifier"
+        else fit_loss_difference_regressor
+    )
+    return [
+        fit_one(
+            x_np,
+            targets[:, output_idx],
+            iterations=iterations,
+            learning_rate=learning_rate,
+            depth=depth,
+            seed=seed + output_idx,
+        )
+        for output_idx in range(targets.shape[1])
+    ]
+
+
+def predict_gate(models: list[dict[str, Any]], features: np.ndarray) -> np.ndarray:
+    columns = []
+    for model in models:
+        if "constant" in model:
+            difference = np.full(features.shape[0], model["constant"], dtype=np.float64)
+        elif "classifier" in model:
+            # Center the positive-class probability so every gate uses zero as
+            # the decision threshold and diagnostics remain directly comparable.
+            difference = model["classifier"].predict_proba(features)[:, 1] - 0.5
+        else:
+            difference = model["regressor"].predict(features)
+        columns.append(difference)
+    return np.column_stack(columns)
+
+
+def fit_no_feature_context_gates(oracle_arrays: dict[str, np.ndarray]) -> dict[str, np.ndarray | float]:
+    """Bayes-optimal deterministic context decisions with no input features."""
+    base_loss = (oracle_arrays["y"] - oracle_arrays["pred"]) ** 2
+    context_loss = (oracle_arrays["y"] - oracle_arrays["pred_c"]) ** 2
+    improvement = base_loss - context_loss
+    return {
+        "scalar_score": float(improvement.mean()),
+        "horizon_score": improvement.mean(axis=0).astype(np.float64),
+    }
+
+
+def add_no_feature_context_gates(
+    predictions: dict[str, np.ndarray],
+    arrays: dict[str, np.ndarray],
+    artifacts: dict[str, np.ndarray | float],
+) -> dict[str, np.ndarray]:
+    """Apply no-feature scalar and horizon decisions learned from T2."""
+    pred = arrays["pred"]
+    pred_c = arrays["pred_c"]
+    scalar_score = float(artifacts["scalar_score"])
+    horizon_score = np.asarray(artifacts["horizon_score"], dtype=np.float64)
+    predictions["bayes_context_scalar"] = pred_c if scalar_score > 0.0 else pred
+    predictions["bayes_context_horizon"] = np.where(horizon_score[None, :] > 0.0, pred_c, pred)
+    return {
+        "bayes_scalar_score": np.full(pred.shape[0], scalar_score, dtype=np.float64),
+        "bayes_horizon_score": np.repeat(horizon_score[None, :], pred.shape[0], axis=0),
+    }
+
+
+def add_true_context_oracles(
+    predictions: dict[str, np.ndarray],
+    arrays: dict[str, np.ndarray],
+) -> None:
+    """Add target-aware upper bounds for scalar and horizon context gates."""
+    pred = arrays["pred"]
+    pred_c = arrays["pred_c"]
+    target = arrays["y"]
+    base_loss = (target - pred) ** 2
+    context_loss = (target - pred_c) ** 2
+    use_context_scalar = context_loss.mean(axis=1, keepdims=True) < base_loss.mean(axis=1, keepdims=True)
+    predictions["oracle_context_scalar"] = np.where(use_context_scalar, pred_c, pred)
+    predictions["oracle_context_horizon"] = np.where(context_loss < base_loss, pred_c, pred)
+
+
+def add_context_gate_predictions(
+    base_predictions_by_split: dict[str, dict[str, np.ndarray]],
+    oracle_arrays: dict[str, np.ndarray],
+    arrays_by_split: dict[str, dict[str, np.ndarray]],
+    *,
+    iterations: int,
+    learning_rate: float,
+    depth: int,
+    seed: int,
+) -> tuple[
+    dict[str, dict[str, np.ndarray]],
+    dict[str, Any],
+    dict[str, dict[str, np.ndarray]],
+]:
+    base_loss = (oracle_arrays["y"] - oracle_arrays["pred"]) ** 2
+    context_loss = (oracle_arrays["y"] - oracle_arrays["pred_c"]) ** 2
+    # Positive difference means the context forecast has smaller loss.
+    train_targets = {
+        "scalar": (base_loss - context_loss).mean(axis=1, keepdims=True),
+        "horizon": base_loss - context_loss,
+    }
+    train_features = {
+        "scalar": scalar_gate_features(oracle_arrays),
+        "horizon": horizon_gate_features(oracle_arrays),
+    }
+    no_feature_artifacts = fit_no_feature_context_gates(oracle_arrays)
+    models: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for objective_index, objective in enumerate(("classifier", "regressor")):
+        models[objective] = {}
+        for shape_index, shape in enumerate(("scalar", "horizon")):
+            models[objective][shape] = fit_gate(
+                train_features[shape],
+                train_targets[shape],
+                iterations=iterations,
+                learning_rate=learning_rate,
+                depth=depth,
+                seed=seed + objective_index * 10_000 + shape_index * 1_000,
+                objective=objective,
+            )
+
+    out: dict[str, dict[str, np.ndarray]] = {}
+    diagnostics: dict[str, dict[str, np.ndarray]] = {}
+    for split, arrays in arrays_by_split.items():
+        split_predictions = dict(base_predictions_by_split[split])
+        split_features = {
+            "scalar": scalar_gate_features(arrays),
+            "horizon": horizon_gate_features(arrays),
+        }
+        split_base_loss = (arrays["y"] - arrays["pred"]) ** 2
+        split_context_loss = (arrays["y"] - arrays["pred_c"]) ** 2
+        split_targets = {
+            "scalar": (split_base_loss - split_context_loss).mean(axis=1),
+            "horizon": split_base_loss - split_context_loss,
+        }
+        diagnostics[split] = {}
+        diagnostics[split].update(
+            add_no_feature_context_gates(split_predictions, arrays, no_feature_artifacts)
+        )
+        for objective in ("classifier", "regressor"):
+            for shape in ("scalar", "horizon"):
+                score = predict_gate(models[objective][shape], split_features[shape])
+                decision = score > 0.0
+                if shape == "scalar":
+                    decision = decision[:, :1]
+                name = f"catboost_context_{objective}_{shape}"
+                split_predictions[name] = np.where(
+                    decision,
+                    arrays["pred_c"],
+                    arrays["pred"],
+                )
+                diagnostics[split][f"{objective}_{shape}_score"] = (
+                    score[:, 0] if shape == "scalar" else score
+                )
+                diagnostics[split][f"{objective}_{shape}_target"] = split_targets[shape]
+        add_true_context_oracles(split_predictions, arrays)
+        out[split] = split_predictions
+    artifacts = {
+        "backend": "catboost",
+        "objectives": {
+            "classifier": "context_improves_over_vanilla",
+            "regressor": "vanilla_loss_minus_context_loss",
+        },
+        "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
+        "horizon_feature_names": horizon_gate_feature_names(oracle_arrays["y"].shape[1]),
+        "models": models,
+        "no_feature": no_feature_artifacts,
+    }
+    return out, artifacts, diagnostics
+
+
+def visualization_payload(
+    predictions_by_split: dict[str, dict[str, np.ndarray]],
+    gate_diagnostics: dict[str, dict[str, np.ndarray]],
+) -> dict[str, Any]:
+    """Create a plotting payload without serialized estimators or duplicated inputs."""
+    splits: dict[str, Any] = {}
+    for split, predictions in predictions_by_split.items():
+        splits[split] = {
+            "predictions": {
+                name: torch.as_tensor(value, dtype=torch.float32)
+                for name, value in predictions.items()
+            },
+            "gate_diagnostics": {
+                name: torch.as_tensor(value, dtype=torch.float32)
+                for name, value in gate_diagnostics.get(split, {}).items()
+            },
+        }
+    return {
+        "format_version": 1,
+        "description": "Precomputed baseline predictions and gate diagnostics for visualization.",
+        "splits": splits,
+    }
+
+
+def _model_feature_importance(model: dict[str, Any]) -> np.ndarray | None:
+    estimator = model.get("classifier") or model.get("regressor")
+    if estimator is None or not hasattr(estimator, "get_feature_importance"):
+        return None
+    return np.asarray(estimator.get_feature_importance(), dtype=np.float64)
+
+
+def _mean_feature_importance(
+    models: list[dict[str, Any]],
+    feature_names: Sequence[str],
+) -> np.ndarray | None:
+    values = []
+    for model in models:
+        importance = _model_feature_importance(model)
+        if importance is None or importance.shape[0] != len(feature_names):
+            continue
+        values.append(importance)
+    if not values:
+        return None
+    return np.mean(np.stack(values, axis=0), axis=0)
+
+
+def save_gate_feature_importance_plots(
+    gate_artifacts: dict[str, Any],
+    output_dir: Path,
+    *,
+    top_k: int = 20,
+) -> list[Path]:
+    """Save CatBoost feature-importance plots for every trained gate group."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    models = gate_artifacts.get("models", {})
+    scalar_names = tuple(gate_artifacts.get("scalar_feature_names", SCALAR_GATE_FEATURE_NAMES))
+    horizon_names = tuple(gate_artifacts.get("horizon_feature_names", ()))
+    saved: list[Path] = []
+
+    try:
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError:  # pragma: no cover - optional plotting dependency
+        LOGGER.warning("matplotlib is unavailable; skipping gate feature-importance plots")
+        return saved
+
+    for objective, by_shape in models.items():
+        if not isinstance(by_shape, dict):
+            continue
+        for shape, feature_names in (("scalar", scalar_names), ("horizon", horizon_names)):
+            fitted = by_shape.get(shape)
+            if not fitted or not feature_names:
+                continue
+            importance = _mean_feature_importance(fitted, feature_names)
+            if importance is None:
+                continue
+            order = np.argsort(importance)[::-1][: max(1, min(int(top_k), importance.shape[0]))]
+            names = np.asarray(feature_names, dtype=object)[order]
+            values = importance[order]
+
+            csv_path = output_dir / f"feature_importance_{objective}_{shape}.csv"
+            pd.DataFrame({"feature": names, "importance": values}).to_csv(csv_path, index=False)
+            saved.append(csv_path)
+
+            fig, ax = plt.subplots(figsize=(8, max(4, 0.32 * len(order))))
+            y = np.arange(len(order))
+            ax.barh(y, values[::-1])
+            ax.set_yticks(y, labels=list(names[::-1]))
+            ax.set_xlabel("mean CatBoost feature importance")
+            ax.set_title(f"{objective} {shape} gate")
+            ax.grid(True, axis="x", alpha=0.25)
+            fig.tight_layout()
+            png_path = output_dir / f"feature_importance_{objective}_{shape}.png"
+            fig.savefig(png_path, dpi=180)
+            plt.close(fig)
+            saved.append(png_path)
+    return saved
+
+
+def evaluate_predictions(split: str, arrays: dict[str, np.ndarray], predictions: dict[str, np.ndarray]) -> list[dict[str, Any]]:
+    rows = []
+    y = arrays["y"]
+    scale = np.maximum(arrays["x"].std(axis=1, keepdims=True), 1e-8)
+    vanilla_nmse = np.mean(((arrays["pred"] - y) / scale) ** 2)
+    for name, pred in predictions.items():
+        err = pred - y
+        mse = np.mean(err**2)
+        mae = np.mean(np.abs(err))
+        nmse = np.mean((err / scale) ** 2)
+        rows.append(
+            {
+                "split": split,
+                "baseline": name,
+                "mse": float(mse),
+                "mae": float(mae),
+                "nmse": float(nmse),
+                "relative_nmse_improvement_pct": float(100.0 * (vanilla_nmse - nmse) / max(vanilla_nmse, 1e-12)),
+            }
+        )
+    return rows
+
+
+def write_metric_outputs(frame: pd.DataFrame, output_dir: Path, metrics_stem: str) -> tuple[Path, Path]:
+    csv_path = output_dir / f"{metrics_stem}.csv"
+    json_path = output_dir / f"{metrics_stem}.json"
+    frame.to_csv(csv_path, index=False)
+    json_path.write_text(json.dumps(frame.to_dict(orient="records"), indent=2), encoding="utf-8")
+    for baseline, group in frame.groupby("baseline", sort=False):
+        method_dir = output_dir / str(baseline)
+        method_dir.mkdir(parents=True, exist_ok=True)
+        method_csv = method_dir / f"{metrics_stem}.csv"
+        method_json = method_dir / f"{metrics_stem}.json"
+        group.to_csv(method_csv, index=False)
+        method_json.write_text(json.dumps(group.to_dict(orient="records"), indent=2), encoding="utf-8")
+    return csv_path, json_path
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-dir", required=True)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--family", choices=("all", "baselines", "gates"), default="all")
+    parser.add_argument("--prefixes", default="train,oracle,eval")
+    parser.add_argument("--l2", type=float, default=1e-3)
+    parser.add_argument(
+        "--fit-baselines-on-eval",
+        action="store_true",
+        help="Also report optimistic in-sample fits of trainable baselines on T3",
+    )
+    parser.add_argument("--gate-iterations", "--gate-epochs", dest="gate_iterations", type=int, default=300)
+    parser.add_argument(
+        "--gate-learning-rate",
+        "--gate-lr",
+        dest="gate_learning_rate",
+        type=float,
+        default=3e-2,
+    )
+    parser.add_argument("--gate-depth", type=int, default=4)
+    parser.add_argument("--feature-importance-top-k", type=int, default=20)
+    parser.add_argument("--train-horizon-gate", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--seed", type=int, default=1)
+    return parser.parse_args()
+
+
+def main() -> dict[str, Path]:
+    args = parse_args()
+    setup_logging()
+    log_experiment_separator(LOGGER)
+    started = perf_counter()
+    input_dir = Path(args.input_dir).expanduser()
+    default_subdir = {
+        "all": "baseline_adapters",
+        "baselines": "baselines",
+        "gates": "gates",
+    }[args.family]
+    output_dir = Path(args.output_dir).expanduser() if args.output_dir else input_dir / default_subdir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    LOGGER.info("experiment start kind=%s input=%s", args.family, input_dir)
+
+    prefixes = [part.strip() for part in args.prefixes.replace(";", ",").split(",") if part.strip()]
+    LOGGER.info("payload load start")
+    arrays_by_split = {
+        prefix: flatten_payload(torch_load(input_dir / f"{prefix}_prediction_payload.pt"), prefix)
+        for prefix in prefixes
+    }
+    missing = {"train", "oracle", "eval"} - set(arrays_by_split)
+    if missing:
+        raise ValueError(f"baseline evaluation requires train, oracle, and eval payloads; missing {sorted(missing)}")
+    LOGGER.info("payload load done splits=%s", ",".join(prefixes))
+
+    artifacts = None
+    eval_fit_artifacts = None
+    predictions_by_split: dict[str, dict[str, np.ndarray]] = {
+        split: {} for split in arrays_by_split
+    }
+    if args.family in {"all", "baselines"}:
+        LOGGER.info("mixture fitting start")
+        artifacts = fit_baseline_adapters(arrays_by_split["train"], args.l2)
+        predictions_by_split = {
+            split: predict_baseline_adapters(arrays, artifacts)
+            for split, arrays in arrays_by_split.items()
+        }
+        if args.fit_baselines_on_eval:
+            eval_fit_artifacts = add_eval_fitted_baselines(
+                predictions_by_split,
+                arrays_by_split["eval"],
+                l2=args.l2,
+            )
+        LOGGER.info("mixture fitting done")
+    elif args.family == "gates":
+        predictions_by_split = {
+            split: {"context_forecast": arrays["pred_c"]}
+            for split, arrays in arrays_by_split.items()
+        }
+
+    gate_artifacts = None
+    gate_diagnostics: dict[str, dict[str, np.ndarray]] = {
+        split: {} for split in arrays_by_split
+    }
+    if args.family in {"all", "gates"}:
+        LOGGER.info("context gate fitting start objectives=classifier,regressor shapes=scalar,horizon")
+        predictions_by_split, gate_artifacts, gate_diagnostics = add_context_gate_predictions(
+            predictions_by_split,
+            arrays_by_split["oracle"],
+            arrays_by_split,
+            iterations=args.gate_iterations,
+            learning_rate=args.gate_learning_rate,
+            depth=args.gate_depth,
+            seed=args.seed,
+        )
+        LOGGER.info("context gate fitting done")
+
+    LOGGER.info("evaluation start split=eval")
+    rows = evaluate_predictions("eval", arrays_by_split["eval"], predictions_by_split["eval"])
+    LOGGER.info("evaluation done rows=%s", len(rows))
+    frame = pd.DataFrame(rows)
+    metrics_stem = "gate_metrics" if args.family == "gates" else "baseline_metrics"
+    artifact_path = output_dir / ("gate_artifacts.pt" if args.family == "gates" else "baseline_artifacts.pt")
+    visualization_path = output_dir / "visualization_payload.pt"
+    csv_path, json_path = write_metric_outputs(frame, output_dir, metrics_stem)
+    saved_artifacts: dict[str, Any] = {"family": args.family}
+    if artifacts is not None:
+        saved_artifacts["mix_artifacts"] = artifacts
+    if eval_fit_artifacts is not None:
+        saved_artifacts["eval_fit_mix_artifacts"] = eval_fit_artifacts
+    if gate_artifacts is not None:
+        saved_artifacts["context_gate_artifacts"] = gate_artifacts
+        saved_artifacts["gate_config"] = {
+            "backend": "catboost",
+            "objectives": ["classifier", "regressor"],
+            "decision_threshold": 0.0,
+            "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
+            "horizon_feature_names": horizon_gate_feature_names(
+                arrays_by_split["oracle"]["y"].shape[1]
+            ),
+            "iterations": args.gate_iterations,
+            "learning_rate": args.gate_learning_rate,
+            "depth": args.gate_depth,
+            "shapes": ["scalar", "horizon"],
+        }
+        importance_paths = save_gate_feature_importance_plots(
+            gate_artifacts,
+            output_dir / "plots",
+            top_k=args.feature_importance_top_k,
+        )
+        LOGGER.info("feature-importance plots saved count=%s", len(importance_paths))
+    torch.save(saved_artifacts, artifact_path)
+    torch.save(
+        visualization_payload(predictions_by_split, gate_diagnostics),
+        visualization_path,
+    )
+    LOGGER.info("outputs saved dir=%s", output_dir)
+    LOGGER.info("experiment done seconds=%.2f", perf_counter() - started)
+    log_experiment_separator(LOGGER)
+    return {
+        "csv": csv_path,
+        "json": json_path,
+        "artifacts": artifact_path,
+        "visualization": visualization_path,
+    }
+
+
+if __name__ == "__main__":
+    main()
