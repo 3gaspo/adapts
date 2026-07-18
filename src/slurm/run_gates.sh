@@ -1,13 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=baselines
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
-#SBATCH --time=04:00:00
-#SBATCH --partition=a100
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=20000
-#SBATCH --array=0-671%64
-
+# Fit adaptation gates from completed extractions and write gate metrics/artifacts.
+# Submit run_gates.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
@@ -22,6 +15,7 @@ if is_true "$TEST_MODE"; then
   SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
   DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw}"
   NEIGHBORS_CSV="${NEIGHBORS_CSV:-3}"
+  GATE_ITERATIONS="${GATE_ITERATIONS:-2}"
 else
   DATASETS_CSV="${DATASETS_CSV:-ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange}"
   MODELS_CSV="${MODELS_CSV:-chronos,tabpfnts}"
@@ -29,9 +23,11 @@ else
   SETTINGS_CSV="${SETTINGS_CSV:-572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24}"
   DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw,instance}"
   NEIGHBORS_CSV="${NEIGHBORS_CSV:-1,3,10}"
+  GATE_ITERATIONS="${GATE_ITERATIONS:-300}"
 fi
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
-L2="${L2:-0.001}"
+GATE_LEARNING_RATE="${GATE_LEARNING_RATE:-0.03}"
+GATE_DEPTH="${GATE_DEPTH:-4}"
 SEED="${SEED:-1}"
 
 csv_to_array "$DATASETS_CSV" DATASETS
@@ -63,28 +59,29 @@ run_task() {
   RETRIEVAL_SETTING="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
   RUN_ROOT="$OUT_ROOT/$dataset/${L}_${H}/$model/$RETRIEVAL_SETTING"
   INPUT_DIR="$RUN_ROOT/extracted"
-  OUTPUT_DIR="$RUN_ROOT/baselines"
+  OUTPUT_DIR="$RUN_ROOT/gates"
   require_extraction "$INPUT_DIR"
-  echo "$(date -Is) baselines start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
-  srun python -m src.adaptors.baselines.evaluate \
+  log_section "gates start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH seed=$SEED"
+  srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
-    --family baselines \
-    --l2 "$L2" \
-    --fit-baselines-on-eval \
+    --family gates \
+    --gate-iterations "$GATE_ITERATIONS" \
+    --gate-learning-rate "$GATE_LEARNING_RATE" \
+    --gate-depth "$GATE_DEPTH" \
     --seed "$SEED"
-  assert_files baseline-output \
-    "$OUTPUT_DIR/baseline_metrics.csv" \
-    "$OUTPUT_DIR/baseline_metrics.json" \
-    "$OUTPUT_DIR/baseline_artifacts.pt" \
+  assert_files gate-output \
+    "$OUTPUT_DIR/gate_metrics.csv" \
+    "$OUTPUT_DIR/gate_metrics.json" \
+    "$OUTPUT_DIR/gate_artifacts.pt" \
     "$OUTPUT_DIR/visualization_payload.pt"
-  echo "$(date -Is) baselines done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+  log "gates done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-echo "$(date -Is) job start kind=baselines test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV"
+log_section "job start kind=gates test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
   if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    echo "$(date -Is) array task outside narrowed grid; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
+    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
     exit 0
   fi
   run_task "$SLURM_ARRAY_TASK_ID"
@@ -93,4 +90,4 @@ else
     run_task "$task_id"
   done
 fi
-echo "$(date -Is) job done kind=baselines output=$OUT_ROOT"
+log_section "job done kind=gates output=$OUT_ROOT"

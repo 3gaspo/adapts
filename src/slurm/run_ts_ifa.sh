@@ -1,14 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa
-#SBATCH --gres=gpu:1
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
-#SBATCH --time=23:00:00
-#SBATCH --partition=a100
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=40000
-#SBATCH --array=0-23%4
-
+# Train and evaluate TS-IFA from completed extraction artifacts.
+# Submit run_ts_ifa.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
@@ -96,8 +88,8 @@ run_task() {
   [ -z "$MAX_VALID_SAMPLES" ] || optional_args+=(--max-valid-samples "$MAX_VALID_SAMPLES")
   [ -z "$MAX_EVAL_SAMPLES" ] || optional_args+=(--max-eval-samples "$MAX_EVAL_SAMPLES")
   is_true "$RESTORE_BEST_VALIDATION" && restore_args+=(--restore-best-validation)
-  echo "$(date -Is) training start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
-  srun python -m src.adaptors.ts_ifa.train \
+  log_section "training start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING epochs=$EPOCHS batch_size=$BATCH_SIZE learning_rate=$LR weight_decay=$WEIGHT_DECAY beta=$BETA gamma=$GAMMA dropout=$DROPOUT attention_heads=$ATTENTION_HEADS attention_dim=$ATTENTION_DIM hidden_dim=$HIDDEN_DIM mixture_gate_init=$MIXTURE_GATE_INIT seed=$SEED"
+  srun --ntasks=1 python -m src.adaptors.ts_ifa.train \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --epochs "$EPOCHS" \
@@ -133,13 +125,13 @@ run_task() {
     "$OUTPUT_DIR/eval_predictions.pt" \
     "$OUTPUT_DIR/config.json" \
     "$OUTPUT_DIR/training_nmse.pdf"
-  echo "$(date -Is) training done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+  log "training done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-echo "$(date -Is) job start kind=ts_ifa_training test_mode=$TEST_MODE tasks=${#TASKS[@]}"
+log_section "job start kind=ts_ifa_training test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
   if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    echo "$(date -Is) array task outside narrowed grid; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
+    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
     exit 0
   fi
   run_task "$SLURM_ARRAY_TASK_ID"
@@ -148,4 +140,4 @@ else
     run_task "$task_id"
   done
 fi
-echo "$(date -Is) job done kind=ts_ifa_training output=$OUT_ROOT"
+log_section "job done kind=ts_ifa_training output=$OUT_ROOT"

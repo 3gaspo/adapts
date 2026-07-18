@@ -1,7 +1,7 @@
 \documentclass[10pt]{article}
 \input{common}
 \title{Adaptation Experiment 3: Learned Context Gates}
-\author{Thesis experiment note}
+\author{}
 \date{}
 \begin{document}
 \maketitle
@@ -42,14 +42,13 @@ Oracle & True target loss & Scalar / horizon \\
 
 CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
 and seed 1.  Models are trained only on \Ttwo and applied without refitting to
-\Tthree.  The publication retrieval grid is raw/instance Euclidean distance
+\Tthree. The publication retrieval sweep is raw/instance Euclidean distance
 with $k\in\{1,3,10\}$ across the seven datasets, eight settings, and Chronos plus
 TabPFN-TS defined by the extraction sweep.  The 572--64 setting is retained for
 the Cross-RAG comparison; TS-ICL remains a later extension.
 
-\textbf{Launcher:} \code{src/adaptors/gates/slurm/run.slurm}\\
-\textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}\\
-\textbf{Standalone module:} \code{src/adaptors/gates/evaluate.py}
+\textbf{Launcher:} \code{src/slurm/run\_gates.slurm}\\
+\textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}
 
 Outputs
 include per-method metrics, prediction payloads, gate diagnostics, and feature

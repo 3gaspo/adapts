@@ -1,22 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=univariate
-#SBATCH --gres=gpu:1
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
-#SBATCH --time=23:00:00
-#SBATCH --partition=a100
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=40000
-#SBATCH --array=0-3%4
-
+# Run direct univariate backbone forecasts used as non-adapted references.
+# Submit run_univariate.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
 source .venv/bin/activate
 export PYTHONPATH="$PROJECT_ROOT"
 
-# Set DATA_ROOT/WEIGHTS_ROOT when running outside the project/parent/shared
-# thesis layout searched by src/slurm/common.sh.
+# Set DATA_ROOT/WEIGHTS_ROOT on another machine or edit candidates in common.sh.
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
 OUT_ROOT="${OUT_ROOT:-outputs/univariate}"
@@ -56,8 +47,8 @@ run_task() {
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
   SETTING_OUT="$OUT_ROOT/$dataset/${L}_${H}"
-  echo "$(date -Is) univariate start task=$task_id/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos"
-  srun python -m src.experiments.experiment_univariate \
+  log_section "univariate start task=$task_id/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos eval_stride=$EVAL_QUERY_STRIDE normalization=instance seed=$SEED"
+  srun --ntasks=1 python -m src.experiments.experiment_univariate \
     --csv "$dataset_dir" \
     --dataset-name "$dataset" \
     "${data_args[@]}" \
@@ -76,13 +67,13 @@ run_task() {
     "$SETTING_OUT/chronos/univariate_losses.csv" \
     "$SETTING_OUT/chronos/univariate_summary.json" \
     "$SETTING_OUT/chronos/univariate_payload.pt"
-  echo "$(date -Is) univariate done task=$task_id dataset=$dataset lags=$L horizon=$H model=chronos"
+  log "univariate done task=$task_id dataset=$dataset lags=$L horizon=$H model=chronos"
 }
 
-echo "$(date -Is) job start kind=univariate test_mode=$TEST_MODE tasks=${#TASKS[@]}"
+log_section "job start kind=univariate test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV settings=$SETTINGS_CSV"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
   if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    echo "$(date -Is) array task outside narrowed grid; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
+    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
     exit 0
   fi
   run_task "$SLURM_ARRAY_TASK_ID"
@@ -91,4 +82,4 @@ else
     run_task "$task_id"
   done
 fi
-echo "$(date -Is) job done kind=univariate output=$OUT_ROOT"
+log_section "job done kind=univariate output=$OUT_ROOT"

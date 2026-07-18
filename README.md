@@ -39,24 +39,24 @@ they are intentionally excluded from the deployable main comparison.
 ## Data and weight locations
 
 Submit from the project root.  Launchers search, in order, the project-local
-folder (`datasets/` or `weights/`), the project parent, and the thesis workspace
-shared root.  The first folder containing the requested dataset or weight is
+folder (`datasets/` or `weights/`), the project parent, and an additional shared
+parent candidate. The first folder containing the requested dataset or weight is
 used.  When the repository is copied elsewhere, explicitly set the roots:
 
 ```bash
 DATA_ROOT=/cluster/shared/datasets \
 WEIGHTS_ROOT=/cluster/shared/weights \
-sbatch src/slurm/extract_multi_backbone_adaptation.slurm
+sbatch src/slurm/extract_adaptation.slurm
 ```
 
 `CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
-paths.  The active multi-backbone grid contains `chronos` and `tabpfnts` only.
+paths. The active full sweep contains `chronos` and `tabpfnts` only.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
 ## Required run order
 
-First run the two-task extraction smoke grid (vanilla plus one raw, k=3
+First run the two-task extraction smoke sweep (vanilla plus one raw, k=3
 retrieval), then its one-task baseline and gate consumers:
 
 ```bash
@@ -65,14 +65,14 @@ extract_test=$(TEST_MODE=true sbatch --parsable --array=0-1 \
 
 baseline_test=$(TEST_MODE=true sbatch --parsable --array=0 \
   --dependency=afterok:$extract_test \
-  src/adaptors/baselines/slurm/run.slurm)
+  src/slurm/run_baselines.slurm)
 
 gate_test=$(TEST_MODE=true sbatch --parsable --array=0 \
   --dependency=afterok:$extract_test \
-  src/adaptors/gates/slurm/run.slurm)
+  src/slurm/run_gates.slurm)
 
 TEST_MODE=true sbatch --dependency=afterok:$baseline_test:$gate_test \
-  src/adaptors/baselines/slurm/build_tables.slurm
+  src/slurm/build_tables.slurm
 ```
 
 Inspect both Slurm logs, the extraction manifest, downstream JSON/CSV metrics,
@@ -80,31 +80,35 @@ feature-importance plots, and the Chronos full/average test tables.  Then submit
 the publication arrays:
 
 ```bash
-extract_job=$(sbatch --parsable src/slurm/extract_multi_backbone_adaptation.slurm)
+extract_job=$(PROFILE=full sbatch --parsable src/slurm/extract_adaptation.slurm)
 baseline_job=$(sbatch --parsable --dependency=afterok:$extract_job \
-  src/adaptors/baselines/slurm/run.slurm)
+  src/slurm/run_baselines.slurm)
 gate_job=$(sbatch --parsable --dependency=afterok:$extract_job \
-  src/adaptors/gates/slurm/run.slurm)
+  src/slurm/run_gates.slurm)
 sbatch --dependency=afterok:$baseline_job:$gate_job \
-  src/adaptors/baselines/slurm/build_tables.slurm
+  src/slurm/build_tables.slurm
 ```
 
 The full extraction array has 784 tasks: seven datasets, two models, eight
 settings, and seven variants (vanilla plus two spaces times three k values).
 Baseline and gate arrays have 672 tasks each.  Concurrency is throttled in the
 launchers.  The `572:64` setting is intentional for comparison with Cross-RAG.
+The single extraction launcher has three profiles: `test` (2 tasks), `pilot`
+(28 tasks: Electricity/Solar, Chronos, two settings), and `full` (784 tasks).
+Match `--array` to the selected profile as shown in the comments at the top of
+`extract_adaptation.slurm`.
 
-The screening grid is intentionally single-seed (`SEED=1`). `SEED` is not part
+The screening sweep is intentionally single-seed (`SEED=1`). `SEED` is not part
 of the output directory, so never submit different seeds against the same
 `OUT_ROOT`: they would replace one another. For exploratory repeats, use one
 root per seed (for example `OUT_ROOT=outputs/adaptation_seed_2`) consistently
 for extraction and its downstream jobs. The current table builder averages
-configurations, not seeds; seed aggregation should be added before presenting a
+configurations, not seeds; seed aggregation must be added before presenting a
 multi-seed adaptation result.
 
-All grid axes have comma-separated environment overrides:
+All sweep dimensions have comma-separated environment overrides:
 `DATASETS_CSV`, `MODELS_CSV`, `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, and
-`NEIGHBORS_CSV`.  Settings use `L:H`.  When narrowing a grid, override the array
+`NEIGHBORS_CSV`. Settings use `L:H`. When narrowing a sweep, override the array
 range too.  Extraction needs
 `D*M*S*(1 + spaces*k)` tasks; baselines/gates need `D*M*S*spaces*k` tasks.
 Out-of-range tasks exit safely, but submitting them wastes scheduler capacity.
@@ -113,7 +117,7 @@ For example:
 ```bash
 DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-sbatch --array=0-1 src/slurm/extract_multi_backbone_adaptation.slurm
+PROFILE=full sbatch --array=0-1 src/slurm/extract_adaptation.slurm
 ```
 
 Do not submit a downstream job without an `afterok` dependency unless the
@@ -123,8 +127,8 @@ legacy, and assert the files expected by table discovery after each run.
 
 ## Tables and averages
 
-The canonical table implementation is `src/slurm/build_tables.sh`; any of the
-three `build_tables.slurm` wrappers delegates to it, so submit only one.  It
+The only table front end is `src/slurm/build_tables.slurm`; it delegates to
+`src/slurm/build_tables.sh`. It
 checks every selected input rather than silently constructing a sparse table,
 then writes separate Chronos and TabPFN-TS tables.  `full/` reports each
 dataset/setting/retrieval result.  `average/` gives the unweighted mean over the
@@ -172,10 +176,46 @@ logits such as `-6`, `-3`, and `-1` on the same pilot configuration.
 TS-IFA smoke submission:
 
 ```bash
-TEST_MODE=true sbatch --array=0 src/adaptors/ts_ifa/slurm/run.slurm
+TEST_MODE=true sbatch --array=0 src/slurm/run_ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
+
+## Executable files
+
+Every `.slurm` file is a thin scheduler front end containing resources and a
+test/profile switch. Its same-named `.sh` file contains the actual enumeration,
+input checks, and command invocation:
+
+- `extract_adaptation.sh` builds vanilla and retrieval extraction tasks and
+  calls `src.experiments.extraction`.
+- `run_baselines.sh` checks extraction manifests and evaluates direct, ridge,
+  horizon-ridge, and optimistic appendix references.
+- `run_gates.sh` uses the same evaluator with `--family gates` to fit and score
+  the candidate gates.
+- `run_ts_ifa.sh` trains TS-IFA with validation checkpoint selection and writes
+  T3 metrics.
+- `run_univariate.sh` runs direct Chronos forecasts without retrieval.
+- `build_tables.sh` verifies the selected sweep is complete before producing
+  full and equal-configuration-average tables.
+- `common.sh` provides resource lookup, setting parsing, manifest checks, and
+  timestamped shell logging; it is sourced, not submitted.
+
+The runnable Python modules are:
+
+- `src.experiments.extraction`: frozen-backbone inference, features, neighbors,
+  prediction payloads, and the atomic completion manifest.
+- `src.experiments.experiment_univariate`: direct univariate backbone reference.
+- `src.experiments.artifacts`: command-line validation of an extraction folder.
+- `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
+  with `--family baselines` or `--family gates`.
+- `src.adaptors.ts_ifa.train`: TS-IFA training, T2 selection, and T3 evaluation.
+- `src.visu.sweep_results_table`: full and averaged publication tables.
+- `src.visu.results_table` and `src.visu.selected_methods`: focused table
+  utilities for individual result folders and selected method subsets.
+- `src.visu.dashboard`: interactive retrieval diagnostics. Library modules such
+  as `features.py`, `runtime.py`, `models/*.py`, and `data/*.py` support these
+  entry points and are not separate jobs.
 
 ## Local checks
 

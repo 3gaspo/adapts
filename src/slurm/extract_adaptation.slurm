@@ -5,15 +5,18 @@
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=23:00:00
 #SBATCH --partition=a100
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
-#SBATCH --array=0-27%8
+#SBATCH --array=0-783%8
 
-# Pilot wrapper. Set DATA_ROOT/WEIGHTS_ROOT when datasets and weights are not
-# project-local, in the parent folder, or in the thesis workspace shared root.
-# Override with ``sbatch --array=0-1`` when TEST_MODE=true (vanilla + one retrieval).
-DEFAULT_DATASETS_CSV="electricity,solar"
-DEFAULT_MODELS_CSV="chronos"
-DEFAULT_SETTINGS_CSV="168:24,672:168"
+# Slurm front end: edit scheduler resources and the extraction profile here.
+# test has 2 tasks:  sbatch --array=0-1 src/slurm/extract_adaptation.slurm
+# pilot has 28:     sbatch --array=0-27 src/slurm/extract_adaptation.slurm
+# full has 784 and matches the default array above.
+PROFILE="${PROFILE:-full}" # test, pilot, or full
 
-source src/slurm/extraction_grid.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PROFILE
+source "$SCRIPT_DIR/extract_adaptation.sh"

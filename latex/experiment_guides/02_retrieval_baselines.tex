@@ -1,7 +1,7 @@
 \documentclass[10pt]{article}
 \input{common}
 \title{Adaptation Experiment 2: Retrieval Baselines}
-\author{Thesis experiment note}
+\author{}
 \date{}
 \begin{document}
 \maketitle
@@ -54,8 +54,8 @@ $\ell_2=10^{-3}$.
 
 \textbf{Sources:} \code{src/experiments/extraction.py};
 \code{src/adaptors/baselines/evaluate.py}\\
-\textbf{Extraction:} \code{src/slurm/extract\_multi\_backbone\_adaptation.slurm}\\
-\textbf{Baselines:} \code{src/adaptors/baselines/slurm/run.slurm}
+\textbf{Extraction:} \code{src/slurm/extract\_adaptation.slurm}\\
+\textbf{Baselines:} \code{src/slurm/run\_baselines.slurm}
 
 The launcher also requests \code{--fit-baselines-on-eval}.  Methods suffixed
 \code{eval\_fit} are explicitly optimistic \Tthree in-sample fits: they are
@@ -63,9 +63,10 @@ diagnostic upper bounds and must not be reported as causal test results.  The
 primary table should use coefficients fitted before \Tthree and report MSE,
 nMSE, equal-user metrics, and W10 where available.
 
-The baseline array depends on successful extraction.  Resource lookup checks
-the project, parent, and thesis root; moved copies set \code{DATA\_ROOT} and
-\code{WEIGHTS\_ROOT}.  Tables report per-backbone details and equal-grid means.
+The baseline array depends on successful extraction. Resource lookup checks
+project-local and shared-parent candidates; moved copies set \code{DATA\_ROOT}
+and \code{WEIGHTS\_ROOT}. Tables report per-backbone details and
+equal-configuration means.
 
 \section{Interpretation}
 If residual retrieval wins, the memory primarily estimates backbone bias.  If

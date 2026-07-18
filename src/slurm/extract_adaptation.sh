@@ -1,5 +1,6 @@
 #!/bin/bash
-# Generic extraction grid used by the pilot and multi-backbone Slurm wrappers.
+# Enumerate adaptation extraction configurations and run one array task.
+# Submit extract_adaptation.slurm; source this implementation only for local debugging.
 
 set -euo pipefail
 source src/slurm/common.sh
@@ -7,13 +8,36 @@ require_project_root
 source .venv/bin/activate
 export PYTHONPATH="$PROJECT_ROOT"
 
-# When this repository is run outside the thesis workspace, set DATA_ROOT and
-# WEIGHTS_ROOT here or export them before sbatch. Otherwise project-local,
-# parent-shared, then thesis-root shared folders are searched in that order.
+# On another machine, set DATA_ROOT and WEIGHTS_ROOT to the available resource
+# directories or edit the candidate paths in common.sh.
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
 : "${OUT_ROOT:=outputs/adaptation}"
+: "${PROFILE:=full}"
 : "${TEST_MODE:=false}"
+
+if is_true "$TEST_MODE"; then PROFILE=test; fi
+
+case "$PROFILE" in
+  test)
+    TEST_MODE=true
+    DEFAULT_DATASETS_CSV="electricity"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_SETTINGS_CSV="168:24"
+    ;;
+  pilot)
+    DEFAULT_DATASETS_CSV="electricity,solar"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_SETTINGS_CSV="168:24,672:168"
+    ;;
+  full)
+    DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
+    DEFAULT_MODELS_CSV="chronos,tabpfnts"
+    # 572:64 is intentional: it provides the Cross-RAG comparison.
+    DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+    ;;
+  *) log_error "unknown PROFILE=$PROFILE expected=test,pilot,full"; exit 2 ;;
+esac
 : "${SKIP_COMPLETE:=true}"
 
 if is_true "$TEST_MODE"; then
@@ -66,11 +90,11 @@ model_kwargs() {
       printf '{"weights_path":"%s","device":"cuda","context_mode":"future_included"}\n' "$weight_path"
       ;;
     ts_icl)
-      echo "$(date -Is) model ts_icl is reserved for the later implementation and is not registered" >&2
+      log_error "model ts_icl is reserved for a later implementation and is not registered"
       return 1
       ;;
     *)
-      echo "$(date -Is) unknown extraction model=$model" >&2
+      log_error "unknown extraction model=$model"
       return 1
       ;;
   esac
@@ -87,7 +111,7 @@ run_extraction() {
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
   model_options="$(model_kwargs "$model")"
-  srun python -m src.experiments.extraction \
+  srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \
     --dataset-name "$dataset" \
     "${data_args[@]}" \
@@ -163,15 +187,15 @@ run_task() {
     retrieval_setting="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
     run_root="$MODEL_ROOT/$retrieval_setting"
   fi
-  echo "$(date -Is) extraction start task=$task_id/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
+  log_section "extraction start task=$task_id/${#TASK_DATASETS[@]} profile=$PROFILE dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE train_stride=$TRAIN_QUERY_STRIDE oracle_stride=$ORACLE_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$save_name" "$run_root"
-  echo "$(date -Is) extraction done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
+  log "extraction done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 
-echo "$(date -Is) job start kind=adaptation_extraction test_mode=$TEST_MODE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV"
+log_section "job start kind=adaptation_extraction profile=$PROFILE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
 if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
   if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASK_DATASETS[@]}" ]; then
-    echo "$(date -Is) array task outside narrowed grid; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASK_DATASETS[@]}"
+    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASK_DATASETS[@]}"
     exit 0
   fi
   run_task "$SLURM_ARRAY_TASK_ID"
@@ -180,4 +204,4 @@ else
     run_task "$task_id"
   done
 fi
-echo "$(date -Is) job done kind=adaptation_extraction output=$OUT_ROOT"
+log_section "job done kind=adaptation_extraction output=$OUT_ROOT"

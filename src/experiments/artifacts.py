@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+
+LOGGER = logging.getLogger(__name__)
 
 
 MANIFEST_NAME = "extraction_manifest.json"
@@ -107,9 +110,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        force=True,
+    )
     args = parse_args(argv)
     complete, reason = validate_extraction(args.directory)
-    print(f"{args.directory}: {reason}")
+    LOGGER.info("extraction validation directory=%s status=%s", args.directory, reason)
     return 0 if complete else 1
 
 

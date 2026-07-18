@@ -1,5 +1,6 @@
 #!/bin/bash
 # Build held-out and equal-configuration-average tables from completed sweeps.
+# Submit build_tables.slurm; source this implementation only for local debugging.
 
 set -euo pipefail
 source src/slurm/common.sh
@@ -54,7 +55,7 @@ SPACE_ARG="$(join_csv "${DISTANCE_SPACES[@]}")"
 NEIGHBOR_ARG="$(join_csv "${NEIGHBORS[@]}")"
 FAMILY_ARG="$(join_csv "${FAMILIES[@]}")"
 
-echo "$(date -Is) job start kind=adaptation_tables datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG"
+log_section "job start kind=adaptation_tables datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC table_kinds=$TABLE_KINDS_CSV"
 for model in "${MODELS[@]}"; do
   # Fail instead of silently averaging an incomplete sweep.
   for dataset in "${DATASETS[@]}"; do
@@ -76,7 +77,7 @@ for model in "${MODELS[@]}"; do
                   "$RUN_ROOT/gates/gate_metrics.json" \
                   "$RUN_ROOT/ts_ifa/TS-IFA/eval_metrics.json"
                 ;;
-              *) echo "$(date -Is) unknown table family=$family" >&2; exit 1 ;;
+              *) log_error "unknown table family=$family"; exit 1 ;;
             esac
           done
         done
@@ -86,8 +87,8 @@ for model in "${MODELS[@]}"; do
 
   for table_kind in "${TABLE_KINDS[@]}"; do
     OUTPUT_DIR="$OUT_ROOT/tables/$model/$table_kind"
-    echo "$(date -Is) table start model=$model kind=$table_kind output=$OUTPUT_DIR"
-    srun python -m src.visu.sweep_results_table \
+    log_section "table start model=$model kind=$table_kind metric=$METRIC split=eval decimals=$DECIMALS output=$OUTPUT_DIR"
+    srun --ntasks=1 python -m src.visu.sweep_results_table \
       "$OUT_ROOT" \
       --table-kind "$table_kind" \
       --output-dir "$OUTPUT_DIR" \
@@ -104,7 +105,7 @@ for model in "${MODELS[@]}"; do
     for family in "${FAMILIES[@]}"; do
       assert_files table-output "$OUTPUT_DIR/${family}_results.tex"
     done
-    echo "$(date -Is) table done model=$model kind=$table_kind output=$OUTPUT_DIR"
+    log "table done model=$model kind=$table_kind output=$OUTPUT_DIR"
   done
 done
-echo "$(date -Is) job done kind=adaptation_tables output=$OUT_ROOT/tables"
+log_section "job done kind=adaptation_tables output=$OUT_ROOT/tables"

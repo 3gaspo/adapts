@@ -1,5 +1,17 @@
 #!/bin/bash
-# Shared Slurm helpers. Source this file from the project root.
+# Shared launcher helpers. Source this file from the project root.
+
+log() {
+  printf '%s %s\n' "$(date -Is)" "$*"
+}
+
+log_section() {
+  printf '\n%s %s\n' "$(date -Is)" "$*"
+}
+
+log_error() {
+  printf '%s %s\n' "$(date -Is)" "$*" >&2
+}
 
 is_true() {
   case "${1:-false}" in
@@ -22,7 +34,7 @@ csv_to_array() {
     [ -n "$item" ] && target+=("$item")
   done
   if [ "${#target[@]}" -eq 0 ]; then
-    echo "$(date -Is) empty grid variable target=$target_name raw=$raw" >&2
+    log_error "empty sweep dimension target=$target_name raw=$raw"
     return 1
   fi
 }
@@ -33,7 +45,7 @@ parse_setting() {
   setting="${setting//-/ }"
   read -r SETTING_LAGS SETTING_HORIZON SETTING_EXTRA <<< "$setting"
   if [ -z "${SETTING_LAGS:-}" ] || [ -z "${SETTING_HORIZON:-}" ] || [ -n "${SETTING_EXTRA:-}" ]; then
-    echo "$(date -Is) invalid setting value=$1 expected=L:H" >&2
+    log_error "invalid setting value=$1 expected=L:H"
     return 1
   fi
 }
@@ -69,7 +81,7 @@ find_dataset_dir() {
       fi
     fi
   done
-  echo "$(date -Is) missing dataset directory dataset=$dataset searched=${roots[*]}" >&2
+  log_error "missing dataset directory dataset=$dataset searched=${roots[*]}"
   return 1
 }
 
@@ -93,14 +105,14 @@ find_weight_path() {
       return 0
     fi
   done
-  echo "$(date -Is) missing weight path relative=$relative searched=${roots[*]}" >&2
+  log_error "missing weight path relative=$relative searched=${roots[*]}"
   return 1
 }
 
 require_project_root() {
   PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
   if [ ! -f "$PROJECT_ROOT/pyproject.toml" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
-    echo "$(date -Is) submit from the adaptation project root or set PROJECT_ROOT path=$PROJECT_ROOT" >&2
+    log_error "submit from the adaptation project root or set PROJECT_ROOT path=$PROJECT_ROOT"
     return 1
   fi
   cd "$PROJECT_ROOT"
@@ -110,8 +122,8 @@ require_project_root() {
 require_extraction() {
   local directory="$1"
   if ! python -m src.experiments.artifacts "$directory"; then
-    echo "$(date -Is) extraction is absent, partial, or stale input=$directory" >&2
-    echo "Submit extraction first. Legacy payloads need to be re-extracted to receive a completion marker." >&2
+    log_error "extraction is absent, partial, or stale input=$directory"
+    log_error "submit extraction first; older payloads must be re-extracted to receive a completion marker"
     return 1
   fi
 }
@@ -122,7 +134,7 @@ assert_files() {
   local path
   for path in "$@"; do
     if [ ! -s "$path" ]; then
-      echo "$(date -Is) missing expected $label path=$path" >&2
+      log_error "missing expected $label path=$path"
       return 1
     fi
   done
