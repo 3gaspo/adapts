@@ -1,18 +1,17 @@
 #!/bin/bash
-#SBATCH --job-name=tsifa
-#SBATCH --gres=gpu:1
+#SBATCH --job-name=baselines
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
-#SBATCH --time=23:00:00
+#SBATCH --time=04:00:00
 #SBATCH --partition=a100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=40000
-#SBATCH --array=0-23%4
+#SBATCH --mem=20000
+#SBATCH --array=0-671%64
 
-# Slurm front end: use TEST_MODE=true with --array=0-0 for a one-task smoke run.
+# Submit this file from the project root; use TEST_MODE=true with --array=0-0 for smoke.
 TEST_MODE="${TEST_MODE:-false}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TEST_MODE
-source "$SCRIPT_DIR/run_ts_ifa.sh"
+source "$SCRIPT_DIR/src/slurm/run_baselines.sh"

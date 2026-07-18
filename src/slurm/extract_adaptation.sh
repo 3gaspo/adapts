@@ -1,6 +1,6 @@
 #!/bin/bash
 # Enumerate adaptation extraction configurations and run one array task.
-# Submit extract_adaptation.slurm; source this implementation only for local debugging.
+# Submit ../../extract.slurm; source this implementation only for local debugging.
 
 set -euo pipefail
 source src/slurm/common.sh

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fit adaptation gates from completed extractions and write gate metrics/artifacts.
-# Submit run_gates.slurm; source this implementation only for local debugging.
+# Submit ../../gates.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Train and evaluate TS-IFA from completed extraction artifacts.
-# Submit run_ts_ifa.slurm; source this implementation only for local debugging.
+# Submit ../../ts_ifa.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root

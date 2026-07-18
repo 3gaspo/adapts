@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build held-out and equal-configuration-average tables from completed sweeps.
-# Submit build_tables.slurm; source this implementation only for local debugging.
+# Submit ../../tables.slurm; source this implementation only for local debugging.
 
 set -euo pipefail
 source src/slurm/common.sh

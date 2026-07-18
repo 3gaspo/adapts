@@ -11,12 +11,12 @@
 #SBATCH --mem=40000
 #SBATCH --array=0-783%8
 
-# Slurm front end: edit scheduler resources and the extraction profile here.
-# test has 2 tasks:  sbatch --array=0-1 src/slurm/extract_adaptation.slurm
-# pilot has 28:     sbatch --array=0-27 src/slurm/extract_adaptation.slurm
+# Submit this file from the project root. Edit resources and the extraction profile here.
+# test has 2 tasks:  sbatch --array=0-1 extract.slurm
+# pilot has 28:     sbatch --array=0-27 extract.slurm
 # full has 784 and matches the default array above.
 PROFILE="${PROFILE:-full}" # test, pilot, or full
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PROFILE
-source "$SCRIPT_DIR/extract_adaptation.sh"
+source "$SCRIPT_DIR/src/slurm/extract_adaptation.sh"

@@ -46,7 +46,7 @@ used.  When the repository is copied elsewhere, explicitly set the roots:
 ```bash
 DATA_ROOT=/cluster/shared/datasets \
 WEIGHTS_ROOT=/cluster/shared/weights \
-sbatch src/slurm/extract_adaptation.slurm
+sbatch extract.slurm
 ```
 
 `CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
@@ -61,18 +61,18 @@ retrieval), then its one-task baseline and gate consumers:
 
 ```bash
 extract_test=$(TEST_MODE=true sbatch --parsable --array=0-1 \
-  src/slurm/extract_adaptation.slurm)
+  extract.slurm)
 
 baseline_test=$(TEST_MODE=true sbatch --parsable --array=0 \
   --dependency=afterok:$extract_test \
-  src/slurm/run_baselines.slurm)
+  baselines.slurm)
 
 gate_test=$(TEST_MODE=true sbatch --parsable --array=0 \
   --dependency=afterok:$extract_test \
-  src/slurm/run_gates.slurm)
+  gates.slurm)
 
 TEST_MODE=true sbatch --dependency=afterok:$baseline_test:$gate_test \
-  src/slurm/build_tables.slurm
+  tables.slurm
 ```
 
 Inspect both Slurm logs, the extraction manifest, downstream JSON/CSV metrics,
@@ -80,13 +80,13 @@ feature-importance plots, and the Chronos full/average test tables.  Then submit
 the publication arrays:
 
 ```bash
-extract_job=$(PROFILE=full sbatch --parsable src/slurm/extract_adaptation.slurm)
+extract_job=$(PROFILE=full sbatch --parsable extract.slurm)
 baseline_job=$(sbatch --parsable --dependency=afterok:$extract_job \
-  src/slurm/run_baselines.slurm)
+  baselines.slurm)
 gate_job=$(sbatch --parsable --dependency=afterok:$extract_job \
-  src/slurm/run_gates.slurm)
+  gates.slurm)
 sbatch --dependency=afterok:$baseline_job:$gate_job \
-  src/slurm/build_tables.slurm
+  tables.slurm
 ```
 
 The full extraction array has 784 tasks: seven datasets, two models, eight
@@ -96,7 +96,7 @@ launchers.  The `572:64` setting is intentional for comparison with Cross-RAG.
 The single extraction launcher has three profiles: `test` (2 tasks), `pilot`
 (28 tasks: Electricity/Solar, Chronos, two settings), and `full` (784 tasks).
 Match `--array` to the selected profile as shown in the comments at the top of
-`extract_adaptation.slurm`.
+`extract.slurm`.
 
 The screening sweep is intentionally single-seed (`SEED=1`). `SEED` is not part
 of the output directory, so never submit different seeds against the same
@@ -117,7 +117,7 @@ For example:
 ```bash
 DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-PROFILE=full sbatch --array=0-1 src/slurm/extract_adaptation.slurm
+PROFILE=full sbatch --array=0-1 extract.slurm
 ```
 
 Do not submit a downstream job without an `afterok` dependency unless the
@@ -127,7 +127,7 @@ legacy, and assert the files expected by table discovery after each run.
 
 ## Tables and averages
 
-The only table front end is `src/slurm/build_tables.slurm`; it delegates to
+The only table front end is `tables.slurm`; it delegates to
 `src/slurm/build_tables.sh`. It
 checks every selected input rather than silently constructing a sparse table,
 then writes separate Chronos and TabPFN-TS tables.  `full/` reports each
@@ -176,16 +176,24 @@ logits such as `-6`, `-3`, and `-1` on the same pilot configuration.
 TS-IFA smoke submission:
 
 ```bash
-TEST_MODE=true sbatch --array=0 src/slurm/run_ts_ifa.slurm
+TEST_MODE=true sbatch --array=0 ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
 
 ## Executable files
 
-Every `.slurm` file is a thin scheduler front end containing resources and a
-test/profile switch. Its same-named `.sh` file contains the actual enumeration,
-input checks, and command invocation:
+Only the concise `.slurm` files in the project root are submitted. They contain
+scheduler resources and test/profile switches, while `src/slurm/*.sh` contains
+enumeration, input checks, and command invocation:
+
+- `extract.slurm` -> `src/slurm/extract_adaptation.sh`.
+- `baselines.slurm` -> `src/slurm/run_baselines.sh`.
+- `gates.slurm` -> `src/slurm/run_gates.sh`.
+- `tables.slurm` -> `src/slurm/build_tables.sh`.
+- `ts_ifa.slurm` and `univariate.slurm` are optional model/reference jobs.
+
+Implementation shells:
 
 - `extract_adaptation.sh` builds vanilla and retrieval extraction tasks and
   calls `src.experiments.extraction`.

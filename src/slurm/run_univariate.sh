@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run direct univariate backbone forecasts used as non-adapted references.
-# Submit run_univariate.slurm; source this implementation only for local debugging.
+# Submit ../../univariate.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=univariate
+#SBATCH --job-name=tsifa
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -9,10 +9,10 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
-#SBATCH --array=0-3%4
+#SBATCH --array=0-23%4
 
-# Slurm front end: use TEST_MODE=true with --array=0-0 for a one-task smoke run.
+# Optional TS-IFA front end; use TEST_MODE=true with --array=0-0 for smoke.
 TEST_MODE="${TEST_MODE:-false}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TEST_MODE
-source "$SCRIPT_DIR/run_univariate.sh"
+source "$SCRIPT_DIR/src/slurm/run_ts_ifa.sh"

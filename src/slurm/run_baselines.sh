@@ -1,6 +1,6 @@
 #!/bin/bash
 # Evaluate non-trainable and fitted adaptation baselines from completed extractions.
-# Submit run_baselines.slurm; source this implementation only for local debugging.
+# Submit ../../baselines.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root

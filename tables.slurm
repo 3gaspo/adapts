@@ -1,17 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=baselines
+#SBATCH --job-name=tables
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
-#SBATCH --time=04:00:00
+#SBATCH --time=00:30:00
 #SBATCH --partition=a100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=20000
-#SBATCH --array=0-671%64
+#SBATCH --mem=4000
 
-# Slurm front end: use TEST_MODE=true with --array=0-0 for a one-task smoke run.
+# Submit after the baseline/gate jobs; set TEST_MODE=true after smoke runs.
 TEST_MODE="${TEST_MODE:-false}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TEST_MODE
-source "$SCRIPT_DIR/run_baselines.sh"
+source "$SCRIPT_DIR/src/slurm/build_tables.sh"
