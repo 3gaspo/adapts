@@ -57,21 +57,21 @@ it is implemented and registered.
 ## Required run order
 
 First run the two-task extraction smoke sweep (vanilla plus one raw, k=3
-retrieval), then its one-task baseline and gate consumers:
+retrieval), then its one-task baseline and gate consumers. These are the safe
+defaults in the root launchers, so no array override is needed:
 
 ```bash
-extract_test=$(TEST_MODE=true sbatch --parsable --array=0-1 \
-  extract.slurm)
+extract_test=$(sbatch --parsable extract.slurm)
 
-baseline_test=$(TEST_MODE=true sbatch --parsable --array=0 \
+baseline_test=$(sbatch --parsable \
   --dependency=afterok:$extract_test \
   baselines.slurm)
 
-gate_test=$(TEST_MODE=true sbatch --parsable --array=0 \
+gate_test=$(sbatch --parsable \
   --dependency=afterok:$extract_test \
   gates.slurm)
 
-TEST_MODE=true sbatch --dependency=afterok:$baseline_test:$gate_test \
+sbatch --dependency=afterok:$baseline_test:$gate_test \
   tables.slurm
 ```
 
@@ -80,12 +80,14 @@ feature-importance plots, and the Chronos full/average test tables.  Then submit
 the publication arrays:
 
 ```bash
-extract_job=$(PROFILE=full sbatch --parsable extract.slurm)
-baseline_job=$(sbatch --parsable --dependency=afterok:$extract_job \
+extract_job=$(PROFILE=full sbatch --parsable --array=0-783%8 extract.slurm)
+baseline_job=$(TEST_MODE=false sbatch --parsable --array=0-671%64 \
+  --dependency=afterok:$extract_job \
   baselines.slurm)
-gate_job=$(sbatch --parsable --dependency=afterok:$extract_job \
+gate_job=$(TEST_MODE=false sbatch --parsable --array=0-671%32 \
+  --dependency=afterok:$extract_job \
   gates.slurm)
-sbatch --dependency=afterok:$baseline_job:$gate_job \
+TEST_MODE=false sbatch --dependency=afterok:$baseline_job:$gate_job \
   tables.slurm
 ```
 
@@ -97,6 +99,12 @@ The single extraction launcher has three profiles: `test` (2 tasks), `pilot`
 (28 tasks: Electricity/Solar, Chronos, two settings), and `full` (784 tasks).
 Match `--array` to the selected profile as shown in the comments at the top of
 `extract.slurm`.
+
+Every array task has an independent `logs/<job>_<array-job>_<task>.out` and
+`.err` pair. This prevents concurrent tasks from interleaving or corrupting one
+shared file; normal timestamped progress goes to `.out`, while `.err` is for
+warnings and failures. A full extraction therefore intentionally creates 784
+pairs, whereas the default smoke submission creates two.
 
 The screening sweep is intentionally single-seed (`SEED=1`). `SEED` is not part
 of the output directory, so never submit different seeds against the same
