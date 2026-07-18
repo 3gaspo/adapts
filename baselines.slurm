@@ -12,6 +12,7 @@
 
 # Submit this file from the project root; use TEST_MODE=true with --array=0-0 for smoke.
 TEST_MODE="${TEST_MODE:-false}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export TEST_MODE
-source "$SCRIPT_DIR/src/slurm/run_baselines.sh"
+PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
+cd "$PROJECT_ROOT"
+export PROJECT_ROOT TEST_MODE
+source "$PROJECT_ROOT/src/slurm/run_baselines.sh"

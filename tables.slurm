@@ -11,6 +11,7 @@
 
 # Submit after the baseline/gate jobs; set TEST_MODE=true after smoke runs.
 TEST_MODE="${TEST_MODE:-false}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export TEST_MODE
-source "$SCRIPT_DIR/src/slurm/build_tables.sh"
+PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
+cd "$PROJECT_ROOT"
+export PROJECT_ROOT TEST_MODE
+source "$PROJECT_ROOT/src/slurm/build_tables.sh"

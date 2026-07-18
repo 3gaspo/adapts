@@ -17,6 +17,7 @@
 # full has 784 and matches the default array above.
 PROFILE="${PROFILE:-full}" # test, pilot, or full
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export PROFILE
-source "$SCRIPT_DIR/src/slurm/extract_adaptation.sh"
+PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
+cd "$PROJECT_ROOT"
+export PROJECT_ROOT PROFILE
+source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
