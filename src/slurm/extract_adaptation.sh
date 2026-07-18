@@ -1,6 +1,6 @@
 #!/bin/bash
-# Enumerate adaptation extraction configurations and run one array task.
-# Submit ../../extract.slurm; source this implementation only for local debugging.
+# Enumerate and run adaptation extraction configurations sequentially.
+# Submit ../../extraction.slurm; source this implementation only for local debugging.
 
 set -euo pipefail
 source src/slurm/common.sh
@@ -13,31 +13,18 @@ export PYTHONPATH="$PROJECT_ROOT"
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
 : "${OUT_ROOT:=outputs/adaptation}"
-: "${PROFILE:=full}"
-: "${TEST_MODE:=false}"
+: "${TEST_MODE:=true}"
 
-if is_true "$TEST_MODE"; then PROFILE=test; fi
-
-case "$PROFILE" in
-  test)
-    TEST_MODE=true
-    DEFAULT_DATASETS_CSV="electricity"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_SETTINGS_CSV="168:24"
-    ;;
-  pilot)
-    DEFAULT_DATASETS_CSV="electricity,solar"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_SETTINGS_CSV="168:24,672:168"
-    ;;
-  full)
-    DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
-    DEFAULT_MODELS_CSV="chronos,tabpfnts"
-    # 572:64 is intentional: it provides the Cross-RAG comparison.
-    DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
-    ;;
-  *) log_error "unknown PROFILE=$PROFILE expected=test,pilot,full"; exit 2 ;;
-esac
+if is_true "$TEST_MODE"; then
+  DEFAULT_DATASETS_CSV="electricity"
+  DEFAULT_MODELS_CSV="chronos"
+  DEFAULT_SETTINGS_CSV="168:24"
+else
+  DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
+  DEFAULT_MODELS_CSV="chronos,tabpfnts"
+  # 572:64 is intentional: it provides the Cross-RAG comparison.
+  DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+fi
 : "${SKIP_COMPLETE:=true}"
 
 if is_true "$TEST_MODE"; then
@@ -187,21 +174,13 @@ run_task() {
     retrieval_setting="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
     run_root="$MODEL_ROOT/$retrieval_setting"
   fi
-  log_section "extraction start task=$task_id/${#TASK_DATASETS[@]} profile=$PROFILE dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE train_stride=$TRAIN_QUERY_STRIDE oracle_stride=$ORACLE_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
+  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE train_stride=$TRAIN_QUERY_STRIDE oracle_stride=$ORACLE_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$save_name" "$run_root"
-  log "extraction done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
+  log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 
-log_section "job start kind=adaptation_extraction profile=$PROFILE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
-if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASK_DATASETS[@]}" ]; then
-    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASK_DATASETS[@]}"
-    exit 0
-  fi
-  run_task "$SLURM_ARRAY_TASK_ID"
-else
-  for ((task_id = 0; task_id < ${#TASK_DATASETS[@]}; task_id++)); do
-    run_task "$task_id"
-  done
-fi
+log_section "job start kind=adaptation_extraction test_mode=$TEST_MODE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
+for ((task_id = 0; task_id < ${#TASK_DATASETS[@]}; task_id++)); do
+  run_task "$task_id"
+done
 log_section "job done kind=adaptation_extraction output=$OUT_ROOT"

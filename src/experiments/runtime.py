@@ -16,6 +16,7 @@ def setup_logging() -> None:
         stream=sys.stdout,
         force=True,
     )
+    logging.captureWarnings(True)
 
 
 def log_experiment_separator(logger: logging.Logger) -> None:

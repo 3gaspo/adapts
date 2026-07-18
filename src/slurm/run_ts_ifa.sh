@@ -88,7 +88,7 @@ run_task() {
   [ -z "$MAX_VALID_SAMPLES" ] || optional_args+=(--max-valid-samples "$MAX_VALID_SAMPLES")
   [ -z "$MAX_EVAL_SAMPLES" ] || optional_args+=(--max-eval-samples "$MAX_EVAL_SAMPLES")
   is_true "$RESTORE_BEST_VALIDATION" && restore_args+=(--restore-best-validation)
-  log_section "training start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING epochs=$EPOCHS batch_size=$BATCH_SIZE learning_rate=$LR weight_decay=$WEIGHT_DECAY beta=$BETA gamma=$GAMMA dropout=$DROPOUT attention_heads=$ATTENTION_HEADS attention_dim=$ATTENTION_DIM hidden_dim=$HIDDEN_DIM mixture_gate_init=$MIXTURE_GATE_INIT seed=$SEED"
+  log_section "training start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING epochs=$EPOCHS batch_size=$BATCH_SIZE learning_rate=$LR weight_decay=$WEIGHT_DECAY beta=$BETA gamma=$GAMMA dropout=$DROPOUT attention_heads=$ATTENTION_HEADS attention_dim=$ATTENTION_DIM hidden_dim=$HIDDEN_DIM mixture_gate_init=$MIXTURE_GATE_INIT seed=$SEED"
   srun --ntasks=1 python -m src.adaptors.ts_ifa.train \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
@@ -125,19 +125,11 @@ run_task() {
     "$OUTPUT_DIR/eval_predictions.pt" \
     "$OUTPUT_DIR/config.json" \
     "$OUTPUT_DIR/training_nmse.pdf"
-  log "training done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+  log "training done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
 log_section "job start kind=ts_ifa_training test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
-if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
-    exit 0
-  fi
-  run_task "$SLURM_ARRAY_TASK_ID"
-else
-  for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
-    run_task "$task_id"
-  done
-fi
+for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
+  run_task "$task_id"
+done
 log_section "job done kind=ts_ifa_training output=$OUT_ROOT"

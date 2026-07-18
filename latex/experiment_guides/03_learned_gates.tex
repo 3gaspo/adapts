@@ -54,9 +54,9 @@ Outputs
 include per-method metrics, prediction payloads, gate diagnostics, and feature
 importance plots.
 
-The gate job is an array and validates each extraction completion manifest
-before loading it.  It must depend on the extraction array.  The table job then
-checks every requested gate JSON before producing detailed and averaged tables
+The gate job loops sequentially and validates each extraction completion
+manifest before loading it. It must depend on the extraction job. The table job
+then checks every requested gate JSON before producing detailed and averaged tables
 for each backbone; missing configurations are errors rather than silent blanks.
 
 \section{Interpretation}

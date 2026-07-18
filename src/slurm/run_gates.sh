@@ -61,7 +61,7 @@ run_task() {
   INPUT_DIR="$RUN_ROOT/extracted"
   OUTPUT_DIR="$RUN_ROOT/gates"
   require_extraction "$INPUT_DIR"
-  log_section "gates start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH seed=$SEED"
+  log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH seed=$SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
@@ -75,19 +75,11 @@ run_task() {
     "$OUTPUT_DIR/gate_metrics.json" \
     "$OUTPUT_DIR/gate_artifacts.pt" \
     "$OUTPUT_DIR/visualization_payload.pt"
-  log "gates done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+  log "gates done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
 log_section "job start kind=gates test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
-if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
-    exit 0
-  fi
-  run_task "$SLURM_ARRAY_TASK_ID"
-else
-  for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
-    run_task "$task_id"
-  done
-fi
+for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
+  run_task "$task_id"
+done
 log_section "job done kind=gates output=$OUT_ROOT"

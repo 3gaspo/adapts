@@ -1,6 +1,10 @@
 #!/bin/bash
 # Shared launcher helpers. Source this file from the project root.
 
+# Keep third-party progress bars out of Slurm stderr; application logs use stdout.
+export HF_HUB_DISABLE_PROGRESS_BARS="${HF_HUB_DISABLE_PROGRESS_BARS:-1}"
+export TRANSFORMERS_VERBOSITY="${TRANSFORMERS_VERBOSITY:-error}"
+
 log() {
   printf '%s %s\n' "$(date -Is)" "$*"
 }

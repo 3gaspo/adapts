@@ -58,7 +58,7 @@ run_task() {
   INPUT_DIR="$RUN_ROOT/extracted"
   OUTPUT_DIR="$RUN_ROOT/baselines"
   require_extraction "$INPUT_DIR"
-  log_section "baselines start task=$task_id/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2=$L2 fit_baselines_on_eval=true seed=$SEED"
+  log_section "baselines start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2=$L2 fit_baselines_on_eval=true seed=$SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
@@ -71,19 +71,11 @@ run_task() {
     "$OUTPUT_DIR/baseline_metrics.json" \
     "$OUTPUT_DIR/baseline_artifacts.pt" \
     "$OUTPUT_DIR/visualization_payload.pt"
-  log "baselines done task=$task_id dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+  log "baselines done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
 log_section "job start kind=baselines test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
-if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
-    exit 0
-  fi
-  run_task "$SLURM_ARRAY_TASK_ID"
-else
-  for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
-    run_task "$task_id"
-  done
-fi
+for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
+  run_task "$task_id"
+done
 log_section "job done kind=baselines output=$OUT_ROOT"

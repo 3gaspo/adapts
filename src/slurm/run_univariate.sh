@@ -47,7 +47,7 @@ run_task() {
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
   SETTING_OUT="$OUT_ROOT/$dataset/${L}_${H}"
-  log_section "univariate start task=$task_id/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos eval_stride=$EVAL_QUERY_STRIDE normalization=instance seed=$SEED"
+  log_section "univariate start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos eval_stride=$EVAL_QUERY_STRIDE normalization=instance seed=$SEED"
   srun --ntasks=1 python -m src.experiments.experiment_univariate \
     --csv "$dataset_dir" \
     --dataset-name "$dataset" \
@@ -67,19 +67,11 @@ run_task() {
     "$SETTING_OUT/chronos/univariate_losses.csv" \
     "$SETTING_OUT/chronos/univariate_summary.json" \
     "$SETTING_OUT/chronos/univariate_payload.pt"
-  log "univariate done task=$task_id dataset=$dataset lags=$L horizon=$H model=chronos"
+  log "univariate done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos"
 }
 
 log_section "job start kind=univariate test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV settings=$SETTINGS_CSV"
-if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
-  if [ "$SLURM_ARRAY_TASK_ID" -ge "${#TASKS[@]}" ]; then
-    log "array task outside narrowed sweep; exiting task=$SLURM_ARRAY_TASK_ID tasks=${#TASKS[@]}"
-    exit 0
-  fi
-  run_task "$SLURM_ARRAY_TASK_ID"
-else
-  for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
-    run_task "$task_id"
-  done
-fi
+for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
+  run_task "$task_id"
+done
 log_section "job done kind=univariate output=$OUT_ROOT"

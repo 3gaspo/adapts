@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -113,8 +114,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        stream=sys.stdout,
         force=True,
     )
+    logging.captureWarnings(True)
     args = parse_args(argv)
     complete, reason = validate_extraction(args.directory)
     LOGGER.info("extraction validation directory=%s status=%s", args.directory, reason)

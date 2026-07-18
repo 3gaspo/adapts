@@ -46,7 +46,7 @@ used.  When the repository is copied elsewhere, explicitly set the roots:
 ```bash
 DATA_ROOT=/cluster/shared/datasets \
 WEIGHTS_ROOT=/cluster/shared/weights \
-sbatch extract.slurm
+sbatch extraction.slurm
 ```
 
 `CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
@@ -56,12 +56,12 @@ it is implemented and registered.
 
 ## Required run order
 
-First run the two-task extraction smoke sweep (vanilla plus one raw, k=3
-retrieval), then its one-task baseline and gate consumers. These are the safe
-defaults in the root launchers, so no array override is needed:
+Keep `TEST_MODE=true` in the root launchers for the first pass. Each submission
+is one Slurm job that loops sequentially over its selected configurations and
+therefore creates one `.out` and one `.err` file:
 
 ```bash
-extract_test=$(sbatch --parsable extract.slurm)
+extract_test=$(sbatch --parsable extraction.slurm)
 
 baseline_test=$(sbatch --parsable \
   --dependency=afterok:$extract_test \
@@ -75,36 +75,32 @@ sbatch --dependency=afterok:$baseline_test:$gate_test \
   tables.slurm
 ```
 
-Inspect both Slurm logs, the extraction manifest, downstream JSON/CSV metrics,
+Inspect the Slurm logs, extraction manifests, downstream JSON/CSV metrics,
 feature-importance plots, and the Chronos full/average test tables.  Then submit
-the publication arrays:
+the full sequential jobs with `TEST_MODE=false`:
 
 ```bash
-extract_job=$(PROFILE=full sbatch --parsable --array=0-783%8 extract.slurm)
-baseline_job=$(TEST_MODE=false sbatch --parsable --array=0-671%64 \
+extract_job=$(TEST_MODE=false sbatch --parsable extraction.slurm)
+baseline_job=$(TEST_MODE=false sbatch --parsable \
   --dependency=afterok:$extract_job \
   baselines.slurm)
-gate_job=$(TEST_MODE=false sbatch --parsable --array=0-671%32 \
+gate_job=$(TEST_MODE=false sbatch --parsable \
   --dependency=afterok:$extract_job \
   gates.slurm)
 TEST_MODE=false sbatch --dependency=afterok:$baseline_job:$gate_job \
   tables.slurm
 ```
 
-The full extraction array has 784 tasks: seven datasets, two models, eight
-settings, and seven variants (vanilla plus two spaces times three k values).
-Baseline and gate arrays have 672 tasks each.  Concurrency is throttled in the
-launchers.  The `572:64` setting is intentional for comparison with Cross-RAG.
-The single extraction launcher has three profiles: `test` (2 tasks), `pilot`
-(28 tasks: Electricity/Solar, Chronos, two settings), and `full` (784 tasks).
-Match `--array` to the selected profile as shown in the comments at the top of
-`extract.slurm`.
+Full extraction loops over 784 configurations: seven datasets, two models,
+eight settings, and seven variants (vanilla plus two spaces times three k
+values). Baselines and gates each loop over 672 configurations. The `572:64`
+setting is intentional for comparison with Cross-RAG. If one sequential job
+later exceeds the cluster time limit, split first by model and then by dataset;
+the current launchers intentionally remain single jobs.
 
-Every array task has an independent `logs/<job>_<array-job>_<task>.out` and
-`.err` pair. This prevents concurrent tasks from interleaving or corrupting one
-shared file; normal timestamped progress goes to `.out`, while `.err` is for
-warnings and failures. A full extraction therefore intentionally creates 784
-pairs, whereas the default smoke submission creates two.
+Normal timestamped progress and Python warnings are written to
+`logs/<job>_<job-id>.out`. Third-party progress bars are disabled, leaving the
+matching `.err` for scheduler, shell, or Python failures.
 
 The screening sweep is intentionally single-seed (`SEED=1`). `SEED` is not part
 of the output directory, so never submit different seeds against the same
@@ -116,16 +112,14 @@ multi-seed adaptation result.
 
 All sweep dimensions have comma-separated environment overrides:
 `DATASETS_CSV`, `MODELS_CSV`, `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, and
-`NEIGHBORS_CSV`. Settings use `L:H`. When narrowing a sweep, override the array
-range too.  Extraction needs
-`D*M*S*(1 + spaces*k)` tasks; baselines/gates need `D*M*S*spaces*k` tasks.
-Out-of-range tasks exit safely, but submitting them wastes scheduler capacity.
-For example:
+`NEIGHBORS_CSV`. Settings use `L:H`. Extraction loops over
+`D*M*S*(1 + spaces*k)` configurations; baselines/gates loop over
+`D*M*S*spaces*k` configurations. For example:
 
 ```bash
 DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-PROFILE=full sbatch --array=0-1 extract.slurm
+TEST_MODE=false sbatch extraction.slurm
 ```
 
 Do not submit a downstream job without an `afterok` dependency unless the
@@ -184,7 +178,7 @@ logits such as `-6`, `-3`, and `-1` on the same pilot configuration.
 TS-IFA smoke submission:
 
 ```bash
-TEST_MODE=true sbatch --array=0 ts_ifa.slurm
+TEST_MODE=true sbatch ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
@@ -195,7 +189,7 @@ Only the concise `.slurm` files in the project root are submitted. They contain
 scheduler resources and test/profile switches, while `src/slurm/*.sh` contains
 enumeration, input checks, and command invocation:
 
-- `extract.slurm` -> `src/slurm/extract_adaptation.sh`.
+- `extraction.slurm` -> `src/slurm/extract_adaptation.sh`.
 - `baselines.slurm` -> `src/slurm/run_baselines.sh`.
 - `gates.slurm` -> `src/slurm/run_gates.sh`.
 - `tables.slurm` -> `src/slurm/build_tables.sh`.
