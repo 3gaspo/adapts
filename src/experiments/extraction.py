@@ -29,10 +29,65 @@ from ..data.neighbors import (
 )
 from ..models.models import load_pretrained_model, parameter_counts, resolve_device
 from ..visu import plot_series
+from .artifacts import (
+    invalidate_extraction,
+    required_extraction_files,
+    validate_extraction,
+    write_extraction_manifest,
+)
 from .runtime import log_experiment_separator, setup_logging
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[str, Any]:
+    """Return the configuration fields that determine extracted tensor contents."""
+    fields = (
+        "csv",
+        "dataset_config",
+        "target_cols",
+        "date_col",
+        "drop_users",
+        "rename_users",
+        "aggr",
+        "aggr_period",
+        "model",
+        "model_kwargs",
+        "pretrained_path",
+        "normalization",
+        "lags",
+        "horizon",
+        "splits",
+        "datastore_stride",
+        "train_stride",
+        "oracle_stride",
+        "eval_stride",
+        "period",
+        "neighbors",
+        "distance_space",
+        "distance_metric",
+        "retrieval_mode",
+        "min_store_dates",
+        "max_store_dates",
+        "max_store_windows",
+        "full_online_history",
+        "store_start_date",
+        "store_end_date",
+        "no_align_period",
+        "pool_representation",
+        "compute_ec",
+        "search_chunk_size",
+        "seed",
+    )
+    signature = {name: getattr(args, name) for name in fields}
+    signature["dataset_name"] = dataset_name
+    signature["csv"] = str(Path(args.csv).expanduser().resolve())
+    if args.dataset_config:
+        signature["dataset_config"] = str(Path(args.dataset_config).expanduser().resolve())
+    if args.pretrained_path:
+        signature["pretrained_path"] = str(Path(args.pretrained_path).expanduser().resolve())
+    return signature
 
 
 def _empty_neighbor_tensors(
@@ -548,6 +603,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--search-chunk-size", type=int, default=512)
     parser.add_argument("--output-dir", default="outputs/adaptation")
     parser.add_argument("--save-name", default="neighbors")
+    parser.add_argument(
+        "--skip-complete",
+        action="store_true",
+        help="Skip only when an atomic completion marker matches this exact extraction configuration",
+    )
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args()
@@ -570,6 +630,25 @@ def main() -> dict[str, Path]:
         args.distance_metric,
     )
     set_seed(args.seed)
+    if args.oracle_stride is None:
+        args.oracle_stride = args.train_stride
+    if args.datastore_stride is None:
+        args.datastore_stride = args.train_stride
+    out = run_dir(args.output_dir, args.save_name)
+    signature = extraction_signature(args, dataset_name)
+    if args.skip_complete:
+        complete, reason = validate_extraction(out, expected_signature=signature)
+        if complete:
+            LOGGER.info("extraction skipped dir=%s reason=%s", out, reason)
+            log_experiment_separator(LOGGER)
+            return {
+                "run_dir": out,
+                "train_prediction": out / "train_prediction_payload.pt",
+                "oracle_prediction": out / "oracle_prediction_payload.pt",
+                "eval_prediction": out / "eval_prediction_payload.pt",
+            }
+        LOGGER.info("existing extraction not reusable dir=%s reason=%s", out, reason)
+    invalidate_extraction(out)
     LOGGER.info("dataset load start")
     dataset = load_csv_dataset(
         args.csv,
@@ -603,7 +682,6 @@ def main() -> dict[str, Path]:
         f"{total_parameters:,}",
         f"{trainable_parameters:,}",
     )
-    out = run_dir(args.output_dir, args.save_name)
     if args.retrieval_mode == "fixed" and args.full_online_history:
         raise ValueError("--full-online-history is only valid with --retrieval-mode online")
     if args.max_store_dates is not None and args.max_store_dates <= 0:
@@ -624,10 +702,6 @@ def main() -> dict[str, Path]:
         and args.store_start_date >= args.store_end_date
     ):
         raise ValueError("--store-start-date must be before --store-end-date")
-    if args.oracle_stride is None:
-        args.oracle_stride = args.train_stride
-    if args.datastore_stride is None:
-        args.datastore_stride = args.train_stride
     for name in ("datastore_stride", "train_stride", "oracle_stride", "eval_stride"):
         if int(getattr(args, name)) <= 0:
             raise ValueError(f"--{name.replace('_', '-')} must be positive")
@@ -760,6 +834,12 @@ def main() -> dict[str, Path]:
         output_dir=out,
         device=device,
     )
+    manifest = write_extraction_manifest(
+        out,
+        signature=signature,
+        required_files=required_extraction_files(vanilla=args.neighbors == 0),
+    )
+    LOGGER.info("completion marker saved path=%s", manifest)
     LOGGER.info("outputs saved dir=%s", out)
     LOGGER.info("experiment done seconds=%.2f", perf_counter() - started)
     log_experiment_separator(LOGGER)

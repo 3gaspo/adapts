@@ -18,7 +18,9 @@ forecast is a horizon-wise convex mixture
 \]
 Residual attention uses neighbor backbone errors as values; memory attention
 uses neighbor futures.  A third attention block produces mixture logits from
-query and neighbor look-backs.
+query and neighbor look-backs.  The horizon-specific four-way mixture is the
+highest-capacity final component and is the first target for simplification if
+\Ttwo overfitting persists.
 
 \goal{Learn a small, backbone-agnostic adaptation mechanism that can exploit
 retrieved forecasts, outcomes, and errors while remaining anchored to the
@@ -45,6 +47,14 @@ one random batch from \Tone.  Full deterministic \Ttwo validation and interval
 logging occur every 1,000 optimizer steps; \Tthree is evaluated only after
 training.
 
+The trainer can restore the lowest-nMSE \Ttwo checkpoint before touching
+\Tthree and can stop after a configurable number of non-improving validation
+evaluations.  The launcher enables best-checkpoint restoration but leaves early
+stopping disabled by default for backward-compatible optimization length.
+Dropout and reduced attention/MLP dimensions should be screened on one pilot
+configuration before widening the sweep.  A scalar/shared or low-rank final
+mixture is the next architecture ablation, not yet a default change.
+
 The sweep covers Electricity/Solar, 168--24 and 672--168, raw/instance
 Euclidean retrieval, and $k\in\{1,3,10\}$.  Implementation is under
 \code{src/adaptors/ts\_ifa/}; the launcher is
@@ -59,4 +69,3 @@ Selection must use \Ttwo; the untouched \Tthree period is the only final test.
 Attention weights are diagnostics and should not be interpreted as causal
 feature importance.
 \end{document}
-

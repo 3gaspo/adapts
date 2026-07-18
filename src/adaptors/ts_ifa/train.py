@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import logging
 from dataclasses import asdict
@@ -399,6 +400,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--max-train-samples", type=int, default=None)
+    parser.add_argument("--max-valid-samples", type=int, default=None)
     parser.add_argument("--max-eval-samples", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--grad-clip", type=float, default=1.0)
@@ -414,6 +416,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mixture-key-dim", type=int, default=64, help="Deprecated; kept for old launch configs")
     parser.add_argument("--mixture-gate-init", type=float, default=-6.0)
     parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument(
+        "--restore-best-validation",
+        action="store_true",
+        help="Restore the checkpoint with the lowest T2 adapted nMSE before final T3 evaluation",
+    )
+    parser.add_argument(
+        "--early-stopping-patience",
+        type=int,
+        default=0,
+        help="Stop after this many non-improving T2 evaluations; 0 disables early stopping",
+    )
+    parser.add_argument(
+        "--early-stopping-min-delta",
+        type=float,
+        default=0.0,
+        help="Minimum T2 nMSE decrease counted as an improvement",
+    )
     return parser.parse_args()
 
 
@@ -462,7 +481,11 @@ def main() -> dict[str, Path]:
         prefix="train",
         max_samples=args.max_train_samples,
     )
-    valid_dataset = PredictionPayloadDataset(torch_load(oracle_payload_path), prefix="oracle")
+    valid_dataset = PredictionPayloadDataset(
+        torch_load(oracle_payload_path),
+        prefix="oracle",
+        max_samples=args.max_valid_samples,
+    )
     eval_dataset = None
     if eval_payload_path is not None and eval_payload_path.exists():
         eval_dataset = PredictionPayloadDataset(
@@ -558,6 +581,10 @@ def main() -> dict[str, Path]:
     )
     if logging_eval_freq % valid_eval_freq != 0:
         raise ValueError("logging_eval_freq must be a multiple of valid_eval_freq")
+    if args.early_stopping_patience < 0:
+        raise ValueError("early_stopping_patience cannot be negative")
+    if args.early_stopping_min_delta < 0:
+        raise ValueError("early_stopping_min_delta cannot be negative")
     LOGGER.info(
         "training start epochs=%s steps_per_epoch=%s total_steps=%s valid_eval_freq=%s logging_eval_freq=%s",
         args.epochs,
@@ -575,6 +602,11 @@ def main() -> dict[str, Path]:
     }
     recent_seen = 0
     step = 0
+    best_valid_nmse = float("inf")
+    best_step: int | None = None
+    best_state: dict[str, torch.Tensor] | None = None
+    non_improving_evaluations = 0
+    stopped_early = False
     for epoch in range(1, args.epochs + 1):
         model.train()
         for raw_cpu in train_loader:
@@ -631,6 +663,15 @@ def main() -> dict[str, Path]:
             )
             row.update({f"valid_{key}": value for key, value in valid_metrics.items()})
 
+            current_valid_nmse = float(row["valid_adapted_nmse"])
+            if current_valid_nmse < best_valid_nmse - float(args.early_stopping_min_delta):
+                best_valid_nmse = current_valid_nmse
+                best_step = step
+                best_state = copy.deepcopy(model.state_dict())
+                non_improving_evaluations = 0
+            else:
+                non_improving_evaluations += 1
+
             if should_logging_eval:
                 LOGGER.info(
                     "training progress step=%s/%s epoch=%s/%s train_interval_nmse=%.6f valid_nmse=%.6f",
@@ -645,6 +686,21 @@ def main() -> dict[str, Path]:
             history.append(row)
             recent_totals = {key: 0.0 for key in recent_totals}
             recent_seen = 0
+            if (
+                args.early_stopping_patience > 0
+                and non_improving_evaluations >= args.early_stopping_patience
+            ):
+                stopped_early = True
+                LOGGER.info(
+                    "early stopping step=%s best_step=%s best_valid_nmse=%.6f patience=%s",
+                    step,
+                    best_step,
+                    best_valid_nmse,
+                    args.early_stopping_patience,
+                )
+                break
+        if stopped_early:
+            break
     if recent_seen:
         row = {
             "epoch": args.epochs,
@@ -664,12 +720,25 @@ def main() -> dict[str, Path]:
             eps=eps,
         )
         row.update({f"valid_{key}": value for key, value in valid_metrics.items()})
+        current_valid_nmse = float(row["valid_adapted_nmse"])
+        if current_valid_nmse < best_valid_nmse - float(args.early_stopping_min_delta):
+            best_valid_nmse = current_valid_nmse
+            best_step = step
+            best_state = copy.deepcopy(model.state_dict())
         history.append(row)
         LOGGER.info(
             "training final step=%s train_interval_nmse=%.6f valid_nmse=%.6f",
             step,
             row["train_batch_nmse"],
             row["valid_adapted_nmse"],
+        )
+    restore_best = bool(args.restore_best_validation or args.early_stopping_patience > 0)
+    if restore_best and best_state is not None:
+        model.load_state_dict(best_state)
+        LOGGER.info(
+            "best T2 checkpoint restored step=%s valid_nmse=%.6f",
+            best_step,
+            best_valid_nmse,
         )
     LOGGER.info("training done seconds=%.2f", perf_counter() - start_time)
 
@@ -707,10 +776,15 @@ def main() -> dict[str, Path]:
             "validation_payload": str(oracle_payload_path),
             "eval_payload": str(eval_payload_path) if eval_payload_path else None,
             "epochs": args.epochs,
-            "steps": total_steps,
+            "epochs_requested": args.epochs,
+            "steps": step,
             "steps_per_epoch": steps_per_epoch,
             "valid_eval_freq": valid_eval_freq,
             "logging_eval_freq": logging_eval_freq,
+            "best_validation_step": best_step,
+            "best_validation_nmse": best_valid_nmse if best_step is not None else None,
+            "restored_best_validation": restore_best and best_state is not None,
+            "stopped_early": stopped_early,
         },
         checkpoint_path,
     )
@@ -752,11 +826,18 @@ def main() -> dict[str, Path]:
                 "validation_split": "T2",
                 "final_eval_split": "T3",
                 "random_epoch_size": args.batch_size,
-                "steps": total_steps,
+                "steps_requested": total_steps,
+                "steps": step,
                 "steps_per_epoch": steps_per_epoch,
                 "valid_eval_freq": valid_eval_freq,
                 "logging_eval_freq": logging_eval_freq,
                 "plot_step_train_loss": bool(args.plot_step_train_loss),
+                "early_stopping_patience": args.early_stopping_patience,
+                "early_stopping_min_delta": args.early_stopping_min_delta,
+                "best_validation_step": best_step,
+                "best_validation_nmse": best_valid_nmse if best_step is not None else None,
+                "restored_best_validation": restore_best and best_state is not None,
+                "stopped_early": stopped_early,
                 "seconds": perf_counter() - start_time,
             },
         },

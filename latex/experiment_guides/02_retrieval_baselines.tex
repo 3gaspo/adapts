@@ -31,6 +31,10 @@ uses only eligible history.  The current sweep uses Euclidean distance, raw and
 instance-normalized spaces, $k\in\{1,3,10\}$, daily period/stride 24, and at most
 30,000 store windows.
 
+The publication array adds ETTh1/2, ETTm1/2, Weather, Electricity, and Exchange
+with Chronos and TabPFN-TS; 572--64 is retained for Cross-RAG.  TS-ICL is
+deferred.  Atomic manifests prevent consumers from loading partial payloads.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{p{.31\linewidth}p{.61\linewidth}}
@@ -50,14 +54,18 @@ $\ell_2=10^{-3}$.
 
 \textbf{Sources:} \code{src/experiments/extraction.py};
 \code{src/adaptors/baselines/evaluate.py}\\
-\textbf{Launchers:} \code{src/slurm/extract\_adaptation.slurm};
-\code{src/adaptors/baselines/slurm/run.slurm}
+\textbf{Extraction:} \code{src/slurm/extract\_multi\_backbone\_adaptation.slurm}\\
+\textbf{Baselines:} \code{src/adaptors/baselines/slurm/run.slurm}
 
 The launcher also requests \code{--fit-baselines-on-eval}.  Methods suffixed
 \code{eval\_fit} are explicitly optimistic \Tthree in-sample fits: they are
 diagnostic upper bounds and must not be reported as causal test results.  The
 primary table should use coefficients fitted before \Tthree and report MSE,
 nMSE, equal-user metrics, and W10 where available.
+
+The baseline array depends on successful extraction.  Resource lookup checks
+the project, parent, and thesis root; moved copies set \code{DATA\_ROOT} and
+\code{WEIGHTS\_ROOT}.  Tables report per-backbone details and equal-grid means.
 
 \section{Interpretation}
 If residual retrieval wins, the memory primarily estimates backbone bias.  If

@@ -21,7 +21,6 @@ from .results_table import (
 
 
 REFERENCE_METHOD = "vanilla"
-REFERENCE_LABEL = "Vanilla Chronos"
 
 BASELINE_HELDOUT_VARIANTS = (
     "context_forecast",
@@ -192,12 +191,26 @@ def _average_metric(
     return sum(values) / len(values) if values else math.nan
 
 
-def _caption_with_reference(caption: str, metric: str, reference: float, decimals: int) -> str:
+def _reference_label(results: Sequence[Result]) -> str:
+    models = sorted({result.model for result in results if result.model}, key=str.casefold)
+    if len(models) == 1:
+        display = {"chronos": "Chronos", "tabpfnts": "TabPFN-TS"}.get(models[0], models[0])
+        return f"Vanilla {display}"
+    return "Vanilla backbone"
+
+
+def _caption_with_reference(
+    caption: str,
+    metric: str,
+    reference: float,
+    decimals: int,
+    reference_label: str,
+) -> str:
     separator = " " if caption.rstrip().endswith((".", "?", "!")) else ". "
     if math.isfinite(reference):
-        reference_text = f"{REFERENCE_LABEL} {metric.upper()}: {reference:.{decimals}f}."
+        reference_text = f"{reference_label} {metric.upper()}: {reference:.{decimals}f}."
     else:
-        reference_text = f"{REFERENCE_LABEL} {metric.upper()}: unavailable."
+        reference_text = f"{reference_label} {metric.upper()}: unavailable."
     return caption + separator + reference_text
 
 
@@ -289,7 +302,7 @@ def build_average_matrix_table(
     lines = [
         r"\begin{table}[htbp]",
         r"\centering",
-        rf"\caption{{{_latex(_caption_with_reference(caption_text, metric, reference, decimals))}}}",
+        rf"\caption{{{_latex(_caption_with_reference(caption_text, metric, reference, decimals, _reference_label(results)))}}}",
         r"\resizebox{\textwidth}{!}{%",
         rf"\begin{{tabular}}{{{'l' + 'c' * len(runs)}}}",
         r"\toprule",

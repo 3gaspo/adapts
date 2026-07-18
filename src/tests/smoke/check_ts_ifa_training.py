@@ -217,6 +217,7 @@ def run() -> None:
                 "16",
                 "--mixture-key-dim",
                 "16",
+                "--restore-best-validation",
             ]
             paths = main()
         finally:
@@ -233,6 +234,8 @@ def run() -> None:
         assert "train_nmse" in train_steps[0]
         assert config["training"]["train_split"] == "T1"
         assert config["training"]["validation_split"] == "T2"
+        assert config["training"]["best_validation_step"] == 1
+        assert config["training"]["restored_best_validation"] is True
     print("TS-IFA training smoke checks passed")
 
 

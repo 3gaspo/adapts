@@ -42,8 +42,10 @@ Oracle & True target loss & Scalar / horizon \\
 
 CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
 and seed 1.  Models are trained only on \Ttwo and applied without refitting to
-\Tthree.  The retrieval grid is raw/instance Euclidean distance with
-$k\in\{1,3,10\}$ for Electricity and Solar at 168--24 and 672--168.
+\Tthree.  The publication retrieval grid is raw/instance Euclidean distance
+with $k\in\{1,3,10\}$ across the seven datasets, eight settings, and Chronos plus
+TabPFN-TS defined by the extraction sweep.  The 572--64 setting is retained for
+the Cross-RAG comparison; TS-ICL remains a later extension.
 
 \textbf{Launcher:} \code{src/adaptors/gates/slurm/run.slurm}\\
 \textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}\\
@@ -52,6 +54,11 @@ $k\in\{1,3,10\}$ for Electricity and Solar at 168--24 and 672--168.
 Outputs
 include per-method metrics, prediction payloads, gate diagnostics, and feature
 importance plots.
+
+The gate job is an array and validates each extraction completion manifest
+before loading it.  It must depend on the extraction array.  The table job then
+checks every requested gate JSON before producing detailed and averaged tables
+for each backbone; missing configurations are errors rather than silent blanks.
 
 \section{Interpretation}
 The oracle gap measures headroom, not deployable performance.  The comparison

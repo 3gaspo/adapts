@@ -143,10 +143,39 @@ def _aggregate(df: pd.DataFrame, aggr: str | None, period: str) -> pd.DataFrame:
 def resolve_csv_path(path: str | Path, dataset_name: str | None = None) -> Path:
     base = Path(path).expanduser()
     if base.suffix.lower() == ".csv":
-        return base.resolve()
+        if base.is_file():
+            return base.resolve()
+        if base.parent.is_dir():
+            matches = [
+                candidate
+                for candidate in base.parent.iterdir()
+                if candidate.is_file() and candidate.name.casefold() == base.name.casefold()
+            ]
+            if len(matches) == 1:
+                return matches[0].resolve()
+        raise FileNotFoundError(base)
+    if not base.is_dir():
+        raise FileNotFoundError(base)
+    matches = sorted(
+        (candidate for candidate in base.iterdir() if candidate.is_file() and candidate.suffix.casefold() == ".csv"),
+        key=lambda candidate: candidate.name.casefold(),
+    )
     if dataset_name:
-        return (base / f"{dataset_name}.csv").resolve()
-    matches = sorted(base.glob("*.csv"))
+        expected = f"{dataset_name}.csv".casefold()
+        named = [candidate for candidate in matches if candidate.name.casefold() == expected]
+        if len(named) == 1:
+            return named[0].resolve()
+        if len(matches) == 1:
+            LOGGER.info(
+                "dataset CSV name differs from dataset label label=%s path=%s",
+                dataset_name,
+                matches[0],
+            )
+            return matches[0].resolve()
+        available = [candidate.name for candidate in matches]
+        raise FileNotFoundError(
+            f"no case-insensitive CSV match for dataset {dataset_name!r} in {base}; found {available}"
+        )
     if len(matches) == 1:
         return matches[0].resolve()
     raise ValueError("pass a CSV file or a directory with dataset_name")

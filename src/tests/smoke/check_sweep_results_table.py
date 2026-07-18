@@ -132,6 +132,27 @@ def main() -> None:
         assert r"R-ridge-h-fit-T3" in baselines
         assert baselines.count(r"\midrule") >= 2
 
+        tabpfn_root = root / "tabpfn_only"
+        tabpfn_setting = tabpfn_root / "electricity" / "168_24" / "tabpfnts"
+        _write(
+            tabpfn_setting / "vanilla" / "vanilla_metrics.json",
+            [{"split": "eval", "baseline": "vanilla", "nmse": 1.0}],
+        )
+        _write(
+            tabpfn_setting / "raw_euclidean_1_online" / "baselines" / "baseline_metrics.json",
+            [{"split": "eval", "baseline": "context_forecast", "nmse": 0.9}],
+        )
+        generate_average_results_tables(
+            tabpfn_root,
+            tabpfn_root / "tables",
+            models=["tabpfnts"],
+            families=["baselines"],
+            spaces=["raw"],
+            neighbors=[1],
+        )
+        tabpfn_table = (tabpfn_root / "tables" / "baselines_results.tex").read_text(encoding="utf-8")
+        assert "Vanilla TabPFN-TS NMSE: 1.00" in tabpfn_table
+
         gates = (root / "tables" / "average" / "gates_results.tex").read_text(encoding="utf-8")
         assert r"bayes-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{10.91\%}" in gates
         assert r"oracle-h" in gates

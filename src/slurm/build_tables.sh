@@ -1,0 +1,110 @@
+#!/bin/bash
+# Build held-out and equal-configuration-average tables from completed sweeps.
+
+set -euo pipefail
+source src/slurm/common.sh
+require_project_root
+source .venv/bin/activate
+export PYTHONPATH="$PROJECT_ROOT"
+
+OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
+TEST_MODE="${TEST_MODE:-false}"
+if is_true "$TEST_MODE"; then
+  DATASETS_CSV="${DATASETS_CSV:-electricity}"
+  MODELS_CSV="${MODELS_CSV:-chronos}"
+  SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
+  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw}"
+  NEIGHBORS_CSV="${NEIGHBORS_CSV:-3}"
+else
+  DATASETS_CSV="${DATASETS_CSV:-ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange}"
+  MODELS_CSV="${MODELS_CSV:-chronos,tabpfnts}"
+  # 572:64 is the intentional Cross-RAG comparison setting.
+  SETTINGS_CSV="${SETTINGS_CSV:-572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24}"
+  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw,instance}"
+  NEIGHBORS_CSV="${NEIGHBORS_CSV:-1,3,10}"
+fi
+RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
+FAMILIES_CSV="${FAMILIES_CSV:-baselines,gates}"
+TABLE_KINDS_CSV="${TABLE_KINDS_CSV:-full,average}"
+METRIC="${METRIC:-nmse}"
+DECIMALS="${DECIMALS:-2}"
+
+csv_to_array "$DATASETS_CSV" DATASETS
+csv_to_array "$MODELS_CSV" MODELS
+csv_to_array "$SETTINGS_CSV" SETTINGS
+csv_to_array "$DISTANCE_SPACES_CSV" DISTANCE_SPACES
+csv_to_array "$NEIGHBORS_CSV" NEIGHBORS
+csv_to_array "$FAMILIES_CSV" FAMILIES
+csv_to_array "$TABLE_KINDS_CSV" TABLE_KINDS
+
+SETTING_NAMES=()
+for setting in "${SETTINGS[@]}"; do
+  parse_setting "$setting"
+  SETTING_NAMES+=("${SETTING_LAGS}_${SETTING_HORIZON}")
+done
+
+join_csv() {
+  local IFS=,
+  echo "$*"
+}
+
+DATASET_ARG="$(join_csv "${DATASETS[@]}")"
+SETTING_ARG="$(join_csv "${SETTING_NAMES[@]}")"
+SPACE_ARG="$(join_csv "${DISTANCE_SPACES[@]}")"
+NEIGHBOR_ARG="$(join_csv "${NEIGHBORS[@]}")"
+FAMILY_ARG="$(join_csv "${FAMILIES[@]}")"
+
+echo "$(date -Is) job start kind=adaptation_tables datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG"
+for model in "${MODELS[@]}"; do
+  # Fail instead of silently averaging an incomplete sweep.
+  for dataset in "${DATASETS[@]}"; do
+    for setting in "${SETTING_NAMES[@]}"; do
+      VANILLA_ROOT="$OUT_ROOT/$dataset/$setting/$model/vanilla"
+      require_extraction "$VANILLA_ROOT"
+      assert_files table-input "$VANILLA_ROOT/vanilla_metrics.json"
+      for space in "${DISTANCE_SPACES[@]}"; do
+        for neighbors in "${NEIGHBORS[@]}"; do
+          RUN_ROOT="$OUT_ROOT/$dataset/$setting/$model/${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
+          for family in "${FAMILIES[@]}"; do
+            case "$family" in
+              baselines) assert_files table-input "$RUN_ROOT/baselines/baseline_metrics.json" ;;
+              gates) assert_files table-input "$RUN_ROOT/gates/gate_metrics.json" ;;
+              ts_ifa) assert_files table-input "$RUN_ROOT/ts_ifa/TS-IFA/eval_metrics.json" ;;
+              full)
+                assert_files table-input \
+                  "$RUN_ROOT/baselines/baseline_metrics.json" \
+                  "$RUN_ROOT/gates/gate_metrics.json" \
+                  "$RUN_ROOT/ts_ifa/TS-IFA/eval_metrics.json"
+                ;;
+              *) echo "$(date -Is) unknown table family=$family" >&2; exit 1 ;;
+            esac
+          done
+        done
+      done
+    done
+  done
+
+  for table_kind in "${TABLE_KINDS[@]}"; do
+    OUTPUT_DIR="$OUT_ROOT/tables/$model/$table_kind"
+    echo "$(date -Is) table start model=$model kind=$table_kind output=$OUTPUT_DIR"
+    srun python -m src.visu.sweep_results_table \
+      "$OUT_ROOT" \
+      --table-kind "$table_kind" \
+      --output-dir "$OUTPUT_DIR" \
+      --metric "$METRIC" \
+      --split eval \
+      --datasets "$DATASET_ARG" \
+      --settings "$SETTING_ARG" \
+      --models "$model" \
+      --families "$FAMILY_ARG" \
+      --spaces "$SPACE_ARG" \
+      --neighbors "$NEIGHBOR_ARG" \
+      --retrieval-mode "$RETRIEVAL_MODE" \
+      --decimals "$DECIMALS"
+    for family in "${FAMILIES[@]}"; do
+      assert_files table-output "$OUTPUT_DIR/${family}_results.tex"
+    done
+    echo "$(date -Is) table done model=$model kind=$table_kind output=$OUTPUT_DIR"
+  done
+done
+echo "$(date -Is) job done kind=adaptation_tables output=$OUT_ROOT/tables"

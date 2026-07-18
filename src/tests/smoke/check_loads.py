@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.data.load_dataset import load_csv_dataset, split_bounds  # noqa: E402
+from src.data.load_dataset import load_csv_dataset, resolve_csv_path, split_bounds  # noqa: E402
 from src.data.neighbors import aligned_store_dates, build_window_batch  # noqa: E402
 from src.experiments.extraction import context_on_query_scale  # noqa: E402
 from src.models.chronos_model import Chronos  # noqa: E402
@@ -32,6 +33,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    with tempfile.TemporaryDirectory() as tmp:
+        csv = Path(tmp) / "electricity.CSV"
+        csv.write_text("date,user_a\n2020-01-01,1\n", encoding="utf-8")
+        assert resolve_csv_path(tmp, "Electricity") == csv.resolve()
+        assert resolve_csv_path(Path(tmp) / "ELECTRICITY.csv") == csv.resolve()
+
     dataset = load_csv_dataset(
         args.csv,
         date_col="date",
