@@ -19,7 +19,8 @@ Extraction writes to
 `outputs/adaptation/<dataset>/<L>_<H>/<model>/<retrieval>/extracted/`.
 A usable extraction contains train/oracle/eval prediction and feature payloads
 plus `extraction_manifest.json`.  The manifest is written atomically only after
-all payloads exist and records the exact extraction signature and file sizes.
+all payloads exist and records the exact extraction signature, the resolved
+dataset-config path and content hash, and file sizes.
 `--skip-complete` therefore skips a matching complete run but re-runs a partial,
 changed, or legacy extraction.
 
@@ -53,6 +54,15 @@ sbatch extraction.slurm
 paths. The active full sweep contains `chronos` and `tabpfnts` only.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
+
+Dataset directories may contain a sibling `config.json`. It is discovered by
+the Python loader even for direct runs; `--dataset-config` accepts an explicit
+JSON file or directory. Portable fields such as `drop_users`, `date_col`, and
+aggregation settings live at the top level. Adaptation-only values belong under
+`adaptation` (`ts_ifa` remains a supported legacy alias). Project-scoped values
+override other settings, while `drop_users` is merged additively with both the
+top-level list and `--drop-users`. The loader logs the selected path and applied
+keys.
 
 ## Required run order
 

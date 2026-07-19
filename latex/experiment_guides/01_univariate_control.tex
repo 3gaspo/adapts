@@ -35,6 +35,12 @@ The control command maps \Tone, \Ttwo, and \Tthree to the labels
 \Tthree period.  Each query contains all users at one date, but the backbone is
 called as a univariate model with one channel per sample.
 
+Dataset preparation automatically reads the sibling \code{config.json}.
+Portable top-level options and adaptation-scoped options are combined before
+the chronological split; user exclusions are additive and the selected config
+path is logged. The same preparation contract is used by extraction, the
+univariate control, and all downstream adapters.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{ll}

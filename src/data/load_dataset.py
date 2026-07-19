@@ -56,6 +56,18 @@ DATASET_CONFIG_KEYS = {
 }
 
 
+def _merge_drop_users(*values: Any) -> list[Any]:
+    merged: list[Any] = []
+    seen: set[str] = set()
+    for value in values:
+        for item in _as_list(value):
+            key = str(item)
+            if key not in seen:
+                merged.append(item)
+                seen.add(key)
+    return merged
+
+
 def _dataset_config_path(
     path: str | Path,
     dataset_config: str | Path | None = None,
@@ -70,11 +82,23 @@ def _dataset_config_path(
 
 def _dataset_config_options(raw: Mapping[str, Any]) -> dict[str, Any]:
     options = {key: raw[key] for key in DATASET_CONFIG_KEYS if key in raw}
-    scoped = raw.get("ts_ifa")
-    if scoped is not None:
+    for scope in ("ts_ifa", "adaptation"):
+        scoped = raw.get(scope)
+        if scoped is None:
+            continue
         if not isinstance(scoped, Mapping):
-            raise ValueError("dataset config field 'ts_ifa' must be an object")
-        options.update(scoped)
+            raise ValueError(f"dataset config field {scope!r} must be an object")
+        if "drop_users" in scoped:
+            options["drop_users"] = _merge_drop_users(
+                options.get("drop_users"), scoped["drop_users"]
+            )
+        options.update(
+            {
+                key: value
+                for key, value in scoped.items()
+                if key in DATASET_CONFIG_KEYS and key != "drop_users"
+            }
+        )
     return options
 
 
@@ -253,7 +277,7 @@ def load_csv_dataset(
     config = load_dataset_config(path, dataset_config)
     target_cols = _configured_value(target_cols, config.get("target_cols"))
     date_col = _configured_value(date_col, config.get("date_col"))
-    drop_users = _configured_value(drop_users, config.get("drop_users"))
+    drop_users = _merge_drop_users(config.get("drop_users"), drop_users)
     rename_users = bool(_configured_value(rename_users, config.get("rename_users"), False))
     aggr = _configured_value(aggr, config.get("aggr"))
     aggr_period = str(_configured_value(aggr_period, config.get("aggr_period"), "h"))

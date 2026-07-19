@@ -39,6 +39,24 @@ def main() -> None:
         assert resolve_csv_path(tmp, "Electricity") == csv.resolve()
         assert resolve_csv_path(Path(tmp) / "ELECTRICITY.csv") == csv.resolve()
 
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "tiny.csv").write_text(
+            "date,user_a,user_b,user_c,user_d\n2020-01-01,1,2,3,4\n2020-01-02,5,6,7,8\n",
+            encoding="utf-8",
+        )
+        (root / "config.json").write_text(
+            '{"drop_users": [0], "adaptation": {"drop_users": [1]}}',
+            encoding="utf-8",
+        )
+        configured = load_csv_dataset(
+            root,
+            dataset_name="tiny",
+            date_col="date",
+            drop_users=[2],
+        )
+        assert configured.user_names == ["user_d"]
+
     dataset = load_csv_dataset(
         args.csv,
         date_col="date",

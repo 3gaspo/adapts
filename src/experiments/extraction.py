@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -83,8 +84,21 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
     signature = {name: getattr(args, name) for name in fields}
     signature["dataset_name"] = dataset_name
     signature["csv"] = str(Path(args.csv).expanduser().resolve())
-    if args.dataset_config:
-        signature["dataset_config"] = str(Path(args.dataset_config).expanduser().resolve())
+    config_path = (
+        Path(args.dataset_config).expanduser()
+        if args.dataset_config
+        else Path(args.csv).expanduser().with_name("config.json")
+    )
+    if config_path.is_dir():
+        config_path = config_path / "config.json"
+    if config_path.is_file():
+        signature["dataset_config"] = str(config_path.resolve())
+        signature["dataset_config_sha256"] = hashlib.sha256(
+            config_path.read_bytes()
+        ).hexdigest()
+    else:
+        signature["dataset_config"] = None
+        signature["dataset_config_sha256"] = None
     if args.pretrained_path:
         signature["pretrained_path"] = str(Path(args.pretrained_path).expanduser().resolve())
     return signature
