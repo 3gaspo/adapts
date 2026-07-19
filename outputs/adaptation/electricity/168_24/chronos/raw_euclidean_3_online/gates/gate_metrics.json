@@ -1,0 +1,74 @@
+[
+  {
+    "split": "eval",
+    "baseline": "context_forecast",
+    "mse": 2053161.25,
+    "mae": 166.90975952148438,
+    "nmse": 0.16674979031085968,
+    "relative_nmse_improvement_pct": -2.3905391693115234
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_scalar",
+    "mse": 2053161.25,
+    "mae": 166.90975952148438,
+    "nmse": 0.16674979031085968,
+    "relative_nmse_improvement_pct": -2.3905391693115234
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_horizon",
+    "mse": 2001638.875,
+    "mae": 165.7773895263672,
+    "nmse": 0.16630436480045319,
+    "relative_nmse_improvement_pct": -2.1170315742492676
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_scalar",
+    "mse": 2001124.625,
+    "mae": 163.25894165039062,
+    "nmse": 0.16224178671836853,
+    "relative_nmse_improvement_pct": 0.3775416910648346
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_horizon",
+    "mse": 1975169.125,
+    "mae": 163.7223663330078,
+    "nmse": 0.16438175737857819,
+    "relative_nmse_improvement_pct": -0.9364794492721558
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_scalar",
+    "mse": 2053161.25,
+    "mae": 166.90975952148438,
+    "nmse": 0.16674979031085968,
+    "relative_nmse_improvement_pct": -2.3905391693115234
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_horizon",
+    "mse": 1973191.75,
+    "mae": 164.98585510253906,
+    "nmse": 0.16626015305519104,
+    "relative_nmse_improvement_pct": -2.089883804321289
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_scalar",
+    "mse": 1827004.75,
+    "mae": 154.07534790039062,
+    "nmse": 0.1418168842792511,
+    "relative_nmse_improvement_pct": 12.91918659210205
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_horizon",
+    "mse": 1682410.375,
+    "mae": 141.4295196533203,
+    "nmse": 0.12945052981376648,
+    "relative_nmse_improvement_pct": 20.51258659362793
+  }
+]
