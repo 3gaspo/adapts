@@ -4,37 +4,68 @@
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
-source .venv/bin/activate
+activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
 OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
-TEST_MODE="${TEST_MODE:-false}"
-if is_true "$TEST_MODE"; then
-  DATASETS_CSV="${DATASETS_CSV:-electricity}"
-  MODELS_CSV="${MODELS_CSV:-chronos}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-3}"
-  EPOCHS="${EPOCHS:-2}"
-  VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-1}"
-  LOGGING_EVAL_FREQ="${LOGGING_EVAL_FREQ:-1}"
-  MAX_TRAIN_SAMPLES="${MAX_TRAIN_SAMPLES:-32}"
-  MAX_VALID_SAMPLES="${MAX_VALID_SAMPLES:-32}"
-  MAX_EVAL_SAMPLES="${MAX_EVAL_SAMPLES:-32}"
-else
-  # Keep the default TS-IFA sweep as a pilot while the architecture is being tuned.
-  DATASETS_CSV="${DATASETS_CSV:-electricity,solar}"
-  MODELS_CSV="${MODELS_CSV:-chronos}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24,672:168}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw,instance}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-1,3,10}"
-  EPOCHS="${EPOCHS:-10000}"
-  VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-1000}"
-  LOGGING_EVAL_FREQ="${LOGGING_EVAL_FREQ:-1000}"
-  MAX_TRAIN_SAMPLES="${MAX_TRAIN_SAMPLES:-}"
-  MAX_VALID_SAMPLES="${MAX_VALID_SAMPLES:-}"
-  MAX_EVAL_SAMPLES="${MAX_EVAL_SAMPLES:-}"
-fi
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+require_experiment_mode
+case "$EXPERIMENT_MODE" in
+  test)
+    DEFAULT_DATASETS_CSV="electricity"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_SETTINGS_CSV="168:24"
+    DEFAULT_DISTANCE_SPACES_CSV="raw"
+    DEFAULT_NEIGHBORS_CSV="3"
+    DEFAULT_EPOCHS=2
+    DEFAULT_VALID_EVAL_FREQ=1
+    DEFAULT_LOGGING_EVAL_FREQ=1
+    DEFAULT_MAX_TRAIN_SAMPLES=32
+    DEFAULT_MAX_VALID_SAMPLES=32
+    DEFAULT_MAX_EVAL_SAMPLES=32
+    DEFAULT_SKIP_COMPLETE=false
+    ;;
+  small)
+    DEFAULT_DATASETS_CSV="electricity,solar"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_SETTINGS_CSV="168:24,672:168"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    DEFAULT_EPOCHS=10000
+    DEFAULT_VALID_EVAL_FREQ=1000
+    DEFAULT_LOGGING_EVAL_FREQ=1000
+    DEFAULT_MAX_TRAIN_SAMPLES=""
+    DEFAULT_MAX_VALID_SAMPLES=""
+    DEFAULT_MAX_EVAL_SAMPLES=""
+    DEFAULT_SKIP_COMPLETE=true
+    ;;
+  large)
+    DEFAULT_DATASETS_CSV="electricity,solar"
+    DEFAULT_MODELS_CSV="chronos,tabpfnts"
+    DEFAULT_SETTINGS_CSV="168:24,672:168"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    DEFAULT_EPOCHS=10000
+    DEFAULT_VALID_EVAL_FREQ=1000
+    DEFAULT_LOGGING_EVAL_FREQ=1000
+    DEFAULT_MAX_TRAIN_SAMPLES=""
+    DEFAULT_MAX_VALID_SAMPLES=""
+    DEFAULT_MAX_EVAL_SAMPLES=""
+    DEFAULT_SKIP_COMPLETE=true
+    ;;
+esac
+DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
+MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
+SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
+DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
+NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
+EPOCHS="${EPOCHS:-$DEFAULT_EPOCHS}"
+VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-$DEFAULT_VALID_EVAL_FREQ}"
+LOGGING_EVAL_FREQ="${LOGGING_EVAL_FREQ:-$DEFAULT_LOGGING_EVAL_FREQ}"
+MAX_TRAIN_SAMPLES="${MAX_TRAIN_SAMPLES-$DEFAULT_MAX_TRAIN_SAMPLES}"
+MAX_VALID_SAMPLES="${MAX_VALID_SAMPLES-$DEFAULT_MAX_VALID_SAMPLES}"
+MAX_EVAL_SAMPLES="${MAX_EVAL_SAMPLES-$DEFAULT_MAX_EVAL_SAMPLES}"
+SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 SEED="${SEED:-1}"
 
@@ -71,6 +102,16 @@ for dataset in "${DATASETS[@]}"; do
   done
 done
 
+ts_ifa_complete() {
+  local output="$1"
+  [ -s "$output/ts_ifa.pt" ] &&
+    [ -s "$output/training_history.json" ] &&
+    [ -s "$output/eval_metrics.json" ] &&
+    [ -s "$output/eval_predictions.pt" ] &&
+    [ -s "$output/config.json" ] &&
+    [ -s "$output/training_nmse.pdf" ]
+}
+
 run_task() {
   local task_id="$1" task dataset model setting space neighbors
   local optional_args=() restore_args=()
@@ -84,6 +125,11 @@ run_task() {
   INPUT_DIR="$RUN_DIR/extracted"
   OUTPUT_DIR="$RUN_DIR/ts_ifa/TS-IFA"
   require_extraction "$INPUT_DIR"
+  if is_true "$SKIP_COMPLETE" && ts_ifa_complete "$OUTPUT_DIR" &&
+    [ "$OUTPUT_DIR/eval_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
+    log "skip complete family=ts_ifa dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+    return
+  fi
   [ -z "$MAX_TRAIN_SAMPLES" ] || optional_args+=(--max-train-samples "$MAX_TRAIN_SAMPLES")
   [ -z "$MAX_VALID_SAMPLES" ] || optional_args+=(--max-valid-samples "$MAX_VALID_SAMPLES")
   [ -z "$MAX_EVAL_SAMPLES" ] || optional_args+=(--max-eval-samples "$MAX_EVAL_SAMPLES")
@@ -128,7 +174,7 @@ run_task() {
   log "training done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-log_section "job start kind=ts_ifa_training test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=ts_ifa_training experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done

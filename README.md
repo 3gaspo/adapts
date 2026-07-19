@@ -51,7 +51,7 @@ sbatch extraction.slurm
 ```
 
 `CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
-paths. The active full sweep contains `chronos` and `tabpfnts` only.
+paths. The active large sweep contains `chronos` and `tabpfnts` only.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -64,49 +64,66 @@ override other settings, while `drop_users` is merged additively with both the
 top-level list and `--drop-users`. The loader logs the selected path and applied
 keys.
 
-## Required run order
+The repository tracks the curated Electricity `config.json` while leaving its
+CSV ignored, so the same exclusions—including source column 245—are carried to
+cluster checkouts and shared with RevIN.
 
-Keep `TEST_MODE=true` in the root launchers for the first pass. Each submission
-is one Slurm job that loops sequentially over its selected configurations and
-therefore creates one `.out` and one `.err` file:
+## Experiment profiles and required order
+
+Every root launcher accepts the same `EXPERIMENT_MODE=test|small|large` switch:
+
+- `test` is the existing Electricity 168:24 Chronos smoke profile with raw
+  distance, `k=3`, sparse queries, and reduced fitting/training budgets.
+- `small` uses all seven datasets, all eight settings, raw and instance
+  distance, and `k in {1,3,10}`, but only the Chronos backbone. Extraction has
+  392 configurations; baselines and gates have 336 each.
+- `large` uses the same production protocol and adds TabPFN-TS. Extraction has
+  784 configurations; baselines and gates have 672 each.
+
+Start with the test DAG. Each submission is one sequential Slurm job and creates
+one `.out` and one `.err` file:
 
 ```bash
-extract_test=$(sbatch --parsable extraction.slurm)
+extract_test=$(EXPERIMENT_MODE=test sbatch --parsable extraction.slurm)
 
-baseline_test=$(sbatch --parsable \
+baseline_test=$(EXPERIMENT_MODE=test sbatch --parsable \
   --dependency=afterok:$extract_test \
   baselines.slurm)
 
-gate_test=$(sbatch --parsable \
+gate_test=$(EXPERIMENT_MODE=test sbatch --parsable \
   --dependency=afterok:$extract_test \
   gates.slurm)
 
-sbatch --dependency=afterok:$baseline_test:$gate_test \
+EXPERIMENT_MODE=test sbatch --dependency=afterok:$baseline_test:$gate_test \
   tables.slurm
 ```
 
 Inspect the Slurm logs, extraction manifests, downstream JSON/CSV metrics,
-feature-importance plots, and the Chronos full/average test tables.  Then submit
-the full sequential jobs with `TEST_MODE=false`:
+feature-importance plots, and the Chronos full/average test tables. Then run the
+Chronos production grid:
 
 ```bash
-extract_job=$(TEST_MODE=false sbatch --parsable extraction.slurm)
-baseline_job=$(TEST_MODE=false sbatch --parsable \
-  --dependency=afterok:$extract_job \
+extract_small=$(EXPERIMENT_MODE=small sbatch --parsable extraction.slurm)
+baseline_small=$(EXPERIMENT_MODE=small sbatch --parsable \
+  --dependency=afterok:$extract_small \
   baselines.slurm)
-gate_job=$(TEST_MODE=false sbatch --parsable \
-  --dependency=afterok:$extract_job \
+gate_small=$(EXPERIMENT_MODE=small sbatch --parsable \
+  --dependency=afterok:$extract_small \
   gates.slurm)
-TEST_MODE=false sbatch --dependency=afterok:$baseline_job:$gate_job \
+EXPERIMENT_MODE=small sbatch --dependency=afterok:$baseline_small:$gate_small \
   tables.slurm
 ```
 
-Full extraction loops over 784 configurations: seven datasets, two models,
-eight settings, and seven variants (vanilla plus two spaces times three k
-values). Baselines and gates each loop over 672 configurations. The `572:64`
-setting is intentional for comparison with Cross-RAG. If one sequential job
-later exceeds the cluster time limit, split first by model and then by dataset;
-the current launchers intentionally remain single jobs.
+After checking Chronos, repeat the same DAG with `EXPERIMENT_MODE=large`.
+Extraction defaults to `SKIP_COMPLETE=true` and validates a complete manifest
+and exact extraction signature, so the large run skips matching Chronos
+payloads and computes the new TabPFN-TS runs. Baselines, gates, and TS-IFA also
+default to completion skipping in small/large mode when all expected files are
+newer than the matching extraction manifest. Set `SKIP_COMPLETE=false` after
+changing downstream hyperparameters. Tables are always rebuilt for the selected
+profile. The `572:64` setting remains intentional for Cross-RAG. If a sequential
+job exceeds its time limit, resubmit the same mode; split first by model and then
+dataset only when needed.
 
 Normal timestamped progress and Python warnings are written to
 `logs/<job>_<job-id>.out`. Third-party progress bars are disabled, leaving the
@@ -129,7 +146,7 @@ All sweep dimensions have comma-separated environment overrides:
 ```bash
 DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-TEST_MODE=false sbatch extraction.slurm
+EXPERIMENT_MODE=small sbatch extraction.slurm
 ```
 
 Do not submit a downstream job without an `afterok` dependency unless the
@@ -188,15 +205,18 @@ logits such as `-6`, `-3`, and `-1` on the same pilot configuration.
 TS-IFA smoke submission:
 
 ```bash
-TEST_MODE=true sbatch ts_ifa.slurm
+EXPERIMENT_MODE=test sbatch ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
+TS-IFA `small` retains the current Electricity/Solar Chronos pilot; `large`
+adds TabPFN-TS over that same pilot grid. These modes do not promote TS-IFA to
+the paper-critical path.
 
 ## Executable files
 
 Only the concise `.slurm` files in the project root are submitted. They contain
-scheduler resources and test/profile switches, while `src/slurm/*.sh` contains
+scheduler resources and the `EXPERIMENT_MODE` switch, while `src/slurm/*.sh` contains
 enumeration, input checks, and command invocation:
 
 - `extraction.slurm` -> `src/slurm/extract_adaptation.sh`.

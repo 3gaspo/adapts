@@ -4,27 +4,50 @@
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
-source .venv/bin/activate
+activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
 OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
-TEST_MODE="${TEST_MODE:-false}"
-if is_true "$TEST_MODE"; then
-  DATASETS_CSV="${DATASETS_CSV:-electricity}"
-  MODELS_CSV="${MODELS_CSV:-chronos}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-3}"
-  GATE_ITERATIONS="${GATE_ITERATIONS:-2}"
-else
-  DATASETS_CSV="${DATASETS_CSV:-ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange}"
-  MODELS_CSV="${MODELS_CSV:-chronos,tabpfnts}"
-  # 572:64 is the intentional Cross-RAG comparison setting.
-  SETTINGS_CSV="${SETTINGS_CSV:-572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw,instance}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-1,3,10}"
-  GATE_ITERATIONS="${GATE_ITERATIONS:-300}"
-fi
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+require_experiment_mode
+DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
+DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+case "$EXPERIMENT_MODE" in
+  test)
+    DEFAULT_PROFILE_DATASETS_CSV="electricity"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_PROFILE_SETTINGS_CSV="168:24"
+    DEFAULT_DISTANCE_SPACES_CSV="raw"
+    DEFAULT_NEIGHBORS_CSV="3"
+    DEFAULT_GATE_ITERATIONS=2
+    DEFAULT_SKIP_COMPLETE=false
+    ;;
+  small)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    DEFAULT_GATE_ITERATIONS=300
+    DEFAULT_SKIP_COMPLETE=true
+    ;;
+  large)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+    DEFAULT_MODELS_CSV="chronos,tabpfnts"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    DEFAULT_GATE_ITERATIONS=300
+    DEFAULT_SKIP_COMPLETE=true
+    ;;
+esac
+DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_PROFILE_DATASETS_CSV}"
+MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
+SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_PROFILE_SETTINGS_CSV}"
+DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
+NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
+GATE_ITERATIONS="${GATE_ITERATIONS:-$DEFAULT_GATE_ITERATIONS}"
+SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 GATE_LEARNING_RATE="${GATE_LEARNING_RATE:-0.03}"
 GATE_DEPTH="${GATE_DEPTH:-4}"
@@ -49,6 +72,14 @@ for dataset in "${DATASETS[@]}"; do
   done
 done
 
+gate_complete() {
+  local output="$1"
+  [ -s "$output/gate_metrics.csv" ] &&
+    [ -s "$output/gate_metrics.json" ] &&
+    [ -s "$output/gate_artifacts.pt" ] &&
+    [ -s "$output/visualization_payload.pt" ]
+}
+
 run_task() {
   local task_id="$1" task dataset model setting space neighbors
   task="${TASKS[$task_id]}"
@@ -61,6 +92,11 @@ run_task() {
   INPUT_DIR="$RUN_ROOT/extracted"
   OUTPUT_DIR="$RUN_ROOT/gates"
   require_extraction "$INPUT_DIR"
+  if is_true "$SKIP_COMPLETE" && gate_complete "$OUTPUT_DIR" &&
+    [ "$OUTPUT_DIR/gate_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
+    log "skip complete family=gates dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
+    return
+  fi
   log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH seed=$SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
@@ -78,7 +114,7 @@ run_task() {
   log "gates done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-log_section "job start kind=gates test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=gates experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done

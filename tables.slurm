@@ -9,9 +9,9 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4000
 
-# Safe default: smoke tables. Full: TEST_MODE=false sbatch tables.slurm
-TEST_MODE="${TEST_MODE:-true}"
+# Select the same test, small, or large profile used by upstream jobs.
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT TEST_MODE
+export PROJECT_ROOT EXPERIMENT_MODE
 source "$PROJECT_ROOT/src/slurm/build_tables.sh"

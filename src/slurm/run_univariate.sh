@@ -4,23 +4,35 @@
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
-source .venv/bin/activate
+activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
 # Set DATA_ROOT/WEIGHTS_ROOT on another machine or edit candidates in common.sh.
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
 OUT_ROOT="${OUT_ROOT:-outputs/univariate}"
-TEST_MODE="${TEST_MODE:-false}"
-if is_true "$TEST_MODE"; then
-  DATASETS_CSV="${DATASETS_CSV:-electricity}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
-  EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-256}"
-else
-  DATASETS_CSV="${DATASETS_CSV:-electricity,solar}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24,672:168}"
-  EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-128}"
-fi
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+require_experiment_mode
+case "$EXPERIMENT_MODE" in
+  test)
+    DEFAULT_DATASETS_CSV="electricity"
+    DEFAULT_SETTINGS_CSV="168:24"
+    DEFAULT_EVAL_QUERY_STRIDE=256
+    ;;
+  small)
+    DEFAULT_DATASETS_CSV="electricity,solar"
+    DEFAULT_SETTINGS_CSV="168:24,672:168"
+    DEFAULT_EVAL_QUERY_STRIDE=128
+    ;;
+  large)
+    DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
+    DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+    DEFAULT_EVAL_QUERY_STRIDE=128
+    ;;
+esac
+DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
+SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
+EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
 SPLITS="${SPLITS:-0.3,0.35,0.15,0.2}"
 SEED="${SEED:-1}"
 CHRONOS_WEIGHTS_PATH="${CHRONOS_WEIGHTS_PATH:-}"
@@ -70,7 +82,7 @@ run_task() {
   log "univariate done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos"
 }
 
-log_section "job start kind=univariate test_mode=$TEST_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV settings=$SETTINGS_CSV"
+log_section "job start kind=univariate experiment_mode=$EXPERIMENT_MODE tasks=${#TASKS[@]} datasets=$DATASETS_CSV settings=$SETTINGS_CSV"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done

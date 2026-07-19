@@ -5,25 +5,42 @@
 set -euo pipefail
 source src/slurm/common.sh
 require_project_root
-source .venv/bin/activate
+activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
 OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
-TEST_MODE="${TEST_MODE:-false}"
-if is_true "$TEST_MODE"; then
-  DATASETS_CSV="${DATASETS_CSV:-electricity}"
-  MODELS_CSV="${MODELS_CSV:-chronos}"
-  SETTINGS_CSV="${SETTINGS_CSV:-168:24}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-3}"
-else
-  DATASETS_CSV="${DATASETS_CSV:-ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange}"
-  MODELS_CSV="${MODELS_CSV:-chronos,tabpfnts}"
-  # 572:64 is the intentional Cross-RAG comparison setting.
-  SETTINGS_CSV="${SETTINGS_CSV:-572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24}"
-  DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-raw,instance}"
-  NEIGHBORS_CSV="${NEIGHBORS_CSV:-1,3,10}"
-fi
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+require_experiment_mode
+DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
+DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+case "$EXPERIMENT_MODE" in
+  test)
+    DEFAULT_PROFILE_DATASETS_CSV="electricity"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_PROFILE_SETTINGS_CSV="168:24"
+    DEFAULT_DISTANCE_SPACES_CSV="raw"
+    DEFAULT_NEIGHBORS_CSV="3"
+    ;;
+  small)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    ;;
+  large)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+    DEFAULT_MODELS_CSV="chronos,tabpfnts"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    ;;
+esac
+DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_PROFILE_DATASETS_CSV}"
+MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
+SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_PROFILE_SETTINGS_CSV}"
+DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
+NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 FAMILIES_CSV="${FAMILIES_CSV:-baselines,gates}"
 TABLE_KINDS_CSV="${TABLE_KINDS_CSV:-full,average}"
@@ -55,7 +72,7 @@ SPACE_ARG="$(join_csv "${DISTANCE_SPACES[@]}")"
 NEIGHBOR_ARG="$(join_csv "${NEIGHBORS[@]}")"
 FAMILY_ARG="$(join_csv "${FAMILIES[@]}")"
 
-log_section "job start kind=adaptation_tables datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC table_kinds=$TABLE_KINDS_CSV"
+log_section "job start kind=adaptation_tables experiment_mode=$EXPERIMENT_MODE datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC table_kinds=$TABLE_KINDS_CSV"
 for model in "${MODELS[@]}"; do
   # Fail instead of silently averaging an incomplete sweep.
   for dataset in "${DATASETS[@]}"; do

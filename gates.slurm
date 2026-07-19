@@ -9,9 +9,9 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=20000
 
-# Keep true for the smoke run; set false to loop over all configurations.
-TEST_MODE="${TEST_MODE:-true}"
+# Select test, small (Chronos), or large (all backbones).
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT TEST_MODE
+export PROJECT_ROOT EXPERIMENT_MODE
 source "$PROJECT_ROOT/src/slurm/run_gates.sh"

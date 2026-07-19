@@ -10,10 +10,10 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
-# Submit from the project root. Keep true for the smoke run; set false for all configurations.
-TEST_MODE="${TEST_MODE:-true}"
+# Submit from the project root. Select test, small (Chronos), or large (all backbones).
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT TEST_MODE
+export PROJECT_ROOT EXPERIMENT_MODE
 source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"

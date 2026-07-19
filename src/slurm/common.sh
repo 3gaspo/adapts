@@ -24,6 +24,26 @@ is_true() {
   esac
 }
 
+require_experiment_mode() {
+  case "${EXPERIMENT_MODE:-test}" in
+    test|small|large) ;;
+    *)
+      log_error "EXPERIMENT_MODE must be test, small, or large (got ${EXPERIMENT_MODE:-})"
+      return 2
+      ;;
+  esac
+}
+
+activate_project_environment() {
+  local activate="${VENV_ACTIVATE:-$PROJECT_ROOT/.venv/bin/activate}"
+  if [ -f "$activate" ]; then
+    source "$activate"
+  elif [ -z "${VIRTUAL_ENV:-}" ]; then
+    log_error "no active environment and $activate does not exist"
+    return 1
+  fi
+}
+
 csv_to_array() {
   local raw="${1//;/,}"
   local target_name="$2"
@@ -73,12 +93,12 @@ find_dataset_dir() {
   fi
   for root in "${roots[@]}"; do
     candidate="$root/$dataset"
-    if [ -d "$candidate" ]; then
+    if [ -d "$candidate" ] && find "$candidate" -maxdepth 1 -type f -iname "$dataset.csv" -print -quit | grep -q .; then
       (cd "$candidate" && pwd)
       return 0
     fi
     if [ -d "$root" ]; then
-      match="$(find "$root" -mindepth 1 -maxdepth 1 -type d -iname "$dataset" -print -quit)"
+      match="$(find "$root" -mindepth 2 -maxdepth 2 -type f -iname "$dataset.csv" -printf '%h\n' -quit)"
       if [ -n "$match" ]; then
         (cd "$match" && pwd)
         return 0
