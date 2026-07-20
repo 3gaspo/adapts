@@ -1,0 +1,74 @@
+[
+  {
+    "split": "eval",
+    "baseline": "context_forecast",
+    "mse": 2059732.25,
+    "mae": 167.34304809570312,
+    "nmse": 0.16698576509952545,
+    "relative_nmse_improvement_pct": -2.377305746078491
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_scalar",
+    "mse": 2059732.25,
+    "mae": 167.34304809570312,
+    "nmse": 0.16698576509952545,
+    "relative_nmse_improvement_pct": -2.377305746078491
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_horizon",
+    "mse": 2008044.75,
+    "mae": 166.2086639404297,
+    "nmse": 0.1665477305650711,
+    "relative_nmse_improvement_pct": -2.108751058578491
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_scalar",
+    "mse": 2015072.75,
+    "mae": 164.08494567871094,
+    "nmse": 0.16285072267055511,
+    "relative_nmse_improvement_pct": 0.1578475385904312
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_horizon",
+    "mse": 1980491.75,
+    "mae": 164.66539001464844,
+    "nmse": 0.1658402383327484,
+    "relative_nmse_improvement_pct": -1.674994707107544
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_scalar",
+    "mse": 2059732.25,
+    "mae": 167.34304809570312,
+    "nmse": 0.16698576509952545,
+    "relative_nmse_improvement_pct": -2.377305746078491
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_horizon",
+    "mse": 2016931.625,
+    "mae": 166.2196044921875,
+    "nmse": 0.16652636229991913,
+    "relative_nmse_improvement_pct": -2.0956504344940186
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_scalar",
+    "mse": 1832852.375,
+    "mae": 154.4735870361328,
+    "nmse": 0.14200566709041595,
+    "relative_nmse_improvement_pct": 12.937744140625
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_horizon",
+    "mse": 1687795.375,
+    "mae": 141.79452514648438,
+    "nmse": 0.1296120136976242,
+    "relative_nmse_improvement_pct": 20.53616714477539
+  }
+]
