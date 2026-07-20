@@ -16,9 +16,11 @@ export PYTHONPATH="$PROJECT_ROOT"
 : "${EXPERIMENT_MODE:=test}"
 require_experiment_mode
 
-DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
-# 572:64 is intentional: it provides the Cross-RAG comparison.
-DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+DEFAULT_SMALL_DATASETS_CSV="Traffic,Electricity,Solar"
+DEFAULT_FULL_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+DEFAULT_SMALL_SETTINGS_CSV="168:24,504:24,504:168,504:504"
+# 512:64 is the additional Cross-RAG comparison setting.
+DEFAULT_FULL_SETTINGS_CSV="$DEFAULT_SMALL_SETTINGS_CSV,512:64"
 : "${SKIP_COMPLETE:=true}"
 
 case "$EXPERIMENT_MODE" in
@@ -35,9 +37,9 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_MAX_STORE_WINDOWS=2048
     ;;
   small)
-    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_SMALL_DATASETS_CSV"
     DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SMALL_SETTINGS_CSV"
     DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
     DEFAULT_NEIGHBORS_CSV="1,3,10"
     DEFAULT_DATASTORE_STRIDE=24
@@ -46,10 +48,22 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_EVAL_QUERY_STRIDE=128
     DEFAULT_MAX_STORE_WINDOWS=30000
     ;;
-  large)
-    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_DATASETS_CSV"
+  full|large)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_FULL_DATASETS_CSV"
+    DEFAULT_MODELS_CSV="chronos"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_FULL_SETTINGS_CSV"
+    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+    DEFAULT_NEIGHBORS_CSV="1,3,10"
+    DEFAULT_DATASTORE_STRIDE=24
+    DEFAULT_TRAIN_QUERY_STRIDE=24
+    DEFAULT_ORACLE_QUERY_STRIDE=24
+    DEFAULT_EVAL_QUERY_STRIDE=128
+    DEFAULT_MAX_STORE_WINDOWS=30000
+    ;;
+  ultra)
+    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_FULL_DATASETS_CSV"
     DEFAULT_MODELS_CSV="chronos,tabpfnts"
-    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SETTINGS_CSV"
+    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_FULL_SETTINGS_CSV"
     DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
     DEFAULT_NEIGHBORS_CSV="1,3,10"
     DEFAULT_DATASTORE_STRIDE=24
@@ -117,6 +131,7 @@ run_extraction() {
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
+  if [ "${dataset,,}" = etth1 ]; then data_args+=(--target-cols OT); fi
   model_options="$(model_kwargs "$model")"
   srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \

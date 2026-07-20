@@ -26,9 +26,9 @@ is_true() {
 
 require_experiment_mode() {
   case "${EXPERIMENT_MODE:-test}" in
-    test|small|large) ;;
+    test|small|full|ultra|large) ;;
     *)
-      log_error "EXPERIMENT_MODE must be test, small, or large (got ${EXPERIMENT_MODE:-})"
+      log_error "EXPERIMENT_MODE must be test, small, full, or ultra (large is a compatibility alias; got ${EXPERIMENT_MODE:-})"
       return 2
       ;;
   esac

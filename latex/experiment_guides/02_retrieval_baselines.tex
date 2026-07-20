@@ -31,10 +31,11 @@ uses only eligible history.  The current sweep uses Euclidean distance, raw and
 instance-normalized spaces, $k\in\{1,3,10\}$, daily period/stride 24, and at most
 30,000 store windows.
 
-The small publication sweep adds ETTh1/2, ETTm1/2, Weather, Electricity, and
-Exchange with Chronos; the large profile adds TabPFN-TS while reusing matching
-Chronos manifests and completed outputs. The 572--64 setting is retained for
-Cross-RAG. TS-ICL is deferred. Atomic manifests prevent consumers from loading
+The small publication sweep uses Traffic, Electricity, and Solar with four
+RevIN reproduction settings. Full uses ETTh1 (OT only), Electricity, Traffic,
+Solar, Weather, and Exchange with Chronos and adds 512--64 for Cross-RAG. Ultra
+adds TabPFN-TS while reusing matching Chronos manifests and completed outputs.
+TS-ICL is deferred. Atomic manifests prevent consumers from loading
 partial payloads.
 
 \begin{table}[h]

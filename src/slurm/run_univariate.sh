@@ -20,13 +20,13 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_EVAL_QUERY_STRIDE=256
     ;;
   small)
-    DEFAULT_DATASETS_CSV="electricity,solar"
-    DEFAULT_SETTINGS_CSV="168:24,672:168"
+    DEFAULT_DATASETS_CSV="Traffic,Electricity,Solar"
+    DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504"
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
-  large)
-    DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,Exchange"
-    DEFAULT_SETTINGS_CSV="572:64,672:24,672:48,672:168,672:336,672:672,168:24,336:24"
+  full|large|ultra)
+    DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+    DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
 esac
@@ -58,6 +58,7 @@ run_task() {
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
+  if [ "${dataset,,}" = etth1 ]; then data_args+=(--target-cols OT); fi
   SETTING_OUT="$OUT_ROOT/$dataset/${L}_${H}"
   log_section "univariate start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos eval_stride=$EVAL_QUERY_STRIDE normalization=instance seed=$SEED"
   srun --ntasks=1 python -m src.experiments.experiment_univariate \

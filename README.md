@@ -51,7 +51,7 @@ sbatch extraction.slurm
 ```
 
 `CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
-paths. The active large sweep contains `chronos` and `tabpfnts` only.
+paths. The full sweep is Chronos-only; ultra contains `chronos` and `tabpfnts`.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -64,21 +64,29 @@ override other settings, while `drop_users` is merged additively with both the
 top-level list and `--drop-users`. The loader logs the selected path and applied
 keys.
 
+ETTh1 is configured to select only the `OT` target column in every profile.
+
 The repository tracks the curated Electricity `config.json` while leaving its
 CSV ignored, so the same exclusions—including source column 245—are carried to
 cluster checkouts and shared with RevIN.
 
 ## Experiment profiles and required order
 
-Every root launcher accepts the same `EXPERIMENT_MODE=test|small|large` switch:
+Every root launcher accepts the same `EXPERIMENT_MODE=test|small|full|ultra`
+switch (`large` remains a compatibility alias for `full`):
 
 - `test` is the existing Electricity 168:24 Chronos smoke profile with raw
   distance, `k=3`, sparse queries, and reduced fitting/training budgets.
-- `small` uses all seven datasets, all eight settings, raw and instance
-  distance, and `k in {1,3,10}`, but only the Chronos backbone. Extraction has
-  392 configurations; baselines and gates have 336 each.
-- `large` uses the same production protocol and adds TabPFN-TS. Extraction has
-  784 configurations; baselines and gates have 672 each.
+- `small` reproduces the RevIN subset: Traffic, Electricity, and Solar with
+  `168:24`, `504:24`, `504:168`, and `504:504`; raw and instance distance;
+  `k in {1,3,10}`; and Chronos. Extraction has 84 configurations; baselines,
+  gates, and TS-IFA have 72 each.
+- `full` uses ETTh1 (OT only), Electricity, Traffic, Solar, Weather, and
+  Exchange; the four small settings plus the Cross-RAG `512:64` comparison;
+  and Chronos. Extraction has 210 configurations; baselines, gates, and TS-IFA
+  have 180 each.
+- `ultra` adds TabPFN-TS to the full profile. Extraction has 420
+  configurations; baselines, gates, and TS-IFA have 360 each.
 
 Start with the test DAG. Each submission is one sequential Slurm job and creates
 one `.out` and one `.err` file:
@@ -114,14 +122,16 @@ EXPERIMENT_MODE=small sbatch --dependency=afterok:$baseline_small:$gate_small \
   tables.slurm
 ```
 
-After checking Chronos, repeat the same DAG with `EXPERIMENT_MODE=large`.
+After checking the reproduction subset, repeat the same DAG with
+`EXPERIMENT_MODE=full`. Use `EXPERIMENT_MODE=ultra` only for the multi-backbone
+extension.
 Extraction defaults to `SKIP_COMPLETE=true` and validates a complete manifest
-and exact extraction signature, so the large run skips matching Chronos
+and exact extraction signature, so ultra skips matching Chronos
 payloads and computes the new TabPFN-TS runs. Baselines, gates, and TS-IFA also
-default to completion skipping in small/large mode when all expected files are
+default to completion skipping in small/full/ultra mode when all expected files are
 newer than the matching extraction manifest. Set `SKIP_COMPLETE=false` after
 changing downstream hyperparameters. Tables are always rebuilt for the selected
-profile. The `572:64` setting remains intentional for Cross-RAG. If a sequential
+profile. The `512:64` setting is the Cross-RAG comparison. If a sequential
 job exceeds its time limit, resubmit the same mode; split first by model and then
 dataset only when needed.
 
@@ -140,7 +150,7 @@ multi-seed adaptation result.
 All sweep dimensions have comma-separated environment overrides:
 `DATASETS_CSV`, `MODELS_CSV`, `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, and
 `NEIGHBORS_CSV`. Settings use `L:H`. Extraction loops over
-`D*M*S*(1 + spaces*k)` configurations; baselines/gates loop over
+`D*M*S*(1 + spaces*k)` configurations; baselines/gates/TS-IFA loop over
 `D*M*S*spaces*k` configurations. For example:
 
 ```bash
@@ -209,9 +219,9 @@ EXPERIMENT_MODE=test sbatch ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
-TS-IFA `small` retains the current Electricity/Solar Chronos pilot; `large`
-adds TabPFN-TS over that same pilot grid. These modes do not promote TS-IFA to
-the paper-critical path.
+TS-IFA follows the shared small/full/ultra dataset, setting, and backbone
+profiles, but remains outside the paper-critical baseline/gate path while its
+architecture is being tuned.
 
 ## Executable files
 

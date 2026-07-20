@@ -3,13 +3,13 @@
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=00:30:00
-#SBATCH --partition=a100
+#SBATCH --partition=h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4000
+#SBATCH --mem=40000
 
-# Select the same test, small, or large profile used by upstream jobs.
+# Select the same test, small, full, or ultra profile used by upstream jobs.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

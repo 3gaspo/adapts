@@ -42,10 +42,10 @@ Oracle & True target loss & Scalar / horizon \\
 
 CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
 and seed 1.  Models are trained only on \Ttwo and applied without refitting to
-\Tthree. The small publication retrieval sweep is raw/instance Euclidean distance
-with $k\in\{1,3,10\}$ across the seven datasets, eight settings, and Chronos;
-the large profile adds TabPFN-TS and skips complete Chronos outputs. The 572--64 setting is retained for
-the Cross-RAG comparison; TS-ICL remains a later extension.
+\Tthree. The small sweep uses three datasets, four settings, raw/instance
+Euclidean distance, $k\in\{1,3,10\}$, and Chronos. Full uses six datasets and
+adds 512--64 for Cross-RAG while remaining Chronos-only; ultra adds TabPFN-TS
+and skips complete Chronos outputs. TS-ICL remains a later extension.
 
 \textbf{Launcher:} \code{gates.slurm}\\
 \textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}

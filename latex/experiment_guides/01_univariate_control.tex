@@ -42,8 +42,9 @@ path is logged. The same preparation contract is used by extraction, the
 univariate control, and all downstream adapters.
 
 The test profile uses Electricity 168--24 with sparse evaluation. The small
-profile below is the current Chronos pilot; the large profile retains Chronos
-but widens the control to every dataset and setting used by Adaptation.
+profile reproduces the three-dataset subset; full widens the Chronos control to
+six datasets and adds the Cross-RAG setting. Ultra has the same direct Chronos
+control because this reference launcher has no second backbone.
 
 \begin{table}[h]
 \centering
@@ -51,8 +52,8 @@ but widens the control to every dataset and setting used by Adaptation.
 \toprule
 Component & Current sweep value \\
 \midrule
-Datasets & Electricity, Solar \\
-Look-back--horizon & 168--24, 672--168 \\
+Datasets & Traffic, Electricity, Solar \\
+Look-back--horizon & 168--24, 504--24, 504--168, 504--504 \\
 Backbone & Chronos \\
 Input normalization & Instance normalization \\
 Evaluation stride & 128 dates \\

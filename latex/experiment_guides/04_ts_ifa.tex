@@ -55,9 +55,10 @@ Dropout and reduced attention/MLP dimensions should be screened on one pilot
 configuration before widening the sweep.  A scalar/shared or low-rank final
 mixture is the next architecture ablation, not yet a default change.
 
-The small sweep covers Electricity/Solar, 168--24 and 672--168, raw/instance
-Euclidean retrieval, $k\in\{1,3,10\}$, and Chronos. The large profile adds
-TabPFN-TS after the Chronos architecture is stable. Implementation is under
+The small sweep covers Traffic/Electricity/Solar and the four RevIN reproduction
+settings with raw/instance Euclidean retrieval, $k\in\{1,3,10\}$, and Chronos.
+Full adds ETTh1 (OT only), Weather, Exchange, and 512--64 while retaining
+Chronos; ultra adds TabPFN-TS after the Chronos architecture is stable. Implementation is under
 \code{src/adaptors/ts\_ifa/}; the launcher is
 \code{ts\_ifa.slurm}. Saved artifacts include the model,
 resolved configuration, full step history, interval-average train and \Ttwo
