@@ -25,6 +25,7 @@ from src.adaptors.baselines.evaluate import (  # noqa: E402
     predict_gate,
     ridge_no_intercept,
     scalar_gate_features,
+    subsample_fit_arrays,
 )
 
 
@@ -64,9 +65,24 @@ def main() -> None:
         dtype=np.float64,
     )
     ridge_y = np.asarray([2.0, -1.0, 3.0, 4.0], dtype=np.float64)
-    coefficient = ridge_no_intercept(ridge_x, ridge_y, l2=0.4)
-    rescaled_coefficient = ridge_no_intercept(100.0 * ridge_x, 100.0 * ridge_y, l2=0.4)
+    coefficient = ridge_no_intercept(ridge_x, ridge_y, l2=0.4, chunk_rows=2)
+    rescaled_coefficient = ridge_no_intercept(
+        100.0 * ridge_x,
+        100.0 * ridge_y,
+        l2=0.4,
+        chunk_rows=2,
+    )
     np.testing.assert_allclose(coefficient, rescaled_coefficient)
+
+    fit_arrays = {
+        "y": np.arange(20, dtype=np.float32).reshape(10, 2),
+        "pred": np.arange(20, dtype=np.float32).reshape(10, 2),
+    }
+    sampled_a = subsample_fit_arrays(fit_arrays, 4, seed=7)
+    sampled_b = subsample_fit_arrays(fit_arrays, 4, seed=7)
+    assert sampled_a["y"].shape[0] == 4
+    np.testing.assert_array_equal(sampled_a["y"], sampled_b["y"])
+    assert subsample_fit_arrays(fit_arrays, None, seed=7) is fit_arrays
 
     query = np.asarray([[3.0, 7.0]], dtype=np.float32)
     neighbor = np.asarray([[[8.0, 12.0]]], dtype=np.float32)

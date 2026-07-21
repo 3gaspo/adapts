@@ -16,7 +16,7 @@ DEFAULT_SMALL_SETTINGS_CSV="168:24,504:24,504:168,504:504"
 DEFAULT_FULL_SETTINGS_CSV="$DEFAULT_SMALL_SETTINGS_CSV,512:64"
 case "$EXPERIMENT_MODE" in
   test)
-    DEFAULT_PROFILE_DATASETS_CSV="electricity"
+    DEFAULT_PROFILE_DATASETS_CSV="Electricity"
     DEFAULT_MODELS_CSV="chronos"
     DEFAULT_PROFILE_SETTINGS_CSV="168:24"
     DEFAULT_DISTANCE_SPACES_CSV="raw"
@@ -57,6 +57,15 @@ SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 L2="${L2:-0.001}"
 SEED="${SEED:-1}"
+MAX_TRAIN_FIT_SAMPLES="${MAX_TRAIN_FIT_SAMPLES:-}"
+MAX_ORACLE_FIT_SAMPLES="${MAX_ORACLE_FIT_SAMPLES:-}"
+MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
+FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
+
+FIT_SAMPLE_ARGS=(--fit-sample-seed "$FIT_SAMPLE_SEED")
+[ -z "$MAX_TRAIN_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-train-fit-samples "$MAX_TRAIN_FIT_SAMPLES")
+[ -z "$MAX_ORACLE_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-oracle-fit-samples "$MAX_ORACLE_FIT_SAMPLES")
+[ -z "$MAX_EVAL_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-eval-fit-samples "$MAX_EVAL_FIT_SAMPLES")
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -102,13 +111,14 @@ run_task() {
     log "skip complete family=baselines dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return
   fi
-  log_section "baselines start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2=$L2 fit_baselines_on_eval=true seed=$SEED"
+  log_section "baselines start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2=$L2 fit_baselines_on_eval=true seed=$SEED max_train_fit_samples=${MAX_TRAIN_FIT_SAMPLES:-none} max_oracle_fit_samples=${MAX_ORACLE_FIT_SAMPLES:-none} max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --family baselines \
     --l2 "$L2" \
     --fit-baselines-on-eval \
+    "${FIT_SAMPLE_ARGS[@]}" \
     --seed "$SEED"
   assert_files baseline-output \
     "$OUTPUT_DIR/baseline_metrics.csv" \

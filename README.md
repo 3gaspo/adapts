@@ -36,6 +36,18 @@ tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,...}
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
 they are intentionally excluded from the deployable main comparison.
+Ridge fits accumulate float64 sufficient statistics in bounded chunks, so they
+use the complete selected fitting split without materializing the full design
+matrix. This changes memory use, not the fitted objective.
+
+Baseline and gate fitting may optionally use reproducible subsets of the
+already-extracted payloads through `MAX_TRAIN_FIT_SAMPLES`,
+`MAX_ORACLE_FIT_SAMPLES`, and `MAX_EVAL_FIT_SAMPLES`. All default to unlimited;
+`FIT_SAMPLE_SEED` defaults to `SEED`. T1 controls primary baseline fitting, T2
+controls gate fitting, and the T3 maximum applies only to optimistic
+`_eval_fit` methods. Final T3 scoring always uses the complete evaluation
+payload, regardless of these fitting maxima. The chosen counts and seeds are
+logged and stored in the output artifact.
 
 ## Data and weight locations
 
@@ -158,6 +170,20 @@ DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
 EXPERIMENT_MODE=small sbatch extraction.slurm
 ```
+
+Fit-only sample maxima can be applied to one selected configuration without
+re-extraction. For example, this caps only the T1 baseline fit while retaining
+full T3 evaluation:
+
+```bash
+DATASETS_CSV=Traffic SETTINGS_CSV=504:504 \
+DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=10 \
+MAX_TRAIN_FIT_SAMPLES=50000 FIT_SAMPLE_SEED=1 \
+SKIP_COMPLETE=false EXPERIMENT_MODE=small sbatch baselines.slurm
+```
+
+Use `MAX_ORACLE_FIT_SAMPLES` analogously for gate training. Use
+`MAX_EVAL_FIT_SAMPLES` only to limit the optimistic appendix fits.
 
 Do not submit a downstream job without an `afterok` dependency unless the
 corresponding manifests have already been checked.  Downstream launchers fail

@@ -42,7 +42,9 @@ Oracle & True target loss & Scalar / horizon \\
 
 CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
 and seed 1.  Models are trained only on \Ttwo and applied without refitting to
-\Tthree. The small sweep uses three datasets, four settings, raw/instance
+\Tthree. An optional seeded maximum can subsample \Ttwo fitting rows from the
+saved extraction payload; it is unlimited by default, and final \Tthree scoring
+always retains every extracted evaluation row. The small sweep uses three datasets, four settings, raw/instance
 Euclidean distance, $k\in\{1,3,10\}$, and Chronos. Full uses six datasets and
 adds 512--64 for Cross-RAG while remaining Chronos-only; ultra adds TabPFN-TS
 and skips complete Chronos outputs. TS-ICL remains a later extension.

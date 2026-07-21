@@ -19,6 +19,7 @@ from src.experiments.runtime import log_experiment_separator, setup_logging
 
 
 LOGGER = logging.getLogger(__name__)
+RIDGE_CHUNK_ROWS = 65_536
 
 
 def torch_load(path: str | Path) -> dict[str, Any]:
@@ -110,24 +111,97 @@ def weighted_neighbor_residual(arrays: dict[str, np.ndarray]) -> np.ndarray:
     return (w[:, :, None] * arrays["e"]).sum(axis=1)
 
 
-def ridge_no_intercept(x: np.ndarray, y: np.ndarray, l2: float) -> np.ndarray:
-    if x.shape[0] == 0:
+def _ridge_no_intercept_from_chunks(
+    chunks,
+    *,
+    n_samples: int,
+    n_features: int,
+    target_shape: tuple[int, ...],
+    l2: float,
+) -> np.ndarray:
+    if n_samples == 0:
         raise ValueError("cannot fit ridge regression without observations")
     if l2 < 0:
         raise ValueError("l2 must be non-negative")
+
+    sum_squares = np.zeros(n_features, dtype=np.float64)
+    xtx = np.zeros((n_features, n_features), dtype=np.float64)
+    xty = np.zeros((n_features, *target_shape), dtype=np.float64)
+    seen = 0
+    for x_chunk, y_chunk in chunks:
+        x_chunk = np.asarray(x_chunk, dtype=np.float64)
+        y_chunk = np.asarray(y_chunk, dtype=np.float64)
+        if x_chunk.ndim != 2 or x_chunk.shape[1] != n_features:
+            raise ValueError("ridge chunks must have shape (samples, features)")
+        if y_chunk.shape[0] != x_chunk.shape[0] or y_chunk.shape[1:] != target_shape:
+            raise ValueError("ridge feature and target chunks must align")
+        sum_squares += np.einsum("ij,ij->j", x_chunk, x_chunk)
+        xtx += x_chunk.T @ x_chunk
+        xty += x_chunk.T @ y_chunk
+        seen += x_chunk.shape[0]
+    if seen != n_samples:
+        raise ValueError(f"ridge chunks contain {seen} samples, expected {n_samples}")
+
     # RMS-standardize without centering so zero coefficients still mean zero
-    # correction. This makes the penalty invariant to dataset units while
-    # retaining the vanilla forecast as the ridge anchor.
-    x = np.asarray(x, dtype=np.float64)
-    y = np.asarray(y, dtype=np.float64)
-    feature_scale = np.sqrt(np.mean(x**2, axis=0))
+    # correction. Accumulating raw sufficient statistics avoids materializing
+    # a float64 copy of the complete design matrix.
+    feature_scale = np.sqrt(sum_squares / n_samples)
     feature_scale = np.maximum(feature_scale, 1e-12)
-    standardized = x / feature_scale
-    xtx = (standardized.T @ standardized) / x.shape[0]
-    xty = (standardized.T @ y) / x.shape[0]
+    xtx = xtx / np.outer(feature_scale, feature_scale) / n_samples
+    scale_shape = (n_features, *([1] * len(target_shape)))
+    xty = xty / feature_scale.reshape(scale_shape) / n_samples
     reg = float(l2) * np.eye(xtx.shape[0], dtype=np.float64)
     standardized_coef = np.linalg.solve(xtx + reg, xty)
-    return standardized_coef / feature_scale
+    return standardized_coef / feature_scale.reshape(scale_shape)
+
+
+def ridge_no_intercept(
+    x: np.ndarray,
+    y: np.ndarray,
+    l2: float,
+    *,
+    chunk_rows: int = RIDGE_CHUNK_ROWS,
+) -> np.ndarray:
+    x = np.asarray(x)
+    y = np.asarray(y)
+    if x.ndim != 2:
+        raise ValueError("ridge features must have shape (samples, features)")
+    if y.ndim < 1 or y.shape[0] != x.shape[0]:
+        raise ValueError("ridge features and targets must align")
+    if chunk_rows <= 0:
+        raise ValueError("chunk_rows must be positive")
+
+    chunks = (
+        (x[start : start + chunk_rows], y[start : start + chunk_rows])
+        for start in range(0, x.shape[0], chunk_rows)
+    )
+    return _ridge_no_intercept_from_chunks(
+        chunks,
+        n_samples=x.shape[0],
+        n_features=x.shape[1],
+        target_shape=y.shape[1:],
+        l2=l2,
+    )
+
+
+def subsample_fit_arrays(
+    arrays: dict[str, np.ndarray],
+    max_samples: int | None,
+    *,
+    seed: int,
+) -> dict[str, np.ndarray]:
+    """Select a reproducible fitting subset while leaving scoring arrays intact."""
+    n_samples = arrays["y"].shape[0]
+    if max_samples is None or n_samples <= max_samples:
+        return arrays
+    if max_samples <= 0:
+        raise ValueError("fit sample maxima must be positive")
+    for name, value in arrays.items():
+        if value.shape[0] != n_samples:
+            raise ValueError(f"fit array {name!r} has inconsistent sample count")
+    indices = np.random.default_rng(seed).choice(n_samples, size=max_samples, replace=False)
+    indices.sort()
+    return {name: value[indices] for name, value in arrays.items()}
 
 
 def fit_baseline_adapters(train: dict[str, np.ndarray], l2: float) -> dict[str, Any]:
@@ -157,22 +231,44 @@ def fit_baseline_adapters(train: dict[str, np.ndarray], l2: float) -> dict[str, 
     )[0]
     residual_lam = float(np.clip(residual_lam, 0.0, 1.0))
 
-    residual_ridge_shared_x = np.moveaxis(e, 1, 2)
-    residual_ridge_shared_coef = ridge_no_intercept(
-        rearrange(residual_ridge_shared_x, "sample horizon feature -> (sample horizon) feature"),
-        rearrange(residual_target, "sample horizon -> (sample horizon)"),
-        l2,
+    n_samples, neighbors, horizon = e.shape
+    sample_chunk = max(1, RIDGE_CHUNK_ROWS // horizon)
+    residual_chunks = (
+        (
+            np.moveaxis(e[start : start + sample_chunk], 1, 2).reshape(-1, neighbors),
+            residual_target[start : start + sample_chunk].reshape(-1),
+        )
+        for start in range(0, n_samples, sample_chunk)
+    )
+    residual_ridge_shared_coef = _ridge_no_intercept_from_chunks(
+        residual_chunks,
+        n_samples=n_samples * horizon,
+        n_features=neighbors,
+        target_shape=(),
+        l2=l2,
     )
 
-    horizon_ridge_shared_x = np.concatenate([pred[:, :, None], np.moveaxis(y_c, 1, 2)], axis=-1)
-    horizon_ridge_shared_coef = ridge_no_intercept(
-        rearrange(horizon_ridge_shared_x, "sample horizon feature -> (sample horizon) feature"),
-        rearrange(residual_target, "sample horizon -> (sample horizon)"),
-        l2,
+    horizon_chunks = (
+        (
+            np.concatenate(
+                [
+                    pred[start : start + sample_chunk, :, None],
+                    np.moveaxis(y_c[start : start + sample_chunk], 1, 2),
+                ],
+                axis=-1,
+            ).reshape(-1, neighbors + 1),
+            residual_target[start : start + sample_chunk].reshape(-1),
+        )
+        for start in range(0, n_samples, sample_chunk)
+    )
+    horizon_ridge_shared_coef = _ridge_no_intercept_from_chunks(
+        horizon_chunks,
+        n_samples=n_samples * horizon,
+        n_features=neighbors + 1,
+        target_shape=(),
+        l2=l2,
     )
 
-    horizon = y.shape[1]
-    neighbors = y_c.shape[1]
     residual_ridge_horizon_coef = np.zeros((horizon, neighbors), dtype=np.float64)
     for h in range(horizon):
         residual_ridge_horizon_coef[h] = ridge_no_intercept(e[:, :, h], residual_target[:, h], l2)
@@ -233,8 +329,18 @@ def predict_baseline_adapters(arrays: dict[str, np.ndarray], artifacts: dict[str
     predictions["residual_ridge_horizon"] = residual_full
 
     horizon_ridge_shared_coef = artifacts["horizon_ridge_shared_coef"]
-    horizon_ridge_shared_x = np.concatenate([pred[:, :, None], np.moveaxis(y_c, 1, 2)], axis=-1)
-    correction = np.einsum("shf,f->sh", horizon_ridge_shared_x, horizon_ridge_shared_coef)
+    correction = np.einsum(
+        "sh,->sh",
+        pred,
+        horizon_ridge_shared_coef[0],
+        dtype=np.float64,
+    )
+    correction += np.einsum(
+        "snh,n->sh",
+        y_c,
+        horizon_ridge_shared_coef[1:],
+        dtype=np.float64,
+    )
     predictions["horizon_ridge_shared"] = pred + correction
 
     full_ridge_horizon_coef = artifacts["full_ridge_horizon_coef"]
@@ -258,13 +364,17 @@ TRAINABLE_BASELINES = (
 
 def add_eval_fitted_baselines(
     predictions_by_split: dict[str, dict[str, np.ndarray]],
-    eval_arrays: dict[str, np.ndarray],
+    eval_fit_arrays: dict[str, np.ndarray],
     *,
+    eval_scoring_arrays: dict[str, np.ndarray] | None = None,
     l2: float,
 ) -> dict[str, Any]:
     """Add explicitly optimistic T3 in-sample fits for trainable mixtures."""
-    artifacts = fit_baseline_adapters(eval_arrays, l2)
-    eval_predictions = predict_baseline_adapters(eval_arrays, artifacts)
+    artifacts = fit_baseline_adapters(eval_fit_arrays, l2)
+    eval_predictions = predict_baseline_adapters(
+        eval_fit_arrays if eval_scoring_arrays is None else eval_scoring_arrays,
+        artifacts,
+    )
     predictions_by_split["eval"].update(
         {
             f"{name}_eval_fit": eval_predictions[name]
@@ -753,6 +863,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--gate-depth", type=int, default=4)
     parser.add_argument("--feature-importance-top-k", type=int, default=20)
+    parser.add_argument("--max-train-fit-samples", type=int, default=None)
+    parser.add_argument("--max-oracle-fit-samples", type=int, default=None)
+    parser.add_argument("--max-eval-fit-samples", type=int, default=None)
+    parser.add_argument(
+        "--fit-sample-seed",
+        type=int,
+        default=None,
+        help="Seed for reproducible fit-only subsampling; defaults to --seed",
+    )
     parser.add_argument("--train-horizon-gate", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--seed", type=int, default=1)
     return parser.parse_args()
@@ -784,6 +903,43 @@ def main() -> dict[str, Path]:
         raise ValueError(f"baseline evaluation requires train, oracle, and eval payloads; missing {sorted(missing)}")
     LOGGER.info("payload load done splits=%s", ",".join(prefixes))
 
+    fit_sample_seed = args.seed if args.fit_sample_seed is None else args.fit_sample_seed
+    fit_maxima = {
+        "train": args.max_train_fit_samples,
+        "oracle": args.max_oracle_fit_samples,
+        "eval": args.max_eval_fit_samples,
+    }
+    for split, maximum in fit_maxima.items():
+        if maximum is not None and maximum <= 0:
+            raise ValueError(f"--max-{split}-fit-samples must be positive")
+    split_seed_offsets = {"train": 0, "oracle": 1, "eval": 2}
+    fit_arrays_by_split = {
+        split: subsample_fit_arrays(
+            arrays,
+            fit_maxima[split],
+            seed=fit_sample_seed + split_seed_offsets[split],
+        )
+        for split, arrays in arrays_by_split.items()
+    }
+    fit_sampling = {
+        split: {
+            "available_samples": int(arrays_by_split[split]["y"].shape[0]),
+            "used_samples": int(fit_arrays_by_split[split]["y"].shape[0]),
+            "max_samples": fit_maxima[split],
+            "seed": fit_sample_seed + split_seed_offsets[split],
+        }
+        for split in arrays_by_split
+    }
+    for split, details in fit_sampling.items():
+        LOGGER.info(
+            "fit sampling split=%s available=%s used=%s maximum=%s seed=%s",
+            split,
+            details["available_samples"],
+            details["used_samples"],
+            details["max_samples"],
+            details["seed"],
+        )
+
     artifacts = None
     eval_fit_artifacts = None
     predictions_by_split: dict[str, dict[str, np.ndarray]] = {
@@ -791,7 +947,7 @@ def main() -> dict[str, Path]:
     }
     if args.family in {"all", "baselines"}:
         LOGGER.info("mixture fitting start")
-        artifacts = fit_baseline_adapters(arrays_by_split["train"], args.l2)
+        artifacts = fit_baseline_adapters(fit_arrays_by_split["train"], args.l2)
         predictions_by_split = {
             split: predict_baseline_adapters(arrays, artifacts)
             for split, arrays in arrays_by_split.items()
@@ -799,7 +955,8 @@ def main() -> dict[str, Path]:
         if args.fit_baselines_on_eval:
             eval_fit_artifacts = add_eval_fitted_baselines(
                 predictions_by_split,
-                arrays_by_split["eval"],
+                fit_arrays_by_split["eval"],
+                eval_scoring_arrays=arrays_by_split["eval"],
                 l2=args.l2,
             )
         LOGGER.info("mixture fitting done")
@@ -817,7 +974,7 @@ def main() -> dict[str, Path]:
         LOGGER.info("context gate fitting start objectives=classifier,regressor shapes=scalar,horizon")
         predictions_by_split, gate_artifacts, gate_diagnostics = add_context_gate_predictions(
             predictions_by_split,
-            arrays_by_split["oracle"],
+            fit_arrays_by_split["oracle"],
             arrays_by_split,
             iterations=args.gate_iterations,
             learning_rate=args.gate_learning_rate,
@@ -834,7 +991,10 @@ def main() -> dict[str, Path]:
     artifact_path = output_dir / ("gate_artifacts.pt" if args.family == "gates" else "baseline_artifacts.pt")
     visualization_path = output_dir / "visualization_payload.pt"
     csv_path, json_path = write_metric_outputs(frame, output_dir, metrics_stem)
-    saved_artifacts: dict[str, Any] = {"family": args.family}
+    saved_artifacts: dict[str, Any] = {
+        "family": args.family,
+        "fit_sampling": fit_sampling,
+    }
     if artifacts is not None:
         saved_artifacts["mix_artifacts"] = artifacts
     if eval_fit_artifacts is not None:

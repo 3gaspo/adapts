@@ -12,7 +12,7 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
 case "$EXPERIMENT_MODE" in
   test)
-    DEFAULT_DATASETS_CSV="electricity"
+    DEFAULT_DATASETS_CSV="Electricity"
     DEFAULT_MODELS_CSV="chronos"
     DEFAULT_SETTINGS_CSV="168:24"
     DEFAULT_DISTANCE_SPACES_CSV="raw"
