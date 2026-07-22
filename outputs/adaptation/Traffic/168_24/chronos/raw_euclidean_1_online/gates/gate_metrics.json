@@ -1,0 +1,74 @@
+[
+  {
+    "split": "eval",
+    "baseline": "context_forecast",
+    "mse": 0.0008023327100090683,
+    "mae": 0.011341775767505169,
+    "nmse": 0.29839929938316345,
+    "relative_nmse_improvement_pct": -4.334446907043457
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_scalar",
+    "mse": 0.000778419547714293,
+    "mae": 0.011205503717064857,
+    "nmse": 0.28600266575813293,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_horizon",
+    "mse": 0.0007919908384792507,
+    "mae": 0.011287610977888107,
+    "nmse": 0.29306718707084656,
+    "relative_nmse_improvement_pct": -2.4700894355773926
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_scalar",
+    "mse": 0.0007680108537897468,
+    "mae": 0.011114109307527542,
+    "nmse": 0.2849370837211609,
+    "relative_nmse_improvement_pct": 0.3725776672363281
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_classifier_horizon",
+    "mse": 0.0007673304644413292,
+    "mae": 0.01109590008854866,
+    "nmse": 0.2849530875682831,
+    "relative_nmse_improvement_pct": 0.36698195338249207
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_scalar",
+    "mse": 0.0007785189663991332,
+    "mae": 0.0111846923828125,
+    "nmse": 0.28746476769447327,
+    "relative_nmse_improvement_pct": -0.5112196803092957
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_horizon",
+    "mse": 0.0007842019549570978,
+    "mae": 0.011258327402174473,
+    "nmse": 0.2914445698261261,
+    "relative_nmse_improvement_pct": -1.9027459621429443
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_scalar",
+    "mse": 0.0007060043280944228,
+    "mae": 0.010662658140063286,
+    "nmse": 0.26360511779785156,
+    "relative_nmse_improvement_pct": 7.831236839294434
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_horizon",
+    "mse": 0.0006844110903330147,
+    "mae": 0.010168775916099548,
+    "nmse": 0.25717034935951233,
+    "relative_nmse_improvement_pct": 10.081135749816895
+  }
+]

@@ -1,0 +1,317 @@
+
+2026-07-22T07:04:55+02:00 job start kind=gates experiment_mode=small skip_complete=false tasks=72 datasets=Traffic,Electricity,Solar models=chronos settings=168:24,504:24,504:168,504:504 distance_spaces=raw,instance neighbors=1,3,10
+2026-07-22 07:04:57,751 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-22T07:04:58+02:00 gates start configuration=1/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:05:00,331 INFO [__main__] ========================================================================
+2026-07-22 07:05:00,333 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted
+2026-07-22 07:05:00,333 INFO [__main__] payload load start
+2026-07-22 07:05:03,648 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:05:03,648 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:05:03,649 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:05:03,649 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:05:03,649 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:08:28,185 INFO [__main__] context gate fitting done
+2026-07-22 07:08:28,185 INFO [__main__] evaluation start split=eval
+2026-07-22 07:08:28,205 INFO [__main__] evaluation done rows=9
+2026-07-22 07:08:30,034 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:08:30,928 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/gates
+2026-07-22 07:08:30,928 INFO [__main__] experiment done seconds=210.60
+2026-07-22 07:08:30,928 INFO [__main__] ========================================================================
+2026-07-22T07:08:31+02:00 gates done configuration=1/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-22 07:08:33,421 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-22T07:08:33+02:00 gates start configuration=2/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:08:35,958 INFO [__main__] ========================================================================
+2026-07-22 07:08:35,961 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted
+2026-07-22 07:08:35,961 INFO [__main__] payload load start
+2026-07-22 07:08:44,628 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:08:44,628 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:08:44,628 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:08:44,628 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:08:44,628 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:12:17,822 INFO [__main__] context gate fitting done
+2026-07-22 07:12:17,822 INFO [__main__] evaluation start split=eval
+2026-07-22 07:12:17,844 INFO [__main__] evaluation done rows=9
+2026-07-22 07:12:19,674 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:12:20,649 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/gates
+2026-07-22 07:12:20,649 INFO [__main__] experiment done seconds=224.69
+2026-07-22 07:12:20,649 INFO [__main__] ========================================================================
+2026-07-22T07:12:22+02:00 gates done configuration=2/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online
+2026-07-22 07:12:27,069 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-22T07:12:27+02:00 gates start configuration=3/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:12:29,582 INFO [__main__] ========================================================================
+2026-07-22 07:12:29,584 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted
+2026-07-22 07:12:29,584 INFO [__main__] payload load start
+2026-07-22 07:12:45,908 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:12:45,908 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:12:45,908 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:12:45,908 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:12:45,909 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:16:19,509 INFO [__main__] context gate fitting done
+2026-07-22 07:16:19,510 INFO [__main__] evaluation start split=eval
+2026-07-22 07:16:19,532 INFO [__main__] evaluation done rows=9
+2026-07-22 07:16:21,413 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:16:22,285 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/gates
+2026-07-22 07:16:22,285 INFO [__main__] experiment done seconds=232.70
+2026-07-22 07:16:22,285 INFO [__main__] ========================================================================
+2026-07-22T07:16:22+02:00 gates done configuration=3/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online
+2026-07-22 07:16:25,086 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-22T07:16:25+02:00 gates start configuration=4/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:16:27,534 INFO [__main__] ========================================================================
+2026-07-22 07:16:27,536 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted
+2026-07-22 07:16:27,536 INFO [__main__] payload load start
+2026-07-22 07:16:30,778 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:16:30,778 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:16:30,778 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:16:30,778 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:16:30,778 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:19:54,904 INFO [__main__] context gate fitting done
+2026-07-22 07:19:54,905 INFO [__main__] evaluation start split=eval
+2026-07-22 07:19:54,925 INFO [__main__] evaluation done rows=9
+2026-07-22 07:19:56,708 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:19:57,660 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/gates
+2026-07-22 07:19:57,660 INFO [__main__] experiment done seconds=210.13
+2026-07-22 07:19:57,661 INFO [__main__] ========================================================================
+2026-07-22T07:19:58+02:00 gates done configuration=4/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-22 07:20:00,515 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-22T07:20:00+02:00 gates start configuration=5/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:20:02,959 INFO [__main__] ========================================================================
+2026-07-22 07:20:02,961 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted
+2026-07-22 07:20:02,961 INFO [__main__] payload load start
+2026-07-22 07:20:08,843 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:20:08,843 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:20:08,843 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:20:08,843 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:20:08,843 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:23:40,035 INFO [__main__] context gate fitting done
+2026-07-22 07:23:40,035 INFO [__main__] evaluation start split=eval
+2026-07-22 07:23:40,055 INFO [__main__] evaluation done rows=9
+2026-07-22 07:23:53,033 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:23:53,918 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/gates
+2026-07-22 07:23:53,918 INFO [__main__] experiment done seconds=230.96
+2026-07-22 07:23:53,918 INFO [__main__] ========================================================================
+2026-07-22T07:23:54+02:00 gates done configuration=5/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online
+2026-07-22 07:23:56,464 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted status=complete
+
+2026-07-22T07:23:56+02:00 gates start configuration=6/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:23:58,922 INFO [__main__] ========================================================================
+2026-07-22 07:23:58,923 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted
+2026-07-22 07:23:58,923 INFO [__main__] payload load start
+2026-07-22 07:24:13,421 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:24:13,421 INFO [__main__] fit sampling split=train available=213280 used=213280 maximum=None seed=1
+2026-07-22 07:24:13,421 INFO [__main__] fit sampling split=oracle available=87720 used=87720 maximum=None seed=2
+2026-07-22 07:24:13,421 INFO [__main__] fit sampling split=eval available=22360 used=22360 maximum=None seed=3
+2026-07-22 07:24:13,421 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:27:47,390 INFO [__main__] context gate fitting done
+2026-07-22 07:27:47,390 INFO [__main__] evaluation start split=eval
+2026-07-22 07:27:47,414 INFO [__main__] evaluation done rows=9
+2026-07-22 07:27:49,241 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:27:50,179 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/gates
+2026-07-22 07:27:50,179 INFO [__main__] experiment done seconds=231.26
+2026-07-22 07:27:50,179 INFO [__main__] ========================================================================
+2026-07-22T07:27:50+02:00 gates done configuration=6/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-22 07:27:53,164 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-22T07:27:53+02:00 gates start configuration=7/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:27:55,538 INFO [__main__] ========================================================================
+2026-07-22 07:27:55,540 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted
+2026-07-22 07:27:55,540 INFO [__main__] payload load start
+2026-07-22 07:28:01,471 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:28:01,471 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:28:01,471 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:28:01,471 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:28:01,471 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:31:02,544 INFO [__main__] context gate fitting done
+2026-07-22 07:31:02,544 INFO [__main__] evaluation start split=eval
+2026-07-22 07:31:02,579 INFO [__main__] evaluation done rows=9
+2026-07-22 07:31:04,398 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:31:05,262 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/gates
+2026-07-22 07:31:05,263 INFO [__main__] experiment done seconds=189.72
+2026-07-22 07:31:05,263 INFO [__main__] ========================================================================
+2026-07-22T07:31:05+02:00 gates done configuration=7/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-22 07:31:07,810 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-22T07:31:08+02:00 gates start configuration=8/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:31:10,302 INFO [__main__] ========================================================================
+2026-07-22 07:31:10,304 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted
+2026-07-22 07:31:10,304 INFO [__main__] payload load start
+2026-07-22 07:31:22,111 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:31:22,111 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:31:22,111 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:31:22,112 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:31:22,112 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:34:29,749 INFO [__main__] context gate fitting done
+2026-07-22 07:34:29,750 INFO [__main__] evaluation start split=eval
+2026-07-22 07:34:29,786 INFO [__main__] evaluation done rows=9
+2026-07-22 07:34:31,608 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:34:32,426 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/gates
+2026-07-22 07:34:32,426 INFO [__main__] experiment done seconds=202.12
+2026-07-22 07:34:32,426 INFO [__main__] ========================================================================
+2026-07-22T07:34:32+02:00 gates done configuration=8/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online
+2026-07-22 07:34:34,958 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-22T07:34:35+02:00 gates start configuration=9/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:34:37,493 INFO [__main__] ========================================================================
+2026-07-22 07:34:37,495 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted
+2026-07-22 07:34:37,495 INFO [__main__] payload load start
+2026-07-22 07:35:08,803 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:35:08,803 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:35:08,803 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:35:08,803 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:35:08,803 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:38:18,434 INFO [__main__] context gate fitting done
+2026-07-22 07:38:18,435 INFO [__main__] evaluation start split=eval
+2026-07-22 07:38:18,470 INFO [__main__] evaluation done rows=9
+2026-07-22 07:38:20,316 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:38:21,199 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/gates
+2026-07-22 07:38:21,199 INFO [__main__] experiment done seconds=223.71
+2026-07-22 07:38:21,199 INFO [__main__] ========================================================================
+2026-07-22T07:38:21+02:00 gates done configuration=9/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online
+2026-07-22 07:38:23,691 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-22T07:38:23+02:00 gates start configuration=10/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:38:26,197 INFO [__main__] ========================================================================
+2026-07-22 07:38:26,199 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted
+2026-07-22 07:38:26,199 INFO [__main__] payload load start
+2026-07-22 07:38:32,176 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:38:32,176 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:38:32,176 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:38:32,176 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:38:32,176 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:41:32,720 INFO [__main__] context gate fitting done
+2026-07-22 07:41:32,721 INFO [__main__] evaluation start split=eval
+2026-07-22 07:41:32,757 INFO [__main__] evaluation done rows=9
+2026-07-22 07:41:34,581 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:41:35,478 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/gates
+2026-07-22 07:41:35,479 INFO [__main__] experiment done seconds=189.28
+2026-07-22 07:41:35,479 INFO [__main__] ========================================================================
+2026-07-22T07:41:36+02:00 gates done configuration=10/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-22 07:41:37,990 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-22T07:41:38+02:00 gates start configuration=11/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:41:40,509 INFO [__main__] ========================================================================
+2026-07-22 07:41:40,512 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted
+2026-07-22 07:41:40,512 INFO [__main__] payload load start
+2026-07-22 07:41:52,544 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:41:52,545 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:41:52,545 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:41:52,545 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:41:52,545 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:44:58,955 INFO [__main__] context gate fitting done
+2026-07-22 07:44:58,955 INFO [__main__] evaluation start split=eval
+2026-07-22 07:44:58,991 INFO [__main__] evaluation done rows=9
+2026-07-22 07:45:00,786 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:45:01,657 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/gates
+2026-07-22 07:45:01,657 INFO [__main__] experiment done seconds=201.15
+2026-07-22 07:45:01,657 INFO [__main__] ========================================================================
+2026-07-22T07:45:02+02:00 gates done configuration=11/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online
+2026-07-22 07:45:04,389 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted status=complete
+
+2026-07-22T07:45:04+02:00 gates start configuration=12/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:45:06,817 INFO [__main__] ========================================================================
+2026-07-22 07:45:06,819 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted
+2026-07-22 07:45:06,819 INFO [__main__] payload load start
+2026-07-22 07:46:14,463 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:46:14,464 INFO [__main__] fit sampling split=train available=201240 used=201240 maximum=None seed=1
+2026-07-22 07:46:14,464 INFO [__main__] fit sampling split=oracle available=75680 used=75680 maximum=None seed=2
+2026-07-22 07:46:14,464 INFO [__main__] fit sampling split=eval available=20640 used=20640 maximum=None seed=3
+2026-07-22 07:46:14,464 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 07:49:24,122 INFO [__main__] context gate fitting done
+2026-07-22 07:49:24,122 INFO [__main__] evaluation start split=eval
+2026-07-22 07:49:24,159 INFO [__main__] evaluation done rows=9
+2026-07-22 07:49:25,980 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 07:49:26,857 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/gates
+2026-07-22 07:49:26,857 INFO [__main__] experiment done seconds=260.04
+2026-07-22 07:49:26,857 INFO [__main__] ========================================================================
+2026-07-22T07:49:27+02:00 gates done configuration=12/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-22 07:49:29,451 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-22T07:49:29+02:00 gates start configuration=13/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 07:49:31,818 INFO [__main__] ========================================================================
+2026-07-22 07:49:31,820 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted
+2026-07-22 07:49:31,820 INFO [__main__] payload load start
+2026-07-22 07:49:59,344 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 07:49:59,344 INFO [__main__] fit sampling split=train available=196080 used=196080 maximum=None seed=1
+2026-07-22 07:49:59,344 INFO [__main__] fit sampling split=oracle available=70520 used=70520 maximum=None seed=2
+2026-07-22 07:49:59,344 INFO [__main__] fit sampling split=eval available=19780 used=19780 maximum=None seed=3
+2026-07-22 07:49:59,344 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 08:36:21,110 INFO [__main__] context gate fitting done
+2026-07-22 08:36:21,110 INFO [__main__] evaluation start split=eval
+2026-07-22 08:36:21,208 INFO [__main__] evaluation done rows=9
+2026-07-22 08:36:26,154 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 08:36:33,647 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/gates
+2026-07-22 08:36:33,647 INFO [__main__] experiment done seconds=2821.83
+2026-07-22 08:36:33,647 INFO [__main__] ========================================================================
+2026-07-22T08:36:34+02:00 gates done configuration=13/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-07-22 08:36:36,370 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-22T08:36:36+02:00 gates start configuration=14/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 08:36:38,829 INFO [__main__] ========================================================================
+2026-07-22 08:36:38,831 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted
+2026-07-22 08:36:38,831 INFO [__main__] payload load start
+2026-07-22 08:37:13,815 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 08:37:13,815 INFO [__main__] fit sampling split=train available=196080 used=196080 maximum=None seed=1
+2026-07-22 08:37:13,815 INFO [__main__] fit sampling split=oracle available=70520 used=70520 maximum=None seed=2
+2026-07-22 08:37:13,815 INFO [__main__] fit sampling split=eval available=19780 used=19780 maximum=None seed=3
+2026-07-22 08:37:13,815 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 09:24:26,390 INFO [__main__] context gate fitting done
+2026-07-22 09:24:26,390 INFO [__main__] evaluation start split=eval
+2026-07-22 09:24:26,490 INFO [__main__] evaluation done rows=9
+2026-07-22 09:24:31,360 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 09:24:38,857 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/gates
+2026-07-22 09:24:38,857 INFO [__main__] experiment done seconds=2880.03
+2026-07-22 09:24:38,857 INFO [__main__] ========================================================================
+2026-07-22T09:24:39+02:00 gates done configuration=14/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online
+2026-07-22 09:24:41,626 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-22T09:24:41+02:00 gates start configuration=15/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 09:24:43,987 INFO [__main__] ========================================================================
+2026-07-22 09:24:43,990 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted
+2026-07-22 09:24:43,990 INFO [__main__] payload load start
+2026-07-22 09:26:29,014 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 09:26:29,014 INFO [__main__] fit sampling split=train available=196080 used=196080 maximum=None seed=1
+2026-07-22 09:26:29,014 INFO [__main__] fit sampling split=oracle available=70520 used=70520 maximum=None seed=2
+2026-07-22 09:26:29,014 INFO [__main__] fit sampling split=eval available=19780 used=19780 maximum=None seed=3
+2026-07-22 09:26:29,014 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 10:13:52,180 INFO [__main__] context gate fitting done
+2026-07-22 10:13:52,180 INFO [__main__] evaluation start split=eval
+2026-07-22 10:13:52,300 INFO [__main__] evaluation done rows=9
+2026-07-22 10:13:57,619 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 10:14:06,941 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/gates
+2026-07-22 10:14:06,941 INFO [__main__] experiment done seconds=2962.95
+2026-07-22 10:14:06,941 INFO [__main__] ========================================================================
+2026-07-22T10:14:08+02:00 gates done configuration=15/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online
+2026-07-22 10:14:10,735 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-22T10:14:10+02:00 gates start configuration=16/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 10:14:13,130 INFO [__main__] ========================================================================
+2026-07-22 10:14:13,133 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted
+2026-07-22 10:14:13,133 INFO [__main__] payload load start
+2026-07-22 10:14:30,834 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 10:14:30,835 INFO [__main__] fit sampling split=train available=196080 used=196080 maximum=None seed=1
+2026-07-22 10:14:30,835 INFO [__main__] fit sampling split=oracle available=70520 used=70520 maximum=None seed=2
+2026-07-22 10:14:30,835 INFO [__main__] fit sampling split=eval available=19780 used=19780 maximum=None seed=3
+2026-07-22 10:14:30,835 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon
+2026-07-22 11:00:46,993 INFO [__main__] context gate fitting done
+2026-07-22 11:00:46,994 INFO [__main__] evaluation start split=eval
+2026-07-22 11:00:47,091 INFO [__main__] evaluation done rows=9
+2026-07-22 11:00:52,224 INFO [__main__] feature-importance plots saved count=8
+2026-07-22 11:00:59,616 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/gates
+2026-07-22 11:00:59,616 INFO [__main__] experiment done seconds=2806.49
+2026-07-22 11:00:59,616 INFO [__main__] ========================================================================
+2026-07-22T11:01:00+02:00 gates done configuration=16/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online
+2026-07-22 11:01:02,910 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-22T11:01:03+02:00 gates start configuration=17/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_3_online family=gates iterations=300 learning_rate=0.03 depth=4 seed=1 max_train_fit_samples=none max_oracle_fit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-22 11:01:05,328 INFO [__main__] ========================================================================
+2026-07-22 11:01:05,346 INFO [__main__] experiment start kind=gates input=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted
+2026-07-22 11:01:05,346 INFO [__main__] payload load start
+2026-07-22 11:01:47,887 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-22 11:01:47,888 INFO [__main__] fit sampling split=train available=196080 used=196080 maximum=None seed=1
+2026-07-22 11:01:47,888 INFO [__main__] fit sampling split=oracle available=70520 used=70520 maximum=None seed=2
+2026-07-22 11:01:47,888 INFO [__main__] fit sampling split=eval available=19780 used=19780 maximum=None seed=3
+2026-07-22 11:01:47,888 INFO [__main__] context gate fitting start objectives=classifier,regressor shapes=scalar,horizon

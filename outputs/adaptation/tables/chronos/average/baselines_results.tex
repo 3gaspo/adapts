@@ -1,0 +1,30 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos NMSE: 0.16.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lc}
+\toprule
+Model & raw\_L2\_3 \\
+\midrule
+ctx & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.38\%}\\{\scriptsize 0.17}\end{tabular} \\
+Y-kNN-w & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-181.29\%}\\{\scriptsize 0.46}\end{tabular} \\
+Y-kNN & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-147.03\%}\\{\scriptsize 0.40}\end{tabular} \\
+Y-mix-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{0.43\%}}\\{\scriptsize 0.16}\end{tabular} \\
+Y-ridge & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-1.13\%}\\{\scriptsize 0.16}\end{tabular} \\
+R-kNN-w & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-81.62\%}\\{\scriptsize 0.30}\end{tabular} \\
+R-mix-s & \begin{tabular}{@{}c@{}}-0.00\%\\{\scriptsize 0.16}\end{tabular} \\
+R-ridge & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.97\%}\\{\scriptsize 0.16}\end{tabular} \\
+R-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-14.22\%}\\{\scriptsize 0.19}\end{tabular} \\
+full-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-11.21\%}\\{\scriptsize 0.18}\end{tabular} \\
+\midrule
+Y-mix-s-fit-T3 & \begin{tabular}{@{}c@{}}-0.00\%\\{\scriptsize 0.16}\end{tabular} \\
+Y-ridge-fit-T3 & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-7.38\%}\\{\scriptsize 0.18}\end{tabular} \\
+R-mix-s-fit-T3 & \begin{tabular}{@{}c@{}}-0.00\%\\{\scriptsize 0.16}\end{tabular} \\
+R-ridge-fit-T3 & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.58\%}\\{\scriptsize 0.16}\end{tabular} \\
+R-ridge-h-fit-T3 & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-19.93\%}\\{\scriptsize 0.20}\end{tabular} \\
+full-ridge-h-fit-T3 & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-33.17\%}\\{\scriptsize 0.22}\end{tabular} \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}

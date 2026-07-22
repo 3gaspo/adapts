@@ -1,0 +1,310 @@
+
+2026-07-21T10:35:47+02:00 job start kind=baselines experiment_mode=small skip_complete=true tasks=72 datasets=Traffic,Electricity,Solar models=chronos settings=168:24,504:24,504:168,504:504 distance_spaces=raw,instance neighbors=1,3,10
+2026-07-21 10:35:49,606 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:35:49+02:00 baselines start configuration=1/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:35:52,155 INFO [__main__] ========================================================================
+2026-07-21 10:35:52,157 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted
+2026-07-21 10:35:52,157 INFO [__main__] payload load start
+2026-07-21 10:36:00,091 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:36:00,091 INFO [__main__] mixture fitting start
+2026-07-21 10:36:01,482 INFO [__main__] mixture fitting done
+2026-07-21 10:36:01,483 INFO [__main__] evaluation start split=eval
+2026-07-21 10:36:01,531 INFO [__main__] evaluation done rows=17
+2026-07-21 10:36:02,384 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/baselines
+2026-07-21 10:36:02,384 INFO [__main__] experiment done seconds=10.23
+2026-07-21 10:36:02,384 INFO [__main__] ========================================================================
+2026-07-21T10:36:02+02:00 baselines done configuration=1/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-21 10:36:04,649 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:36:04+02:00 baselines start configuration=2/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:36:07,032 INFO [__main__] ========================================================================
+2026-07-21 10:36:07,035 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted
+2026-07-21 10:36:07,035 INFO [__main__] payload load start
+2026-07-21 10:36:18,966 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:36:18,966 INFO [__main__] mixture fitting start
+2026-07-21 10:36:21,790 INFO [__main__] mixture fitting done
+2026-07-21 10:36:21,791 INFO [__main__] evaluation start split=eval
+2026-07-21 10:36:21,837 INFO [__main__] evaluation done rows=17
+2026-07-21 10:36:22,656 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/baselines
+2026-07-21 10:36:22,656 INFO [__main__] experiment done seconds=15.62
+2026-07-21 10:36:22,656 INFO [__main__] ========================================================================
+2026-07-21T10:36:23+02:00 baselines done configuration=2/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online
+2026-07-21 10:36:24,913 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:36:25+02:00 baselines start configuration=3/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:36:27,337 INFO [__main__] ========================================================================
+2026-07-21 10:36:27,340 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted
+2026-07-21 10:36:27,340 INFO [__main__] payload load start
+2026-07-21 10:36:56,893 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:36:56,893 INFO [__main__] mixture fitting start
+2026-07-21 10:37:03,668 INFO [__main__] mixture fitting done
+2026-07-21 10:37:03,668 INFO [__main__] evaluation start split=eval
+2026-07-21 10:37:03,707 INFO [__main__] evaluation done rows=17
+2026-07-21 10:37:04,571 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/baselines
+2026-07-21 10:37:04,571 INFO [__main__] experiment done seconds=37.23
+2026-07-21 10:37:04,571 INFO [__main__] ========================================================================
+2026-07-21T10:37:05+02:00 baselines done configuration=3/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online
+2026-07-21 10:37:07,130 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:37:07+02:00 baselines start configuration=4/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:37:09,543 INFO [__main__] ========================================================================
+2026-07-21 10:37:09,545 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted
+2026-07-21 10:37:09,545 INFO [__main__] payload load start
+2026-07-21 10:37:16,607 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:37:16,607 INFO [__main__] mixture fitting start
+2026-07-21 10:37:17,970 INFO [__main__] mixture fitting done
+2026-07-21 10:37:17,971 INFO [__main__] evaluation start split=eval
+2026-07-21 10:37:18,019 INFO [__main__] evaluation done rows=17
+2026-07-21 10:37:18,870 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/baselines
+2026-07-21 10:37:18,870 INFO [__main__] experiment done seconds=9.33
+2026-07-21 10:37:18,870 INFO [__main__] ========================================================================
+2026-07-21T10:37:19+02:00 baselines done configuration=4/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-21 10:37:21,108 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:37:21+02:00 baselines start configuration=5/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:37:23,515 INFO [__main__] ========================================================================
+2026-07-21 10:37:23,518 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted
+2026-07-21 10:37:23,518 INFO [__main__] payload load start
+2026-07-21 10:37:35,708 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:37:35,709 INFO [__main__] mixture fitting start
+2026-07-21 10:37:38,540 INFO [__main__] mixture fitting done
+2026-07-21 10:37:38,540 INFO [__main__] evaluation start split=eval
+2026-07-21 10:37:38,586 INFO [__main__] evaluation done rows=17
+2026-07-21 10:37:39,442 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/baselines
+2026-07-21 10:37:39,442 INFO [__main__] experiment done seconds=15.93
+2026-07-21 10:37:39,442 INFO [__main__] ========================================================================
+2026-07-21T10:37:39+02:00 baselines done configuration=5/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online
+2026-07-21 10:37:41,700 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:37:41+02:00 baselines start configuration=6/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:37:44,103 INFO [__main__] ========================================================================
+2026-07-21 10:37:44,105 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted
+2026-07-21 10:37:44,105 INFO [__main__] payload load start
+2026-07-21 10:38:15,197 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:38:15,197 INFO [__main__] mixture fitting start
+2026-07-21 10:38:22,009 INFO [__main__] mixture fitting done
+2026-07-21 10:38:22,010 INFO [__main__] evaluation start split=eval
+2026-07-21 10:38:22,049 INFO [__main__] evaluation done rows=17
+2026-07-21 10:38:22,902 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/baselines
+2026-07-21 10:38:22,903 INFO [__main__] experiment done seconds=38.80
+2026-07-21 10:38:22,903 INFO [__main__] ========================================================================
+2026-07-21T10:38:23+02:00 baselines done configuration=6/72 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-21 10:38:25,394 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:38:25+02:00 baselines start configuration=7/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:38:27,745 INFO [__main__] ========================================================================
+2026-07-21 10:38:27,747 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted
+2026-07-21 10:38:27,747 INFO [__main__] payload load start
+2026-07-21 10:38:40,837 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:38:40,837 INFO [__main__] mixture fitting start
+2026-07-21 10:38:42,114 INFO [__main__] mixture fitting done
+2026-07-21 10:38:42,114 INFO [__main__] evaluation start split=eval
+2026-07-21 10:38:42,177 INFO [__main__] evaluation done rows=17
+2026-07-21 10:38:43,007 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/baselines
+2026-07-21 10:38:43,007 INFO [__main__] experiment done seconds=15.26
+2026-07-21 10:38:43,007 INFO [__main__] ========================================================================
+2026-07-21T10:38:43+02:00 baselines done configuration=7/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-21 10:38:45,244 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:38:45+02:00 baselines start configuration=8/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:38:47,638 INFO [__main__] ========================================================================
+2026-07-21 10:38:47,640 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted
+2026-07-21 10:38:47,640 INFO [__main__] payload load start
+2026-07-21 10:39:12,338 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:39:12,338 INFO [__main__] mixture fitting start
+2026-07-21 10:39:15,031 INFO [__main__] mixture fitting done
+2026-07-21 10:39:15,031 INFO [__main__] evaluation start split=eval
+2026-07-21 10:39:15,092 INFO [__main__] evaluation done rows=17
+2026-07-21 10:39:15,856 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/baselines
+2026-07-21 10:39:15,858 INFO [__main__] experiment done seconds=28.22
+2026-07-21 10:39:15,858 INFO [__main__] ========================================================================
+2026-07-21T10:39:16+02:00 baselines done configuration=8/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online
+2026-07-21 10:39:18,191 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:39:18+02:00 baselines start configuration=9/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:39:20,633 INFO [__main__] ========================================================================
+2026-07-21 10:39:20,636 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted
+2026-07-21 10:39:20,636 INFO [__main__] payload load start
+2026-07-21 10:40:29,836 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:40:29,836 INFO [__main__] mixture fitting start
+2026-07-21 10:40:36,171 INFO [__main__] mixture fitting done
+2026-07-21 10:40:36,171 INFO [__main__] evaluation start split=eval
+2026-07-21 10:40:36,225 INFO [__main__] evaluation done rows=17
+2026-07-21 10:40:37,021 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/baselines
+2026-07-21 10:40:37,022 INFO [__main__] experiment done seconds=76.39
+2026-07-21 10:40:37,022 INFO [__main__] ========================================================================
+2026-07-21T10:40:37+02:00 baselines done configuration=9/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online
+2026-07-21 10:40:39,694 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:40:39+02:00 baselines start configuration=10/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:40:42,111 INFO [__main__] ========================================================================
+2026-07-21 10:40:42,113 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted
+2026-07-21 10:40:42,114 INFO [__main__] payload load start
+2026-07-21 10:40:55,559 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:40:55,559 INFO [__main__] mixture fitting start
+2026-07-21 10:40:56,860 INFO [__main__] mixture fitting done
+2026-07-21 10:40:56,860 INFO [__main__] evaluation start split=eval
+2026-07-21 10:40:56,923 INFO [__main__] evaluation done rows=17
+2026-07-21 10:40:57,688 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/baselines
+2026-07-21 10:40:57,688 INFO [__main__] experiment done seconds=15.58
+2026-07-21 10:40:57,688 INFO [__main__] ========================================================================
+2026-07-21T10:40:58+02:00 baselines done configuration=10/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-21 10:40:59,918 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:41:00+02:00 baselines start configuration=11/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:41:02,290 INFO [__main__] ========================================================================
+2026-07-21 10:41:02,293 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted
+2026-07-21 10:41:02,293 INFO [__main__] payload load start
+2026-07-21 10:41:31,165 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:41:31,166 INFO [__main__] mixture fitting start
+2026-07-21 10:41:33,793 INFO [__main__] mixture fitting done
+2026-07-21 10:41:33,793 INFO [__main__] evaluation start split=eval
+2026-07-21 10:41:33,853 INFO [__main__] evaluation done rows=17
+2026-07-21 10:41:34,645 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/baselines
+2026-07-21 10:41:34,645 INFO [__main__] experiment done seconds=32.35
+2026-07-21 10:41:34,645 INFO [__main__] ========================================================================
+2026-07-21T10:41:35+02:00 baselines done configuration=11/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online
+2026-07-21 10:41:36,877 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:41:37+02:00 baselines start configuration=12/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:41:39,455 INFO [__main__] ========================================================================
+2026-07-21 10:41:39,458 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted
+2026-07-21 10:41:39,458 INFO [__main__] payload load start
+2026-07-21 10:42:52,797 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:42:52,797 INFO [__main__] mixture fitting start
+2026-07-21 10:42:59,104 INFO [__main__] mixture fitting done
+2026-07-21 10:42:59,104 INFO [__main__] evaluation start split=eval
+2026-07-21 10:42:59,158 INFO [__main__] evaluation done rows=17
+2026-07-21 10:42:59,927 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/baselines
+2026-07-21 10:42:59,927 INFO [__main__] experiment done seconds=80.47
+2026-07-21 10:42:59,927 INFO [__main__] ========================================================================
+2026-07-21T10:43:00+02:00 baselines done configuration=12/72 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-21 10:43:02,627 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:43:02+02:00 baselines start configuration=13/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:43:05,017 INFO [__main__] ========================================================================
+2026-07-21 10:43:05,019 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted
+2026-07-21 10:43:05,019 INFO [__main__] payload load start
+2026-07-21 10:43:21,589 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:43:21,589 INFO [__main__] mixture fitting start
+2026-07-21 10:43:32,327 INFO [__main__] mixture fitting done
+2026-07-21 10:43:32,327 INFO [__main__] evaluation start split=eval
+2026-07-21 10:43:32,561 INFO [__main__] evaluation done rows=17
+2026-07-21 10:43:38,980 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/baselines
+2026-07-21 10:43:38,980 INFO [__main__] experiment done seconds=33.96
+2026-07-21 10:43:38,980 INFO [__main__] ========================================================================
+2026-07-21T10:43:39+02:00 baselines done configuration=13/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-07-21 10:43:41,317 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:43:41+02:00 baselines start configuration=14/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:43:43,736 INFO [__main__] ========================================================================
+2026-07-21 10:43:43,739 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted
+2026-07-21 10:43:43,739 INFO [__main__] payload load start
+2026-07-21 10:44:19,861 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:44:19,861 INFO [__main__] mixture fitting start
+2026-07-21 10:44:38,595 INFO [__main__] mixture fitting done
+2026-07-21 10:44:38,595 INFO [__main__] evaluation start split=eval
+2026-07-21 10:44:38,842 INFO [__main__] evaluation done rows=17
+2026-07-21 10:44:44,925 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/baselines
+2026-07-21 10:44:44,925 INFO [__main__] experiment done seconds=61.19
+2026-07-21 10:44:44,925 INFO [__main__] ========================================================================
+2026-07-21T10:44:45+02:00 baselines done configuration=14/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online
+2026-07-21 10:44:47,734 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:44:47+02:00 baselines start configuration=15/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:44:50,174 INFO [__main__] ========================================================================
+2026-07-21 10:44:50,177 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted
+2026-07-21 10:44:50,177 INFO [__main__] payload load start
+2026-07-21 10:46:24,878 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:46:24,878 INFO [__main__] mixture fitting start
+2026-07-21 10:47:10,459 INFO [__main__] mixture fitting done
+2026-07-21 10:47:10,459 INFO [__main__] evaluation start split=eval
+2026-07-21 10:47:10,723 INFO [__main__] evaluation done rows=17
+2026-07-21 10:47:17,795 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/baselines
+2026-07-21 10:47:17,796 INFO [__main__] experiment done seconds=147.62
+2026-07-21 10:47:17,796 INFO [__main__] ========================================================================
+2026-07-21T10:47:18+02:00 baselines done configuration=15/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online
+2026-07-21 10:47:20,459 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:47:20+02:00 baselines start configuration=16/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:47:22,878 INFO [__main__] ========================================================================
+2026-07-21 10:47:22,880 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted
+2026-07-21 10:47:22,880 INFO [__main__] payload load start
+2026-07-21 10:47:41,479 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:47:41,480 INFO [__main__] mixture fitting start
+2026-07-21 10:47:50,773 INFO [__main__] mixture fitting done
+2026-07-21 10:47:50,774 INFO [__main__] evaluation start split=eval
+2026-07-21 10:47:51,014 INFO [__main__] evaluation done rows=17
+2026-07-21 10:47:56,871 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/baselines
+2026-07-21 10:47:56,871 INFO [__main__] experiment done seconds=33.99
+2026-07-21 10:47:56,872 INFO [__main__] ========================================================================
+2026-07-21T10:47:57+02:00 baselines done configuration=16/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online
+2026-07-21 10:47:59,163 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:47:59+02:00 baselines start configuration=17/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:48:01,532 INFO [__main__] ========================================================================
+2026-07-21 10:48:01,535 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted
+2026-07-21 10:48:01,535 INFO [__main__] payload load start
+2026-07-21 10:48:42,114 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:48:42,114 INFO [__main__] mixture fitting start
+2026-07-21 10:49:02,055 INFO [__main__] mixture fitting done
+2026-07-21 10:49:02,055 INFO [__main__] evaluation start split=eval
+2026-07-21 10:49:02,291 INFO [__main__] evaluation done rows=17
+2026-07-21 10:49:08,416 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/baselines
+2026-07-21 10:49:08,416 INFO [__main__] experiment done seconds=66.88
+2026-07-21 10:49:08,416 INFO [__main__] ========================================================================
+2026-07-21T10:49:08+02:00 baselines done configuration=17/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_3_online
+2026-07-21 10:49:11,196 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:49:11+02:00 baselines start configuration=18/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:49:13,601 INFO [__main__] ========================================================================
+2026-07-21 10:49:13,603 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/extracted
+2026-07-21 10:49:13,603 INFO [__main__] payload load start
+2026-07-21 10:50:47,248 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:50:47,248 INFO [__main__] mixture fitting start
+2026-07-21 10:51:32,386 INFO [__main__] mixture fitting done
+2026-07-21 10:51:32,386 INFO [__main__] evaluation start split=eval
+2026-07-21 10:51:32,630 INFO [__main__] evaluation done rows=17
+2026-07-21 10:51:38,686 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/baselines
+2026-07-21 10:51:38,686 INFO [__main__] experiment done seconds=145.09
+2026-07-21 10:51:38,686 INFO [__main__] ========================================================================
+2026-07-21T10:51:39+02:00 baselines done configuration=18/72 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_10_online
+2026-07-21 10:51:41,262 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/extracted status=complete
+
+2026-07-21T10:51:41+02:00 baselines start configuration=19/72 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_1_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:51:43,651 INFO [__main__] ========================================================================
+2026-07-21 10:51:43,654 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/extracted
+2026-07-21 10:51:43,654 INFO [__main__] payload load start
+2026-07-21 10:52:07,559 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:52:07,559 INFO [__main__] mixture fitting start
+2026-07-21 10:52:35,557 INFO [__main__] mixture fitting done
+2026-07-21 10:52:35,557 INFO [__main__] evaluation start split=eval
+2026-07-21 10:52:36,688 INFO [__main__] evaluation done rows=17
+2026-07-21 10:52:54,065 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/baselines
+2026-07-21 10:52:54,065 INFO [__main__] experiment done seconds=70.41
+2026-07-21 10:52:54,065 INFO [__main__] ========================================================================
+2026-07-21T10:52:54+02:00 baselines done configuration=19/72 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-07-21 10:52:57,014 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/extracted status=complete
+
+2026-07-21T10:52:57+02:00 baselines start configuration=20/72 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_3_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:52:59,496 INFO [__main__] ========================================================================
+2026-07-21 10:52:59,499 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/extracted
+2026-07-21 10:52:59,499 INFO [__main__] payload load start
+2026-07-21 10:53:47,130 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:53:47,131 INFO [__main__] mixture fitting start
+2026-07-21 10:54:41,052 INFO [__main__] mixture fitting done
+2026-07-21 10:54:41,052 INFO [__main__] evaluation start split=eval
+2026-07-21 10:54:42,163 INFO [__main__] evaluation done rows=17
+2026-07-21 10:54:56,150 INFO [__main__] outputs saved dir=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/baselines
+2026-07-21 10:54:56,150 INFO [__main__] experiment done seconds=116.65
+2026-07-21 10:54:56,150 INFO [__main__] ========================================================================
+2026-07-21T10:54:56+02:00 baselines done configuration=20/72 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_3_online
+2026-07-21 10:54:59,776 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_10_online/extracted status=complete
+
+2026-07-21T10:55:00+02:00 baselines start configuration=21/72 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_10_online family=baselines l2=0.001 fit_baselines_on_eval=true seed=1
+2026-07-21 10:55:02,391 INFO [__main__] ========================================================================
+2026-07-21 10:55:02,394 INFO [__main__] experiment start kind=baselines input=outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_10_online/extracted
+2026-07-21 10:55:02,394 INFO [__main__] payload load start
+2026-07-21 10:57:06,565 INFO [__main__] payload load done splits=train,oracle,eval
+2026-07-21 10:57:06,565 INFO [__main__] mixture fitting start

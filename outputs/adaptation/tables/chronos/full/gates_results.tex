@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_3/ctx & raw\_L2\_3/bayes-s & raw\_L2\_3/bayes-h & raw\_L2\_3/cb-cls-s & raw\_L2\_3/cb-cls-h & raw\_L2\_3/cb-reg-s & raw\_L2\_3/cb-reg-h \\
+\midrule
+\multirow{1}{*}{electricity} & 168--24 & $\times 10^{-1}$ & 1.63 & 1.67 & 1.67 & 1.67 & \textbf{1.63} & 1.66 & 1.67 & 1.67 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results}
+\end{table}

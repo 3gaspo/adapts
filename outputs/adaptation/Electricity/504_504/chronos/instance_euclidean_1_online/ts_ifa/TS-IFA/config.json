@@ -1,0 +1,54 @@
+{
+  "name": "TS-IFA",
+  "model": {
+    "lags": 504,
+    "horizon": 504,
+    "neighbors": 1,
+    "residual_heads": 4,
+    "memory_heads": 4,
+    "mixture_heads": 4,
+    "residual_attn_dim": 32,
+    "memory_attn_dim": 32,
+    "mixture_attn_dim": 32,
+    "residual_hidden": 128,
+    "memory_hidden": 128,
+    "mixture_hidden": 128,
+    "mixture_key_dim": 64,
+    "mixture_gate_init": -6.0,
+    "dropout": 0.0
+  },
+  "parameters": {
+    "total": 2215992,
+    "trainable": 2215992
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "lr": 1e-05,
+    "weight_decay": 0.0001,
+    "loss": "normalized_mse",
+    "normalization": "instance",
+    "beta": 0.01,
+    "gamma": 0.01,
+    "gamma_components": [
+      "residual_delta",
+      "memory_delta"
+    ],
+    "train_split": "T1",
+    "validation_split": "T2",
+    "final_eval_split": "T3",
+    "random_epoch_size": 256,
+    "steps_requested": 10000,
+    "steps": 10000,
+    "steps_per_epoch": 1,
+    "valid_eval_freq": 1000,
+    "logging_eval_freq": 1000,
+    "plot_step_train_loss": false,
+    "early_stopping_patience": 0,
+    "early_stopping_min_delta": 0.0,
+    "best_validation_step": 1000,
+    "best_validation_nmse": 0.4496428960558025,
+    "restored_best_validation": true,
+    "stopped_early": false,
+    "seconds": 131.28720146790147
+  }
+}

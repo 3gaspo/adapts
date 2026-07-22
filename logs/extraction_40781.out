@@ -1,0 +1,596 @@
+
+2026-07-21T12:06:06+02:00 job start kind=adaptation_extraction experiment_mode=small skip_complete=true tasks=28 datasets=Traffic models=chronos settings=168:24,504:24,504:168,504:504 distance_spaces=raw,instance neighbors=1,3,10
+
+2026-07-21T12:06:06+02:00 extraction start configuration=1/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=vanilla datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 12:06:09,561 INFO [__main__] ========================================================================
+2026-07-21 12:06:09,561 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-21 12:06:09,919 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/vanilla reason=completion marker belongs to a different extraction configuration
+2026-07-21 12:06:09,920 INFO [__main__] dataset load start
+2026-07-21 12:06:09,921 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 12:06:10,998 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 12:06:10,998 INFO [__main__] model load start
+2026-07-21 12:06:21,805 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 12:06:21,807 INFO [__main__] extraction start split=train queries=248
+2026-07-21 12:07:18,041 INFO [__main__] extraction done split=train
+2026-07-21 12:07:18,041 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 12:07:45,576 INFO [__main__] extraction done split=oracle
+2026-07-21 12:07:45,576 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 12:07:53,080 INFO [__main__] extraction done split=eval
+2026-07-21 12:07:53,300 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/vanilla/vanilla_metrics.json
+2026-07-21 12:07:53,304 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/vanilla/extraction_manifest.json
+2026-07-21 12:07:53,304 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/vanilla
+2026-07-21 12:07:53,304 INFO [__main__] experiment done seconds=103.74
+2026-07-21 12:07:53,304 INFO [__main__] ========================================================================
+2026-07-21T12:07:54+02:00 extraction done configuration=1/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=vanilla
+
+2026-07-21T12:07:54+02:00 extraction start configuration=2/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 12:07:56,635 INFO [__main__] ========================================================================
+2026-07-21 12:07:56,635 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-21 12:07:56,934 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 12:07:56,935 INFO [__main__] dataset load start
+2026-07-21 12:07:56,936 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 12:07:58,007 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 12:07:58,007 INFO [__main__] model load start
+2026-07-21 12:08:08,816 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 12:08:08,818 INFO [__main__] extraction start split=train queries=248
+2026-07-21 12:13:55,102 INFO [__main__] extraction done split=train
+2026-07-21 12:13:55,102 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 12:16:14,528 INFO [__main__] extraction done split=oracle
+2026-07-21 12:16:14,528 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 12:16:50,408 INFO [__main__] extraction done split=eval
+2026-07-21 12:16:51,305 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 12:16:51,305 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_1_online/extracted
+2026-07-21 12:16:51,305 INFO [__main__] experiment done seconds=534.67
+2026-07-21 12:16:51,305 INFO [__main__] ========================================================================
+2026-07-21T12:16:52+02:00 extraction done configuration=2/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-07-21T12:16:52+02:00 extraction start configuration=3/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 12:16:54,644 INFO [__main__] ========================================================================
+2026-07-21 12:16:54,644 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=3 distance=raw/euclidean
+2026-07-21 12:16:54,950 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 12:16:54,951 INFO [__main__] dataset load start
+2026-07-21 12:16:54,952 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 12:16:56,026 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 12:16:56,026 INFO [__main__] model load start
+2026-07-21 12:17:06,676 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 12:17:06,678 INFO [__main__] extraction start split=train queries=248
+2026-07-21 12:26:56,587 INFO [__main__] extraction done split=train
+2026-07-21 12:26:56,587 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 12:30:54,292 INFO [__main__] extraction done split=oracle
+2026-07-21 12:30:54,292 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 12:31:55,273 INFO [__main__] extraction done split=eval
+2026-07-21 12:31:56,224 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 12:31:56,225 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_3_online/extracted
+2026-07-21 12:31:56,225 INFO [__main__] experiment done seconds=901.58
+2026-07-21 12:31:56,225 INFO [__main__] ========================================================================
+2026-07-21T12:31:57+02:00 extraction done configuration=3/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_3_online
+
+2026-07-21T12:31:57+02:00 extraction start configuration=4/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 12:31:59,605 INFO [__main__] ========================================================================
+2026-07-21 12:31:59,606 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=10 distance=raw/euclidean
+2026-07-21 12:31:59,950 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 12:31:59,951 INFO [__main__] dataset load start
+2026-07-21 12:31:59,952 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 12:32:01,053 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 12:32:01,053 INFO [__main__] model load start
+2026-07-21 12:32:11,689 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 12:32:11,691 INFO [__main__] extraction start split=train queries=248
+2026-07-21 12:56:29,900 INFO [__main__] extraction done split=train
+2026-07-21 12:56:29,900 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 13:06:37,186 INFO [__main__] extraction done split=oracle
+2026-07-21 13:06:37,186 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 13:09:16,434 INFO [__main__] extraction done split=eval
+2026-07-21 13:09:17,805 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 13:09:17,805 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/raw_euclidean_10_online/extracted
+2026-07-21 13:09:17,805 INFO [__main__] experiment done seconds=2238.20
+2026-07-21 13:09:17,805 INFO [__main__] ========================================================================
+2026-07-21T13:09:18+02:00 extraction done configuration=4/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=raw_euclidean_10_online
+
+2026-07-21T13:09:18+02:00 extraction start configuration=5/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 13:09:21,424 INFO [__main__] ========================================================================
+2026-07-21 13:09:21,425 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=1 distance=instance/euclidean
+2026-07-21 13:09:21,767 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 13:09:21,807 INFO [__main__] dataset load start
+2026-07-21 13:09:21,808 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 13:09:22,902 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 13:09:22,903 INFO [__main__] model load start
+2026-07-21 13:09:33,873 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 13:09:33,875 INFO [__main__] extraction start split=train queries=248
+2026-07-21 13:14:56,747 INFO [__main__] extraction done split=train
+2026-07-21 13:14:56,747 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 13:17:10,809 INFO [__main__] extraction done split=oracle
+2026-07-21 13:17:10,809 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 13:17:46,031 INFO [__main__] extraction done split=eval
+2026-07-21 13:17:46,855 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 13:17:46,855 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_1_online/extracted
+2026-07-21 13:17:46,855 INFO [__main__] experiment done seconds=505.43
+2026-07-21 13:17:46,855 INFO [__main__] ========================================================================
+2026-07-21T13:17:47+02:00 extraction done configuration=5/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-07-21T13:17:47+02:00 extraction start configuration=6/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 13:17:49,949 INFO [__main__] ========================================================================
+2026-07-21 13:17:49,949 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=3 distance=instance/euclidean
+2026-07-21 13:17:50,385 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 13:17:50,387 INFO [__main__] dataset load start
+2026-07-21 13:17:50,388 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 13:17:51,472 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 13:17:51,472 INFO [__main__] model load start
+2026-07-21 13:18:02,089 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 13:18:02,091 INFO [__main__] extraction start split=train queries=248
+2026-07-21 13:27:50,878 INFO [__main__] extraction done split=train
+2026-07-21 13:27:50,878 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 13:31:51,964 INFO [__main__] extraction done split=oracle
+2026-07-21 13:31:51,965 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 13:32:54,243 INFO [__main__] extraction done split=eval
+2026-07-21 13:32:55,219 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 13:32:55,219 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_3_online/extracted
+2026-07-21 13:32:55,219 INFO [__main__] experiment done seconds=905.27
+2026-07-21 13:32:55,219 INFO [__main__] ========================================================================
+2026-07-21T13:32:56+02:00 extraction done configuration=6/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_3_online
+
+2026-07-21T13:32:56+02:00 extraction start configuration=7/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 13:32:58,373 INFO [__main__] ========================================================================
+2026-07-21 13:32:58,373 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=168 horizon=24 neighbors=10 distance=instance/euclidean
+2026-07-21 13:32:58,743 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 13:32:58,744 INFO [__main__] dataset load start
+2026-07-21 13:32:58,745 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 13:32:59,834 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 13:32:59,834 INFO [__main__] model load start
+2026-07-21 13:33:10,528 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 13:33:10,530 INFO [__main__] extraction start split=train queries=248
+2026-07-21 13:56:52,449 INFO [__main__] extraction done split=train
+2026-07-21 13:56:52,450 INFO [__main__] extraction start split=oracle queries=102
+2026-07-21 14:06:42,619 INFO [__main__] extraction done split=oracle
+2026-07-21 14:06:42,619 INFO [__main__] extraction start split=eval queries=26
+2026-07-21 14:09:24,361 INFO [__main__] extraction done split=eval
+2026-07-21 14:09:25,273 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 14:09:25,273 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos/instance_euclidean_10_online/extracted
+2026-07-21 14:09:25,273 INFO [__main__] experiment done seconds=2186.90
+2026-07-21 14:09:25,273 INFO [__main__] ========================================================================
+2026-07-21T14:09:26+02:00 extraction done configuration=7/28 dataset=Traffic model=chronos lags=168 horizon=24 retrieval=instance_euclidean_10_online
+
+2026-07-21T14:09:26+02:00 extraction start configuration=8/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=vanilla datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 14:09:28,855 INFO [__main__] ========================================================================
+2026-07-21 14:09:28,856 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-21 14:09:29,209 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/vanilla reason=completion marker belongs to a different extraction configuration
+2026-07-21 14:09:29,211 INFO [__main__] dataset load start
+2026-07-21 14:09:29,212 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 14:09:30,287 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 14:09:30,287 INFO [__main__] model load start
+2026-07-21 14:09:41,156 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 14:09:41,158 INFO [__main__] extraction start split=train queries=234
+2026-07-21 14:12:05,741 INFO [__main__] extraction done split=train
+2026-07-21 14:12:05,741 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 14:12:59,886 INFO [__main__] extraction done split=oracle
+2026-07-21 14:12:59,886 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 14:13:16,124 INFO [__main__] extraction done split=eval
+2026-07-21 14:13:16,620 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/vanilla/vanilla_metrics.json
+2026-07-21 14:13:16,625 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/vanilla/extraction_manifest.json
+2026-07-21 14:13:16,625 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/vanilla
+2026-07-21 14:13:16,625 INFO [__main__] experiment done seconds=227.77
+2026-07-21 14:13:16,625 INFO [__main__] ========================================================================
+2026-07-21T14:13:17+02:00 extraction done configuration=8/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=vanilla
+
+2026-07-21T14:13:17+02:00 extraction start configuration=9/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 14:13:20,083 INFO [__main__] ========================================================================
+2026-07-21 14:13:20,083 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-21 14:13:20,381 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 14:13:20,382 INFO [__main__] dataset load start
+2026-07-21 14:13:20,383 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 14:13:22,109 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 14:13:22,109 INFO [__main__] model load start
+2026-07-21 14:13:33,052 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 14:13:33,054 INFO [__main__] extraction start split=train queries=234
+2026-07-21 14:24:13,593 INFO [__main__] extraction done split=train
+2026-07-21 14:24:13,593 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 14:28:09,502 INFO [__main__] extraction done split=oracle
+2026-07-21 14:28:09,502 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 14:29:14,248 INFO [__main__] extraction done split=eval
+2026-07-21 14:29:15,274 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 14:29:15,274 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_1_online/extracted
+2026-07-21 14:29:15,274 INFO [__main__] experiment done seconds=955.19
+2026-07-21 14:29:15,274 INFO [__main__] ========================================================================
+2026-07-21T14:29:16+02:00 extraction done configuration=9/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-07-21T14:29:16+02:00 extraction start configuration=10/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 14:29:18,858 INFO [__main__] ========================================================================
+2026-07-21 14:29:18,858 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=3 distance=raw/euclidean
+2026-07-21 14:29:19,151 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 14:29:19,153 INFO [__main__] dataset load start
+2026-07-21 14:29:19,154 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 14:29:20,272 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 14:29:20,273 INFO [__main__] model load start
+2026-07-21 14:29:31,289 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 14:29:31,291 INFO [__main__] extraction start split=train queries=234
+2026-07-21 14:49:20,450 INFO [__main__] extraction done split=train
+2026-07-21 14:49:20,451 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 14:56:51,076 INFO [__main__] extraction done split=oracle
+2026-07-21 14:56:51,076 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 14:58:54,082 INFO [__main__] extraction done split=eval
+2026-07-21 14:58:55,139 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 14:58:55,139 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_3_online/extracted
+2026-07-21 14:58:55,139 INFO [__main__] experiment done seconds=1776.28
+2026-07-21 14:58:55,139 INFO [__main__] ========================================================================
+2026-07-21T14:58:56+02:00 extraction done configuration=10/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_3_online
+
+2026-07-21T14:58:56+02:00 extraction start configuration=11/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 14:58:58,892 INFO [__main__] ========================================================================
+2026-07-21 14:58:58,893 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=10 distance=raw/euclidean
+2026-07-21 14:58:59,175 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 14:58:59,177 INFO [__main__] dataset load start
+2026-07-21 14:58:59,178 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 14:59:00,266 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 14:59:00,266 INFO [__main__] model load start
+2026-07-21 14:59:12,296 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 14:59:12,298 INFO [__main__] extraction start split=train queries=234
+2026-07-21 15:50:56,581 INFO [__main__] extraction done split=train
+2026-07-21 15:50:56,581 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 16:10:15,084 INFO [__main__] extraction done split=oracle
+2026-07-21 16:10:15,084 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 16:15:28,222 INFO [__main__] extraction done split=eval
+2026-07-21 16:15:29,291 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 16:15:29,292 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/raw_euclidean_10_online/extracted
+2026-07-21 16:15:29,292 INFO [__main__] experiment done seconds=4590.40
+2026-07-21 16:15:29,292 INFO [__main__] ========================================================================
+2026-07-21T16:15:30+02:00 extraction done configuration=11/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=raw_euclidean_10_online
+
+2026-07-21T16:15:30+02:00 extraction start configuration=12/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 16:15:33,046 INFO [__main__] ========================================================================
+2026-07-21 16:15:33,046 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=1 distance=instance/euclidean
+2026-07-21 16:15:33,375 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 16:15:33,382 INFO [__main__] dataset load start
+2026-07-21 16:15:33,383 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 16:15:34,471 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 16:15:34,471 INFO [__main__] model load start
+2026-07-21 16:15:45,233 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 16:15:45,235 INFO [__main__] extraction start split=train queries=234
+2026-07-21 16:26:29,443 INFO [__main__] extraction done split=train
+2026-07-21 16:26:29,443 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 16:30:31,057 INFO [__main__] extraction done split=oracle
+2026-07-21 16:30:31,057 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 16:31:36,279 INFO [__main__] extraction done split=eval
+2026-07-21 16:31:37,370 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 16:31:37,370 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_1_online/extracted
+2026-07-21 16:31:37,370 INFO [__main__] experiment done seconds=964.32
+2026-07-21 16:31:37,370 INFO [__main__] ========================================================================
+2026-07-21T16:31:38+02:00 extraction done configuration=12/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-07-21T16:31:38+02:00 extraction start configuration=13/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 16:31:40,971 INFO [__main__] ========================================================================
+2026-07-21 16:31:40,971 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=3 distance=instance/euclidean
+2026-07-21 16:31:41,316 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 16:31:41,347 INFO [__main__] dataset load start
+2026-07-21 16:31:41,348 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 16:31:42,427 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 16:31:42,427 INFO [__main__] model load start
+2026-07-21 16:31:53,818 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 16:31:53,820 INFO [__main__] extraction start split=train queries=234
+2026-07-21 16:51:22,453 INFO [__main__] extraction done split=train
+2026-07-21 16:51:22,453 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 16:58:42,824 INFO [__main__] extraction done split=oracle
+2026-07-21 16:58:42,824 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 17:00:43,462 INFO [__main__] extraction done split=eval
+2026-07-21 17:00:44,729 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 17:00:44,729 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_3_online/extracted
+2026-07-21 17:00:44,729 INFO [__main__] experiment done seconds=1743.76
+2026-07-21 17:00:44,730 INFO [__main__] ========================================================================
+2026-07-21T17:00:45+02:00 extraction done configuration=13/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_3_online
+
+2026-07-21T17:00:45+02:00 extraction start configuration=14/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 17:00:48,408 INFO [__main__] ========================================================================
+2026-07-21 17:00:48,408 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=24 neighbors=10 distance=instance/euclidean
+2026-07-21 17:00:48,737 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 17:00:48,738 INFO [__main__] dataset load start
+2026-07-21 17:00:48,739 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 17:00:49,821 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 17:00:49,821 INFO [__main__] model load start
+2026-07-21 17:01:01,975 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 17:01:01,977 INFO [__main__] extraction start split=train queries=234
+2026-07-21 17:54:35,434 INFO [__main__] extraction done split=train
+2026-07-21 17:54:35,434 INFO [__main__] extraction start split=oracle queries=88
+2026-07-21 18:16:17,685 INFO [__main__] extraction done split=oracle
+2026-07-21 18:16:17,685 INFO [__main__] extraction start split=eval queries=24
+2026-07-21 18:21:41,396 INFO [__main__] extraction done split=eval
+2026-07-21 18:21:42,694 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 18:21:42,694 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_24/chronos/instance_euclidean_10_online/extracted
+2026-07-21 18:21:42,694 INFO [__main__] experiment done seconds=4854.29
+2026-07-21 18:21:42,694 INFO [__main__] ========================================================================
+2026-07-21T18:21:43+02:00 extraction done configuration=14/28 dataset=Traffic model=chronos lags=504 horizon=24 retrieval=instance_euclidean_10_online
+
+2026-07-21T18:21:43+02:00 extraction start configuration=15/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=vanilla datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 18:21:47,408 INFO [__main__] ========================================================================
+2026-07-21 18:21:47,409 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=0 distance=raw/euclidean
+2026-07-21 18:21:47,799 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/vanilla reason=completion marker belongs to a different extraction configuration
+2026-07-21 18:21:47,819 INFO [__main__] dataset load start
+2026-07-21 18:21:47,821 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 18:21:49,066 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 18:21:49,066 INFO [__main__] model load start
+2026-07-21 18:22:02,280 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 18:22:02,282 INFO [__main__] extraction start split=train queries=228
+2026-07-21 18:24:38,355 INFO [__main__] extraction done split=train
+2026-07-21 18:24:38,355 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 18:25:34,914 INFO [__main__] extraction done split=oracle
+2026-07-21 18:25:34,914 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 18:25:51,705 INFO [__main__] extraction done split=eval
+2026-07-21 18:25:52,528 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/vanilla/vanilla_metrics.json
+2026-07-21 18:25:52,533 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/vanilla/extraction_manifest.json
+2026-07-21 18:25:52,533 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/vanilla
+2026-07-21 18:25:52,533 INFO [__main__] experiment done seconds=245.12
+2026-07-21 18:25:52,533 INFO [__main__] ========================================================================
+2026-07-21T18:25:53+02:00 extraction done configuration=15/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=vanilla
+
+2026-07-21T18:25:53+02:00 extraction start configuration=16/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 18:25:56,701 INFO [__main__] ========================================================================
+2026-07-21 18:25:56,701 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=1 distance=raw/euclidean
+2026-07-21 18:25:56,953 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 18:25:56,971 INFO [__main__] dataset load start
+2026-07-21 18:25:56,972 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 18:25:58,057 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 18:25:58,057 INFO [__main__] model load start
+2026-07-21 18:26:11,193 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 18:26:11,195 INFO [__main__] extraction start split=train queries=228
+2026-07-21 18:38:19,281 INFO [__main__] extraction done split=train
+2026-07-21 18:38:19,281 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 18:42:44,096 INFO [__main__] extraction done split=oracle
+2026-07-21 18:42:44,096 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 18:43:56,879 INFO [__main__] extraction done split=eval
+2026-07-21 18:43:58,112 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 18:43:58,112 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_1_online/extracted
+2026-07-21 18:43:58,112 INFO [__main__] experiment done seconds=1081.41
+2026-07-21 18:43:58,112 INFO [__main__] ========================================================================
+2026-07-21T18:43:59+02:00 extraction done configuration=16/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-07-21T18:43:59+02:00 extraction start configuration=17/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 18:44:02,043 INFO [__main__] ========================================================================
+2026-07-21 18:44:02,043 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=3 distance=raw/euclidean
+2026-07-21 18:44:02,347 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 18:44:02,349 INFO [__main__] dataset load start
+2026-07-21 18:44:02,349 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 18:44:03,434 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 18:44:03,434 INFO [__main__] model load start
+2026-07-21 18:44:16,518 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 18:44:16,520 INFO [__main__] extraction start split=train queries=228
+2026-07-21 19:06:48,910 INFO [__main__] extraction done split=train
+2026-07-21 19:06:48,910 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 19:15:03,554 INFO [__main__] extraction done split=oracle
+2026-07-21 19:15:03,554 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 19:17:19,203 INFO [__main__] extraction done split=eval
+2026-07-21 19:17:20,283 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 19:17:20,283 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_3_online/extracted
+2026-07-21 19:17:20,283 INFO [__main__] experiment done seconds=1998.24
+2026-07-21 19:17:20,283 INFO [__main__] ========================================================================
+2026-07-21T19:17:21+02:00 extraction done configuration=17/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-07-21T19:17:21+02:00 extraction start configuration=18/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 19:17:23,876 INFO [__main__] ========================================================================
+2026-07-21 19:17:23,876 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-07-21 19:17:24,198 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 19:17:24,232 INFO [__main__] dataset load start
+2026-07-21 19:17:24,233 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 19:17:25,328 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 19:17:25,328 INFO [__main__] model load start
+2026-07-21 19:17:37,375 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 19:17:37,377 INFO [__main__] extraction start split=train queries=228
+2026-07-21 20:19:48,499 INFO [__main__] extraction done split=train
+2026-07-21 20:19:48,500 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 20:42:59,585 INFO [__main__] extraction done split=oracle
+2026-07-21 20:42:59,585 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 20:49:31,826 INFO [__main__] extraction done split=eval
+2026-07-21 20:49:32,970 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 20:49:32,970 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/raw_euclidean_10_online/extracted
+2026-07-21 20:49:32,970 INFO [__main__] experiment done seconds=5529.09
+2026-07-21 20:49:32,970 INFO [__main__] ========================================================================
+2026-07-21T20:49:34+02:00 extraction done configuration=18/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-07-21T20:49:34+02:00 extraction start configuration=19/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 20:49:37,786 INFO [__main__] ========================================================================
+2026-07-21 20:49:37,786 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=1 distance=instance/euclidean
+2026-07-21 20:49:38,050 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 20:49:38,053 INFO [__main__] dataset load start
+2026-07-21 20:49:38,054 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 20:49:39,128 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 20:49:39,128 INFO [__main__] model load start
+2026-07-21 20:49:50,022 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 20:49:50,024 INFO [__main__] extraction start split=train queries=228
+2026-07-21 21:02:20,404 INFO [__main__] extraction done split=train
+2026-07-21 21:02:20,404 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 21:06:46,899 INFO [__main__] extraction done split=oracle
+2026-07-21 21:06:46,899 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 21:08:02,325 INFO [__main__] extraction done split=eval
+2026-07-21 21:08:03,506 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 21:08:03,507 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_1_online/extracted
+2026-07-21 21:08:03,507 INFO [__main__] experiment done seconds=1105.72
+2026-07-21 21:08:03,507 INFO [__main__] ========================================================================
+2026-07-21T21:08:04+02:00 extraction done configuration=19/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_1_online
+
+2026-07-21T21:08:04+02:00 extraction start configuration=20/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 21:08:08,265 INFO [__main__] ========================================================================
+2026-07-21 21:08:08,265 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=3 distance=instance/euclidean
+2026-07-21 21:08:08,565 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 21:08:08,566 INFO [__main__] dataset load start
+2026-07-21 21:08:08,567 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 21:08:09,653 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 21:08:09,653 INFO [__main__] model load start
+2026-07-21 21:08:21,732 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 21:08:21,734 INFO [__main__] extraction start split=train queries=228
+2026-07-21 21:31:05,931 INFO [__main__] extraction done split=train
+2026-07-21 21:31:05,931 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 21:39:10,028 INFO [__main__] extraction done split=oracle
+2026-07-21 21:39:10,028 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 21:41:26,387 INFO [__main__] extraction done split=eval
+2026-07-21 21:41:27,499 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-21 21:41:27,499 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_3_online/extracted
+2026-07-21 21:41:27,499 INFO [__main__] experiment done seconds=1999.23
+2026-07-21 21:41:27,499 INFO [__main__] ========================================================================
+2026-07-21T21:41:28+02:00 extraction done configuration=20/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_3_online
+
+2026-07-21T21:41:28+02:00 extraction start configuration=21/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 21:41:31,052 INFO [__main__] ========================================================================
+2026-07-21 21:41:31,052 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=168 neighbors=10 distance=instance/euclidean
+2026-07-21 21:41:31,326 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 21:41:31,328 INFO [__main__] dataset load start
+2026-07-21 21:41:31,329 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 21:41:32,417 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 21:41:32,417 INFO [__main__] model load start
+2026-07-21 21:41:43,974 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 21:41:43,976 INFO [__main__] extraction start split=train queries=228
+2026-07-21 22:45:12,807 INFO [__main__] extraction done split=train
+2026-07-21 22:45:12,807 INFO [__main__] extraction start split=oracle queries=82
+2026-07-21 23:07:53,402 INFO [__main__] extraction done split=oracle
+2026-07-21 23:07:53,403 INFO [__main__] extraction start split=eval queries=23
+2026-07-21 23:14:14,989 INFO [__main__] extraction done split=eval
+2026-07-21 23:14:16,249 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-21 23:14:16,250 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos/instance_euclidean_10_online/extracted
+2026-07-21 23:14:16,250 INFO [__main__] experiment done seconds=5565.20
+2026-07-21 23:14:16,250 INFO [__main__] ========================================================================
+2026-07-21T23:14:17+02:00 extraction done configuration=21/28 dataset=Traffic model=chronos lags=504 horizon=168 retrieval=instance_euclidean_10_online
+
+2026-07-21T23:14:17+02:00 extraction start configuration=22/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=vanilla datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 23:14:20,622 INFO [__main__] ========================================================================
+2026-07-21 23:14:20,622 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=0 distance=raw/euclidean
+2026-07-21 23:14:20,965 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/vanilla reason=completion marker belongs to a different extraction configuration
+2026-07-21 23:14:20,968 INFO [__main__] dataset load start
+2026-07-21 23:14:20,968 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 23:14:22,113 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 23:14:22,113 INFO [__main__] model load start
+2026-07-21 23:14:34,534 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 23:14:34,535 INFO [__main__] extraction start split=train queries=214
+2026-07-21 23:18:24,676 INFO [__main__] extraction done split=train
+2026-07-21 23:18:24,676 INFO [__main__] extraction start split=oracle queries=68
+2026-07-21 23:19:39,563 INFO [__main__] extraction done split=oracle
+2026-07-21 23:19:39,563 INFO [__main__] extraction start split=eval queries=20
+2026-07-21 23:20:02,578 INFO [__main__] extraction done split=eval
+2026-07-21 23:20:04,375 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/vanilla/vanilla_metrics.json
+2026-07-21 23:20:04,398 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/vanilla/extraction_manifest.json
+2026-07-21 23:20:04,398 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/vanilla
+2026-07-21 23:20:04,398 INFO [__main__] experiment done seconds=343.78
+2026-07-21 23:20:04,398 INFO [__main__] ========================================================================
+2026-07-21T23:20:05+02:00 extraction done configuration=22/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=vanilla
+
+2026-07-21T23:20:05+02:00 extraction start configuration=23/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 23:20:08,122 INFO [__main__] ========================================================================
+2026-07-21 23:20:08,123 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=1 distance=raw/euclidean
+2026-07-21 23:20:08,428 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 23:20:08,429 INFO [__main__] dataset load start
+2026-07-21 23:20:08,430 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 23:20:09,579 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 23:20:09,579 INFO [__main__] model load start
+2026-07-21 23:20:21,280 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 23:20:21,282 INFO [__main__] extraction start split=train queries=214
+2026-07-21 23:37:31,373 INFO [__main__] extraction done split=train
+2026-07-21 23:37:31,373 INFO [__main__] extraction start split=oracle queries=68
+2026-07-21 23:43:02,384 INFO [__main__] extraction done split=oracle
+2026-07-21 23:43:02,384 INFO [__main__] extraction start split=eval queries=20
+2026-07-21 23:44:41,699 INFO [__main__] extraction done split=eval
+2026-07-21 23:44:42,983 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-21 23:44:42,983 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_1_online/extracted
+2026-07-21 23:44:42,983 INFO [__main__] experiment done seconds=1474.86
+2026-07-21 23:44:42,983 INFO [__main__] ========================================================================
+2026-07-21T23:44:44+02:00 extraction done configuration=23/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-07-21T23:44:44+02:00 extraction start configuration=24/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-21 23:44:47,335 INFO [__main__] ========================================================================
+2026-07-21 23:44:47,335 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=3 distance=raw/euclidean
+2026-07-21 23:44:47,640 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-21 23:44:47,642 INFO [__main__] dataset load start
+2026-07-21 23:44:47,643 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-21 23:44:48,800 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-21 23:44:48,800 INFO [__main__] model load start
+2026-07-21 23:45:00,037 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-21 23:45:00,039 INFO [__main__] extraction start split=train queries=214
+2026-07-22 00:17:04,897 INFO [__main__] extraction done split=train
+2026-07-22 00:17:04,897 INFO [__main__] extraction start split=oracle queries=68
+2026-07-22 00:27:07,113 INFO [__main__] extraction done split=oracle
+2026-07-22 00:27:07,113 INFO [__main__] extraction start split=eval queries=20
+2026-07-22 00:30:02,598 INFO [__main__] extraction done split=eval
+2026-07-22 00:30:03,785 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-22 00:30:03,786 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_3_online/extracted
+2026-07-22 00:30:03,786 INFO [__main__] experiment done seconds=2716.45
+2026-07-22 00:30:03,786 INFO [__main__] ========================================================================
+2026-07-22T00:30:05+02:00 extraction done configuration=24/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_3_online
+
+2026-07-22T00:30:05+02:00 extraction start configuration=25/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-22 00:30:07,999 INFO [__main__] ========================================================================
+2026-07-22 00:30:07,999 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=10 distance=raw/euclidean
+2026-07-22 00:30:08,618 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-22 00:30:08,622 INFO [__main__] dataset load start
+2026-07-22 00:30:08,623 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-22 00:30:09,829 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-22 00:30:09,830 INFO [__main__] model load start
+2026-07-22 00:30:23,574 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-22 00:30:23,576 INFO [__main__] extraction start split=train queries=214
+2026-07-22 02:01:55,889 INFO [__main__] extraction done split=train
+2026-07-22 02:01:55,889 INFO [__main__] extraction start split=oracle queries=68
+2026-07-22 02:30:25,236 INFO [__main__] extraction done split=oracle
+2026-07-22 02:30:25,236 INFO [__main__] extraction start split=eval queries=20
+2026-07-22 02:39:14,883 INFO [__main__] extraction done split=eval
+2026-07-22 02:39:17,515 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-22 02:39:17,515 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/raw_euclidean_10_online/extracted
+2026-07-22 02:39:17,515 INFO [__main__] experiment done seconds=7749.52
+2026-07-22 02:39:17,515 INFO [__main__] ========================================================================
+2026-07-22T02:39:19+02:00 extraction done configuration=25/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=raw_euclidean_10_online
+
+2026-07-22T02:39:19+02:00 extraction start configuration=26/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_1_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-22 02:39:22,604 INFO [__main__] ========================================================================
+2026-07-22 02:39:22,605 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=1 distance=instance/euclidean
+2026-07-22 02:39:23,128 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_1_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-22 02:39:23,129 INFO [__main__] dataset load start
+2026-07-22 02:39:23,130 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-22 02:39:24,222 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-22 02:39:24,222 INFO [__main__] model load start
+2026-07-22 02:39:36,403 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-22 02:39:36,404 INFO [__main__] extraction start split=train queries=214
+2026-07-22 02:57:15,075 INFO [__main__] extraction done split=train
+2026-07-22 02:57:15,076 INFO [__main__] extraction start split=oracle queries=68
+2026-07-22 03:02:42,746 INFO [__main__] extraction done split=oracle
+2026-07-22 03:02:42,746 INFO [__main__] extraction start split=eval queries=20
+2026-07-22 03:04:18,726 INFO [__main__] extraction done split=eval
+2026-07-22 03:04:20,026 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-22 03:04:20,027 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_1_online/extracted
+2026-07-22 03:04:20,027 INFO [__main__] experiment done seconds=1497.42
+2026-07-22 03:04:20,027 INFO [__main__] ========================================================================
+2026-07-22T03:04:20+02:00 extraction done configuration=26/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_1_online
+
+2026-07-22T03:04:20+02:00 extraction start configuration=27/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_3_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-22 03:04:23,572 INFO [__main__] ========================================================================
+2026-07-22 03:04:23,572 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=3 distance=instance/euclidean
+2026-07-22 03:04:23,854 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_3_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-22 03:04:23,856 INFO [__main__] dataset load start
+2026-07-22 03:04:23,857 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-22 03:04:24,937 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-22 03:04:24,937 INFO [__main__] model load start
+2026-07-22 03:04:36,711 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-22 03:04:36,713 INFO [__main__] extraction start split=train queries=214
+2026-07-22 03:36:41,019 INFO [__main__] extraction done split=train
+2026-07-22 03:36:41,019 INFO [__main__] extraction start split=oracle queries=68
+2026-07-22 03:46:50,186 INFO [__main__] extraction done split=oracle
+2026-07-22 03:46:50,186 INFO [__main__] extraction start split=eval queries=20
+2026-07-22 03:49:53,752 INFO [__main__] extraction done split=eval
+2026-07-22 03:49:54,940 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_3_online/extracted/extraction_manifest.json
+2026-07-22 03:49:54,941 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_3_online/extracted
+2026-07-22 03:49:54,941 INFO [__main__] experiment done seconds=2731.37
+2026-07-22 03:49:54,941 INFO [__main__] ========================================================================
+2026-07-22T03:49:56+02:00 extraction done configuration=27/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_3_online
+
+2026-07-22T03:49:56+02:00 extraction start configuration=28/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_10_online datastore_stride=24 train_stride=24 oracle_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-22 03:49:59,172 INFO [__main__] ========================================================================
+2026-07-22 03:49:59,173 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos lags=504 horizon=504 neighbors=10 distance=instance/euclidean
+2026-07-22 03:49:59,407 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_10_online/extracted reason=completion marker belongs to a different extraction configuration
+2026-07-22 03:49:59,409 INFO [__main__] dataset load start
+2026-07-22 03:49:59,410 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['drop_users']
+2026-07-22 03:50:00,480 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-22 03:50:00,480 INFO [__main__] model load start
+2026-07-22 03:50:11,839 INFO [__main__] model load done name=chronos device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-22 03:50:11,840 INFO [__main__] extraction start split=train queries=214
+2026-07-22 05:21:30,089 INFO [__main__] extraction done split=train
+2026-07-22 05:21:30,090 INFO [__main__] extraction start split=oracle queries=68
+2026-07-22 05:49:50,233 INFO [__main__] extraction done split=oracle
+2026-07-22 05:49:50,233 INFO [__main__] extraction start split=eval queries=20
+2026-07-22 05:58:19,727 INFO [__main__] extraction done split=eval
+2026-07-22 05:58:21,119 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-22 05:58:21,119 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_504/chronos/instance_euclidean_10_online/extracted
+2026-07-22 05:58:21,119 INFO [__main__] experiment done seconds=7701.95
+2026-07-22 05:58:21,119 INFO [__main__] ========================================================================
+2026-07-22T05:58:22+02:00 extraction done configuration=28/28 dataset=Traffic model=chronos lags=504 horizon=504 retrieval=instance_euclidean_10_online
+
+2026-07-22T05:58:22+02:00 job done kind=adaptation_extraction output=outputs/adaptation

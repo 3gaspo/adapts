@@ -1,0 +1,15 @@
+
+2026-07-20T18:05:19+02:00 job start kind=adaptation_tables experiment_mode=test datasets=electricity models=chronos settings=168_24 families=baselines,gates metric=nmse table_kinds=full,average
+2026-07-20 18:05:21,640 INFO [__main__] extraction validation directory=outputs/adaptation/electricity/168_24/chronos/vanilla status=complete
+
+2026-07-20T18:05:21+02:00 table start model=chronos kind=full metric=nmse split=eval decimals=2 output=outputs/adaptation/tables/chronos/full
+LaTeX table written to /home/h61084/codes/adapts/outputs/adaptation/tables/chronos/full/baselines_results.tex
+LaTeX table written to /home/h61084/codes/adapts/outputs/adaptation/tables/chronos/full/gates_results.tex
+2026-07-20T18:05:24+02:00 table done model=chronos kind=full output=outputs/adaptation/tables/chronos/full
+
+2026-07-20T18:05:24+02:00 table start model=chronos kind=average metric=nmse split=eval decimals=2 output=outputs/adaptation/tables/chronos/average
+LaTeX table written to /home/h61084/codes/adapts/outputs/adaptation/tables/chronos/average/baselines_results.tex
+LaTeX table written to /home/h61084/codes/adapts/outputs/adaptation/tables/chronos/average/gates_results.tex
+2026-07-20T18:05:27+02:00 table done model=chronos kind=average output=outputs/adaptation/tables/chronos/average
+
+2026-07-20T18:05:27+02:00 job done kind=adaptation_tables output=outputs/adaptation/tables

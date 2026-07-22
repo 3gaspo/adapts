@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_3/ctx & raw\_L2\_3/Y-kNN-w & raw\_L2\_3/Y-kNN & raw\_L2\_3/Y-mix-s & raw\_L2\_3/Y-ridge & raw\_L2\_3/R-kNN-w & raw\_L2\_3/R-mix-s & raw\_L2\_3/R-ridge & raw\_L2\_3/R-ridge-h & raw\_L2\_3/full-ridge-h \\
+\midrule
+\multirow{1}{*}{electricity} & 168--24 & $\times 10^{-1}$ & 1.63 & 1.67 & 4.59 & 4.03 & \textbf{1.62} & 1.65 & 2.96 & 1.63 & 1.65 & 1.86 & 1.81 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results}
+\end{table}
