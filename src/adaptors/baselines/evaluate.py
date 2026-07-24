@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 from pathlib import Path
@@ -684,27 +685,52 @@ def scalar_gate_features(
     ).astype(np.float32)
 
 
+class HorizonGateFeatureView(Sequence[np.ndarray]):
+    """Lazily materialize one local feature matrix at a time."""
+
+    def __init__(
+        self,
+        arrays: dict[str, np.ndarray],
+        candidate: str,
+    ):
+        self.candidate_delta = (
+            _candidate_prediction(arrays, candidate) - arrays["pred"]
+        )
+        static, self.local = _static_gate_features(arrays)
+        self.common = np.stack(static, axis=1).astype(np.float32, copy=False)
+
+    def __len__(self) -> int:
+        return int(self.candidate_delta.shape[1])
+
+    def __getitem__(self, horizon: int | slice) -> np.ndarray | list[np.ndarray]:
+        if isinstance(horizon, slice):
+            return [
+                self[index]
+                for index in range(*horizon.indices(len(self)))
+            ]
+        index = int(horizon)
+        if index < 0:
+            index += len(self)
+        if not 0 <= index < len(self):
+            raise IndexError(index)
+        return np.column_stack(
+            [
+                self.candidate_delta[:, index],
+                self.local["yv_mean"][:, index],
+                self.local["yv_std"][:, index],
+                self.local["yn_mean"][:, index],
+                self.local["yn_std"][:, index],
+                self.common,
+            ]
+        ).astype(np.float32, copy=False)
+
+
 def horizon_gate_features(
     arrays: dict[str, np.ndarray],
     candidate: str = "context",
-) -> list[np.ndarray]:
-    """Return one feature matrix per horizon; no model sees other C_h-V_h."""
-    candidate_delta = _candidate_prediction(arrays, candidate) - arrays["pred"]
-    static, local = _static_gate_features(arrays)
-    common = np.stack(static, axis=1)
-    return [
-        np.column_stack(
-            [
-                candidate_delta[:, h],
-                local["yv_mean"][:, h],
-                local["yv_std"][:, h],
-                local["yn_mean"][:, h],
-                local["yn_std"][:, h],
-                common,
-            ]
-        ).astype(np.float32)
-        for h in range(candidate_delta.shape[1])
-    ]
+) -> Sequence[np.ndarray]:
+    """Return lazy local features; no model sees another horizon's C_h-V_h."""
+    return HorizonGateFeatureView(arrays, candidate)
 
 
 def _catboost_regressor(
@@ -713,6 +739,9 @@ def _catboost_regressor(
     learning_rate: float,
     depth: int,
     seed: int,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
 ):
     try:
         from catboost import CatBoostRegressor
@@ -720,6 +749,11 @@ def _catboost_regressor(
         raise ModuleNotFoundError(
             "CatBoost gates require the `catboost` project dependency. Run `uv sync`."
         ) from exc
+    execution = _catboost_execution_kwargs(
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
+    )
     return CatBoostRegressor(
         iterations=int(iterations),
         learning_rate=float(learning_rate),
@@ -729,6 +763,7 @@ def _catboost_regressor(
         random_seed=int(seed),
         verbose=False,
         allow_writing_files=False,
+        **execution,
     )
 
 
@@ -738,6 +773,9 @@ def _catboost_classifier(
     learning_rate: float,
     depth: int,
     seed: int,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
 ):
     try:
         from catboost import CatBoostClassifier
@@ -745,6 +783,11 @@ def _catboost_classifier(
         raise ModuleNotFoundError(
             "CatBoost gates require the `catboost` project dependency. Run `uv sync`."
         ) from exc
+    execution = _catboost_execution_kwargs(
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
+    )
     return CatBoostClassifier(
         iterations=int(iterations),
         learning_rate=float(learning_rate),
@@ -755,7 +798,29 @@ def _catboost_classifier(
         random_seed=int(seed),
         verbose=False,
         allow_writing_files=False,
+        **execution,
     )
+
+
+def _catboost_execution_kwargs(
+    *,
+    task_type: str,
+    devices: str | None,
+    thread_count: int | None,
+) -> dict[str, Any]:
+    mode = str(task_type).upper()
+    if mode not in {"CPU", "GPU"}:
+        raise ValueError("CatBoost task_type must be CPU or GPU")
+    if thread_count is not None and int(thread_count) <= 0:
+        raise ValueError("CatBoost thread_count must be positive")
+    if mode == "CPU" and devices not in {None, ""}:
+        raise ValueError("CatBoost devices is only valid for GPU training")
+    out: dict[str, Any] = {"task_type": mode}
+    if thread_count is not None:
+        out["thread_count"] = int(thread_count)
+    if mode == "GPU" and devices not in {None, ""}:
+        out["devices"] = str(devices)
+    return out
 
 
 def _selected_iterations(estimator: Any, fallback: int) -> int:
@@ -776,6 +841,9 @@ def fit_loss_difference_regressor(
     depth: int,
     seed: int,
     early_stopping_rounds: int = 50,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
 ) -> dict[str, Any]:
     target = np.asarray(y_np, dtype=np.float64).reshape(-1)
     if np.ptp(target) <= 1e-12:
@@ -787,6 +855,9 @@ def fit_loss_difference_regressor(
             learning_rate=learning_rate,
             depth=depth,
             seed=seed,
+            task_type=task_type,
+            devices=devices,
+            thread_count=thread_count,
         )
         selector.fit(
             x_np,
@@ -809,6 +880,9 @@ def fit_loss_difference_regressor(
         learning_rate=learning_rate,
         depth=depth,
         seed=seed,
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
     )
     model.fit(final_x, final_y)
     return {"regressor": model, "selected_iterations": selected}
@@ -827,6 +901,9 @@ def fit_improvement_classifier(
     depth: int,
     seed: int,
     early_stopping_rounds: int = 50,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
 ) -> dict[str, Any]:
     target = np.asarray(y_np).reshape(-1) > 0.0
     valid_target = (
@@ -858,6 +935,9 @@ def fit_improvement_classifier(
             learning_rate=learning_rate,
             depth=depth,
             seed=seed,
+            task_type=task_type,
+            devices=devices,
+            thread_count=thread_count,
         )
         selector.fit(
             x_np,
@@ -880,6 +960,9 @@ def fit_improvement_classifier(
         learning_rate=learning_rate,
         depth=depth,
         seed=seed,
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
     )
     model.fit(final_x, combined_target.astype(np.int8))
     return {"classifier": model, "selected_iterations": selected}
@@ -899,6 +982,9 @@ def fit_gate(
     seed: int,
     objective: str = "regressor",
     early_stopping_rounds: int = 50,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
 ) -> list[dict[str, Any]]:
     if x_np.shape[0] == 0:
         raise ValueError("cannot train gates from an empty T1 slice")
@@ -937,24 +1023,90 @@ def fit_gate(
             depth=depth,
             seed=seed + output_idx,
             early_stopping_rounds=early_stopping_rounds,
+            task_type=task_type,
+            devices=devices,
+            thread_count=thread_count,
         )
         for output_idx in range(targets.shape[1])
     ]
+
+
+def fit_horizon_gate_models(
+    train_features: Sequence[np.ndarray],
+    train_targets: np.ndarray,
+    *,
+    valid_features: Sequence[np.ndarray],
+    valid_targets: np.ndarray,
+    refit_features: Sequence[np.ndarray],
+    refit_targets: np.ndarray,
+    iterations: int,
+    learning_rate: float,
+    depth: int,
+    seed: int,
+    objective: str,
+    early_stopping_rounds: int,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
+    horizon_jobs: int = 1,
+) -> list[dict[str, Any]]:
+    """Fit independent horizon gates, optionally concurrently on CPU."""
+    jobs = int(horizon_jobs)
+    if jobs <= 0:
+        raise ValueError("horizon_jobs must be positive")
+    mode = str(task_type).upper()
+    if mode == "GPU" and jobs != 1:
+        raise ValueError("GPU horizon fits must be serial within one process")
+    horizon = int(np.asarray(train_targets).shape[1])
+    if not (
+        len(train_features)
+        == len(valid_features)
+        == len(refit_features)
+        == horizon
+        == int(np.asarray(valid_targets).shape[1])
+        == int(np.asarray(refit_targets).shape[1])
+    ):
+        raise ValueError("horizon gate features and targets must align")
+
+    def fit_one_horizon(h: int) -> dict[str, Any]:
+        return fit_gate(
+            train_features[h],
+            train_targets[:, h],
+            valid_x_np=valid_features[h],
+            valid_y_np=valid_targets[:, h],
+            refit_x_np=refit_features[h],
+            refit_y_np=refit_targets[:, h],
+            iterations=iterations,
+            learning_rate=learning_rate,
+            depth=depth,
+            early_stopping_rounds=early_stopping_rounds,
+            seed=seed + h,
+            objective=objective,
+            task_type=mode,
+            devices=devices,
+            thread_count=thread_count,
+        )[0]
+
+    if jobs == 1:
+        return [fit_one_horizon(h) for h in range(horizon)]
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        return list(executor.map(fit_one_horizon, range(horizon)))
 
 
 def predict_gate(
     models: list[dict[str, Any]],
     features: np.ndarray | Sequence[np.ndarray],
 ) -> np.ndarray:
-    per_model_features = (
-        list(features)
-        if isinstance(features, (list, tuple))
-        else [features] * len(models)
+    per_model_features: Sequence[np.ndarray] = (
+        [features] * len(models)
+        if isinstance(features, np.ndarray)
+        else features
     )
     if len(per_model_features) != len(models):
         raise ValueError("one horizon feature matrix is required per gate model")
     columns = []
-    for model, x_np in zip(models, per_model_features):
+    for index, model in enumerate(models):
+        x_np = per_model_features[index]
         if "constant" in model:
             score = np.full(x_np.shape[0], model["constant"], dtype=np.float64)
         elif "classifier" in model:
@@ -1054,6 +1206,10 @@ def add_candidate_gate_predictions(
     depth: int,
     early_stopping_rounds: int,
     seed: int,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
+    horizon_jobs: int = 1,
 ) -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any], dict[str, dict[str, np.ndarray]]]:
     def targets(arrays: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         candidate_prediction = _candidate_prediction(arrays, candidate)
@@ -1096,28 +1252,28 @@ def add_candidate_gate_predictions(
             early_stopping_rounds=early_stopping_rounds,
             seed=seed + objective_index * 10_000,
             objective=objective,
+            task_type=task_type,
+            devices=devices,
+            thread_count=thread_count,
         )
-        horizon_models = []
-        for h, (train_x, valid_x) in enumerate(
-            zip(train_features["horizon"], valid_features["horizon"])
-        ):
-            horizon_models.extend(
-                fit_gate(
-                    train_x,
-                    train_targets["horizon"][:, h],
-                    valid_x_np=valid_x,
-                    valid_y_np=valid_targets["horizon"][:, h],
-                    refit_x_np=refit_features["horizon"][h],
-                    refit_y_np=refit_targets["horizon"][:, h],
-                    iterations=iterations,
-                    learning_rate=learning_rate,
-                    depth=depth,
-                    early_stopping_rounds=early_stopping_rounds,
-                    seed=seed + objective_index * 10_000 + 1_000 + h,
-                    objective=objective,
-                )
-            )
-        models[objective]["horizon"] = horizon_models
+        models[objective]["horizon"] = fit_horizon_gate_models(
+            train_features["horizon"],
+            train_targets["horizon"],
+            valid_features=valid_features["horizon"],
+            valid_targets=valid_targets["horizon"],
+            refit_features=refit_features["horizon"],
+            refit_targets=refit_targets["horizon"],
+            iterations=iterations,
+            learning_rate=learning_rate,
+            depth=depth,
+            early_stopping_rounds=early_stopping_rounds,
+            seed=seed + objective_index * 10_000 + 1_000,
+            objective=objective,
+            task_type=task_type,
+            devices=devices,
+            thread_count=thread_count,
+            horizon_jobs=horizon_jobs,
+        )
 
     no_feature = _fit_no_feature_gates(refit_arrays, candidate)
     out: dict[str, dict[str, np.ndarray]] = {}
@@ -1164,6 +1320,12 @@ def add_candidate_gate_predictions(
     artifacts = {
         "candidate": candidate,
         "backend": "catboost",
+        "execution": {
+            "task_type": str(task_type).upper(),
+            "devices": devices,
+            "thread_count": thread_count,
+            "horizon_jobs": int(horizon_jobs),
+        },
         "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
         "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
         "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
@@ -1185,6 +1347,10 @@ def add_context_gate_predictions(
     valid_arrays: dict[str, np.ndarray] | None = None,
     refit_arrays: dict[str, np.ndarray] | None = None,
     early_stopping_rounds: int = 50,
+    task_type: str = "CPU",
+    devices: str | None = None,
+    thread_count: int | None = None,
+    horizon_jobs: int = 1,
 ) -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any], dict[str, dict[str, np.ndarray]]]:
     """Compatibility wrapper for the context candidate."""
     return add_candidate_gate_predictions(
@@ -1199,6 +1365,10 @@ def add_context_gate_predictions(
         depth=depth,
         early_stopping_rounds=early_stopping_rounds,
         seed=seed,
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
+        horizon_jobs=horizon_jobs,
     )
 
 
@@ -1377,6 +1547,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gate-learning-rate", "--gate-lr", dest="gate_learning_rate", type=float, default=3e-2)
     parser.add_argument("--gate-depth", type=int, default=4)
     parser.add_argument("--gate-early-stopping-rounds", type=int, default=50)
+    parser.add_argument("--gate-task-type", choices=("CPU", "GPU"), default="CPU")
+    parser.add_argument("--gate-devices", default=None)
+    parser.add_argument("--gate-thread-count", type=int, default=None)
+    parser.add_argument("--gate-horizon-jobs", type=int, default=1)
     parser.add_argument("--feature-importance-top-k", type=int, default=20)
     parser.add_argument("--max-t1-fit-samples", "--max-train-fit-samples", dest="max_t1_fit_samples", type=int, default=None)
     parser.add_argument("--max-t2-valid-samples", "--max-oracle-fit-samples", dest="max_t2_valid_samples", type=int, default=None)
@@ -1505,6 +1679,10 @@ def main() -> dict[str, Path]:
                 depth=args.gate_depth,
                 early_stopping_rounds=args.gate_early_stopping_rounds,
                 seed=args.seed + candidate_index * 100_000,
+                task_type=args.gate_task_type,
+                devices=args.gate_devices,
+                thread_count=args.gate_thread_count,
+                horizon_jobs=args.gate_horizon_jobs,
             )
             predictions_by_split = candidate_predictions
             gate_artifacts[candidate] = artifacts
@@ -1542,6 +1720,10 @@ def main() -> dict[str, Path]:
             "learning_rate": args.gate_learning_rate,
             "depth": args.gate_depth,
             "early_stopping_rounds": args.gate_early_stopping_rounds,
+            "task_type": args.gate_task_type,
+            "devices": args.gate_devices,
+            "thread_count": args.gate_thread_count,
+            "horizon_jobs": args.gate_horizon_jobs,
             "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
             "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
         }

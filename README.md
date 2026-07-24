@@ -183,6 +183,33 @@ profile. The `512:64` setting is the Cross-RAG comparison. If a sequential
 job exceeds its time limit, resubmit the same mode; split first by model and then
 dataset only when needed.
 
+### Temporary H=504 gate compute benchmark
+
+`gate_compute_benchmark.slurm` times the same 504 independent context-regressor
+horizon gates in three modes, sequentially within one allocation:
+
+1. one CPU fit at a time with 16 CatBoost threads;
+2. one GPU fit at a time on an H100;
+3. eight concurrent CPU fits with two CatBoost threads each.
+
+It defaults to Traffic `504:504`, Chronos, raw Euclidean retrieval with `k=1`,
+100 trees, and capped T1/T2/refit samples. It performs the normal T1 selection,
+T2 early stopping, and T1+T2 refit, but is a timing benchmark rather than an
+accuracy experiment. Submit it after the corresponding extraction:
+
+```bash
+sbatch gate_compute_benchmark.slurm
+```
+
+The ranked timing table is written below
+`outputs/gate_compute_benchmark/Traffic/504_504/chronos/`
+in the job-specific `summary.csv`. Any default can be overridden at submission,
+for example
+`GATE_ITERATIONS=300 MAX_T1_FIT_SAMPLES=70520 sbatch gate_compute_benchmark.slurm`.
+For timing an older small-mode run, the benchmark alone can pool its legacy
+train and oracle payloads; official downstream experiments still require the
+current format-v2 adapt/eval extraction.
+
 Normal timestamped progress and Python warnings are written to
 `logs/<job>_<job-id>.out`. Third-party progress bars are disabled, leaving the
 matching `.err` for scheduler, shell, or Python failures.
