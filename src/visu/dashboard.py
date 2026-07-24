@@ -33,7 +33,7 @@ def load_dashboard_data(run_dir: str | Path) -> dict[str, Any]:
     """Load extraction, baseline, and optional TS-IFA plotting artifacts."""
     root = Path(run_dir).expanduser()
     extracted: dict[str, dict[str, Any]] = {}
-    for split in ("train", "oracle", "eval"):
+    for split in ("adapt", "eval"):
         path = root / f"{split}_prediction_payload.pt"
         if path.exists():
             extracted[split] = torch_load(path)
@@ -80,7 +80,7 @@ def load_dashboard_data(run_dir: str | Path) -> dict[str, Any]:
 
 
 def available_splits(data: dict[str, Any]) -> list[str]:
-    return [name for name in ("train", "oracle", "eval") if name in data["extracted"]]
+    return [name for name in ("adapt", "eval") if name in data["extracted"]]
 
 
 def split_arrays(data: dict[str, Any], split: str) -> dict[str, Any]:
@@ -516,12 +516,16 @@ def plot_horizon(
 def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
     options: list[tuple[str, str]] = []
-    for objective in ("classifier", "regressor"):
-        if f"{objective}_scalar_score" in diagnostics:
-            options.append((f"{objective} scalar gate", f"{objective}_scalar"))
-        horizon_key = f"{objective}_horizon_score"
-        if horizon_key in diagnostics:
-            options.append((f"{objective} horizon gate (all horizons)", f"{objective}_horizon_all"))
+    for key in sorted(diagnostics):
+        if not key.endswith("_score") or "_bayes_" in key:
+            continue
+        stem = key.removesuffix("_score")
+        if f"{stem}_target" not in diagnostics:
+            continue
+        label = stem.replace("_", " ")
+        if stem.endswith("_horizon"):
+            label += " (all horizons)"
+        options.append((label, stem))
     # Backward-compatible options for artifacts produced before gate families
     # were split into classifier and regressor variants.
     if "scalar_score" in diagnostics:
@@ -533,7 +537,12 @@ def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
 
 def _gate_score_target(data: dict[str, Any], split: str, gate_name: str) -> tuple[np.ndarray, np.ndarray]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
-    if gate_name == "scalar":
+    direct_score = f"{gate_name}_score"
+    direct_target = f"{gate_name}_target"
+    if direct_score in diagnostics and direct_target in diagnostics:
+        score = diagnostics[direct_score]
+        target = diagnostics[direct_target]
+    elif gate_name == "scalar":
         score = diagnostics["scalar_score"].reshape(-1)
         target = diagnostics["scalar_target"].reshape(-1)
     elif gate_name == "horizon_all":
@@ -605,25 +614,33 @@ def plot_gate_roc(data: dict[str, Any], split: str, gate_name: str) -> tuple[plt
 
 def gate_prediction_names(data: dict[str, Any], split: str) -> list[str]:
     names = prediction_names(data, split)
-    prefixes = ("bayes_context_", "catboost_context_", "oracle_context_")
+    prefixes = (
+        "bayes_context_",
+        "catboost_context_",
+        "oracle_context_",
+        "bayes_aggr_y_",
+        "catboost_aggr_y_",
+        "oracle_aggr_y_",
+    )
     return [name for name in names if name.startswith(prefixes)]
 
 
 def _gate_shape(name: str) -> str:
-    return "horizon" if name.endswith("_horizon") else "scalar"
+    return "horizon" if name.endswith("_horizon") else "shared"
 
 
 def _gate_right_percent(arrays: dict[str, Any], prediction_name: str) -> float:
     predictions = arrays["predictions"]
     prediction = np.asarray(predictions[prediction_name], dtype=np.float64)
     vanilla = np.asarray(predictions["vanilla"], dtype=np.float64)
-    context = np.asarray(predictions["context_forecast"], dtype=np.float64)
+    candidate_name = "aggr_y" if "_aggr_y_" in prediction_name else "context_forecast"
+    context = np.asarray(predictions[candidate_name], dtype=np.float64)
     target = np.asarray(arrays["y"], dtype=np.float64)
     base_loss = (vanilla - target) ** 2
     context_loss = (context - target) ** 2
     distance_to_context = np.abs(prediction - context)
     distance_to_vanilla = np.abs(prediction - vanilla)
-    if _gate_shape(prediction_name) == "scalar":
+    if _gate_shape(prediction_name) == "shared":
         decision = np.nanmean(distance_to_context, axis=1) <= np.nanmean(distance_to_vanilla, axis=1)
         target_context = np.nanmean(context_loss, axis=1) < np.nanmean(base_loss, axis=1)
         non_tie = np.abs(np.nanmean(base_loss - context_loss, axis=1)) > 1e-12

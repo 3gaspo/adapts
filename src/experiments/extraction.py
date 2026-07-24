@@ -61,8 +61,7 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
         "horizon",
         "splits",
         "datastore_stride",
-        "train_stride",
-        "oracle_stride",
+        "adapt_stride",
         "eval_stride",
         "period",
         "neighbors",
@@ -83,6 +82,7 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
     )
     signature = {name: getattr(args, name) for name in fields}
     signature["dataset_name"] = dataset_name
+    signature["window_anchor"] = "query_t"
     signature["csv"] = str(Path(args.csv).expanduser().resolve())
     config_path = (
         Path(args.dataset_config).expanduser()
@@ -579,15 +579,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--lags", type=int, required=True)
     parser.add_argument("--horizon", type=int, required=True)
-    parser.add_argument("--splits", default="0.3,0.35,0.15,0.2")
+    parser.add_argument(
+        "--splits",
+        default="0.3,0.5,0.2",
+        help="Chronological ratios T0,T1+T2,T3; downstream models resplit T1+T2",
+    )
     parser.add_argument(
         "--datastore-stride",
         type=int,
         default=None,
-        help="Stride for aligned retrieval datastore dates; defaults to --train-stride for compatibility",
+        help="Stride for aligned retrieval datastore dates; defaults to --adapt-stride",
     )
-    parser.add_argument("--train-stride", type=int, default=24, help="T1 query stride for baseline and TS-IFA training")
-    parser.add_argument("--oracle-stride", type=int, default=None, help="T2 query stride for gate/oracle training")
+    parser.add_argument(
+        "--adapt-stride",
+        "--train-stride",
+        dest="adapt_stride",
+        type=int,
+        default=24,
+        help="Pooled T1+T2 query stride; each downstream model makes its own chronological resplit",
+    )
     parser.add_argument("--eval-stride", type=int, default=24, help="T3 query stride for final evaluation")
     parser.add_argument("--period", type=int, default=24)
     parser.add_argument("--neighbors", type=int, default=0)
@@ -644,10 +654,8 @@ def main() -> dict[str, Path]:
         args.distance_metric,
     )
     set_seed(args.seed)
-    if args.oracle_stride is None:
-        args.oracle_stride = args.train_stride
     if args.datastore_stride is None:
-        args.datastore_stride = args.train_stride
+        args.datastore_stride = args.adapt_stride
     out = run_dir(args.output_dir, args.save_name)
     signature = extraction_signature(args, dataset_name)
     if args.skip_complete:
@@ -657,8 +665,7 @@ def main() -> dict[str, Path]:
             log_experiment_separator(LOGGER)
             return {
                 "run_dir": out,
-                "train_prediction": out / "train_prediction_payload.pt",
-                "oracle_prediction": out / "oracle_prediction_payload.pt",
+                "adapt_prediction": out / "adapt_prediction_payload.pt",
                 "eval_prediction": out / "eval_prediction_payload.pt",
             }
         LOGGER.info("existing extraction not reusable dir=%s reason=%s", out, reason)
@@ -716,7 +723,7 @@ def main() -> dict[str, Path]:
         and args.store_start_date >= args.store_end_date
     ):
         raise ValueError("--store-start-date must be before --store-end-date")
-    for name in ("datastore_stride", "train_stride", "oracle_stride", "eval_stride"):
+    for name in ("datastore_stride", "adapt_stride", "eval_stride"):
         if int(getattr(args, name)) <= 0:
             raise ValueError(f"--{name.replace('_', '-')} must be positive")
     if not args.no_align_period:
@@ -725,40 +732,25 @@ def main() -> dict[str, Path]:
         if int(args.datastore_stride) % int(args.period) != 0:
             raise ValueError("--datastore-stride must be a multiple of --period when aligned retrieval is enabled")
 
-    t0_end, t1_end, t2_end, t3_end = split_bounds(dataset.n_dates, args.splits)
-    train_eval_dates = period_eval_dates(
+    t0_end, t12_end, t3_end = split_bounds(dataset.n_dates, args.splits)
+    adapt_eval_dates = period_eval_dates(
         t0_end,
-        t1_end,
+        t12_end,
         n_dates=dataset.n_dates,
         lags=args.lags,
         horizon=args.horizon,
-        stride=args.train_stride,
-    )
-    oracle_eval_dates = period_eval_dates(
-        t1_end,
-        t2_end,
-        n_dates=dataset.n_dates,
-        lags=args.lags,
-        horizon=args.horizon,
-        stride=args.oracle_stride,
+        stride=args.adapt_stride,
     )
     eval_eval_dates = period_eval_dates(
-        t2_end,
+        t12_end,
         t3_end,
         n_dates=dataset.n_dates,
         lags=args.lags,
         horizon=args.horizon,
         stride=args.eval_stride,
     )
-    train_eval_dates = eligible_query_dates(
-        train_eval_dates,
-        args=args,
-        n_users=dataset.n_users,
-        fixed_store_start=0,
-        fixed_store_end=t0_end,
-    )
-    oracle_eval_dates = eligible_query_dates(
-        oracle_eval_dates,
+    adapt_eval_dates = eligible_query_dates(
+        adapt_eval_dates,
         args=args,
         n_users=dataset.n_users,
         fixed_store_start=0,
@@ -773,50 +765,33 @@ def main() -> dict[str, Path]:
     )
     if args.verbose:
         LOGGER.info(
-            "split bounds t0=%s t1=%s t2=%s t3=%s datastore_stride=%s train_stride=%s oracle_stride=%s eval_stride=%s train_queries=%s oracle_queries=%s eval_queries=%s",
+            "split bounds t0=%s t1_plus_t2=%s t3=%s datastore_stride=%s adapt_stride=%s eval_stride=%s adapt_queries=%s eval_queries=%s",
             t0_end,
-            t1_end,
-            t2_end,
+            t12_end,
             t3_end,
             args.datastore_stride,
-            args.train_stride,
-            args.oracle_stride,
+            args.adapt_stride,
             args.eval_stride,
-            len(train_eval_dates),
-            len(oracle_eval_dates),
+            len(adapt_eval_dates),
             len(eval_eval_dates),
         )
 
     prediction_payloads: dict[str, dict[str, Any]] = {}
 
-    LOGGER.info("extraction start split=train queries=%s", len(train_eval_dates))
-    train_payload, _ = extract_period(
+    LOGGER.info("extraction start split=adapt queries=%s", len(adapt_eval_dates))
+    adapt_payload, _ = extract_period(
         dataset=dataset,
         model=model,
-        prefix="train",
-        eval_dates=train_eval_dates,
+        prefix="adapt",
+        eval_dates=adapt_eval_dates,
         store_start=0,
         store_end=t0_end,
         args=args,
         output_dir=out,
         device=device,
     )
-    prediction_payloads["train"] = train_payload
-    LOGGER.info("extraction done split=train")
-    LOGGER.info("extraction start split=oracle queries=%s", len(oracle_eval_dates))
-    oracle_payload, _ = extract_period(
-        dataset=dataset,
-        model=model,
-        prefix="oracle",
-        eval_dates=oracle_eval_dates,
-        store_start=0,
-        store_end=t0_end,
-        args=args,
-        output_dir=out,
-        device=device,
-    )
-    prediction_payloads["oracle"] = oracle_payload
-    LOGGER.info("extraction done split=oracle")
+    prediction_payloads["adapt"] = adapt_payload
+    LOGGER.info("extraction done split=adapt")
     LOGGER.info("extraction start split=eval queries=%s", len(eval_eval_dates))
     eval_payload, _ = extract_period(
         dataset=dataset,
@@ -859,8 +834,7 @@ def main() -> dict[str, Path]:
     log_experiment_separator(LOGGER)
     return {
         "run_dir": out,
-        "train_prediction": out / "train_prediction_payload.pt",
-        "oracle_prediction": out / "oracle_prediction_payload.pt",
+        "adapt_prediction": out / "adapt_prediction_payload.pt",
         "eval_prediction": out / "eval_prediction_payload.pt",
     }
 

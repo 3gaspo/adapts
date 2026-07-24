@@ -231,25 +231,31 @@ class CsvTimeSeries:
     def n_users(self) -> int:
         return int(self.frame.shape[1])
 
-    def validate_window(self, start: int, lags: int, horizon: int) -> None:
-        stop = int(start) + int(lags) + int(horizon)
+    def validate_window(self, query_date: int, lags: int, horizon: int) -> None:
+        """Validate ``X=(s-L,s]`` and ``Y=(s,s+H]`` for query date ``s``."""
+        start = int(query_date) - int(lags) + 1
+        stop = int(query_date) + int(horizon) + 1
         if start < 0 or stop > self.n_dates:
             raise ValueError(
-                f"window [{start}, {stop}) is outside dataset with {self.n_dates} dates"
+                f"window X=({query_date}-{lags},{query_date}], "
+                f"Y=({query_date},{query_date}+{horizon}] is outside "
+                f"dataset with {self.n_dates} dates"
             )
 
     def window_tensor(
         self,
-        start: int,
+        query_date: int,
         lags: int,
         horizon: int,
         *,
         users: Sequence[int] | None = None,
         device: str | torch.device | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return ``x`` and ``y`` shaped ``(users, 1, time)``."""
-        self.validate_window(start, lags, horizon)
-        values = self.values[start : start + lags + horizon]
+        """Return ``X=(s-L,s]`` and ``Y=(s,s+H]`` as ``(users, 1, time)``."""
+        self.validate_window(query_date, lags, horizon)
+        start = int(query_date) - int(lags) + 1
+        stop = int(query_date) + int(horizon) + 1
+        values = self.values[start:stop]
         if users is not None:
             values = values[:, list(users)]
         arr = torch.as_tensor(
@@ -314,20 +320,20 @@ def parse_ratios(value: str | Sequence[float]) -> list[float]:
         ratios = [float(part) for part in _split_text(value)]
     else:
         ratios = [float(part) for part in value]
-    if len(ratios) != 4:
-        raise ValueError("split ratios must contain exactly four values: T0,T1,T2,T3")
+    if len(ratios) != 3:
+        raise ValueError("split ratios must contain exactly three values: T0,T1+T2,T3")
     total = sum(ratios)
     if not np.isclose(total, 1.0):
         raise ValueError(f"split ratios must sum to 1, got {ratios}")
     return ratios
 
 
-def split_bounds(n_dates: int, ratios: str | Sequence[float]) -> tuple[int, int, int, int]:
-    r0, r1, r2, _ = parse_ratios(ratios)
+def split_bounds(n_dates: int, ratios: str | Sequence[float]) -> tuple[int, int, int]:
+    """Return exclusive boundaries for T0, pooled T1+T2, and T3."""
+    r0, r12, _ = parse_ratios(ratios)
     t0_end = int(round(r0 * n_dates))
-    t1_end = int(round((r0 + r1) * n_dates))
-    t2_end = int(round((r0 + r1 + r2) * n_dates))
-    return t0_end, t1_end, t2_end, int(n_dates)
+    t12_end = int(round((r0 + r12) * n_dates))
+    return t0_end, t12_end, int(n_dates)
 
 
 def load_json_kwargs(text_or_path: str | None) -> dict[str, Any]:

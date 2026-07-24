@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader, Dataset
 from src.data.load_dataset import set_seed
 from src.data.neighbors import neighbor_to_query_scale
 from src.experiments.runtime import log_experiment_separator, setup_logging
+from src.experiments.splits import chronological_date_slices
 from src.models.models import parameter_counts, resolve_device
 
 from .model import TSIFAConfig, TimeSeriesInformedForecastingAdapter
@@ -56,6 +57,7 @@ class PredictionPayloadDataset(Dataset):
         payload: dict[str, Any],
         *,
         prefix: str,
+        date_slice: slice | None = None,
         max_samples: int | None = None,
     ):
         self.prefix = prefix
@@ -63,16 +65,17 @@ class PredictionPayloadDataset(Dataset):
         if missing:
             raise KeyError(f"payload is missing required keys: {missing}")
 
-        x = payload[f"{prefix}_X_values"].float()
+        date_slice = slice(None) if date_slice is None else date_slice
+        x = payload[f"{prefix}_X_values"][date_slice].float()
         self.n_dates = int(x.shape[0])
         self.n_users = int(x.shape[1])
-        x_c_raw = payload[f"{prefix}_Xc_values"].float()
+        x_c_raw = payload[f"{prefix}_Xc_values"][date_slice].float()
         x_c = neighbor_to_query_scale(x, x_c_raw, x_c_raw)
         if x_c.shape[2] <= 0:
             raise ValueError("TS-IFA training requires payloads extracted with neighbors > 0")
 
-        y_c_raw = payload[f"{prefix}_Yc_values"].float()
-        residual_c_raw = payload[f"{prefix}_E_values"].float()
+        y_c_raw = payload[f"{prefix}_Yc_values"][date_slice].float()
+        residual_c_raw = payload[f"{prefix}_E_values"][date_slice].float()
         pred_neighbors_raw = y_c_raw - residual_c_raw
         y_c = neighbor_to_query_scale(x, x_c_raw, y_c_raw)
         residual_c = neighbor_to_query_scale(x, x_c_raw, residual_c_raw, residual=True)
@@ -81,10 +84,12 @@ class PredictionPayloadDataset(Dataset):
         self.tensors = {
             "x": flatten_time_user(x),
             "x_c": flatten_time_user(x_c),
-            "y": flatten_time_user(payload[f"{prefix}_Y_values"]),
+            "y": flatten_time_user(payload[f"{prefix}_Y_values"][date_slice]),
             "y_c": flatten_time_user(y_c),
-            "pred": flatten_time_user(payload[f"{prefix}_preds"]),
-            "pred_context": flatten_time_user(payload[f"{prefix}_preds_context"]),
+            "pred": flatten_time_user(payload[f"{prefix}_preds"][date_slice]),
+            "pred_context": flatten_time_user(
+                payload[f"{prefix}_preds_context"][date_slice]
+            ),
             "pred_neighbors": flatten_time_user(pred_neighbors),
             "residual_c": flatten_time_user(residual_c),
         }
@@ -367,9 +372,8 @@ def plot_loss_curve(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input-dir", default=None, help="Directory with train/oracle/eval prediction payloads")
-    parser.add_argument("--train-payload", default=None)
-    parser.add_argument("--oracle-payload", default=None)
+    parser.add_argument("--input-dir", default=None, help="Directory with adapt/eval prediction payloads")
+    parser.add_argument("--adapt-payload", default=None)
     parser.add_argument("--eval-payload", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--epochs", type=int, default=10000)
@@ -402,6 +406,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-train-samples", type=int, default=None)
     parser.add_argument("--max-valid-samples", type=int, default=None)
     parser.add_argument("--max-eval-samples", type=int, default=None)
+    parser.add_argument(
+        "--validation-fraction",
+        type=float,
+        default=0.2,
+        help="Chronological fraction of pooled T1+T2 query dates assigned to T2",
+    )
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--grad-clip", type=float, default=1.0)
     parser.add_argument("--residual-heads", type=int, default=4)
@@ -436,19 +446,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path, Path]:
+def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path | None, Path]:
     base = Path(args.input_dir).expanduser() if args.input_dir else None
-    train_payload = Path(args.train_payload).expanduser() if args.train_payload else None
-    oracle_payload = Path(args.oracle_payload).expanduser() if args.oracle_payload else None
+    adapt_payload = Path(args.adapt_payload).expanduser() if args.adapt_payload else None
     eval_payload = Path(args.eval_payload).expanduser() if args.eval_payload else None
-    if train_payload is None:
+    if adapt_payload is None:
         if base is None:
-            raise ValueError("pass --input-dir or --train-payload")
-        train_payload = base / "train_prediction_payload.pt"
-    if oracle_payload is None:
-        if base is None:
-            raise ValueError("pass --input-dir or --oracle-payload")
-        oracle_payload = base / "oracle_prediction_payload.pt"
+            raise ValueError("pass --input-dir or --adapt-payload")
+        adapt_payload = base / "adapt_prediction_payload.pt"
     if eval_payload is None and base is not None:
         candidate = base / "eval_prediction_payload.pt"
         eval_payload = candidate if candidate.exists() else None
@@ -457,9 +462,9 @@ def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path, Path, Path]:
     elif base is not None:
         output_dir = base / "ts_ifa"
     else:
-        output_dir = train_payload.parent / "ts_ifa"
+        output_dir = adapt_payload.parent / "ts_ifa"
     output_dir.mkdir(parents=True, exist_ok=True)
-    return train_payload, oracle_payload, eval_payload, output_dir
+    return adapt_payload, eval_payload, output_dir
 
 
 def main() -> dict[str, Path]:
@@ -468,22 +473,30 @@ def main() -> dict[str, Path]:
     log_experiment_separator(LOGGER)
     experiment_start = perf_counter()
     set_seed(args.seed)
-    train_payload_path, oracle_payload_path, eval_payload_path, output_dir = resolve_paths(args)
+    adapt_payload_path, eval_payload_path, output_dir = resolve_paths(args)
     LOGGER.info(
         "experiment start kind=ts_ifa_train input=%s epochs=%s batch_size=%s",
-        train_payload_path.parent,
+        adapt_payload_path.parent,
         args.epochs,
         args.batch_size,
     )
     LOGGER.info("payload load start")
+    adapt_payload = torch_load(adapt_payload_path)
+    n_adapt_dates = int(adapt_payload["adapt_X_values"].shape[0])
+    train_dates, valid_dates = chronological_date_slices(
+        n_adapt_dates,
+        args.validation_fraction,
+    )
     train_dataset = PredictionPayloadDataset(
-        torch_load(train_payload_path),
-        prefix="train",
+        adapt_payload,
+        prefix="adapt",
+        date_slice=train_dates,
         max_samples=args.max_train_samples,
     )
     valid_dataset = PredictionPayloadDataset(
-        torch_load(oracle_payload_path),
-        prefix="oracle",
+        adapt_payload,
+        prefix="adapt",
+        date_slice=valid_dates,
         max_samples=args.max_valid_samples,
     )
     eval_dataset = None
@@ -772,8 +785,8 @@ def main() -> dict[str, Path]:
                 "trainable": trainable_parameters,
             },
             "normalization": args.normalization,
-            "train_payload": str(train_payload_path),
-            "validation_payload": str(oracle_payload_path),
+            "adapt_payload": str(adapt_payload_path),
+            "validation_fraction": args.validation_fraction,
             "eval_payload": str(eval_payload_path) if eval_payload_path else None,
             "epochs": args.epochs,
             "epochs_requested": args.epochs,

@@ -28,8 +28,8 @@ from .sweep_results_table import (
 
 
 SELECTED_VARIANTS = (
-    "horizon_ridge_shared",
-    "bayes_context_scalar",
+    "aggr_y_ridge_shared",
+    "bayes_context_shared",
     "full_ridge_horizon",
 )
 
@@ -255,7 +255,7 @@ def build_selected_outputs(
 
         bayes_methods = [
             REFERENCE_METHOD,
-            *(f"{run}/bayes_context_scalar" for run in runs),
+            *(f"{run}/bayes_context_shared" for run in runs),
         ]
         try:
             bayes_table = build_table(

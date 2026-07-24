@@ -96,6 +96,7 @@ MIXTURE_GATE_INIT="${MIXTURE_GATE_INIT:--6.0}"
 EARLY_STOPPING_PATIENCE="${EARLY_STOPPING_PATIENCE:-0}"
 EARLY_STOPPING_MIN_DELTA="${EARLY_STOPPING_MIN_DELTA:-0.0}"
 RESTORE_BEST_VALIDATION="${RESTORE_BEST_VALIDATION:-true}"
+VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -148,12 +149,13 @@ run_task() {
   [ -z "$MAX_VALID_SAMPLES" ] || optional_args+=(--max-valid-samples "$MAX_VALID_SAMPLES")
   [ -z "$MAX_EVAL_SAMPLES" ] || optional_args+=(--max-eval-samples "$MAX_EVAL_SAMPLES")
   is_true "$RESTORE_BEST_VALIDATION" && restore_args+=(--restore-best-validation)
-  log_section "training start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING epochs=$EPOCHS batch_size=$BATCH_SIZE learning_rate=$LR weight_decay=$WEIGHT_DECAY beta=$BETA gamma=$GAMMA dropout=$DROPOUT attention_heads=$ATTENTION_HEADS attention_dim=$ATTENTION_DIM hidden_dim=$HIDDEN_DIM mixture_gate_init=$MIXTURE_GATE_INIT seed=$SEED"
+  log_section "training start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING validation_fraction=$VALIDATION_FRACTION epochs=$EPOCHS batch_size=$BATCH_SIZE learning_rate=$LR weight_decay=$WEIGHT_DECAY beta=$BETA gamma=$GAMMA dropout=$DROPOUT attention_heads=$ATTENTION_HEADS attention_dim=$ATTENTION_DIM hidden_dim=$HIDDEN_DIM mixture_gate_init=$MIXTURE_GATE_INIT seed=$SEED"
   srun --ntasks=1 python -m src.adaptors.ts_ifa.train \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --epochs "$EPOCHS" \
     --batch-size "$BATCH_SIZE" \
+    --validation-fraction "$VALIDATION_FRACTION" \
     --valid-eval-freq "$VALID_EVAL_FREQ" \
     --logging-eval-freq "$LOGGING_EVAL_FREQ" \
     --lr "$LR" \

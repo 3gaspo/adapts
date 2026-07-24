@@ -62,16 +62,18 @@ SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 GATE_LEARNING_RATE="${GATE_LEARNING_RATE:-0.03}"
 GATE_DEPTH="${GATE_DEPTH:-4}"
+GATE_EARLY_STOPPING_ROUNDS="${GATE_EARLY_STOPPING_ROUNDS:-50}"
+VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
 SEED="${SEED:-1}"
-MAX_TRAIN_FIT_SAMPLES="${MAX_TRAIN_FIT_SAMPLES:-}"
-MAX_ORACLE_FIT_SAMPLES="${MAX_ORACLE_FIT_SAMPLES:-}"
-MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
+MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-${MAX_TRAIN_FIT_SAMPLES:-}}"
+MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-${MAX_ORACLE_FIT_SAMPLES:-}}"
+MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
 
 FIT_SAMPLE_ARGS=(--fit-sample-seed "$FIT_SAMPLE_SEED")
-[ -z "$MAX_TRAIN_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-train-fit-samples "$MAX_TRAIN_FIT_SAMPLES")
-[ -z "$MAX_ORACLE_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-oracle-fit-samples "$MAX_ORACLE_FIT_SAMPLES")
-[ -z "$MAX_EVAL_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-eval-fit-samples "$MAX_EVAL_FIT_SAMPLES")
+[ -z "$MAX_T1_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-t1-fit-samples "$MAX_T1_FIT_SAMPLES")
+[ -z "$MAX_T2_VALID_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-t2-valid-samples "$MAX_T2_VALID_SAMPLES")
+[ -z "$MAX_ADAPT_REFIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-adapt-refit-samples "$MAX_ADAPT_REFIT_SAMPLES")
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -117,7 +119,7 @@ run_task() {
     log "skip complete family=gates dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return
   fi
-  log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH seed=$SEED max_train_fit_samples=${MAX_TRAIN_FIT_SAMPLES:-none} max_oracle_fit_samples=${MAX_ORACLE_FIT_SAMPLES:-none} max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
+  log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH early_stopping_rounds=$GATE_EARLY_STOPPING_ROUNDS validation_fraction=$VALIDATION_FRACTION seed=$SEED max_t1_fit_samples=${MAX_T1_FIT_SAMPLES:-none} max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none} max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
@@ -125,6 +127,8 @@ run_task() {
     --gate-iterations "$GATE_ITERATIONS" \
     --gate-learning-rate "$GATE_LEARNING_RATE" \
     --gate-depth "$GATE_DEPTH" \
+    --gate-early-stopping-rounds "$GATE_EARLY_STOPPING_ROUNDS" \
+    --validation-fraction "$VALIDATION_FRACTION" \
     "${FIT_SAMPLE_ARGS[@]}" \
     --seed "$SEED"
   assert_files gate-output \

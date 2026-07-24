@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.data.load_dataset import load_csv_dataset, resolve_csv_path, split_bounds  # noqa: E402
-from src.data.neighbors import aligned_store_dates, build_window_batch  # noqa: E402
+from src.data.neighbors import aligned_store_dates, build_window_batch, period_eval_dates  # noqa: E402
 from src.experiments.extraction import context_on_query_scale  # noqa: E402
 from src.models.chronos_model import Chronos  # noqa: E402
 from src.models.models import ForecastModel, Linear, load_pretrained_model, parameter_counts  # noqa: E402
@@ -67,9 +67,11 @@ def main() -> None:
 
     lags = 4
     horizon = 2
-    x, y = dataset.window_tensor(0, lags, horizon)
+    x, y = dataset.window_tensor(3, lags, horizon)
     assert x.shape == (2, 1, lags)
     assert y.shape == (2, 1, horizon)
+    torch.testing.assert_close(x[0, 0], torch.tensor([10.0, 11.0, 12.0, 13.0]))
+    torch.testing.assert_close(y[0, 0], torch.tensor([14.0, 15.0]))
 
     persistence = load_pretrained_model(
         "persistence",
@@ -82,14 +84,14 @@ def main() -> None:
 
     raw_windows = build_window_batch(
         dataset,
-        np.asarray([0, 1]),
+        np.asarray([3, 4]),
         lags=lags,
         horizon=horizon,
         distance_space="raw",
     )
     instance_windows = build_window_batch(
         dataset,
-        np.asarray([0, 1]),
+        np.asarray([3, 4]),
         lags=lags,
         horizon=horizon,
         distance_space="instance",
@@ -105,7 +107,7 @@ def main() -> None:
 
     encoder_windows = build_window_batch(
         dataset,
-        np.asarray([0, 1]),
+        np.asarray([3, 4]),
         lags=lags,
         horizon=horizon,
         distance_space="encoder",
@@ -148,7 +150,17 @@ def main() -> None:
     )
     torch.testing.assert_close(scaled_context, torch.tensor([[[3.0, 7.0, 9.0, 11.0]]]))
 
-    assert split_bounds(100, "0.3,0.35,0.15,0.2") == (30, 65, 80, 100)
+    assert split_bounds(100, "0.3,0.5,0.2") == (30, 80, 100)
+    eval_dates = period_eval_dates(
+        80,
+        100,
+        n_dates=100,
+        lags=4,
+        horizon=2,
+        stride=1,
+    )
+    assert eval_dates[0] == 79
+    assert eval_dates[-1] == 97
     fixed_dates = aligned_store_dates(
         80,
         lags=4,
@@ -173,7 +185,9 @@ def main() -> None:
         max_store_dates=len(fixed_dates),
     )
     assert len(online_dates) == len(fixed_dates)
-    assert online_dates[-1] == 80 - (4 + 2)
+    assert online_dates[-1] == 80 - 2
+    assert np.all((80 - online_dates) % 1 == 0)
+    assert np.all(online_dates + horizon <= 80)
     warmup_dates = aligned_store_dates(
         20,
         lags=4,

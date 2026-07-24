@@ -24,39 +24,53 @@ REFERENCE_METHOD = "vanilla"
 
 BASELINE_HELDOUT_VARIANTS = (
     "context_forecast",
-    "horizon_knn_weighted",
-    "horizon_knn_mean",
-    "horizon_mix_scalar",
-    "horizon_ridge_shared",
-    "residual_knn_weighted",
-    "residual_mix_scalar",
+    "aggr_y",
+    "y_mean",
+    "aggr_y_mix_shared",
+    "aggr_y_mix_horizon",
+    "context_ridge_shared",
+    "context_ridge_horizon",
+    "aggr_y_ridge_shared",
+    "aggr_y_ridge_horizon",
+    "y_ridge_shared",
+    "y_ridge_horizon",
+    "cov_y_ridge_shared",
+    "cov_horizon_ridge_shared",
+    "cov_horizon_ridge_horizon",
     "residual_ridge_shared",
     "residual_ridge_horizon",
+    "full_ridge_shared",
     "full_ridge_horizon",
 )
 
-BASELINE_DIAGNOSTIC_VARIANTS = (
-    "horizon_mix_scalar_eval_fit",
-    "horizon_ridge_shared_eval_fit",
-    "residual_mix_scalar_eval_fit",
-    "residual_ridge_shared_eval_fit",
-    "residual_ridge_horizon_eval_fit",
-    "full_ridge_horizon_eval_fit",
+BASELINE_DIAGNOSTIC_VARIANTS = tuple(
+    f"{name}_eval_fit"
+    for name in BASELINE_HELDOUT_VARIANTS
+    if name not in {"context_forecast", "aggr_y", "y_mean"}
 )
 
 GATE_HELDOUT_VARIANTS = (
     "context_forecast",
-    "bayes_context_scalar",
+    "aggr_y",
+    "bayes_context_shared",
     "bayes_context_horizon",
-    "catboost_context_classifier_scalar",
+    "catboost_context_classifier_shared",
     "catboost_context_classifier_horizon",
-    "catboost_context_regressor_scalar",
+    "catboost_context_regressor_shared",
     "catboost_context_regressor_horizon",
+    "bayes_aggr_y_shared",
+    "bayes_aggr_y_horizon",
+    "catboost_aggr_y_classifier_shared",
+    "catboost_aggr_y_classifier_horizon",
+    "catboost_aggr_y_regressor_shared",
+    "catboost_aggr_y_regressor_horizon",
 )
 
 GATE_DIAGNOSTIC_VARIANTS = (
-    "oracle_context_scalar",
+    "oracle_context_shared",
     "oracle_context_horizon",
+    "oracle_aggr_y_shared",
+    "oracle_aggr_y_horizon",
 )
 
 TS_IFA_MAIN_VARIANTS = ("TS-IFA",)
@@ -64,12 +78,18 @@ TS_IFA_BRANCH_VARIANTS = ("residual_branch", "memory_branch")
 
 FULL_VARIANTS = (
     *BASELINE_HELDOUT_VARIANTS,
-    "bayes_context_scalar",
+    "bayes_context_shared",
     "bayes_context_horizon",
-    "catboost_context_classifier_scalar",
+    "catboost_context_classifier_shared",
     "catboost_context_classifier_horizon",
-    "catboost_context_regressor_scalar",
+    "catboost_context_regressor_shared",
     "catboost_context_regressor_horizon",
+    "bayes_aggr_y_shared",
+    "bayes_aggr_y_horizon",
+    "catboost_aggr_y_classifier_shared",
+    "catboost_aggr_y_classifier_horizon",
+    "catboost_aggr_y_regressor_shared",
+    "catboost_aggr_y_regressor_horizon",
     *TS_IFA_MAIN_VARIANTS,
 )
 

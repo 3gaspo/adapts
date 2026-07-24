@@ -24,7 +24,7 @@ write_extraction_manifest = ARTIFACTS.write_extraction_manifest
 def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
-        files = ("train_prediction_payload.pt", "oracle_prediction_payload.pt", "eval_prediction_payload.pt")
+        files = ("adapt_prediction_payload.pt", "eval_prediction_payload.pt")
         for index, name in enumerate(files, start=1):
             (root / name).write_bytes(bytes([index]) * index)
         signature = {"dataset_name": "toy", "lags": 4, "horizon": 2}

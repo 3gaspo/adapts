@@ -28,12 +28,26 @@ mean hides systematic failures on a subset of series.
 heterogeneity, and provide the denominator against which every retrieval method
 must be compared.}
 
-\section{Implementation details}
-Dates are split chronologically as $(\Tzero,\Tone,\Ttwo,\Tthree)=(0.30,0.35,0.15,0.20)$.
-The control command maps \Tone, \Ttwo, and \Tthree to the labels
-\code{train}, \code{oracle}, and \code{eval}; the Slurm job evaluates the held-out
-\Tthree period.  Each query contains all users at one date, but the backbone is
-called as a univariate model with one channel per sample.
+\section{Windows and chronological protocol}
+The integer $s$ is always the query date and the last observed date. The
+look-back and target are
+\[
+ X_s=(s-L,s]=\{z_{s-L+1},\ldots,z_s\},\qquad
+ Y_s=(s,s+H]=\{z_{s+1},\ldots,z_{s+H}\}.
+\]
+They contain exactly $L$ and $H$ values; the look-back never contains the
+first forecast value. If a target interval begins at date $b$, its first query
+is $s=b-1$. The look-back may cross that boundary, but the complete $Y_s$ must
+lie inside the selected target interval. Consequently the held-out \Tthree
+target dates do not shift when $L$ changes.
+
+Raw dates are first split chronologically as
+$(\Tzero,\Tone+\Ttwo,\Tthree)=(0.30,0.50,0.20)$. Extraction writes pooled
+\code{adapt} (\Tone+\Ttwo) and held-out \code{eval} (\Tthree) payloads.
+Each downstream model makes its own whole-query-date split of \code{adapt};
+users sharing one query date can never be divided between \Tone and \Ttwo.
+The control evaluates \Tthree. Each query contains all users at one date, but
+the backbone is called as a univariate model with one channel per sample.
 
 Dataset preparation automatically reads the sibling \code{config.json}.
 Portable top-level options and adaptation-scoped options are combined before

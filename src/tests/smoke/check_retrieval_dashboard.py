@@ -50,7 +50,7 @@ def extraction_payload(prefix: str) -> dict[str, torch.Tensor]:
 def main() -> None:
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
-        payloads = {split: extraction_payload(split) for split in ("train", "oracle", "eval")}
+        payloads = {split: extraction_payload(split) for split in ("adapt", "eval")}
         for split, payload in payloads.items():
             torch.save(payload, root / f"{split}_prediction_payload.pt")
 
@@ -63,15 +63,15 @@ def main() -> None:
             baseline_predictions[split] = {
                 "vanilla": target + 1.0,
                 "context_forecast": target + 0.25,
-                "horizon_knn_weighted": target + 0.5,
+                "aggr_y": target + 0.5,
             }
             gate_predictions[split] = {
-                "catboost_context_classifier_scalar": target + 0.2,
-                "oracle_context_scalar": target + 0.1,
+                "catboost_context_classifier_shared": target + 0.2,
+                "oracle_context_shared": target + 0.1,
             }
             diagnostics_by_split[split] = {
-                "classifier_scalar_score": score,
-                "classifier_scalar_target": score,
+                "context_classifier_shared_score": score,
+                "context_classifier_shared_target": score,
             }
         baseline_dir = root / "baselines"
         baseline_dir.mkdir()
@@ -97,8 +97,8 @@ def main() -> None:
         data = load_dashboard_data(root)
         arrays = split_arrays(data, "eval")
         assert arrays["x"].shape == (6, 4)
-        assert "horizon_knn_weighted" in prediction_names(data, "eval")
-        assert "catboost_context_classifier_scalar" in prediction_names(data, "eval")
+        assert "aggr_y" in prediction_names(data, "eval")
+        assert "catboost_context_classifier_shared" in prediction_names(data, "eval")
         assert "ts_ifa" in prediction_names(data, "eval")
 
         values, _ = horizon_values(
@@ -112,7 +112,7 @@ def main() -> None:
         assert values.shape == (3,)
         assert (values > 0).all()
 
-        _, _, auc, accuracy, count = gate_roc(data, "eval", "classifier_scalar")
+        _, _, auc, accuracy, count = gate_roc(data, "eval", "context_classifier_shared")
         assert auc == 1.0
         assert accuracy == 1.0
         assert count == 6

@@ -171,12 +171,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--lags", type=int, required=True)
     parser.add_argument("--horizon", type=int, required=True)
-    parser.add_argument("--splits", default="0.3,0.35,0.15,0.2")
+    parser.add_argument("--splits", default="0.3,0.5,0.2")
     parser.add_argument("--eval-stride", type=int, default=1)
     parser.add_argument(
         "--eval-splits",
         default="eval",
-        help="Any of train,oracle,eval separated by comma/semicolon",
+        help="Any of adapt,eval separated by comma/semicolon",
     )
     parser.add_argument("--output-dir", default="outputs/univariate")
     parser.add_argument("--save-name", default="univariate")
@@ -211,11 +211,10 @@ def main() -> dict[str, Path]:
         dataset_config=args.dataset_config,
     )
     LOGGER.info("dataset load done dates=%s users=%s", dataset.n_dates, dataset.n_users)
-    t0_end, t1_end, t2_end, t3_end = split_bounds(dataset.n_dates, args.splits)
+    t0_end, t12_end, t3_end = split_bounds(dataset.n_dates, args.splits)
     split_ranges = {
-        "train": (t0_end, t1_end),
-        "oracle": (t1_end, t2_end),
-        "eval": (t2_end, t3_end),
+        "adapt": (t0_end, t12_end),
+        "eval": (t12_end, t3_end),
     }
     selected = [part.strip() for part in args.eval_splits.replace(";", ",").split(",") if part.strip()]
     LOGGER.info("model load start")

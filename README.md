@@ -5,19 +5,48 @@ forecasters.  The current paper-first path is to establish strong direct
 retrieval baselines and learned gates; TS-IFA remains an architecture-tuning
 track until its T2/T3 overfitting is controlled.
 
-## Protocol and outputs
+## Protocol, windows, and outputs
 
-The chronological protocol is fixed throughout the project:
+Every integer `s` stored as `query_t` is the last observed query date. Windows
+are exactly
 
-- T0 is the retrieval datastore.
-- T1 fits ridge/scalar baselines and trains TS-IFA.
-- T2 fits gates and selects TS-IFA checkpoints.
-- T3 is untouched final evaluation.  Nothing fitted on T3 belongs in the main
-  comparison.
+```text
+X_s = (s-L, s] = {z_(s-L+1), ..., z_s}
+Y_s = (s, s+H] = {z_(s+1), ..., z_(s+H)}
+```
+
+so `X_s` and `Y_s` contain exactly `L` and `H` values and never overlap. If a
+target period starts at date `b`, its first eligible query date is `b-1`; the
+lookback may cross a split boundary, but the entire target must lie inside the
+selected target period. This keeps the same T3 target dates when `L` changes.
+
+Extraction fixes only three chronological regions:
+
+- T0 (30%) is the retrieval datastore.
+- pooled T1+T2 (50%) is written once as the `adapt` payload.
+- T3 (20%) is written as the untouched `eval` payload.
+
+Each downstream model chronologically re-splits `adapt` by whole query dates;
+the default assigns its last 20% of dates to T2. Users from the same date are
+never separated. The model-specific protocols are:
+
+- lambda mixtures fit on all T1+T2; their T1 fit is also scored on T2 as a
+  diagnostic;
+- ridge models fit all candidate alphas on T1, select alpha by T2 nMSE, and
+  refit the selected model on T1+T2;
+- fixed-candidate CatBoost gates fit on T1, use T2 early stopping to select the
+  number of trees, then instantiate a fresh model and refit on T1+T2;
+- TS-IFA trains on T1, selects/restores a checkpoint on T2, and does not refit
+  after selection;
+- a future gate over a trainable candidate must train that candidate on T1 and
+  the gate on T2 without later changing the candidate, unless out-of-fold
+  candidate predictions are introduced.
+
+Nothing fitted on T3 belongs in the main comparison.
 
 Extraction writes to
 `outputs/adaptation/<dataset>/<L>_<H>/<model>/<retrieval>/extracted/`.
-A usable extraction contains train/oracle/eval prediction and feature payloads
+A usable extraction contains adapt/eval prediction and feature payloads
 plus `extraction_manifest.json`.  The manifest is written atomically only after
 all payloads exist and records the exact extraction signature, the resolved
 dataset-config path and content hash, and file sizes.
@@ -41,13 +70,20 @@ use the complete selected fitting split without materializing the full design
 matrix. This changes memory use, not the fitted objective.
 
 Baseline and gate fitting may optionally use reproducible subsets of the
-already-extracted payloads through `MAX_TRAIN_FIT_SAMPLES`,
-`MAX_ORACLE_FIT_SAMPLES`, and `MAX_EVAL_FIT_SAMPLES`. All default to unlimited;
-`FIT_SAMPLE_SEED` defaults to `SEED`. T1 controls primary baseline fitting, T2
-controls gate fitting, and the T3 maximum applies only to optimistic
-`_eval_fit` methods. Final T3 scoring always uses the complete evaluation
-payload, regardless of these fitting maxima. The chosen counts and seeds are
-logged and stored in the output artifact.
+already-extracted payloads through `MAX_T1_FIT_SAMPLES`,
+`MAX_T2_VALID_SAMPLES`, `MAX_ADAPT_REFIT_SAMPLES`, and
+`MAX_EVAL_FIT_SAMPLES`. All default to unlimited; `FIT_SAMPLE_SEED` defaults to
+`SEED`. The first three limits affect only T1 fitting, T2 validation, and the
+final T1+T2 refit respectively. The T3 maximum applies only to explicitly
+optimistic `_eval_fit` methods. Final T3 scoring always uses every evaluation
+sample. Legacy `MAX_TRAIN_FIT_SAMPLES` and `MAX_ORACLE_FIT_SAMPLES` are accepted
+as aliases for the first two controls.
+
+For period-aligned retrieval, neighbor query dates `r_j` satisfy
+`(s-r_j) mod P = 0`. In fixed mode, both the neighbor lookback and future lie
+inside T0. In online mode, `r_j+H <= s`, so the complete retrieved future is
+already observable at query date `s`. A neighbor future may overlap the
+observed query lookback but can never overlap the query target.
 
 ## Data and weight locations
 
@@ -178,11 +214,12 @@ full T3 evaluation:
 ```bash
 DATASETS_CSV=Traffic SETTINGS_CSV=504:504 \
 DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=10 \
-MAX_TRAIN_FIT_SAMPLES=50000 FIT_SAMPLE_SEED=1 \
+MAX_T1_FIT_SAMPLES=50000 FIT_SAMPLE_SEED=1 \
 SKIP_COMPLETE=false EXPERIMENT_MODE=small sbatch baselines.slurm
 ```
 
-Use `MAX_ORACLE_FIT_SAMPLES` analogously for gate training. Use
+Use `MAX_T2_VALID_SAMPLES` to cap model-local validation and
+`MAX_ADAPT_REFIT_SAMPLES` to cap the T1+T2 refit. Use
 `MAX_EVAL_FIT_SAMPLES` only to limit the optimistic appendix fits.
 
 Do not submit a downstream job without an `afterok` dependency unless the
@@ -309,6 +346,10 @@ python src/tests/smoke/check_retrieval_dashboard.py
 ```
 
 The experiment guides and their compiled PDFs are under
-`latex/experiment_guides/`.  Source code, notebooks, tests, and Slurm helpers
-remain under `src/`; generated artifacts stay under `outputs/`, and runtime
-logs under `logs/`.
+`latex/experiment_guides/`: `01_univariate_control`, `02_retrieval_baselines`,
+`03_learned_gates`, `04_ts_ifa`, and `05_related_methods`. The second and third
+give the exact artifact names, formulas, feature definitions, and validation
+protocols; the fifth records the dated retrieval/adaptation literature
+comparison and source provenance. Source code, notebooks, tests, and Slurm
+helpers remain under `src/`; generated artifacts stay under `outputs/`, and
+runtime logs under `logs/`.

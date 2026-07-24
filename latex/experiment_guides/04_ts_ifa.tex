@@ -39,6 +39,11 @@ $-6$, so the initial adapter is close to the backbone and learns deviations
 only when supported by data.
 
 \section{Implementation details}
+Extraction stores pooled \Tone+\Ttwo rather than prescribing their boundary.
+TS-IFA assigns the final 20\% of whole query dates in that pool to \Ttwo.
+This model-local split uses the same $X_s=(s-L,s]$, $Y_s=(s,s+H]$
+convention as every baseline.
+
 Each attention block uses four heads of dimension 32, followed by a 128-unit
 GELU MLP.  Inputs are instance-normalized on the query scale.  AdamW uses
 learning rate $10^{-5}$, weight decay $10^{-4}$, gradient clipping 1,
@@ -47,10 +52,13 @@ one random batch from \Tone.  Full deterministic \Ttwo validation and interval
 logging occur every 1,000 optimizer steps; \Tthree is evaluated only after
 training.
 
-The trainer can restore the lowest-nMSE \Ttwo checkpoint before touching
+The trainer restores the lowest-nMSE \Ttwo checkpoint before touching
 \Tthree and can stop after a configurable number of non-improving validation
 evaluations.  The launcher enables best-checkpoint restoration but leaves early
 stopping disabled by default for backward-compatible optimization length.
+Unlike ridge and fixed-candidate CatBoost gates, TS-IFA is not refit on
+\Tone+\Ttwo after checkpoint selection: doing so would remove the validation
+signal used to select its weights.
 Dropout and reduced attention/MLP dimensions should be screened on one pilot
 configuration before widening the sweep.  A scalar/shared or low-rank final
 mixture is the next architecture ablation, not yet a default change.

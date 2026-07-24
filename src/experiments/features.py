@@ -185,7 +185,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", required=True, help="Directory with *_prediction_payload.pt files")
     parser.add_argument("--output-dir", default=None, help="Defaults to <input-dir>/feature_analysis")
-    parser.add_argument("--prefixes", default="train,oracle,eval", help="Comma/semicolon-separated split prefixes")
+    parser.add_argument("--prefixes", default="adapt,eval", help="Comma/semicolon-separated extraction prefixes")
     return parser.parse_args()
 
 

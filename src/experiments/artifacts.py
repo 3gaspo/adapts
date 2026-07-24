@@ -15,10 +15,10 @@ LOGGER = logging.getLogger(__name__)
 
 MANIFEST_NAME = "extraction_manifest.json"
 PREDICTION_FILES = tuple(
-    f"{split}_prediction_payload.pt" for split in ("train", "oracle", "eval")
+    f"{split}_prediction_payload.pt" for split in ("adapt", "eval")
 )
 FEATURE_FILES = tuple(
-    f"{split}_features_payload.pt" for split in ("train", "oracle", "eval")
+    f"{split}_features_payload.pt" for split in ("adapt", "eval")
 )
 
 
@@ -51,7 +51,7 @@ def write_extraction_manifest(
             raise FileNotFoundError(f"cannot complete extraction; missing or empty artifact: {path}")
         sizes[name] = path.stat().st_size
     payload = {
-        "format_version": 1,
+        "format_version": 2,
         "status": "complete",
         "completed_at": datetime.now(timezone.utc).isoformat(),
         "signature": dict(signature),
@@ -78,7 +78,7 @@ def validate_extraction(
         payload = json.loads(marker.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return False, f"invalid completion marker {marker}: {exc}"
-    if payload.get("format_version") != 1 or payload.get("status") != "complete":
+    if payload.get("format_version") != 2 or payload.get("status") != "complete":
         return False, f"unsupported or incomplete marker: {marker}"
     signature = payload.get("signature")
     if not isinstance(signature, Mapping):

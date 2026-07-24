@@ -100,12 +100,18 @@ def period_eval_dates(
     horizon: int,
     stride: int,
 ) -> np.ndarray:
-    """Return query starts fully contained in ``[period_start, period_end)``."""
-    max_start = n_dates - (lags + horizon)
-    last = min(period_end - (lags + horizon), max_start)
-    if last < period_start:
+    """Return query dates whose full target lies in ``[period_start, period_end)``.
+
+    A query date ``s`` is the final observed date.  Its windows are
+    ``X=(s-L,s]`` and ``Y=(s,s+H]``.  Consequently the first forecast in a
+    split may use the lookback immediately preceding that split; no lookback
+    worth of target dates is silently discarded at a boundary.
+    """
+    first = max(int(lags) - 1, int(period_start) - 1)
+    last = min(int(n_dates) - int(horizon) - 1, int(period_end) - int(horizon) - 1)
+    if last < first:
         return np.array([], dtype=np.int64)
-    return np.arange(period_start, last + 1, int(stride), dtype=np.int64)
+    return np.arange(first, last + 1, int(stride), dtype=np.int64)
 
 
 def _trim_dates(
@@ -146,10 +152,12 @@ def aligned_store_dates(
     history_start: int | None = None,
     history_end: int | None = None,
 ) -> np.ndarray:
-    """Return datastore start dates aligned to the query phase.
+    """Return datastore query dates aligned to the query phase.
 
     In fixed mode the store is ``[store_start, store_end)``. In online mode it
-    uses all complete history ending before the query window.
+    uses all labeled windows whose future is observed by query date ``s``.
+    Every returned neighbor date ``r`` satisfies ``r + H <= s`` and, when
+    period alignment is enabled, ``(s-r) mod period = 0``.
     """
     if datastore_stride is None:
         if train_stride is None:
@@ -162,21 +170,21 @@ def aligned_store_dates(
         raise ValueError("datastore_stride must be a multiple of period when align_period=True")
 
     if online:
-        last_valid_store = int(query_t) - (int(lags) + int(horizon))
-        if last_valid_store < 0:
+        last_valid_store = int(query_t) - int(horizon)
+        if last_valid_store < int(lags) - 1:
             return np.array([], dtype=np.int64)
-        first = 0
+        first = int(lags) - 1
         last = last_valid_store
     else:
-        last = int(store_end) - (int(lags) + int(horizon))
-        if last < store_start:
+        first = int(store_start) + int(lags) - 1
+        last = int(store_end) - int(horizon) - 1
+        if last < first:
             return np.array([], dtype=np.int64)
-        first = int(store_start)
 
     if history_start is not None:
-        first = max(first, int(history_start))
+        first = max(first, int(history_start) + int(lags) - 1)
     if history_end is not None:
-        last = min(last, int(history_end) - (int(lags) + int(horizon)))
+        last = min(last, int(history_end) - int(horizon) - 1)
     if last < first:
         return np.array([], dtype=np.int64)
 
@@ -201,7 +209,7 @@ def aligned_store_dates(
 
 def build_window_batch(
     dataset: CsvTimeSeries,
-    start_dates: np.ndarray,
+    query_dates: np.ndarray,
     *,
     lags: int,
     horizon: int,
@@ -210,22 +218,24 @@ def build_window_batch(
     device: str | torch.device | None = None,
     pool_representation: bool = False,
 ) -> WindowBatch:
-    """Build flattened features and raw windows for deterministic start dates."""
-    start_dates = np.asarray(start_dates, dtype=np.int64)
-    if len(start_dates) == 0:
+    """Build windows with ``X=(s-L,s]`` and ``Y=(s,s+H]`` for query dates."""
+    query_dates = np.asarray(query_dates, dtype=np.int64)
+    if len(query_dates) == 0:
         return WindowBatch(
-            dates=start_dates,
+            dates=query_dates,
             features=np.empty((0, int(lags)), dtype=np.float32),
             windows=torch.empty((0, int(lags) + int(horizon)), dtype=torch.float32),
             n_users=dataset.n_users,
             lags=int(lags),
             horizon=int(horizon),
         )
-    max_stop = int(start_dates.max()) + int(lags) + int(horizon)
-    if max_stop > dataset.n_dates:
+    min_start = int(query_dates.min()) - int(lags) + 1
+    max_stop = int(query_dates.max()) + int(horizon) + 1
+    if min_start < 0 or max_stop > dataset.n_dates:
         raise ValueError("requested window dates exceed dataset length")
 
-    value_indices = start_dates[:, None] + np.arange(int(lags) + int(horizon))
+    offsets = np.arange(-int(lags) + 1, int(horizon) + 1)
+    value_indices = query_dates[:, None] + offsets
     raw = dataset.values[value_indices]  # (dates, lags+horizon, users)
     windows = rearrange(raw, "date time user -> (user date) time")
     lookbacks = windows[:, : int(lags)]
@@ -252,7 +262,7 @@ def build_window_batch(
         raise ValueError(f"unknown distance_space={distance_space!r}")
 
     return WindowBatch(
-        dates=start_dates,
+        dates=query_dates,
         features=np.ascontiguousarray(features, dtype=np.float32),
         windows=torch.as_tensor(windows, dtype=torch.float32),
         n_users=dataset.n_users,

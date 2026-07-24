@@ -172,23 +172,19 @@ def run() -> None:
     check_memory_loss_component()
     with tempfile.TemporaryDirectory() as tmp:
         base = Path(tmp)
-        train_path = base / "train_prediction_payload.pt"
-        oracle_path = base / "oracle_prediction_payload.pt"
+        adapt_path = base / "adapt_prediction_payload.pt"
         eval_path = base / "eval_prediction_payload.pt"
         out = base / "ts_ifa"
-        torch.save(make_payload("train"), train_path)
-        torch.save(make_payload("oracle"), oracle_path)
+        torch.save(make_payload("adapt"), adapt_path)
         torch.save(make_payload("eval"), eval_path)
         old_argv = sys.argv
         try:
             sys.argv = [
                 "src.adaptors.ts_ifa.train",
-                "--train-payload",
-                str(train_path),
+                "--adapt-payload",
+                str(adapt_path),
                 "--eval-payload",
                 str(eval_path),
-                "--oracle-payload",
-                str(oracle_path),
                 "--output-dir",
                 str(out),
                 "--epochs",

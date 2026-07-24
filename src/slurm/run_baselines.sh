@@ -55,17 +55,23 @@ DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
-L2="${L2:-0.001}"
+L2_GRID="${L2_GRID:-0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10}"
+VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
+FIT_BASELINES_ON_EVAL="${FIT_BASELINES_ON_EVAL:-false}"
 SEED="${SEED:-1}"
-MAX_TRAIN_FIT_SAMPLES="${MAX_TRAIN_FIT_SAMPLES:-}"
-MAX_ORACLE_FIT_SAMPLES="${MAX_ORACLE_FIT_SAMPLES:-}"
+MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-${MAX_TRAIN_FIT_SAMPLES:-}}"
+MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-${MAX_ORACLE_FIT_SAMPLES:-}}"
+MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
 
 FIT_SAMPLE_ARGS=(--fit-sample-seed "$FIT_SAMPLE_SEED")
-[ -z "$MAX_TRAIN_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-train-fit-samples "$MAX_TRAIN_FIT_SAMPLES")
-[ -z "$MAX_ORACLE_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-oracle-fit-samples "$MAX_ORACLE_FIT_SAMPLES")
+[ -z "$MAX_T1_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-t1-fit-samples "$MAX_T1_FIT_SAMPLES")
+[ -z "$MAX_T2_VALID_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-t2-valid-samples "$MAX_T2_VALID_SAMPLES")
+[ -z "$MAX_ADAPT_REFIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-adapt-refit-samples "$MAX_ADAPT_REFIT_SAMPLES")
 [ -z "$MAX_EVAL_FIT_SAMPLES" ] || FIT_SAMPLE_ARGS+=(--max-eval-fit-samples "$MAX_EVAL_FIT_SAMPLES")
+EVAL_FIT_ARGS=()
+is_true "$FIT_BASELINES_ON_EVAL" && EVAL_FIT_ARGS+=(--fit-baselines-on-eval)
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -111,13 +117,14 @@ run_task() {
     log "skip complete family=baselines dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return
   fi
-  log_section "baselines start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2=$L2 fit_baselines_on_eval=true seed=$SEED max_train_fit_samples=${MAX_TRAIN_FIT_SAMPLES:-none} max_oracle_fit_samples=${MAX_ORACLE_FIT_SAMPLES:-none} max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
+  log_section "baselines start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=baselines l2_grid=$L2_GRID validation_fraction=$VALIDATION_FRACTION fit_baselines_on_eval=$FIT_BASELINES_ON_EVAL seed=$SEED max_t1_fit_samples=${MAX_T1_FIT_SAMPLES:-none} max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none} max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none} max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --family baselines \
-    --l2 "$L2" \
-    --fit-baselines-on-eval \
+    --l2-grid "$L2_GRID" \
+    --validation-fraction "$VALIDATION_FRACTION" \
+    "${EVAL_FIT_ARGS[@]}" \
     "${FIT_SAMPLE_ARGS[@]}" \
     --seed "$SEED"
   assert_files baseline-output \

@@ -5,69 +5,131 @@
 \date{}
 \begin{document}
 \maketitle
-\enlargethispage{5\baselineskip}
 
-\section{Theoretical overview and goal}
-Let $(x_c^{(j)},y_c^{(j)})_{j=1}^{k}$ be past windows retrieved for query $x$.
-After transferring each neighbor to the query scale, distance weights are
+\section{Signals and leakage-free retrieval}
+For query date $s$, the exact window convention is
 \[
- w_j=\frac{\exp(-\tilde d_j)}{\sum_{r=1}^{k}\exp(-\tilde d_r)},
- \qquad \tilde d_j=\frac{d_j-\min_r d_r}{\operatorname{sd}(d)+\varepsilon}.
+ X_s=(s-L,s],\qquad Y_s=(s,s+H].
 \]
-The simplest memory forecast is $\hat y_K=\sum_jw_jy_c^{(j)}$.  If the frozen
-backbone's neighbor residual is $e_c^{(j)}=y_c^{(j)}-f(x_c^{(j)})$, residual
-adaptation instead uses $\hat y_R=\hat y_0+\sum_jw_je_c^{(j)}$.  Scalar mixtures
-and ridge regressions learn how strongly these signals should correct the
-vanilla forecast.
+Let $V=f(X_s)$ be the vanilla backbone forecast and let $C$ be the same
+backbone conditioned on retrieved examples. For neighbor $j$, let $r_j$ be
+its last look-back date, $Y_j$ its observed future, and $N_j=f(X_{r_j})$ its
+vanilla forecast. All neighbor values are transferred to the query's level
+and scale before use. Distance weights are
+\[
+ w_j=\frac{\exp(-\widetilde d_j)}{\sum_{\ell=1}^{k}
+ \exp(-\widetilde d_\ell)},\qquad
+ \widehat Y_h=\sum_{j=1}^{k}w_jY_{j,h}.
+\]
 
-\goal{Determine whether retrieval contains useful predictive information before
-introducing learned gates or the TS-IFA neural adapter, and identify whether
-neighbor horizons or neighbor residuals are the more effective memory.}
+In period-aligned retrieval, the last dates of the look-backs satisfy
+$s-r_j\equiv0\pmod P$. In fixed mode every $(X_{r_j},Y_{r_j})$ lies wholly
+inside \Tzero. In online mode a neighbor is eligible only when
+$r_j+H\leq s$, so its complete future is observed by query time. A retrieved
+future may overlap the query look-back, which is already observed, but it can
+never overlap $Y_s$. These conditions prevent target leakage.
 
-\section{Implementation details}
-Shared extraction uses \Tzero as the datastore, \Tone to fit baseline
-coefficients, \Ttwo for oracle diagnostics, and untouched \Tthree for final
-evaluation.  Online retrieval is period-aligned: the store grows with time but
-uses only eligible history.  The current sweep uses Euclidean distance, raw and
-instance-normalized spaces, $k\in\{1,3,10\}$, daily period/stride 24, and at most
-30,000 store windows.
+\goal{Compare all useful direct combinations of the available information
+$V,C,Y_j,N_j$ before introducing a neural adapter.}
 
-Small uses the three-dataset RevIN reproduction profile; full adds the six-dataset
-Chronos and 512--64 Cross-RAG comparisons; ultra adds TabPFN-TS. Atomic
-manifests prevent consumers from loading partial payloads.
+\section{Anchored models}
+Every fitted forecast is written directly as $V+\text{linear signals}$.
+There is no intercept and no design based only on differences such as
+$Y_j-N_j$. The word ``residual'' below is only the agreed name for the model
+containing both $Y_j$ and $N_j$.
 
-\begin{table}[h]
-\centering
-\begin{tabular}{p{.31\linewidth}p{.61\linewidth}}
+A \emph{shared} model has one coefficient vector used at every horizon.
+A \emph{horizon} model fits $H$ independent regressions. Each of those $H$
+regressions has the same number of coefficients as the shared regression;
+the total coefficient count is therefore multiplied by $H$.
+
+\small
+\begin{longtable}{p{.27\linewidth}p{.55\linewidth}r}
 \toprule
-Family & Compared predictions \\
+Artifact name & Forecast at horizon $h$ & Coefficients \\
 \midrule
-Direct & Vanilla backbone; context-conditioned backbone \\
-Neighbor & Weighted/mean neighbor horizon; weighted neighbor residual \\
-Scalar fit & Convex horizon mixture; scaled residual correction \\
-Ridge fit & Shared or horizon-specific residual, horizon, and full mixtures \\
+\endhead
+\code{vanilla} & $V_h$ & 0\\
+\code{context\_forecast} & $C_h$ & 0\\
+\code{aggr\_y} & $\widehat Y_h$ & 0\\
+\code{y\_mean} & $k^{-1}\sum_jY_{j,h}$ & 0\\
+\midrule
+\code{aggr\_y\_mix\_shared}
+  & $(1-\lambda)V_h+\lambda\widehat Y_h$ & 1\\
+\code{aggr\_y\_mix\_horizon}
+  & $(1-\lambda_h)V_h+\lambda_h\widehat Y_h$ & $1$ per $h$\\
+\midrule
+\code{context\_ridge\_shared}
+  & $V_h+aV_h+bC_h$ & 2\\
+\code{context\_ridge\_horizon}
+  & $V_h+a_hV_h+b_hC_h$ & 2 per $h$\\
+\code{aggr\_y\_ridge\_shared}
+  & $V_h+aV_h+b\widehat Y_h$ & 2\\
+\code{aggr\_y\_ridge\_horizon}
+  & $V_h+a_hV_h+b_h\widehat Y_h$ & 2 per $h$\\
+\code{y\_ridge\_shared}
+  & $V_h+aV_h+\sum_jb_jY_{j,h}$ & $1+k$\\
+\code{y\_ridge\_horizon}
+  & $V_h+a_hV_h+\sum_jb_{j,h}Y_{j,h}$ & $1+k$ per $h$\\
+\code{cov\_y\_ridge\_shared}
+  & $V_h+aV_h+bC_h+\sum_jc_jY_{j,h}$ & $2+k$\\
+\code{cov\_horizon\_ridge\_shared}
+  & $V_h+aV_h+bC_h+c\widehat Y_h$ & 3\\
+\code{cov\_horizon\_ridge\_horizon}
+  & $V_h+a_hV_h+b_hC_h+c_h\widehat Y_h$ & 3 per $h$\\
+\code{residual\_ridge\_shared}
+  & $V_h+aV_h+\sum_jb_jY_{j,h}+\sum_jc_jN_{j,h}$ & $1+2k$\\
+\code{residual\_ridge\_horizon}
+  & $V_h+a_hV_h+\sum_jb_{j,h}Y_{j,h}+\sum_jc_{j,h}N_{j,h}$ & $1+2k$ per $h$\\
+\code{full\_ridge\_shared}
+  & $V_h+aV_h+bC_h+\sum_jc_jY_{j,h}+\sum_jd_jN_{j,h}$ & $2+2k$\\
+\code{full\_ridge\_horizon}
+  & $V_h+a_hV_h+b_hC_h+\sum_jc_{j,h}Y_{j,h}+\sum_jd_{j,h}N_{j,h}$ & $2+2k$ per $h$\\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{longtable}
+\normalsize
 
-Ridge features are RMS-standardized without centering, and coefficients use
-$\ell_2=10^{-3}$. Exact float64 sufficient statistics are accumulated in
-bounded chunks instead of a complete design matrix. An optional seeded \Tone
-fit cap defaults to unlimited; final \Tthree scoring always remains complete.
+The two lambda models are the only retained convex mixtures. Their
+least-squares estimate is projected onto $[0,1]$ with
+$\lambda\leftarrow\min(1,\max(0,\lambda_{\rm LS}))$; the horizon variant
+does this independently for each $\lambda_h$. Ridge coefficients are
+unconstrained.
+
+\section{Model-local split and validation protocol}
+Extraction fixes only
+\[
+ \Tzero\;(30\%),\qquad \Tone+\Ttwo\;(50\%),\qquad \Tthree\;(20\%),
+\]
+and writes \code{adapt} and \code{eval} payloads. For these baselines,
+\code{adapt} is split chronologically by whole query dates, with its final
+20\% assigned to \Ttwo by default.
+
+\begin{enumerate}
+\item Accumulate exact float64 sufficient statistics on \Tone.
+\item For every ridge family, fit every
+$\alpha\in\{0,10^{-6},10^{-5},10^{-4},10^{-3},10^{-2},10^{-1},1,10\}$ and
+select the value with lowest \Ttwo nMSE.
+\item Refit that family on all of \Tone+\Ttwo using the selected $\alpha$.
+\item Fit the lambda models directly on \Tone+\Ttwo because they have no
+regularization hyperparameter to validate.
+\item Score every selected model once on the complete untouched \Tthree.
+\end{enumerate}
+
+Features are RMS-standardized without centering, so a zero coefficient still
+means no added signal. Chunked sufficient statistics change memory usage, not
+the fitted objective. Optional fit-only sample caps never subsample final
+\Tthree scoring. Optimistic \code{eval\_fit} variants remain available behind
+an explicit flag for appendix diagnostics and are disabled by default.
 
 \textbf{Code:} \code{src/experiments/extraction.py};
 \code{src/adaptors/baselines/evaluate.py}.\\
 \textbf{Launchers:} \code{extraction.slurm}; \code{baselines.slurm}.
 
-The launcher also requests \code{--fit-baselines-on-eval}.  Methods suffixed
-\code{eval\_fit} are explicitly optimistic \Tthree in-sample fits: they are
-diagnostic upper bounds, not causal test results. Their independent fit cap
-also leaves scoring complete. Primary tables use pre-\Tthree coefficients.
-
-The baseline job depends on extraction; tables report per-backbone details and
-equal-configuration means.
-
 \section{Interpretation}
-Residual wins indicate backbone-bias correction; neighbor-horizon wins indicate
-local analog forecasting. A large valid--\code{eval\_fit} gap motivates gating.
+\code{aggr\_y} tests analog forecasting directly; \code{context} tests whether
+the backbone can consume retrieved context. The individual-$Y$ models test
+whether learned neighbor-specific weights beat the fixed distance aggregation.
+\code{residual} tests whether neighbor forecasts add information about neighbor
+reliability, and \code{full} is the complete $V,C,Y_j,N_j$ model. All claims
+must be based on the same complete \Tthree queries and compared with $V$.
 \end{document}

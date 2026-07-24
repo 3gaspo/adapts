@@ -18,6 +18,7 @@ from src.adaptors.baselines.evaluate import (  # noqa: E402
     add_context_gate_predictions,
     add_eval_fitted_baselines,
     add_true_context_oracles,
+    TRAINABLE_BASELINES,
     fit_gate,
     flatten_payload,
     horizon_gate_feature_names,
@@ -46,7 +47,7 @@ def main() -> None:
     predictions: dict[str, np.ndarray] = {}
     add_true_context_oracles(predictions, arrays)
     np.testing.assert_array_equal(
-        predictions["oracle_context_scalar"],
+        predictions["oracle_context_shared"],
         np.asarray([[0.0, 2.0], [10.0, 10.0]], dtype=np.float32),
     )
     np.testing.assert_array_equal(
@@ -123,68 +124,66 @@ def main() -> None:
     np.testing.assert_allclose(flattened["neighbor_age_mean"], np.asarray([12.0]))
     scalar_features = scalar_gate_features(flattened)
     horizon_features = horizon_gate_features(flattened)
-    np.testing.assert_allclose(scalar_features[0, :4], np.asarray([1.0, 0.0, 3.0, 3.0]))
-    np.testing.assert_allclose(horizon_features[0, :4], np.asarray([1.0, 1.0, 3.0, 3.0]))
-    assert scalar_features.shape[1] == 2 + 13
-    assert horizon_features.shape[1] == 2 + 13
-    assert horizon_features.shape[1] == len(horizon_gate_feature_names(2))
+    np.testing.assert_allclose(
+        scalar_features[0, :6],
+        np.asarray([1.0, 0.0, 3.0, 0.0, 1.0, 3.0]),
+    )
+    np.testing.assert_allclose(
+        horizon_features[0][0, :5],
+        np.asarray([1.0, 2.0, 0.0, 2.0, 0.0]),
+    )
+    np.testing.assert_allclose(
+        horizon_features[1][0, :5],
+        np.asarray([1.0, 4.0, 0.0, 4.0, 0.0]),
+    )
+    assert scalar_features.shape[1] == 19
+    assert len(horizon_features) == 2
+    assert horizon_features[0].shape[1] == len(horizon_gate_feature_names(2))
 
     gate_predictions, gate_artifacts, gate_diagnostics = add_context_gate_predictions(
-        {split: {} for split in ("train", "oracle", "eval")},
+        {split: {} for split in ("adapt", "eval")},
         flattened,
-        {split: flattened for split in ("train", "oracle", "eval")},
+        {split: flattened for split in ("adapt", "eval")},
         iterations=1,
         learning_rate=0.1,
         depth=1,
         seed=1,
     )
     assert set(gate_predictions["eval"]) == {
-        "bayes_context_scalar",
+        "bayes_context_shared",
         "bayes_context_horizon",
-        "catboost_context_classifier_scalar",
+        "catboost_context_classifier_shared",
         "catboost_context_classifier_horizon",
-        "catboost_context_regressor_scalar",
+        "catboost_context_regressor_shared",
         "catboost_context_regressor_horizon",
-        "oracle_context_scalar",
+        "oracle_context_shared",
         "oracle_context_horizon",
     }
     assert set(gate_artifacts["models"]) == {"classifier", "regressor"}
-    assert set(gate_artifacts["no_feature"]) == {"scalar_score", "horizon_score"}
+    assert set(gate_artifacts["no_feature"]) == {"shared_score", "horizon_score"}
     assert set(gate_diagnostics["eval"]) == {
-        "bayes_scalar_score",
-        "bayes_horizon_score",
-        "classifier_scalar_score",
-        "classifier_scalar_target",
-        "classifier_horizon_score",
-        "classifier_horizon_target",
-        "regressor_scalar_score",
-        "regressor_scalar_target",
-        "regressor_horizon_score",
-        "regressor_horizon_target",
+        "context_bayes_shared_score",
+        "context_bayes_horizon_score",
+        "context_classifier_shared_score",
+        "context_classifier_shared_target",
+        "context_classifier_horizon_score",
+        "context_classifier_horizon_target",
+        "context_regressor_shared_score",
+        "context_regressor_shared_target",
+        "context_regressor_horizon_score",
+        "context_regressor_horizon_target",
     }
 
     baseline_predictions = {"eval": {}}
     eval_fit_artifacts = add_eval_fitted_baselines(
         baseline_predictions,
         flattened,
-        l2=1e-3,
+        l2_grid=(1e-3,),
     )
     assert set(baseline_predictions["eval"]) == {
-        "horizon_mix_scalar_eval_fit",
-        "residual_mix_scalar_eval_fit",
-        "residual_ridge_shared_eval_fit",
-        "residual_ridge_horizon_eval_fit",
-        "horizon_ridge_shared_eval_fit",
-        "full_ridge_horizon_eval_fit",
+        f"{name}_eval_fit" for name in TRAINABLE_BASELINES
     }
-    assert set(eval_fit_artifacts) == {
-        "horizon_mix_scalar_lambda",
-        "residual_mix_scalar_lambda",
-        "residual_ridge_shared_coef",
-        "residual_ridge_horizon_coef",
-        "horizon_ridge_shared_coef",
-        "full_ridge_horizon_coef",
-    }
+    assert set(eval_fit_artifacts["models"]) == set(TRAINABLE_BASELINES)
 
     gate_x = np.asarray([[0.0], [0.1], [0.9], [1.0]], dtype=np.float32)
     gate_y = np.asarray([[-4.0], [-1.0], [1.0], [4.0]], dtype=np.float32)

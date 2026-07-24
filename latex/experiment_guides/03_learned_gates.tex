@@ -1,70 +1,121 @@
 \documentclass[10pt]{article}
 \input{common}
-\title{Adaptation Experiment 3: Learned Context Gates}
+\title{Adaptation Experiment 3: Learned Retrieval Gates}
 \author{}
 \date{}
 \begin{document}
 \maketitle
 
-\section{Theoretical overview and goal}
-Retrieval can help some queries and harm others.  A gate chooses between the
-vanilla forecast $\hat y_0$ and the context forecast $\hat y_c$.  On \Ttwo the
-supervision signal is the loss advantage
+\section{Candidates and targets}
+Two gate families are evaluated. A context gate chooses between the vanilla
+forecast $V$ and the context-informed forecast $C$. An aggregated-neighbor
+gate chooses between $V$ and
 \[
- \Delta_h=(y_h-\hat y_{0,h})^2-(y_h-\hat y_{c,h})^2,
+ \widehat Y_h=\sum_{j=1}^{k}w_jY_{j,h}.
 \]
-so $\Delta_h>0$ means context is preferable.  Scalar gates make one decision
-per window; horizon gates make one decision per forecast step.  Regressors
-estimate $\Delta$, while classifiers estimate the event $\Delta>0$.
+Write either candidate as $A\in\{C,\widehat Y\}$. The horizon-level advantage
+used for supervision is
+\[
+ \Delta_h=(Y_h-V_h)^2-(Y_h-A_h)^2.
+\]
+A positive value means the candidate is better. Shared gates make one decision
+for the complete forecast window using $\overline\Delta=H^{-1}\sum_h\Delta_h$;
+horizon gates make $H$ separate decisions.
 
-\goal{Learn when retrieval should be trusted, quantify the value of query-level
-features, and compare attainable gates with target-aware oracle upper bounds.}
+\goal{Learn when context or retrieved outcomes should replace the reliable
+vanilla forecast, and compare conditional gates with no-feature and
+target-aware upper bounds.}
 
-\section{Implementation details}
-The gate features summarize the context--vanilla difference, query mean and
-standard deviation, neighbor look-back statistics, same-user ratio, neighbor
-age, distance-weight concentration, and average distance.  Horizon gates also
-receive the full horizon-wise context difference.
+\section{Engineered features}
+Let
+\[
+ \mu_w(z)=\sum_jw_jz_j,\qquad
+ \sigma_w(z)=\sqrt{\sum_jw_j(z_j-\mu_w(z))^2}.
+\]
+For each neighbor define the across-horizon summaries
+\[
+\begin{aligned}
+ D^Y_j&=H^{-1}\sum_h(Y_{j,h}-V_h),
+ &S^Y_j&=\operatorname{sd}_h(Y_{j,h}-V_h),\\
+ D^N_j&=H^{-1}\sum_h(Y_{j,h}-N_{j,h}),
+ &S^N_j&=\operatorname{sd}_h(Y_{j,h}-N_{j,h}).
+\end{aligned}
+\]
+Both gate shapes receive
+\[
+ \mu_w(D^Y),\ \sigma_w(D^Y),\ \mu_w(S^Y),\qquad
+ \mu_w(D^N),\ \sigma_w(D^N),\ \mu_w(S^N).
+\]
+They also receive the query mean and standard deviation; the mean and
+between-neighbor standard deviation of neighbor look-back means and
+look-back standard deviations; same-user ratio; mean neighbor age; weight
+standard deviation and maximum; and mean retrieval distance.
 
-\begin{table}[h]
-\centering
-\begin{tabular}{lll}
+The candidate features differ by gate shape:
+\begin{itemize}
+\item A shared gate receives
+$\operatorname{mean}_h(A_h-V_h)$ and
+$\operatorname{sd}_h(A_h-V_h)$.
+\item The model for horizon $h$ receives only $A_h-V_h$, not the complete
+vector $(A_1-V_1,\ldots,A_H-V_H)$. It additionally receives the local
+$\mu_w(Y_{j,h}-V_h)$, $\sigma_w(Y_{j,h}-V_h)$,
+$\mu_w(Y_{j,h}-N_{j,h})$, and $\sigma_w(Y_{j,h}-N_{j,h})$.
+\end{itemize}
+Thus every horizon gate has the same feature count and there are $H$
+independent models; information from another candidate horizon cannot leak
+through the candidate-difference feature.
+
+\section{Models and artifact names}
+\small
+\begin{tabularx}{\linewidth}{p{.34\linewidth}X}
 \toprule
-Gate & Training target & Decision granularity \\
+Name pattern & Meaning \\
 \midrule
-Bayes no-feature & Mean \Ttwo advantage & Scalar / horizon \\
-CatBoost classifier & $\mathbb{1}[\Delta>0]$ & Scalar / horizon \\
-CatBoost regressor & $\Delta$ & Scalar / horizon \\
-Oracle & True target loss & Scalar / horizon \\
+\code{bayes\_<A>\_shared/horizon}
+ & No-feature decision from the average \Tone+\Ttwo advantage.\\
+\code{catboost\_<A>\_classifier\_}\\[-.25ex]
+\code{shared/horizon}
+ & CatBoost estimate of $\mathbb 1[\Delta>0]$; choose $A$ above probability
+ $1/2$.\\
+\code{catboost\_<A>\_regressor\_}\\[-.25ex]
+\code{shared/horizon}
+ & CatBoost estimate of the signed loss advantage; choose $A$ above zero.\\
+\code{oracle\_<A>\_shared/horizon}
+ & Target-aware upper bound evaluated on the scored split; never deployable.\\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabularx}
+\normalsize
+Here \code{<A>} is \code{context} or \code{aggr\_y}.
 
-CatBoost uses 300 iterations, learning rate 0.03, depth 4, balanced classes,
-and seed 1.  Models are trained only on \Ttwo and applied without refitting to
-\Tthree. An optional seeded maximum can subsample \Ttwo fitting rows from the
-saved extraction payload; it is unlimited by default, and final \Tthree scoring
-always retains every extracted evaluation row. The small sweep uses three datasets, four settings, raw/instance
-Euclidean distance, $k\in\{1,3,10\}$, and Chronos. Full uses six datasets and
-adds 512--64 for Cross-RAG while remaining Chronos-only; ultra adds TabPFN-TS
-and skips complete Chronos outputs. TS-ICL remains a later extension.
+\section{Validation protocol}
+Extraction provides pooled \Tone+\Ttwo and fixed \Tthree payloads. For these
+gates, the last 20\% of pooled query dates is \Ttwo by default:
+\begin{enumerate}
+\item fit CatBoost on \Tone with at most 300 trees, learning rate 0.03,
+depth 4, and balanced classifier classes;
+\item use \Ttwo only for early stopping and selection of the tree count;
+\item instantiate a fresh model with that selected count and refit on all
+of \Tone+\Ttwo;
+\item score once on complete \Tthree.
+\end{enumerate}
+CatBoost does not require a separate hyperparameter search here: depth and
+learning rate are fixed experimental choices, while \Ttwo selects effective
+capacity through early stopping. Feature importance is saved separately for
+each candidate, objective, and decision shape.
+
+This refit is valid because $C$ and $\widehat Y$ are fixed candidates. For a
+future gate whose candidate is itself trained, the stage-two protocol is
+different: fit the candidate on \Tone and the gate on \Ttwo without refitting
+the candidate afterward. Refitting the candidate on \Tone+\Ttwo would change
+the gate inputs and make its \Ttwo supervision in-sample. Avoiding that bias
+requires out-of-fold candidate predictions or an additional split.
 
 \textbf{Launcher:} \code{gates.slurm}\\
-\textbf{Active module:} \code{src.adaptors.baselines.evaluate --family gates}
-
-Outputs
-include per-method metrics, prediction payloads, gate diagnostics, and feature
-importance plots.
-
-The gate job loops sequentially and validates each extraction completion
-manifest before loading it. It must depend on the extraction job. The table job
-then checks every requested gate JSON before producing detailed and averaged tables
-for each backbone; missing configurations are errors rather than silent blanks.
+\textbf{Module:} \code{src.adaptors.baselines.evaluate --family gates}
 
 \section{Interpretation}
-The oracle gap measures headroom, not deployable performance.  The comparison
-between the no-feature Bayes gate and feature-based gates isolates the benefit
-of conditional decisions.  Final claims must use \Tthree and should report both
-mean error and user-tail error because a gate can improve the mean while
-systematically rejecting useful context for a subgroup.
+The no-feature gate measures whether one candidate wins globally. CatBoost
+adds conditional decisions. The oracle gap is headroom, not performance.
+Context and aggregated-neighbor gates answer different questions and should
+both be reported against $V$ on identical \Tthree windows.
 \end{document}

@@ -31,8 +31,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_DISTANCE_SPACES_CSV="raw"
     DEFAULT_NEIGHBORS_CSV="3"
     DEFAULT_DATASTORE_STRIDE=168
-    DEFAULT_TRAIN_QUERY_STRIDE=256
-    DEFAULT_ORACLE_QUERY_STRIDE=256
+    DEFAULT_ADAPT_QUERY_STRIDE=256
     DEFAULT_EVAL_QUERY_STRIDE=256
     DEFAULT_MAX_STORE_WINDOWS=2048
     ;;
@@ -43,8 +42,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
     DEFAULT_NEIGHBORS_CSV="1,3,10"
     DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_TRAIN_QUERY_STRIDE=24
-    DEFAULT_ORACLE_QUERY_STRIDE=24
+    DEFAULT_ADAPT_QUERY_STRIDE=24
     DEFAULT_EVAL_QUERY_STRIDE=128
     DEFAULT_MAX_STORE_WINDOWS=30000
     ;;
@@ -55,8 +53,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
     DEFAULT_NEIGHBORS_CSV="1,3,10"
     DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_TRAIN_QUERY_STRIDE=24
-    DEFAULT_ORACLE_QUERY_STRIDE=24
+    DEFAULT_ADAPT_QUERY_STRIDE=24
     DEFAULT_EVAL_QUERY_STRIDE=128
     DEFAULT_MAX_STORE_WINDOWS=30000
     ;;
@@ -67,8 +64,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
     DEFAULT_NEIGHBORS_CSV="1,3,10"
     DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_TRAIN_QUERY_STRIDE=24
-    DEFAULT_ORACLE_QUERY_STRIDE=24
+    DEFAULT_ADAPT_QUERY_STRIDE=24
     DEFAULT_EVAL_QUERY_STRIDE=128
     DEFAULT_MAX_STORE_WINDOWS=30000
     ;;
@@ -80,8 +76,7 @@ SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_PROFILE_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 DATASTORE_STRIDE="${DATASTORE_STRIDE:-$DEFAULT_DATASTORE_STRIDE}"
-TRAIN_QUERY_STRIDE="${TRAIN_QUERY_STRIDE:-$DEFAULT_TRAIN_QUERY_STRIDE}"
-ORACLE_QUERY_STRIDE="${ORACLE_QUERY_STRIDE:-$DEFAULT_ORACLE_QUERY_STRIDE}"
+ADAPT_QUERY_STRIDE="${ADAPT_QUERY_STRIDE:-$DEFAULT_ADAPT_QUERY_STRIDE}"
 EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
 MAX_STORE_WINDOWS="${MAX_STORE_WINDOWS:-$DEFAULT_MAX_STORE_WINDOWS}"
 
@@ -91,7 +86,7 @@ csv_to_array "$SETTINGS_CSV" SETTINGS
 csv_to_array "$DISTANCE_SPACES_CSV" DISTANCE_SPACES
 csv_to_array "$NEIGHBORS_CSV" NEIGHBORS
 
-SPLITS="${SPLITS:-0.3,0.35,0.15,0.2}"
+SPLITS="${SPLITS:-0.3,0.5,0.2}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 PERIOD="${PERIOD:-24}"
 SEED="${SEED:-1}"
@@ -141,8 +136,7 @@ run_extraction() {
     --horizon "$horizon" \
     --splits "$SPLITS" \
     --datastore-stride "$DATASTORE_STRIDE" \
-    --train-stride "$TRAIN_QUERY_STRIDE" \
-    --oracle-stride "$ORACLE_QUERY_STRIDE" \
+    --adapt-stride "$ADAPT_QUERY_STRIDE" \
     --eval-stride "$EVAL_QUERY_STRIDE" \
     --period "$PERIOD" \
     --neighbors "$neighbors" \
@@ -209,7 +203,7 @@ run_task() {
     retrieval_setting="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
     run_root="$MODEL_ROOT/$retrieval_setting"
   fi
-  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE train_stride=$TRAIN_QUERY_STRIDE oracle_stride=$ORACLE_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
+  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$save_name" "$run_root"
   log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }

@@ -1,0 +1,196 @@
+\documentclass[10pt]{article}
+\input{common}
+\title{Related Retrieval and Lightweight-Adaptation Methods}
+\author{}
+\date{Evidence checked 23 July 2026}
+\begin{document}
+\maketitle
+
+\section{How to read this note}
+``Zero-shot'' is not synonymous with ``uses no target data.''  In TS-RAG and
+Cross-RAG, no parameter is updated on an evaluation task, but that task's
+training split is still available as a retrieval knowledge base.  RAFT is a
+different, full-shot setting: its forecasting model is trained on the target
+dataset.  RAF and TimeRAG augment a frozen forecaster at inference.  The final
+three methods below adapt a foundation model or its output without a retrieval
+index.
+
+\small
+\begin{longtable}{p{.14\linewidth}p{.17\linewidth}p{.27\linewidth}p{.31\linewidth}}
+\toprule
+Method & Date and venue & Evaluation data and settings & What is trained, retrieved, and used as backbone \\
+\midrule
+\endhead
+\href{https://arxiv.org/pdf/2603.14709}{Cross-RAG}
+& arXiv v3, 15 Jul.\ 2026; KDD'26 MILETS Workshop, 9--13 Aug.\ 2026
+& ETTh1/2, ETTm1/2, Weather, Electricity, Exchange; chronological
+6:2:2 for ETT and 7:1:2 otherwise; main $L=512,H=64$; $k=15$,
+$\lambda=0.7$.
+& Chronos-Bolt main and MOMENT extension.  Generic pretraining updates only
+projectors and self/cross-attention (about 4\% of parameters); backbone and
+predictor remain frozen. At target inference, the target training split is a
+KB of $(X_j,Y_j)$ pairs; cosine search is performed directly on $X$. No
+target-task parameter update.\\
+\addlinespace
+\href{https://proceedings.neurips.cc/paper_files/paper/2025/file/eed25c037bc08afcbefab6f7a6b700e0-Paper-Conference.pdf}{TS-RAG}
+& arXiv 6 Mar.\ 2025; NeurIPS 2025 main track
+& Same seven datasets, splits, and main $512$--$64$ setting; extended
+horizons 96, 192, 336, 720 are also reported.
+& Chronos-Bolt main and MOMENT appendix. A frozen pretrained encoder retrieves
+top-$k$ context--future pairs by latent Euclidean distance; projected neighbor
+futures and the query representation are fused by the trainable Adaptive
+Retrieval Mixer (ARM). Projectors/ARM are pretrained once; backbone and
+retrieval encoder are frozen and there is no target-task tuning.\\
+\addlinespace
+\href{https://arxiv.org/pdf/2411.08249}{RAF}
+& arXiv 18 Nov.\ 2024; v2, 6 Apr.\ 2026
+& Benchmark I: Weather, Traffic, ETTh1, FRED-MD, Covid Deaths, NN5 with
+$L\in\{50,75,100,150\}$ and $H\in\{10,15,20\}$. Benchmark II: Tourism-M/Q,
+M1-M, Uber TLC, CIF-2016 with $L\in\{10,15,18,21\}$ and
+$H\in\{3,4,5\}$.
+& Frozen Chronos Mini/Base main; Moirai Base, TimesFM, and Lag-Llama
+extensions. A fixed random 80\% of series forms a dataset-specific KB and 20\%
+are test series. Approximate nearest-neighbor search retrieves a past context
+and its future; the normalized/aligned retrieved context and future are
+prepended to the query. No RAF parameter is trained.\\
+\addlinespace
+\href{https://proceedings.mlr.press/v267/han25d.html}{RAFT}
+& 7 May 2025 preprint; ICML, 13--19 Jul.\ 2025
+& Four ETT, Electricity, Exchange, Illness, Solar, Traffic, Weather;
+multivariate; $H\in\{96,192,336,720\}$ (Illness:
+$\{24,36,48,60\}$); validation-selected $L$, usually 720.
+& No foundation-model backbone. A shallow multiresolution MLP is trained per
+dataset. From the target training series, stride-one keys retrieve their
+following future patches by Pearson correlation; top-$m$ futures are
+softmax-aggregated at periods 1, 2, and 4, concatenated with the query, and
+mapped to the forecast.\\
+\addlinespace
+\href{https://arxiv.org/abs/2412.16643}{TimeRAG}
+& 21 Dec.\ 2024 preprint; ICASSP 2025, 6--11 Apr.\ 2025
+& M4, covering yearly through hourly frequencies.
+& A historical-sequence KB is clustered/indexed; DTW selects reference
+inputs. References and query are rendered as text for the LLM-based
+forecaster. The RAG path is inference-time augmentation; the paper reports a
+2.97\% mean improvement over its original model.\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Cross-RAG and TS-RAG in detail}
+Both papers first sample 50 million points from the Chronos pretraining corpus,
+use 5 million to construct a multi-domain pretraining KB, and form about
+26 million training pairs and 2.8 million retrieval pairs.  The downstream
+evaluation training splits are excluded from this \emph{pretraining} KB.  At
+zero-shot evaluation, however, each target training split constructs the
+target KB and its test split supplies queries.  These two facts are compatible:
+the target KB changes at inference but the learned parameters do not.
+
+TS-RAG retrieves
+\[
+ (X_j,e_j,Y_j),\qquad
+ j\in\operatorname{TopK}_{\min}\|e(X)-e(X_j)\|_2,
+\]
+then projects the retrieved futures and applies ARM self-attention jointly
+with the backbone query representation. Cross-RAG instead retrieves in the
+data space,
+\[
+ j\in\operatorname{TopK}_{\max}
+ \frac{\langle X,X_j\rangle}{\|X\|\,\|X_j\|},
+\]
+projects both $X_j$ and $Y_j$, uses the query against retrieved inputs as
+cross-attention keys and retrieved outputs as values, and also retains a
+query-independent retrieval self-attention path. Its final representation is
+\[
+ z=\lambda\,\widetilde c+(1-\lambda)\,\widetilde s,\qquad \lambda=0.7.
+\]
+Cross-RAG trains its added modules for 10,000 AdamW steps on the generic
+pretraining pairs. The published comparison uses $k=15$ for Cross-RAG and the
+best $k=5$ for TS-RAG.
+
+The main Cross-RAG table reports Chronos-Bolt MSEs of 0.341, 0.243, 0.290,
+0.143, 0.144, 0.112, and 0.064 over the seven datasets (unweighted mean
+0.191), versus its reproduced TS-RAG values 0.357, 0.246, 0.298, 0.147,
+0.151, 0.112, and 0.071 (mean 0.197). The reduction computed from the rounded
+mean column is $(0.197-0.191)/0.197=3.05\%$; recomputing the means from the
+seven printed cells gives $3.26\%$. The mean of the seven separate relative
+reductions is instead $3.66\%$. These are distinct summaries and should be
+named explicitly. The paper states that baseline entries combine reproductions
+using official implementations with results taken from the original TS-RAG
+paper; they are not all newly trained from scratch.
+
+\section{Fine-tuning and lightweight adaptation}
+\small
+\begin{longtable}{p{.16\linewidth}p{.17\linewidth}p{.27\linewidth}p{.285\linewidth}}
+\toprule
+Method & Date and venue & Evaluation data and settings & Training and backbone \\
+\midrule
+\endhead
+\href{https://proceedings.mlr.press/v267/faw25b.html}{TimesFM-ICF}
+& 31 Oct.\ 2024 preprint; ICML, 13--19 Jul.\ 2025
+& 18 unseen Monash datasets plus ETTh1/2 and ETTm1/2; ETT horizons 96 and
+192; up to 50 related examples; base maximum target history 512.
+& Starts from a 200M-parameter decoder-only TimesFM pretrained on about 400B
+points. Continued pretraining teaches separator-aware, cross-example attention.
+At target inference there are no gradients: related series are concatenated
+as demonstrations. Target-specific controls fully fine-tune TimesFM or update
+only its input/output MLP blocks.\\
+\addlinespace
+\href{https://proceedings.mlr.press/v267/lee25ag.html}{ELF}
+& ICML, 13--19 Jul.\ 2025
+& ETTh1/2, ETTm1/2, US-Weather, Weather, Solar, ECL, Traffic; rolling
+deployment; horizons 30, 96, 336; update every 200 new points.
+& Frozen Chronos-Tiny, TTM-r2, TimesFM, Moirai-Small, or VisionTS. A Fourier
+linear ELF-Forecaster is updated online using Woodbury sufficient statistics;
+an exponential fast/slow ELF-Weighter combines it with the frozen FM. There is
+no retrieval.\\
+\addlinespace
+\href{https://arxiv.org/pdf/2409.11302}{Beyond LoRA}
+& 17 Sep.\ 2024; NeurIPS 2024 Workshop on Time Series in the Age of Large Models
+& eICU sepsis: MeanBP and heart-rate forecasting; 4,020 samples from 1,442
+patients; patient-disjoint 8:1:1 split; six-hour context sampled every five
+minutes ($L=72$), three-hour target ($H=36$).
+& Chronos Tiny/Small/Base main, with Mini/Large appendix. Compares full
+fine-tuning and LoRA with BitFit, LayerNorm tuning, VeRA, and FourierFT.
+Original weights remain frozen for additive PEFT; selective PEFT updates only
+chosen native parameters. Full-FT and LoRA comparison values are quoted from
+the preceding study; the four new PEFT variants are run by this paper.\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+The comparison provenance matters. TimesFM-ICF borrows official Monash
+baseline values and most non-TimesFM ETT values from the cited benchmark
+papers, while running TimesFM-Base and TimesFM-ICF itself. RAFT states that it
+validation-tunes both RAFT and all nine supervised baselines and averages three
+runs. These numbers therefore answer different questions and should not be
+combined into a single cross-paper ranking.
+
+\section{Relation to this project}
+Our retrieved signals $(X_j,Y_j,N_j)$ resemble the input--output memories in
+the RAG methods, but our primary question is narrower: can cheap, explicitly
+validated mixtures or gates improve the same frozen vanilla forecast $V$?
+The directly comparable external experiment is therefore a fresh execution of
+released Cross-RAG/TS-RAG code on our fixed \Tthree dates, not a transcription
+of their $512$--$64$ table. Their pretrained adaptation modules and our fitted
+ridge/gate models also use different training regimes, which must remain
+visible in any results table.
+
+\section{Primary sources and released code}
+\begin{itemize}
+\item Cross-RAG:
+\href{https://arxiv.org/abs/2603.14709}{paper};
+\href{https://github.com/seunghan96/Cross-RAG}{code}.
+\item TS-RAG paper, code, processed datasets, retrieval database, and
+checkpoints:
+\href{https://github.com/UConn-DSIS/TS-RAG}{project release}.
+\item RAFT paper and code:
+\href{https://proceedings.mlr.press/v267/han25d.html}{paper};
+\href{https://github.com/archon159/RAFT}{code}.
+\item RAF: \href{https://arxiv.org/abs/2411.08249}{paper}.
+\item TimesFM-ICF:
+\href{https://proceedings.mlr.press/v267/faw25b.html}{paper}.
+\item ELF: \href{https://proceedings.mlr.press/v267/lee25ag.html}{paper}.
+\item Beyond LoRA: \href{https://arxiv.org/abs/2409.11302}{paper}.
+\end{itemize}
+
+\end{document}
