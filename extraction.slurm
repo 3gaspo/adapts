@@ -7,7 +7,7 @@
 #SBATCH --partition=h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
 # Submit from the project root. Select test, small, full (Chronos), or ultra (all backbones).
