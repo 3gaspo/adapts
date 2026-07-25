@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40000
 
-# Select the same test, small, full, or ultra profile used by upstream jobs.
+# Select the same profile and winner-method environment used by upstream jobs.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

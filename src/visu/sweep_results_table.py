@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -92,6 +94,12 @@ FULL_VARIANTS = (
     "catboost_aggr_y_regressor_horizon",
     *TS_IFA_MAIN_VARIANTS,
 )
+CROSSRAG_VARIANTS = ("crossrag",)
+COMPARISON_VARIANTS = tuple(
+    dict.fromkeys(
+        (*BASELINE_HELDOUT_VARIANTS, *GATE_HELDOUT_VARIANTS, *CROSSRAG_VARIANTS)
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -142,17 +150,52 @@ FAMILIES = (
         "TS-IFA nMSE results across retrieval settings",
         "tab:ts-ifa-results",
     ),
+    Family(
+        "crossrag",
+        CROSSRAG_VARIANTS,
+        CROSSRAG_VARIANTS,
+        (),
+        "crossrag_results.tex",
+        "Pretrained Cross-RAG nMSE on the fixed Chronos-Bolt setting",
+        "tab:crossrag-results",
+    ),
+    Family(
+        "comparison",
+        COMPARISON_VARIANTS,
+        COMPARISON_VARIANTS,
+        (),
+        "comparison_results.tex",
+        "Chronos-Bolt candidate and pretrained Cross-RAG comparison",
+        "tab:crossrag-comparison",
+    ),
 )
 
 
 def _selected_families(names: Sequence[str] | None) -> tuple[Family, ...]:
     if not names:
-        return FAMILIES
+        return tuple(
+            family
+            for family in FAMILIES
+            if family.name not in {"crossrag", "comparison"}
+        )
     by_name = {family.name: family for family in FAMILIES}
     missing = [name for name in names if name not in by_name]
     if missing:
         raise ValueError(f"unknown table families: {missing}")
     return tuple(by_name[name] for name in names)
+
+
+def _select_variants(
+    family: Family,
+    available: Sequence[str],
+    selected: Sequence[str] | None,
+) -> tuple[str, ...]:
+    if not selected:
+        return tuple(available)
+    selected_set = set(selected)
+    if family.name in {"crossrag", "comparison"}:
+        selected_set.add("crossrag")
+    return tuple(variant for variant in available if variant in selected_set)
 
 
 def _filter_models(results: Sequence[Result], models: Sequence[str] | None) -> list[Result]:
@@ -162,16 +205,40 @@ def _filter_models(results: Sequence[Result], models: Sequence[str] | None) -> l
     return [result for result in results if result.model in selected]
 
 
-def _run_name(space: str, neighbors: int, retrieval_mode: str) -> str:
-    return f"{space}_euclidean_{neighbors}_{retrieval_mode}"
+def _run_name(space: str, distance_metric: str, neighbors: int, retrieval_mode: str) -> str:
+    return f"{space}_{distance_metric}_{neighbors}_{retrieval_mode}"
 
 
-def _run_names(spaces: Sequence[str], neighbors: Sequence[int], retrieval_mode: str) -> list[str]:
-    return [_run_name(space, k, retrieval_mode) for space in spaces for k in neighbors]
+def _run_names(
+    spaces: Sequence[str],
+    distance_metrics: Sequence[str],
+    neighbors: Sequence[int],
+    retrieval_mode: str,
+) -> list[str]:
+    return [
+        _run_name(space, metric, k, retrieval_mode)
+        for space in spaces
+        for metric in distance_metrics
+        for k in neighbors
+    ]
 
 
 def _methods_for_variants(runs: Sequence[str], variants: Sequence[str]) -> list[str]:
     return [f"{run}/{variant}" for run in runs for variant in variants]
+
+
+def _selected_runs(
+    runs: Sequence[str],
+    pipelines: Sequence[str] | None,
+) -> list[str]:
+    if not pipelines:
+        return list(runs)
+    requested = {
+        pipeline.rsplit("/", 1)[0]
+        for pipeline in pipelines
+        if "/" in pipeline
+    }
+    return [run for run in runs if run in requested]
 
 
 def _filters_match(
@@ -211,10 +278,67 @@ def _average_metric(
     return sum(values) / len(values) if values else math.nan
 
 
+def _average_method_statistics(
+    results: Sequence[Result],
+    *,
+    method: str,
+    metric: str,
+    split: str,
+    datasets: Sequence[str] | None,
+    settings: Sequence[str] | None,
+    dataset_settings: Mapping[str, set[str]],
+    lower_is_better: bool,
+) -> tuple[float, float]:
+    """Average the metric and per-configuration percentage improvement.
+
+    Averaging percentages (rather than taking a ratio of two pooled metrics)
+    gives every dataset/horizon configuration equal weight.
+    """
+    dataset_order = list(datasets) if datasets else None
+    setting_filter = set(settings or ())
+    references = {
+        (result.dataset, result.setting, result.model): result.value
+        for result in results
+        if result.method == REFERENCE_METHOD
+        and result.metric.casefold() == metric.casefold()
+        and result.split.casefold() == split.casefold()
+        and _filters_match(result, dataset_order, setting_filter, dataset_settings)
+        and math.isfinite(result.value)
+    }
+    values: list[float] = []
+    improvements: list[float] = []
+    for result in results:
+        if (
+            result.method != method
+            or result.metric.casefold() != metric.casefold()
+            or result.split.casefold() != split.casefold()
+            or not _filters_match(result, dataset_order, setting_filter, dataset_settings)
+            or not math.isfinite(result.value)
+        ):
+            continue
+        reference = references.get((result.dataset, result.setting, result.model))
+        if reference is None:
+            continue
+        values.append(result.value)
+        improvements.append(
+            _relative_improvement(reference, result.value, lower_is_better)
+        )
+    return (
+        sum(values) / len(values) if values else math.nan,
+        sum(improvements) / len(improvements) if improvements else math.nan,
+    )
+
+
 def _reference_label(results: Sequence[Result]) -> str:
     models = sorted({result.model for result in results if result.model}, key=str.casefold)
     if len(models) == 1:
-        display = {"chronos": "Chronos", "tabpfnts": "TabPFN-TS"}.get(models[0], models[0])
+        display = {
+            "chronos": "Chronos",
+            "chronos2": "Chronos-2",
+            "chronos_bolt": "Chronos-Bolt",
+            "chronos-bolt": "Chronos-Bolt",
+            "tabpfnts": "TabPFN-TS",
+        }.get(models[0], models[0])
         return f"Vanilla {display}"
     return "Vanilla backbone"
 
@@ -280,6 +404,7 @@ def build_average_matrix_table(
     lower_is_better: bool = True,
     caption: str | None = None,
     label: str = "tab:sweep-matrix",
+    allowed_methods: set[str] | None = None,
 ) -> str:
     dataset_settings = dataset_settings or {}
     reference = _average_metric(
@@ -297,7 +422,11 @@ def build_average_matrix_table(
     for variant in row_variants:
         for run in runs:
             method = f"{run}/{variant}"
-            value = _average_metric(
+            if allowed_methods is not None and method not in allowed_methods:
+                values[(variant, run)] = math.nan
+                improvements[(variant, run)] = math.nan
+                continue
+            value, improvement = _average_method_statistics(
                 results,
                 method=method,
                 metric=metric,
@@ -305,10 +434,10 @@ def build_average_matrix_table(
                 datasets=datasets,
                 settings=settings,
                 dataset_settings=dataset_settings,
+                lower_is_better=lower_is_better,
             )
             values[(variant, run)] = value
-            improvements[(variant, run)] = _relative_improvement(reference, value, lower_is_better)
-
+            improvements[(variant, run)] = improvement
     diagnostic_set = set(diagnostic_variants)
     finite = [
         improvement
@@ -319,14 +448,16 @@ def build_average_matrix_table(
     ]
     best = max(finite) if finite else None
     caption_text = caption or f"Average {metric.upper()} by retrieval setting."
+    display_runs = tuple(runs)
+    headers = [_latex(_short_run_name(run)) for run in runs]
     lines = [
         r"\begin{table}[htbp]",
         r"\centering",
         rf"\caption{{{_latex(_caption_with_reference(caption_text, metric, reference, decimals, _reference_label(results)))}}}",
         r"\resizebox{\textwidth}{!}{%",
-        rf"\begin{{tabular}}{{{'l' + 'c' * len(runs)}}}",
+        rf"\begin{{tabular}}{{{'l' + 'c' * len(display_runs)}}}",
         r"\toprule",
-        "Model & " + " & ".join(_latex(_short_run_name(run)) for run in runs) + r" \\",
+        "Model & " + " & ".join(headers) + r" \\",
         r"\midrule",
     ]
     inserted_diagnostic_rule = False
@@ -335,7 +466,7 @@ def build_average_matrix_table(
             lines.append(r"\midrule")
             inserted_diagnostic_rule = True
         cells = []
-        for run in runs:
+        for run in display_runs:
             improvement = improvements[(variant, run)]
             is_best = (
                 variant not in diagnostic_set
@@ -362,8 +493,14 @@ def _write_full_family_table(
     dataset_settings: Mapping[str, set[str]],
     decimals: int,
     lower_is_better: bool,
+    allowed_methods: set[str] | None,
 ) -> Path:
-    methods = [REFERENCE_METHOD, *_methods_for_variants(runs, family.full_variants)]
+    candidate_methods = _methods_for_variants(runs, family.full_variants)
+    if allowed_methods is not None:
+        candidate_methods = [
+            method for method in candidate_methods if method in allowed_methods
+        ]
+    methods = [REFERENCE_METHOD, *candidate_methods]
     table = build_table(
         results,
         metric=metric,
@@ -399,6 +536,7 @@ def _write_average_family_table(
     dataset_settings: Mapping[str, set[str]],
     decimals: int,
     lower_is_better: bool,
+    allowed_methods: set[str] | None,
 ) -> Path:
     table = build_average_matrix_table(
         results,
@@ -414,10 +552,87 @@ def _write_average_family_table(
         lower_is_better=lower_is_better,
         caption=family.caption + ", averaged over selected datasets and horizon settings",
         label=f"{family.label}-average",
+        allowed_methods=allowed_methods,
     )
     output = output_dir / family.output_name
     output.write_text(table, encoding="utf-8")
     return output
+
+
+def _write_pipeline_ranking(
+    results: Sequence[Result],
+    output_dir: Path,
+    *,
+    families: Sequence[Family],
+    runs: Sequence[str],
+    selected_variants: Sequence[str] | None,
+    metric: str,
+    split: str,
+    datasets: Sequence[str] | None,
+    settings: Sequence[str] | None,
+    dataset_settings: Mapping[str, set[str]],
+    lower_is_better: bool,
+    allowed_methods: set[str] | None,
+) -> None:
+    rows: list[dict[str, object]] = []
+    for family in families:
+        variants = _select_variants(
+            family,
+            family.average_variants,
+            selected_variants,
+        )
+        for run in runs:
+            for variant in variants:
+                method = f"{run}/{variant}"
+                if allowed_methods is not None and method not in allowed_methods:
+                    continue
+                if variant.startswith("oracle_") or variant.endswith("_eval_fit"):
+                    continue
+                value, improvement = _average_method_statistics(
+                    results,
+                    method=method,
+                    metric=metric,
+                    split=split,
+                    datasets=datasets,
+                    settings=settings,
+                    dataset_settings=dataset_settings,
+                    lower_is_better=lower_is_better,
+                )
+                if not math.isfinite(improvement):
+                    continue
+                rows.append(
+                    {
+                        "winner_name": f"{family.name}/{run}/{variant}",
+                        "family": family.name,
+                        "retrieval": run,
+                        "method": variant,
+                        f"average_{metric}": value,
+                        "average_improvement_pct": improvement,
+                    }
+                )
+    rows.sort(
+        key=lambda row: float(row["average_improvement_pct"]),
+        reverse=True,
+    )
+    json_path = output_dir / "pipeline_ranking.json"
+    csv_path = output_dir / "pipeline_ranking.csv"
+    json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    fieldnames = (
+        list(rows[0])
+        if rows
+        else [
+            "winner_name",
+            "family",
+            "retrieval",
+            "method",
+            f"average_{metric}",
+            "average_improvement_pct",
+        ]
+    )
+    with csv_path.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def generate_full_results_tables(
@@ -430,23 +645,40 @@ def generate_full_results_tables(
     models: Sequence[str] | None = None,
     families: Sequence[str] | None = None,
     spaces: Sequence[str] = ("raw", "instance"),
+    distance_metrics: Sequence[str] = ("euclidean",),
     neighbors: Sequence[int] = (1, 3, 10),
     retrieval_mode: str = "online",
     metric: str = "nmse",
     split: str = "eval",
     decimals: int = 2,
     lower_is_better: bool = True,
+    variants: Sequence[str] | None = None,
+    pipelines: Sequence[str] | None = None,
 ) -> list[Path]:
     root = Path(experiment_dir).expanduser().resolve()
     destination = Path(output_dir).expanduser().resolve() if output_dir else root / "full_tables"
     destination.mkdir(parents=True, exist_ok=True)
     records = _filter_models(discover_results(root), models)
-    runs = _run_names(spaces, neighbors, retrieval_mode)
+    runs = _selected_runs(
+        _run_names(spaces, distance_metrics, neighbors, retrieval_mode),
+        pipelines,
+    )
+    allowed_methods = set(pipelines) if pipelines else None
     return [
         _write_full_family_table(
             records,
             destination,
-            family,
+            (
+                Family(
+                    family.name,
+                    _select_variants(family, family.full_variants, variants),
+                    family.average_variants,
+                    family.diagnostic_variants,
+                    family.output_name,
+                    family.caption,
+                    family.label,
+                )
+            ),
             runs=runs,
             metric=metric,
             split=split,
@@ -455,6 +687,7 @@ def generate_full_results_tables(
             dataset_settings=dataset_settings or {},
             decimals=decimals,
             lower_is_better=lower_is_better,
+            allowed_methods=allowed_methods,
         )
         for family in _selected_families(families)
     ]
@@ -470,23 +703,41 @@ def generate_average_results_tables(
     models: Sequence[str] | None = None,
     families: Sequence[str] | None = None,
     spaces: Sequence[str] = ("raw", "instance"),
+    distance_metrics: Sequence[str] = ("euclidean",),
     neighbors: Sequence[int] = (1, 3, 10),
     retrieval_mode: str = "online",
     metric: str = "nmse",
     split: str = "eval",
     decimals: int = 2,
     lower_is_better: bool = True,
+    variants: Sequence[str] | None = None,
+    pipelines: Sequence[str] | None = None,
 ) -> list[Path]:
     root = Path(experiment_dir).expanduser().resolve()
     destination = Path(output_dir).expanduser().resolve() if output_dir else root / "average_tables"
     destination.mkdir(parents=True, exist_ok=True)
     records = _filter_models(discover_results(root), models)
-    runs = _run_names(spaces, neighbors, retrieval_mode)
-    return [
+    runs = _selected_runs(
+        _run_names(spaces, distance_metrics, neighbors, retrieval_mode),
+        pipelines,
+    )
+    allowed_methods = set(pipelines) if pipelines else None
+    selected_families = _selected_families(families)
+    outputs = [
         _write_average_family_table(
             records,
             destination,
-            family,
+            (
+                Family(
+                    family.name,
+                    family.full_variants,
+                    _select_variants(family, family.average_variants, variants),
+                    _select_variants(family, family.diagnostic_variants, variants),
+                    family.output_name,
+                    family.caption,
+                    family.label,
+                )
+            ),
             runs=runs,
             metric=metric,
             split=split,
@@ -495,9 +746,25 @@ def generate_average_results_tables(
             dataset_settings=dataset_settings or {},
             decimals=decimals,
             lower_is_better=lower_is_better,
+            allowed_methods=allowed_methods,
         )
-        for family in _selected_families(families)
+        for family in selected_families
     ]
+    _write_pipeline_ranking(
+        records,
+        destination,
+        families=selected_families,
+        runs=runs,
+        selected_variants=variants,
+        metric=metric,
+        split=split,
+        datasets=datasets,
+        settings=settings,
+        dataset_settings=dataset_settings or {},
+        lower_is_better=lower_is_better,
+        allowed_methods=allowed_methods,
+    )
+    return outputs
 
 
 def generate_sweep_results_tables(*args, **kwargs) -> list[Path]:
@@ -524,7 +791,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--models", default=None)
     parser.add_argument("--families", default=None, help="Comma/semicolon-separated table families")
     parser.add_argument("--spaces", default="raw,instance")
+    parser.add_argument("--distance-metrics", default="euclidean")
     parser.add_argument("--neighbors", default="1,3,10")
+    parser.add_argument("--variants", default=None, help="Only include these method variants")
+    parser.add_argument(
+        "--pipelines",
+        default=None,
+        help="Only include exact retrieval_run/method pipeline names",
+    )
     parser.add_argument("--retrieval-mode", default="online")
     parser.add_argument("--decimals", type=int, default=2)
     parser.add_argument("--higher-is-better", action="store_true")
@@ -548,10 +822,13 @@ def main(argv: Sequence[str] | None = None) -> list[Path]:
         models=_split_names(args.models),
         families=_split_names(args.families),
         spaces=_split_names(args.spaces) or ("raw", "instance"),
+        distance_metrics=_split_names(args.distance_metrics) or ("euclidean",),
         neighbors=_parse_neighbors(args.neighbors),
         retrieval_mode=args.retrieval_mode,
         decimals=args.decimals,
         lower_is_better=not args.higher_is_better,
+        variants=_split_names(args.variants),
+        pipelines=_split_names(args.pipelines),
     )
     for output in outputs:
         print(f"LaTeX table written to {output}")

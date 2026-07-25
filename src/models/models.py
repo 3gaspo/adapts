@@ -91,6 +91,7 @@ class ForecastModel(nn.Module):
         self.lags = int(getattr(base_model, "lags"))
         self.dim = int(getattr(base_model, "dim", 1))
         self.horizon = int(getattr(base_model, "horizon"))
+        self.supports_context = bool(getattr(base_model, "supports_context", True))
 
     def forward(
         self,
@@ -221,10 +222,10 @@ def load_model(
 ) -> ForecastModel:
     """Load a minimal extraction forecaster.
 
-    Built-ins are ``persistence``, ``linear``, ``patchtst``, ``chronos``,
-    and ``tabpfnts``.
+    Built-ins include ``persistence``, ``linear``, ``patchtst``, ``chronos2``,
+    ``chronos_bolt``, and ``tabpfnts``.
     """
-    from .chronos_model import Chronos
+    from .chronos_model import Chronos, ChronosBolt
     from .patchtst import PatchTST
     from .tabpfn_model import TabPFNTS
 
@@ -236,6 +237,10 @@ def load_model(
         "patchtst": PatchTST,
         "patch": PatchTST,
         "chronos": Chronos,
+        "chronos2": Chronos,
+        "chronos_2": Chronos,
+        "chronos_bolt": ChronosBolt,
+        "chronos-bolt": ChronosBolt,
         "tabpfn": TabPFNTS,
         "tabpfn_ts": TabPFNTS,
         "tabpfnts": TabPFNTS,

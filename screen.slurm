@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=gates
+#SBATCH --job-name=screen
+#SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=23:00:00
@@ -9,9 +10,9 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Candidate profiles require GATE_METHODS_CSV.
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+# Full method screen; no winner names are needed here.
+EXPERIMENT_MODE=screen
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 export PROJECT_ROOT EXPERIMENT_MODE
-source "$PROJECT_ROOT/src/slurm/run_gates.sh"
+source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"

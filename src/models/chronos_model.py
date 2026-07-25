@@ -30,9 +30,9 @@ def _existing_path(*candidates: str | Path | None) -> Path | None:
     return None
 
 
-def _default_chronos_weights() -> Path | None:
+def _default_chronos_weights(name: str = "chronos2") -> Path | None:
     repo_root = Path(__file__).resolve().parents[2]
-    return _existing_path(repo_root.parent / "weights" / "chronos2")
+    return _existing_path(repo_root.parent / "weights" / name)
 
 
 def _broadcast(value: torch.Tensor | None, batch_size: int) -> torch.Tensor | None:
@@ -269,3 +269,80 @@ class Chronos(nn.Module):
         if pool:
             return raw.mean(dim=1).mean(dim=1)
         return rearrange(raw, "batch ... -> batch (...)")
+
+
+class ChronosBolt(nn.Module):
+    """Frozen Chronos-Bolt median forecaster.
+
+    Chronos-Bolt is univariate and does not accept Chronos-2 covariates.
+    ``context`` is therefore intentionally ignored; retrieval methods using
+    neighbor targets or neighbor forecasts remain available.
+    """
+
+    supports_context = False
+
+    def __init__(
+        self,
+        lags: int,
+        dim: int = 1,
+        horizon: int | None = None,
+        *,
+        weights_path: str | Path | None = None,
+        device_map: str = "cuda",
+        local_files_only: bool = True,
+        frozen: bool = True,
+        quantile_level: float = 0.5,
+        **kwargs: Any,
+    ):
+        super().__init__()
+        del kwargs
+        if horizon is None:
+            raise ValueError("horizon is required")
+        self.lags = int(lags)
+        self.dim = int(dim)
+        self.horizon = int(horizon)
+        self.quantile_level = float(quantile_level)
+        model_path = (
+            Path(weights_path).expanduser().resolve()
+            if weights_path
+            else _default_chronos_weights("chronos-bolt-base")
+        )
+        if model_path is None:
+            raise FileNotFoundError(
+                "Chronos-Bolt weights were not found. Pass weights_path or place "
+                "them under ../weights/chronos-bolt-base."
+            )
+        pipeline_cls = _import_chronos()
+        self.pipeline = pipeline_cls.from_pretrained(
+            str(model_path),
+            device_map=device_map,
+            local_files_only=bool(local_files_only),
+        )
+        if frozen:
+            model = getattr(self.pipeline, "model", None)
+            if model is not None:
+                model.eval()
+                for parameter in model.parameters():
+                    parameter.requires_grad = False
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        context: torch.Tensor | None = None,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        del context, kwargs
+        batch, channels, _ = x.shape
+        flat = rearrange(x, "batch channel time -> (batch channel) time")
+        quantiles, _ = self.pipeline.predict_quantiles(
+            context=flat.detach().cpu(),
+            prediction_length=self.horizon,
+            quantile_levels=[self.quantile_level],
+        )
+        central = quantiles[..., 0]
+        return rearrange(
+            central,
+            "(batch channel) horizon -> batch channel horizon",
+            batch=batch,
+            channel=channels,
+        ).to(device=x.device, dtype=x.dtype)

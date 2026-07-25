@@ -23,7 +23,7 @@ FEATURE_FILES = tuple(
 
 
 def required_extraction_files(*, vanilla: bool) -> tuple[str, ...]:
-    files = (*PREDICTION_FILES, *FEATURE_FILES)
+    files = (*PREDICTION_FILES, *FEATURE_FILES, "extraction_timing.json")
     return (*files, "vanilla_metrics.json") if vanilla else files
 
 
@@ -98,9 +98,17 @@ def validate_extraction(
                 f"artifact size changed after completion: {path} "
                 f"(expected {expected_size}, found {actual_size})"
             )
-    missing_predictions = [name for name in PREDICTION_FILES if name not in files]
-    if missing_predictions:
-        return False, f"marker is missing required prediction payloads: {missing_predictions}"
+    try:
+        vanilla = int(signature.get("neighbors", -1)) == 0
+    except (TypeError, ValueError):
+        vanilla = False
+    missing_required = [
+        name
+        for name in required_extraction_files(vanilla=vanilla)
+        if name not in files
+    ]
+    if missing_required:
+        return False, f"marker is missing required artifacts: {missing_required}"
     return True, "complete"
 
 

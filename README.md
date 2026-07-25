@@ -53,13 +53,17 @@ dataset-config path and content hash, and file sizes.
 `--skip-complete` therefore skips a matching complete run but re-runs a partial,
 changed, or legacy extraction.
 
-Downstream output contracts are:
+Downstream results are profile-separated under
+`outputs/adaptation_results/<experiment_mode>/`; extraction payloads remain
+shared under `outputs/adaptation/`. Their contracts are:
 
 ```text
-<retrieval>/baselines/{baseline_metrics.csv,baseline_metrics.json,baseline_artifacts.pt}
-<retrieval>/gates/{gate_metrics.csv,gate_metrics.json,gate_artifacts.pt}
-<retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,...}
-tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,...}
+outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
+  <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,baseline_timing.json,...}
+  <retrieval>/gates/{gate_metrics.json,gate_artifacts.pt,gate_timing.json,...}
+  <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json}
+  <retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,...}
+  tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,...}
 ```
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
@@ -98,8 +102,11 @@ WEIGHTS_ROOT=/cluster/shared/weights \
 sbatch extraction.slurm
 ```
 
-`CHRONOS_WEIGHTS_PATH` and `TABPFN_WEIGHTS_PATH` can override individual model
-paths. The full sweep is Chronos-only; ultra contains `chronos` and `tabpfnts`.
+`CHRONOS2_WEIGHTS_PATH`, `CHRONOS_BOLT_WEIGHTS_PATH`, and
+`TABPFN_WEIGHTS_PATH` can override individual model paths. `CHRONOS_WEIGHTS_PATH`
+remains a legacy alias for Chronos-2. The canonical model names are
+`chronos2`, `chronos-bolt`, and `tabpfnts` (`chronos_bolt` is accepted as an
+alias).
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -120,118 +127,99 @@ cluster checkouts and shared with RevIN.
 
 ## Experiment profiles and required order
 
-Every root launcher accepts the same `EXPERIMENT_MODE=test|small|full|ultra`
-switch (`large` remains a compatibility alias for `full`):
+The main study uses
 
-- `test` is the existing Electricity 168:24 Chronos smoke profile with raw
-  distance, `k=3`, sparse queries, and reduced fitting/training budgets.
-- `small` reproduces the RevIN subset: Traffic, Electricity, and Solar with
-  `168:24`, `504:24`, `504:168`, and `504:504`; raw and instance distance;
-  `k in {1,3,10}`; and Chronos. Extraction has 84 configurations; baselines,
-  gates, and TS-IFA have 72 each.
-- `full` uses ETTh1 (OT only), Electricity, Traffic, Solar, Weather, and
-  Exchange; the four small settings plus the Cross-RAG `512:64` comparison;
-  and Chronos. Extraction has 210 configurations; baselines, gates, and TS-IFA
-  have 180 each.
-- `ultra` adds TabPFN-TS to the full profile. Extraction has 420
-  configurations; baselines, gates, and TS-IFA have 360 each.
-
-Start with the test DAG. Each submission is one sequential Slurm job and creates
-one `.out` and one `.err` file:
-
-```bash
-extract_test=$(EXPERIMENT_MODE=test sbatch --parsable extraction.slurm)
-
-baseline_test=$(EXPERIMENT_MODE=test sbatch --parsable \
-  --dependency=afterok:$extract_test \
-  baselines.slurm)
-
-gate_test=$(EXPERIMENT_MODE=test sbatch --parsable \
-  --dependency=afterok:$extract_test \
-  gates.slurm)
-
-EXPERIMENT_MODE=test sbatch --dependency=afterok:$baseline_test:$gate_test \
-  tables.slurm
+```text
+D = {ETTh1, Electricity, Traffic, Solar, Weather, Exchange}
+S = {168:24, 336:48, 504:168}
 ```
 
-Inspect the Slurm logs, extraction manifests, downstream JSON/CSV metrics,
-feature-importance plots, and the Chronos full/average test tables. Then run the
-Chronos production grid:
+with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
+
+- `screen`: every `(formula, retrieval normalization, K)` pipeline on `D x S`,
+  with raw and instance-normalized retrieval and `K in {1,10}`.
+- `k_ablation`: the manually named winning pipelines on `D x S`, varying only
+  `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
+- `h_ablation`: manually named pipelines with `L=504` and
+  `H in {24,168,504}`.
+- `l_ablation`: manually named pipelines with `H=24` and
+  `L in {24,168,504}`.
+- `crossrag`: a separate Chronos-Bolt comparison at exactly `L=512`, `H=64`,
+  `K=15`, per-window min-max X-space retrieval, and cosine distance. It is not
+  crossed with `S`.
+
+`test`, `small`, `full`, and `ultra` remain for smoke testing and historical
+reproduction. `large` remains an alias of `full`.
+The generic `extraction.slurm`, `baselines.slurm`, `gates.slurm`,
+`tables.slurm`, and `run_all.sh` launchers default to `test`; select a
+publication profile explicitly.
+
+Each experiment is one sequential Slurm job. Run the screen first:
 
 ```bash
-extract_small=$(EXPERIMENT_MODE=small sbatch --parsable extraction.slurm)
-baseline_small=$(EXPERIMENT_MODE=small sbatch --parsable \
-  --dependency=afterok:$extract_small \
-  baselines.slurm)
-gate_small=$(EXPERIMENT_MODE=small sbatch --parsable \
-  --dependency=afterok:$extract_small \
-  gates.slurm)
-EXPERIMENT_MODE=small sbatch --dependency=afterok:$baseline_small:$gate_small \
-  tables.slurm
+sbatch screen.slurm
 ```
 
-After checking the reproduction subset, repeat the same DAG with
-`EXPERIMENT_MODE=full`. Use `EXPERIMENT_MODE=ultra` only for the multi-backbone
-extension.
-Extraction defaults to `SKIP_COMPLETE=true` and validates a complete manifest
-and exact extraction signature, so ultra skips matching Chronos
-payloads and computes the new TabPFN-TS runs. Baselines, gates, and TS-IFA also
-default to completion skipping in small/full/ultra mode when all expected files are
-newer than the matching extraction manifest. Set `SKIP_COMPLETE=false` after
-changing downstream hyperparameters. Tables are always rebuilt for the selected
-profile. The `512:64` setting is the Cross-RAG comparison. If a sequential
-job exceeds its time limit, resubmit the same mode; split first by model and then
-dataset only when needed.
+For screening, a **setting** is one dataset plus one `L:H` pair, so there are
+`|D| x |S| = 18` settings. Each complete pipeline is scored by the unweighted
+mean of its 18 setting-level percentage improvements over vanilla Chronos-2.
+There is no averaging over K or normalization: those identify different
+pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
+`winner_name` includes family, retrieval configuration, and formula.
 
-Normal timestamped progress and Python warnings are written to
-`logs/<job>_<job-id>.out`. Third-party progress bars are disabled, leaving the
-matching `.err` for scheduler, shell, or Python failures.
-
-The screening sweep is intentionally single-seed (`SEED=1`). `SEED` is not part
-of the output directory, so never submit different seeds against the same
-`OUT_ROOT`: they would replace one another. For exploratory repeats, use one
-root per seed (for example `OUT_ROOT=outputs/adaptation_seed_2`) consistently
-for extraction and its downstream jobs. The current table builder averages
-configurations, not seeds; seed aggregation must be added before presenting a
-multi-seed adaptation result.
-
-All sweep dimensions have comma-separated environment overrides:
-`DATASETS_CSV`, `MODELS_CSV`, `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, and
-`NEIGHBORS_CSV`. Settings use `L:H`. Extraction loops over
-`D*M*S*(1 + spaces*k)` configurations; baselines/gates/TS-IFA loop over
-`D*M*S*spaces*k` configurations. For example:
+Copy the selected complete names into `WINNERS_CSV` near the top of each later
+Slurm file (or pass the same variable as an environment override):
 
 ```bash
-DATASETS_CSV=Electricity MODELS_CSV=chronos SETTINGS_CSV=168:24 \
-DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-EXPERIMENT_MODE=small sbatch extraction.slurm
+WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/y_ridge_horizon,gates/raw_euclidean_1_online/catboost_aggr_y_regressor_shared}"
 ```
 
-Fit-only sample maxima can be applied to one selected configuration without
-re-extraction. For example, this caps only the T1 baseline fit while retaining
-full T3 evaluation:
+Then submit exactly one front per experiment:
 
 ```bash
-DATASETS_CSV=Traffic SETTINGS_CSV=504:504 \
-DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=10 \
-MAX_T1_FIT_SAMPLES=50000 FIT_SAMPLE_SEED=1 \
-SKIP_COMPLETE=false EXPERIMENT_MODE=small sbatch baselines.slurm
+sbatch k_ablation.slurm
+sbatch h_ablation.slurm
+sbatch l_ablation.slurm
 ```
 
-Use `MAX_T2_VALID_SAMPLES` to cap model-local validation and
-`MAX_ADAPT_REFIT_SAMPLES` to cap the T1+T2 refit. Use
-`MAX_EVAL_FIT_SAMPLES` only to limit the optimistic appendix fits.
+The K experiment expands each winner across the K grid while retaining its
+formula and normalization. The H and L experiments retain each full winning
+pipeline, including its K and normalization, while changing only the requested
+lookback/horizon axis. Dataset–`L:H` pairs remain evaluation settings.
 
-The extraction, baseline, gate, and TS-IFA fronts request 16 CPUs per task.
-Gate fitting uses the measured CPU-parallel default: eight independent horizon
-fits at once, with two CatBoost threads per fit. Override these only for a
-controlled comparison through `GATE_HORIZON_JOBS`, `GATE_THREAD_COUNT`, and
-`GATE_TASK_TYPE`.
+The Cross-RAG comparison is also one job. Enter one complete winning pipeline in
+`crossrag.slurm`, configure the three released-code/checkpoint paths in the
+environment, and submit it:
 
-Do not submit a downstream job without an `afterok` dependency unless the
-corresponding manifests have already been checked.  Downstream launchers fail
-before computation when the required extraction is absent, partial, stale, or
-legacy, and assert the files expected by table discovery after each run.
+```bash
+CROSSRAG_ROOT=/cluster/code/Cross-RAG \
+CROSSRAG_BASE_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/base \
+CROSSRAG_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/.../best.pth \
+WINNERS_CSV=baselines/instance_euclidean_10_online/y_ridge_horizon \
+sbatch crossrag.slurm
+```
+
+`crossrag.slurm` imports the official released model implementation and loads
+its pretrained adapter checkpoint; it does not retrain Cross-RAG. It evaluates
+the released model on the same T3 settings as our candidate. The candidate
+retains its selected normalization while Cross-RAG uses its prescribed
+min-max/cosine retrieval. The comparison tables include accuracy, and
+`timing_comparison.tex` reports wall-clock vanilla, retrieval, adaptation, and
+Cross-RAG totals, including each pipeline's own retrieval pass.
+
+Extraction defaults to `SKIP_COMPLETE=true` and validates an atomic manifest
+with the exact signature and timing artifact. Selected-candidate profiles
+default downstream skipping to false because changing `*_METHODS_CSV` changes
+the fitted output. Normal logs are under `logs/`; if a sequential job reaches
+its time limit, resubmit the same mode and completed extractions will be reused.
+
+All sweep dimensions remain overridable through `DATASETS_CSV`, `MODELS_CSV`,
+`SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, `DISTANCE_METRICS_CSV`, and
+`NEIGHBORS_CSV`. Settings use `L:H`. `MAX_T1_FIT_SAMPLES`,
+`MAX_T2_VALID_SAMPLES`, and `MAX_ADAPT_REFIT_SAMPLES` affect fitting only;
+complete T3 scoring is never subsampled. Gates use eight concurrent horizon
+fits with two CatBoost threads each by default, matching the 16-CPU Slurm
+allocation.
 
 ## Tables and averages
 
@@ -239,11 +227,12 @@ The only table front end is `tables.slurm`; it delegates to
 `src/slurm/build_tables.sh`. It
 checks every selected input rather than silently constructing a sparse table,
 then writes separate Chronos and TabPFN-TS tables.  `full/` reports each
-dataset/setting/retrieval result.  `average/` gives the unweighted mean over the
-selected configuration-level metrics and the relative improvement from the
-matching vanilla backbone.  This equal-configuration average prevents large
-datasets from dominating merely because they contain more windows.  Report it
-alongside, not instead of, per-dataset results and user-tail analyses.
+dataset/setting/retrieval result. `average/` reports, for each method, the
+unweighted mean of its per-configuration percentage improvements from the
+matching vanilla backbone (plus its mean metric below). This is deliberately
+not the percentage computed from two pooled mean nMSE values. It prevents large
+datasets or large-error configurations from receiving implicit extra weight.
+Report it alongside, not instead of, per-dataset results and user-tail analyses.
 
 Use `FAMILIES_CSV=baselines`, `FAMILIES_CSV=gates`, or include `ts_ifa` after
 those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;

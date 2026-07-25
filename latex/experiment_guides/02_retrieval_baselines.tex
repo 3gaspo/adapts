@@ -125,6 +125,34 @@ an explicit flag for appendix diagnostics and are disabled by default.
 \code{src/adaptors/baselines/evaluate.py}.\\
 \textbf{Launchers:} \code{extraction.slurm}; \code{baselines.slurm}.
 
+\section{Screening and ablation sequence}
+The candidate screen uses Chronos-2 on
+\[
+ \mathcal D=\{\text{ETTh1, Electricity, Traffic, Solar, Weather, Exchange}\},
+ \qquad
+ \mathcal S=\{168{:}24,336{:}48,504{:}168\},
+\]
+with $k\in\{1,10\}$ and both raw and instance-normalized Euclidean retrieval.
+Here a setting is one dataset--$(L,H)$ pair, giving
+$|\mathcal D||\mathcal S|=18$ settings. A candidate model is the complete
+pipeline (formula, retrieval normalization, $k$). Each such pipeline is ranked
+by its unweighted mean of the 18 setting-level percentage improvements over
+$V$; there is no averaging over $k$ or normalization. Complete winner names
+are copied manually from the ranking for three separate studies:
+\[
+\begin{array}{ll}
+\text{$k$ ablation:} & k\in\{1,3,5,10,15,20\},\quad (\mathcal D,\mathcal S),
+ \text{ retaining formula/normalization},\\
+\text{$H$ ablation:} & L=504,\quad H\in\{24,168,504\},
+ \text{ retaining formula/normalization/$k$},\\
+\text{$L$ ablation:} & H=24,\quad L\in\{24,168,504\},
+ \text{ retaining formula/normalization/$k$}.
+\end{array}
+\]
+The Cross-RAG comparison is not crossed with $\mathcal S$: it separately uses
+Chronos-Bolt, $L=512$, $H=64$, $k=15$, and min--max/cosine X-space retrieval.
+Only the winning in-project candidate is fitted in that profile.
+
 \section{Interpretation}
 \code{aggr\_y} tests analog forecasting directly; \code{context} tests whether
 the backbone can consume retrieved context. The individual-$Y$ models test

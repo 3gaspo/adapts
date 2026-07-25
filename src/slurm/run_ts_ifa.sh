@@ -3,20 +3,18 @@
 # Submit ../../ts_ifa.slurm; source this implementation only for local debugging.
 set -euo pipefail
 source src/slurm/common.sh
+source src/slurm/profiles.sh
 require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
 OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
+RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/${EXPERIMENT_MODE:-test}}"
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
+adaptation_profile_defaults
 case "$EXPERIMENT_MODE" in
   test)
-    DEFAULT_DATASETS_CSV="Electricity"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_SETTINGS_CSV="168:24"
-    DEFAULT_DISTANCE_SPACES_CSV="raw"
-    DEFAULT_NEIGHBORS_CSV="3"
     DEFAULT_EPOCHS=2
     DEFAULT_VALID_EVAL_FREQ=1
     DEFAULT_LOGGING_EVAL_FREQ=1
@@ -25,40 +23,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_MAX_EVAL_SAMPLES=32
     DEFAULT_SKIP_COMPLETE=false
     ;;
-  small)
-    DEFAULT_DATASETS_CSV="Traffic,Electricity,Solar"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
-    DEFAULT_EPOCHS=10000
-    DEFAULT_VALID_EVAL_FREQ=1000
-    DEFAULT_LOGGING_EVAL_FREQ=1000
-    DEFAULT_MAX_TRAIN_SAMPLES=""
-    DEFAULT_MAX_VALID_SAMPLES=""
-    DEFAULT_MAX_EVAL_SAMPLES=""
-    DEFAULT_SKIP_COMPLETE=true
-    ;;
-  full|large)
-    DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
-    DEFAULT_EPOCHS=10000
-    DEFAULT_VALID_EVAL_FREQ=1000
-    DEFAULT_LOGGING_EVAL_FREQ=1000
-    DEFAULT_MAX_TRAIN_SAMPLES=""
-    DEFAULT_MAX_VALID_SAMPLES=""
-    DEFAULT_MAX_EVAL_SAMPLES=""
-    DEFAULT_SKIP_COMPLETE=true
-    ;;
-  ultra)
-    DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
-    DEFAULT_MODELS_CSV="chronos,tabpfnts"
-    DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
+  *)
     DEFAULT_EPOCHS=10000
     DEFAULT_VALID_EVAL_FREQ=1000
     DEFAULT_LOGGING_EVAL_FREQ=1000
@@ -72,6 +37,7 @@ DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
 SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
+DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 EPOCHS="${EPOCHS:-$DEFAULT_EPOCHS}"
 VALID_EVAL_FREQ="${VALID_EVAL_FREQ:-$DEFAULT_VALID_EVAL_FREQ}"
@@ -97,11 +63,13 @@ EARLY_STOPPING_PATIENCE="${EARLY_STOPPING_PATIENCE:-0}"
 EARLY_STOPPING_MIN_DELTA="${EARLY_STOPPING_MIN_DELTA:-0.0}"
 RESTORE_BEST_VALIDATION="${RESTORE_BEST_VALIDATION:-true}"
 VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
+require_resolved_profile_grid
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
 csv_to_array "$SETTINGS_CSV" SETTINGS
 csv_to_array "$DISTANCE_SPACES_CSV" DISTANCE_SPACES
+csv_to_array "$DISTANCE_METRICS_CSV" DISTANCE_METRICS
 csv_to_array "$NEIGHBORS_CSV" NEIGHBORS
 
 TASKS=()
@@ -109,8 +77,10 @@ for dataset in "${DATASETS[@]}"; do
   for model in "${MODELS[@]}"; do
     for setting in "${SETTINGS[@]}"; do
       for space in "${DISTANCE_SPACES[@]}"; do
-        for neighbors in "${NEIGHBORS[@]}"; do
-          TASKS+=("$dataset|$model|$setting|$space|$neighbors")
+        for metric in "${DISTANCE_METRICS[@]}"; do
+          for neighbors in "${NEIGHBORS[@]}"; do
+            TASKS+=("$dataset|$model|$setting|$space|$metric|$neighbors")
+          done
         done
       done
     done
@@ -128,18 +98,28 @@ ts_ifa_complete() {
 }
 
 run_task() {
-  local task_id="$1" task dataset model setting space neighbors
+  local task_id="$1" task dataset model setting space metric neighbors
   local optional_args=() restore_args=()
   task="${TASKS[$task_id]}"
-  IFS='|' read -r dataset model setting space neighbors <<< "$task"
+  IFS='|' read -r dataset model setting space metric neighbors <<< "$task"
   parse_setting "$setting"
   L="$SETTING_LAGS"
   H="$SETTING_HORIZON"
-  RETRIEVAL_SETTING="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
+  RETRIEVAL_SETTING="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
   RUN_DIR="$OUT_ROOT/$dataset/${L}_${H}/$model/$RETRIEVAL_SETTING"
   INPUT_DIR="$RUN_DIR/extracted"
-  OUTPUT_DIR="$RUN_DIR/ts_ifa/TS-IFA"
+  RESULT_RUN_ROOT="$RESULTS_ROOT/$dataset/${L}_${H}/$model/$RETRIEVAL_SETTING"
+  OUTPUT_DIR="$RESULT_RUN_ROOT/ts_ifa/TS-IFA"
   require_extraction "$INPUT_DIR"
+  VANILLA_SOURCE="$OUT_ROOT/$dataset/${L}_${H}/$model/vanilla/vanilla_metrics.json"
+  VANILLA_TIMING_SOURCE="$OUT_ROOT/$dataset/${L}_${H}/$model/vanilla/extraction_timing.json"
+  VANILLA_DEST="$RESULTS_ROOT/$dataset/${L}_${H}/$model/vanilla"
+  assert_files vanilla-metrics "$VANILLA_SOURCE" "$VANILLA_TIMING_SOURCE" "$INPUT_DIR/extraction_timing.json"
+  mkdir -p "$VANILLA_DEST"
+  cp "$VANILLA_SOURCE" "$VANILLA_DEST/vanilla_metrics.json"
+  cp "$VANILLA_TIMING_SOURCE" "$VANILLA_DEST/extraction_timing.json"
+  mkdir -p "$RESULT_RUN_ROOT"
+  cp "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
   if is_true "$SKIP_COMPLETE" && ts_ifa_complete "$OUTPUT_DIR" &&
     [ "$OUTPUT_DIR/eval_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
     log "skip complete family=ts_ifa dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
@@ -190,8 +170,8 @@ run_task() {
   log "training done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-log_section "job start kind=ts_ifa_training experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=ts_ifa_training experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV results_root=$RESULTS_ROOT"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done
-log_section "job done kind=ts_ifa_training output=$OUT_ROOT"
+log_section "job done kind=ts_ifa_training output=$RESULTS_ROOT"

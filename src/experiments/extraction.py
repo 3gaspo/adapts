@@ -371,12 +371,15 @@ def extract_period(
         x_c = xy_c[:, :, :lags]
         y_c = xy_c[:, :, lags:]
         query_lookback = rearrange(x.detach().cpu(), "user 1 lags -> user lags")
-        context = context_on_query_scale(query_lookback, xy_c, lags=lags).to(device)
-        pred_context = _predict(
-            model,
-            x,
-            context=context,
-        )
+        if getattr(model, "supports_context", True):
+            context = context_on_query_scale(query_lookback, xy_c, lags=lags).to(device)
+            pred_context = _predict(
+                model,
+                x,
+                context=context,
+            )
+        else:
+            pred_context = pred
 
         x_c_flat = rearrange(x_c, "user neighbor lags -> (user neighbor) 1 lags").to(device)
         pred_neighbors = rearrange(
@@ -604,7 +607,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--distance-space",
         default="instance",
-        choices=["raw", "instance", "encoder"],
+        choices=["raw", "instance", "minmax", "encoder"],
         help="Lookback space used by neighbor search",
     )
     parser.add_argument("--distance-metric", default="euclidean", choices=["euclidean", "cosine", "pearson"])
@@ -823,6 +826,34 @@ def main() -> dict[str, Path]:
         output_dir=out,
         device=device,
     )
+    elapsed_seconds = perf_counter() - started
+    timing_path = out / "extraction_timing.json"
+    timing_path.write_text(
+        json.dumps(
+            {
+                "elapsed_seconds": elapsed_seconds,
+                "model": args.model,
+                "lags": int(args.lags),
+                "horizon": int(args.horizon),
+                "neighbors": int(args.neighbors),
+                "distance_space": args.distance_space,
+                "distance_metric": args.distance_metric,
+                "adapt_query_dates": len(adapt_eval_dates),
+                "eval_query_dates": len(eval_eval_dates),
+                "users": int(dataset.n_users),
+                "adapt_examples": int(
+                    prediction_payloads["adapt"]["adapt_Y_values"].numel()
+                    // int(args.horizon)
+                ),
+                "eval_examples": int(
+                    prediction_payloads["eval"]["eval_Y_values"].numel()
+                    // int(args.horizon)
+                ),
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     manifest = write_extraction_manifest(
         out,
         signature=signature,
@@ -830,7 +861,7 @@ def main() -> dict[str, Path]:
     )
     LOGGER.info("completion marker saved path=%s", manifest)
     LOGGER.info("outputs saved dir=%s", out)
-    LOGGER.info("experiment done seconds=%.2f", perf_counter() - started)
+    LOGGER.info("experiment done seconds=%.2f", elapsed_seconds)
     log_experiment_separator(LOGGER)
     return {
         "run_dir": out,

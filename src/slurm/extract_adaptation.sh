@@ -4,6 +4,7 @@
 
 set -euo pipefail
 source src/slurm/common.sh
+source src/slurm/profiles.sh
 require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
@@ -16,74 +17,25 @@ export PYTHONPATH="$PROJECT_ROOT"
 : "${EXPERIMENT_MODE:=test}"
 require_experiment_mode
 
-DEFAULT_SMALL_DATASETS_CSV="Traffic,Electricity,Solar"
-DEFAULT_FULL_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
-DEFAULT_SMALL_SETTINGS_CSV="168:24,504:24,504:168,504:504"
-# 512:64 is the additional Cross-RAG comparison setting.
-DEFAULT_FULL_SETTINGS_CSV="$DEFAULT_SMALL_SETTINGS_CSV,512:64"
 : "${SKIP_COMPLETE:=true}"
-
-case "$EXPERIMENT_MODE" in
-  test)
-    DEFAULT_PROFILE_DATASETS_CSV="Electricity"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_PROFILE_SETTINGS_CSV="168:24"
-    DEFAULT_DISTANCE_SPACES_CSV="raw"
-    DEFAULT_NEIGHBORS_CSV="3"
-    DEFAULT_DATASTORE_STRIDE=168
-    DEFAULT_ADAPT_QUERY_STRIDE=256
-    DEFAULT_EVAL_QUERY_STRIDE=256
-    DEFAULT_MAX_STORE_WINDOWS=2048
-    ;;
-  small)
-    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_SMALL_DATASETS_CSV"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_SMALL_SETTINGS_CSV"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
-    DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_ADAPT_QUERY_STRIDE=24
-    DEFAULT_EVAL_QUERY_STRIDE=128
-    DEFAULT_MAX_STORE_WINDOWS=30000
-    ;;
-  full|large)
-    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_FULL_DATASETS_CSV"
-    DEFAULT_MODELS_CSV="chronos"
-    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_FULL_SETTINGS_CSV"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
-    DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_ADAPT_QUERY_STRIDE=24
-    DEFAULT_EVAL_QUERY_STRIDE=128
-    DEFAULT_MAX_STORE_WINDOWS=30000
-    ;;
-  ultra)
-    DEFAULT_PROFILE_DATASETS_CSV="$DEFAULT_FULL_DATASETS_CSV"
-    DEFAULT_MODELS_CSV="chronos,tabpfnts"
-    DEFAULT_PROFILE_SETTINGS_CSV="$DEFAULT_FULL_SETTINGS_CSV"
-    DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-    DEFAULT_NEIGHBORS_CSV="1,3,10"
-    DEFAULT_DATASTORE_STRIDE=24
-    DEFAULT_ADAPT_QUERY_STRIDE=24
-    DEFAULT_EVAL_QUERY_STRIDE=128
-    DEFAULT_MAX_STORE_WINDOWS=30000
-    ;;
-esac
-
-DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_PROFILE_DATASETS_CSV}"
+adaptation_profile_defaults
+DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
-SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_PROFILE_SETTINGS_CSV}"
+SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
+DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 DATASTORE_STRIDE="${DATASTORE_STRIDE:-$DEFAULT_DATASTORE_STRIDE}"
 ADAPT_QUERY_STRIDE="${ADAPT_QUERY_STRIDE:-$DEFAULT_ADAPT_QUERY_STRIDE}"
 EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
 MAX_STORE_WINDOWS="${MAX_STORE_WINDOWS:-$DEFAULT_MAX_STORE_WINDOWS}"
+require_resolved_profile_grid
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
 csv_to_array "$SETTINGS_CSV" SETTINGS
 csv_to_array "$DISTANCE_SPACES_CSV" DISTANCE_SPACES
+csv_to_array "$DISTANCE_METRICS_CSV" DISTANCE_METRICS
 csv_to_array "$NEIGHBORS_CSV" NEIGHBORS
 
 SPLITS="${SPLITS:-0.3,0.5,0.2}"
@@ -95,10 +47,15 @@ model_kwargs() {
   local model="$1"
   local weight_path
   case "$model" in
-    chronos)
-      weight_path="${CHRONOS_WEIGHTS_PATH:-}"
+    chronos2|chronos)
+      weight_path="${CHRONOS2_WEIGHTS_PATH:-${CHRONOS_WEIGHTS_PATH:-}}"
       [ -n "$weight_path" ] || weight_path="$(find_weight_path chronos2)"
       printf '{"weights_path":"%s","device_map":"cuda","context_mode":"future_included"}\n' "$weight_path"
+      ;;
+    chronos_bolt|chronos-bolt)
+      weight_path="${CHRONOS_BOLT_WEIGHTS_PATH:-}"
+      [ -n "$weight_path" ] || weight_path="$(find_weight_path chronos-bolt-base)"
+      printf '{"weights_path":"%s","device_map":"cuda"}\n' "$weight_path"
       ;;
     tabpfnts|tabpfn|tabpfn_ts)
       weight_path="${TABPFN_WEIGHTS_PATH:-}"
@@ -120,7 +77,7 @@ SKIP_ARGS=()
 is_true "$SKIP_COMPLETE" && SKIP_ARGS+=(--skip-complete)
 
 run_extraction() {
-  local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" save_name="$7" output_root="$8"
+  local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
   local dataset_dir config model_options
   local data_args=()
   dataset_dir="$(find_dataset_dir "$dataset")"
@@ -141,7 +98,7 @@ run_extraction() {
     --period "$PERIOD" \
     --neighbors "$neighbors" \
     --distance-space "$space" \
-    --distance-metric euclidean \
+    --distance-metric "$metric" \
     --max-store-windows "$MAX_STORE_WINDOWS" \
     --retrieval-mode "$RETRIEVAL_MODE" \
     --model "$model" \
@@ -158,6 +115,7 @@ TASK_DATASETS=()
 TASK_MODELS=()
 TASK_SETTINGS=()
 TASK_SPACES=()
+TASK_METRICS=()
 TASK_NEIGHBORS=()
 for dataset in "${DATASETS[@]}"; do
   for model in "${MODELS[@]}"; do
@@ -166,14 +124,18 @@ for dataset in "${DATASETS[@]}"; do
       TASK_MODELS+=("$model")
       TASK_SETTINGS+=("$setting")
       TASK_SPACES+=(raw)
+      TASK_METRICS+=(euclidean)
       TASK_NEIGHBORS+=(0)
       for space in "${DISTANCE_SPACES[@]}"; do
-        for neighbors in "${NEIGHBORS[@]}"; do
-          TASK_DATASETS+=("$dataset")
-          TASK_MODELS+=("$model")
-          TASK_SETTINGS+=("$setting")
-          TASK_SPACES+=("$space")
-          TASK_NEIGHBORS+=("$neighbors")
+        for metric in "${DISTANCE_METRICS[@]}"; do
+          for neighbors in "${NEIGHBORS[@]}"; do
+            TASK_DATASETS+=("$dataset")
+            TASK_MODELS+=("$model")
+            TASK_SETTINGS+=("$setting")
+            TASK_SPACES+=("$space")
+            TASK_METRICS+=("$metric")
+            TASK_NEIGHBORS+=("$neighbors")
+          done
         done
       done
     done
@@ -186,6 +148,7 @@ run_task() {
   local model="${TASK_MODELS[$task_id]}"
   local setting="${TASK_SETTINGS[$task_id]}"
   local space="${TASK_SPACES[$task_id]}"
+  local metric="${TASK_METRICS[$task_id]}"
   local neighbors="${TASK_NEIGHBORS[$task_id]}"
   local save_name run_root retrieval_setting
   parse_setting "$setting"
@@ -200,15 +163,15 @@ run_task() {
     retrieval_setting=vanilla
   else
     save_name=extracted
-    retrieval_setting="${space}_euclidean_${neighbors}_${RETRIEVAL_MODE}"
+    retrieval_setting="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
     run_root="$MODEL_ROOT/$retrieval_setting"
   fi
   log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
-  run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$save_name" "$run_root"
+  run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root"
   log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 
-log_section "job start kind=adaptation_extraction experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=adaptation_extraction experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV"
 for ((task_id = 0; task_id < ${#TASK_DATASETS[@]}; task_id++)); do
   run_task "$task_id"
 done

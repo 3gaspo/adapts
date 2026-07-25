@@ -4,7 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
 
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-small}"
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 SBATCH_EXPORT="ALL,EXPERIMENT_MODE=$EXPERIMENT_MODE"
 
 extract="$(sbatch --parsable --export="$SBATCH_EXPORT" extraction.slurm)"

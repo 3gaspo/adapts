@@ -55,7 +55,7 @@ def main() -> None:
                     setting / run / "baselines" / "baseline_metrics.json",
                     [
                         {"split": "eval", "baseline": "context_forecast", "nmse": 0.95 + offset, "mse": 0.009},
-                        {"split": "eval", "baseline": "horizon_ridge_shared", "nmse": ridge, "mse": 0.007},
+                        {"split": "eval", "baseline": "y_ridge_shared", "nmse": ridge, "mse": 0.007},
                         {
                             "split": "eval",
                             "baseline": "residual_ridge_horizon_eval_fit",
@@ -67,10 +67,10 @@ def main() -> None:
                 _write(
                     setting / run / "gates" / "gate_metrics.json",
                     [
-                        {"split": "eval", "baseline": "bayes_context_scalar", "nmse": bayes, "mse": 0.006},
+                        {"split": "eval", "baseline": "bayes_context_shared", "nmse": bayes, "mse": 0.006},
                         {
                             "split": "eval",
-                            "baseline": "catboost_context_classifier_scalar",
+                            "baseline": "catboost_context_classifier_shared",
                             "nmse": bayes + 0.05,
                             "mse": 0.0065,
                         },
@@ -105,7 +105,7 @@ def main() -> None:
         full = (root / "tables" / "full" / "full_results.tex").read_text(encoding="utf-8")
         assert full.count(r"\begin{table}") == 1
         assert "vanilla" in full
-        assert r"raw\_L2\_1/Y-ridge" in full
+        assert r"raw\_L2\_1/Y-ridge-s" in full
         assert r"IN\_L2\_3/TS-IFA" in full
         assert "Overall improvement" not in full
 
@@ -128,9 +128,20 @@ def main() -> None:
         assert baselines.count(r"\begin{table}") == 1
         assert "Vanilla Chronos NMSE: 1.10" in baselines
         assert "9.10" not in baselines
-        assert r"\textcolor{green!50!black}{\textbf{25.45\%}}" in baselines
+        assert "25.67" in baselines
         assert r"R-ridge-h-fit-T3" in baselines
         assert baselines.count(r"\midrule") >= 2
+        assert " & Mean" not in baselines
+        ranking = json.loads(
+            (root / "tables" / "average" / "pipeline_ranking.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        assert ranking
+        assert ranking[0]["winner_name"].count("/") == 2
+        assert ranking[0]["winner_name"].startswith(
+            ("baselines/", "gates/", "full/", "ts_ifa/")
+        )
 
         tabpfn_root = root / "tabpfn_only"
         tabpfn_setting = tabpfn_root / "electricity" / "168_24" / "tabpfnts"
@@ -154,8 +165,8 @@ def main() -> None:
         assert "Vanilla TabPFN-TS NMSE: 1.00" in tabpfn_table
 
         gates = (root / "tables" / "average" / "gates_results.tex").read_text(encoding="utf-8")
-        assert r"bayes-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{10.91\%}" in gates
-        assert r"oracle-h" in gates
+        assert r"bayes-C-s & " in gates
+        assert r"oracle-C-h" in gates
 
         ts_ifa = (root / "tables" / "average" / "ts_ifa_results.tex").read_text(encoding="utf-8")
         assert r"TS-IFA & " in ts_ifa

@@ -96,9 +96,18 @@ def main() -> None:
         horizon=horizon,
         distance_space="instance",
     )
+    minmax_windows = build_window_batch(
+        dataset,
+        np.asarray([3, 4]),
+        lags=lags,
+        horizon=horizon,
+        distance_space="minmax",
+    )
     np.testing.assert_allclose(instance_windows.features.mean(axis=1), 0.0, atol=1e-6)
     np.testing.assert_allclose(instance_windows.features.std(axis=1), 1.0, atol=1e-6)
     assert not np.allclose(raw_windows.features, instance_windows.features)
+    np.testing.assert_allclose(minmax_windows.features.min(axis=1), 0.0)
+    np.testing.assert_allclose(minmax_windows.features.max(axis=1), 1.0)
 
     class EncoderStub(torch.nn.Module):
         def representation(self, values: torch.Tensor, *, pool: bool = False) -> torch.Tensor:
@@ -231,7 +240,7 @@ def main() -> None:
 
     if args.chronos_weights:
         chronos = load_pretrained_model(
-            "chronos",
+            "chronos2",
             lags=lags,
             horizon=horizon,
             device="cpu",

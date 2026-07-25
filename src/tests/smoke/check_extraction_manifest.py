@@ -19,15 +19,16 @@ SPEC.loader.exec_module(ARTIFACTS)
 invalidate_extraction = ARTIFACTS.invalidate_extraction
 validate_extraction = ARTIFACTS.validate_extraction
 write_extraction_manifest = ARTIFACTS.write_extraction_manifest
+required_extraction_files = ARTIFACTS.required_extraction_files
 
 
 def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
-        files = ("adapt_prediction_payload.pt", "eval_prediction_payload.pt")
+        files = required_extraction_files(vanilla=False)
         for index, name in enumerate(files, start=1):
             (root / name).write_bytes(bytes([index]) * index)
-        signature = {"dataset_name": "toy", "lags": 4, "horizon": 2}
+        signature = {"dataset_name": "toy", "lags": 4, "horizon": 2, "neighbors": 3}
         write_extraction_manifest(root, signature=signature, required_files=files)
         assert validate_extraction(root, expected_signature=signature) == (True, "complete")
         complete, reason = validate_extraction(root, expected_signature={**signature, "horizon": 3})

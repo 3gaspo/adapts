@@ -26,6 +26,12 @@ def normalize_windows(values: np.ndarray, eps: float = 1e-8) -> np.ndarray:
     return ((values - mean) / (std + eps)).astype(np.float32)
 
 
+def minmax_windows(values: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    minimum = values.min(axis=1, keepdims=True)
+    span = values.max(axis=1, keepdims=True) - minimum
+    return ((values - minimum) / np.maximum(span, eps)).astype(np.float32)
+
+
 def _mean_std(value: Any, eps: float) -> tuple[Any, Any]:
     if isinstance(value, np.ndarray):
         mean = value.mean(axis=-1, keepdims=True)
@@ -245,6 +251,8 @@ def build_window_batch(
         features = lookbacks.astype(np.float32)
     elif space == "instance":
         features = normalize_windows(lookbacks)
+    elif space == "minmax":
+        features = minmax_windows(lookbacks)
     elif space == "encoder":
         if model is None:
             raise ValueError(f"distance_space={distance_space!r} requires a model")

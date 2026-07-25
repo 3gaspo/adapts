@@ -29,7 +29,7 @@ class Result:
 
 
 _RUN_NAME_RE = re.compile(
-    r"(?:chronos_)?(in|raw|instance|encoder|fourier|chronos|patchtst|model|representation)"
+    r"(?:chronos_)?(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
     r"_(euclidean|cosine|pearson)_(\d+)_(online|fixed)"
 )
 
@@ -129,6 +129,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
     metric_paths = [
         *root.rglob("baseline_metrics.json"),
         *root.rglob("gate_metrics.json"),
+        *root.rglob("crossrag_metrics.json"),
     ]
     for path in sorted(metric_paths):
         identity = _setting_ancestor(path, root)
@@ -264,6 +265,7 @@ _METHOD_LABELS = {
     "oracle_context_scalar": "oracle-s",
     "residual_branch": "TS-IFA-R",
     "memory_branch": "TS-IFA-M",
+    "crossrag": "Cross-RAG",
 }
 
 
@@ -271,7 +273,12 @@ def _short_run_name(run: str) -> str:
     match = _RUN_NAME_RE.fullmatch(run)
     if match is not None:
         space, metric, neighbors, mode = match.groups()
-        space = {"in": "IN", "instance": "IN", "encoder": "ENC"}.get(space, space)
+        space = {
+            "in": "IN",
+            "instance": "IN",
+            "minmax": "MM",
+            "encoder": "ENC",
+        }.get(space, space)
         metric = "L2" if metric == "euclidean" else metric
         parts = [space, metric, neighbors]
         if mode == "fixed":

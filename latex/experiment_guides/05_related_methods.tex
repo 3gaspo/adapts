@@ -2,7 +2,7 @@
 \input{common}
 \title{Related Retrieval and Lightweight-Adaptation Methods}
 \author{}
-\date{Evidence checked 23 July 2026}
+\date{Evidence checked 25 July 2026}
 \begin{document}
 \maketitle
 
@@ -29,8 +29,8 @@ $\lambda=0.7$.
 & Chronos-Bolt main and MOMENT extension.  Generic pretraining updates only
 projectors and self/cross-attention (about 4\% of parameters); backbone and
 predictor remain frozen. At target inference, the target training split is a
-KB of $(X_j,Y_j)$ pairs; cosine search is performed directly on $X$. No
-target-task parameter update.\\
+KB of $(X_j,Y_j)$ pairs; each $X$ is min--max normalized and cosine search is
+performed in that X-space. No target-task parameter update.\\
 \addlinespace
 \href{https://proceedings.neurips.cc/paper_files/paper/2025/file/eed25c037bc08afcbefab6f7a6b700e0-Paper-Conference.pdf}{TS-RAG}
 & arXiv 6 Mar.\ 2025; NeurIPS 2025 main track
@@ -91,8 +91,8 @@ TS-RAG retrieves
  j\in\operatorname{TopK}_{\min}\|e(X)-e(X_j)\|_2,
 \]
 then projects the retrieved futures and applies ARM self-attention jointly
-with the backbone query representation. Cross-RAG instead retrieves in the
-data space,
+with the backbone query representation. Cross-RAG instead min--max normalizes
+each window and retrieves in the data space,
 \[
  j\in\operatorname{TopK}_{\max}
  \frac{\langle X,X_j\rangle}{\|X\|\,\|X_j\|},
@@ -169,11 +169,14 @@ combined into a single cross-paper ranking.
 Our retrieved signals $(X_j,Y_j,N_j)$ resemble the input--output memories in
 the RAG methods, but our primary question is narrower: can cheap, explicitly
 validated mixtures or gates improve the same frozen vanilla forecast $V$?
-The directly comparable external experiment is therefore a fresh execution of
-released Cross-RAG/TS-RAG code on our fixed \Tthree dates, not a transcription
-of their $512$--$64$ table. Their pretrained adaptation modules and our fitted
-ridge/gate models also use different training regimes, which must remain
-visible in any results table.
+The implemented external experiment is therefore a fresh execution of the
+released pretrained Cross-RAG model on our fixed \Tthree dates, not a
+transcription of its $512$--$64$ table. It uses Chronos-Bolt, $L=512$, $H=64$,
+$k=15$, min--max/cosine X-space retrieval, and our held-out T3 settings.
+The selected in-project pipeline retains its own retrieval normalization, but
+both methods score identical T3 settings. Its pretrained adaptation module and
+our fitted ridge/gate model use different training regimes, which remain
+explicit in the results and timing tables.
 
 \section{Primary sources and released code}
 \begin{itemize}
