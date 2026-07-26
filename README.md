@@ -119,7 +119,9 @@ override other settings, while `drop_users` is merged additively with both the
 top-level list and `--drop-users`. The loader logs the selected path and applied
 keys.
 
-ETTh1 is configured to select only the `OT` target column in every profile.
+ETTh1 uses every non-date variable in the source CSV in every profile. Ensure
+the cluster copy is the complete seven-variable ETTh1 file rather than an
+`OT`-only derivative.
 
 The repository tracks the curated Electricity `config.json` while leaving its
 CSV ignored, so the same exclusions—including source column 245—are carried to

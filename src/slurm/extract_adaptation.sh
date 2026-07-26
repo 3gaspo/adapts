@@ -83,7 +83,6 @@ run_extraction() {
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
-  if [ "${dataset,,}" = etth1 ]; then data_args+=(--target-cols OT); fi
   model_options="$(model_kwargs "$model")"
   srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \

@@ -62,7 +62,6 @@ run_task() {
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
-  if [ "${dataset,,}" = etth1 ]; then data_args+=(--target-cols OT); fi
   SETTING_OUT="$OUT_ROOT/$dataset/${L}_${H}"
   log_section "univariate start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset lags=$L horizon=$H model=chronos2 eval_stride=$EVAL_QUERY_STRIDE normalization=instance seed=$SEED"
   srun --ntasks=1 python -m src.experiments.experiment_univariate \
