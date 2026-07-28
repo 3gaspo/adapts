@@ -434,3 +434,1009 @@
 2026-07-26 14:57:43,129 INFO [__main__] model load start
 2026-07-26 14:57:53,691 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
 2026-07-26 14:57:53,694 INFO [__main__] extraction start split=adapt queries=547
+2026-07-26 15:34:32,337 INFO [__main__] extraction done split=adapt
+2026-07-26 15:34:32,337 INFO [__main__] extraction start split=eval queries=41
+2026-07-26 15:37:17,937 INFO [__main__] extraction done split=eval
+2026-07-26 15:37:18,785 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 15:37:18,785 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/raw_euclidean_10_online/extracted
+2026-07-26 15:37:18,785 INFO [__main__] experiment done seconds=2376.72
+2026-07-26 15:37:18,785 INFO [__main__] ========================================================================
+2026-07-26T15:37:19+02:00 extraction done configuration=23/90 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+
+2026-07-26T15:37:19+02:00 extraction start configuration=24/90 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 15:37:22,473 INFO [__main__] ========================================================================
+2026-07-26 15:37:22,473 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=336 horizon=48 neighbors=1 distance=instance/euclidean
+2026-07-26 15:37:22,839 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 15:37:22,839 INFO [__main__] dataset load start
+2026-07-26 15:37:22,840 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 15:37:23,520 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 15:37:23,521 INFO [__main__] model load start
+2026-07-26 15:37:34,244 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 15:37:34,247 INFO [__main__] extraction start split=adapt queries=547
+2026-07-26 15:46:33,923 INFO [__main__] extraction done split=adapt
+2026-07-26 15:46:33,923 INFO [__main__] extraction start split=eval queries=41
+2026-07-26 15:47:13,482 INFO [__main__] extraction done split=eval
+2026-07-26 15:47:14,321 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 15:47:14,321 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_1_online/extracted
+2026-07-26 15:47:14,321 INFO [__main__] experiment done seconds=591.84
+2026-07-26 15:47:14,321 INFO [__main__] ========================================================================
+2026-07-26T15:47:15+02:00 extraction done configuration=24/90 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+
+2026-07-26T15:47:15+02:00 extraction start configuration=25/90 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 15:47:17,879 INFO [__main__] ========================================================================
+2026-07-26 15:47:17,879 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=336 horizon=48 neighbors=10 distance=instance/euclidean
+2026-07-26 15:47:18,226 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 15:47:18,226 INFO [__main__] dataset load start
+2026-07-26 15:47:18,227 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 15:47:18,987 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 15:47:18,987 INFO [__main__] model load start
+2026-07-26 15:47:29,560 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 15:47:29,563 INFO [__main__] extraction start split=adapt queries=547
+2026-07-26 16:25:01,903 INFO [__main__] extraction done split=adapt
+2026-07-26 16:25:01,903 INFO [__main__] extraction start split=eval queries=41
+2026-07-26 16:27:53,725 INFO [__main__] extraction done split=eval
+2026-07-26 16:27:54,615 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 16:27:54,615 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_10_online/extracted
+2026-07-26 16:27:54,615 INFO [__main__] experiment done seconds=2436.73
+2026-07-26 16:27:54,616 INFO [__main__] ========================================================================
+2026-07-26T16:27:55+02:00 extraction done configuration=25/90 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+
+2026-07-26T16:27:55+02:00 extraction start configuration=26/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 16:27:58,281 INFO [__main__] ========================================================================
+2026-07-26 16:27:58,281 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 neighbors=0 distance=raw/euclidean
+2026-07-26 16:27:58,676 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-26 16:27:58,676 INFO [__main__] dataset load start
+2026-07-26 16:27:58,676 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 16:27:59,436 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 16:27:59,436 INFO [__main__] model load start
+2026-07-26 16:28:09,959 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 16:28:09,962 INFO [__main__] extraction start split=adapt queries=542
+2026-07-26 16:30:37,926 INFO [__main__] extraction done split=adapt
+2026-07-26 16:30:37,926 INFO [__main__] extraction start split=eval queries=40
+2026-07-26 16:30:48,198 INFO [__main__] extraction done split=eval
+2026-07-26 16:30:48,354 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/vanilla/vanilla_metrics.json
+2026-07-26 16:30:48,359 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-26 16:30:48,359 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/vanilla
+2026-07-26 16:30:48,359 INFO [__main__] experiment done seconds=170.07
+2026-07-26 16:30:48,360 INFO [__main__] ========================================================================
+2026-07-26T16:30:49+02:00 extraction done configuration=26/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=vanilla
+
+2026-07-26T16:30:49+02:00 extraction start configuration=27/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 16:30:51,745 INFO [__main__] ========================================================================
+2026-07-26 16:30:51,745 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 neighbors=1 distance=raw/euclidean
+2026-07-26 16:30:52,070 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 16:30:52,070 INFO [__main__] dataset load start
+2026-07-26 16:30:52,071 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 16:30:52,756 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 16:30:52,756 INFO [__main__] model load start
+2026-07-26 16:31:03,391 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 16:31:03,394 INFO [__main__] extraction start split=adapt queries=542
+2026-07-26 16:43:42,788 INFO [__main__] extraction done split=adapt
+2026-07-26 16:43:42,788 INFO [__main__] extraction start split=eval queries=40
+2026-07-26 16:44:36,424 INFO [__main__] extraction done split=eval
+2026-07-26 16:44:37,292 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 16:44:37,292 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_1_online/extracted
+2026-07-26 16:44:37,292 INFO [__main__] experiment done seconds=825.54
+2026-07-26 16:44:37,292 INFO [__main__] ========================================================================
+2026-07-26T16:44:38+02:00 extraction done configuration=27/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-07-26T16:44:38+02:00 extraction start configuration=28/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 16:44:40,865 INFO [__main__] ========================================================================
+2026-07-26 16:44:40,865 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-07-26 16:44:41,211 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 16:44:41,211 INFO [__main__] dataset load start
+2026-07-26 16:44:41,212 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 16:44:41,889 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 16:44:41,889 INFO [__main__] model load start
+2026-07-26 16:44:52,414 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 16:44:52,418 INFO [__main__] extraction start split=adapt queries=542
+2026-07-26 17:44:25,297 INFO [__main__] extraction done split=adapt
+2026-07-26 17:44:25,298 INFO [__main__] extraction start split=eval queries=40
+2026-07-26 17:48:36,934 INFO [__main__] extraction done split=eval
+2026-07-26 17:48:37,867 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 17:48:37,867 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_10_online/extracted
+2026-07-26 17:48:37,867 INFO [__main__] experiment done seconds=3837.00
+2026-07-26 17:48:37,868 INFO [__main__] ========================================================================
+2026-07-26T17:48:39+02:00 extraction done configuration=28/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-07-26T17:48:39+02:00 extraction start configuration=29/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 17:48:41,803 INFO [__main__] ========================================================================
+2026-07-26 17:48:41,803 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 neighbors=1 distance=instance/euclidean
+2026-07-26 17:48:42,157 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 17:48:42,157 INFO [__main__] dataset load start
+2026-07-26 17:48:42,158 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 17:48:42,842 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 17:48:42,843 INFO [__main__] model load start
+2026-07-26 17:48:53,468 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 17:48:53,471 INFO [__main__] extraction start split=adapt queries=542
+2026-07-26 18:02:03,543 INFO [__main__] extraction done split=adapt
+2026-07-26 18:02:03,543 INFO [__main__] extraction start split=eval queries=40
+2026-07-26 18:03:00,675 INFO [__main__] extraction done split=eval
+2026-07-26 18:03:01,714 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 18:03:01,714 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_1_online/extracted
+2026-07-26 18:03:01,714 INFO [__main__] experiment done seconds=859.91
+2026-07-26 18:03:01,714 INFO [__main__] ========================================================================
+2026-07-26T18:03:02+02:00 extraction done configuration=29/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+
+2026-07-26T18:03:02+02:00 extraction start configuration=30/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 18:03:05,259 INFO [__main__] ========================================================================
+2026-07-26 18:03:05,259 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 neighbors=10 distance=instance/euclidean
+2026-07-26 18:03:05,647 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 18:03:05,647 INFO [__main__] dataset load start
+2026-07-26 18:03:05,648 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 18:03:06,336 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 18:03:06,336 INFO [__main__] model load start
+2026-07-26 18:03:16,859 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 18:03:16,862 INFO [__main__] extraction start split=adapt queries=542
+2026-07-26 19:03:34,978 INFO [__main__] extraction done split=adapt
+2026-07-26 19:03:34,978 INFO [__main__] extraction start split=eval queries=40
+2026-07-26 19:07:52,433 INFO [__main__] extraction done split=eval
+2026-07-26 19:07:53,330 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 19:07:53,330 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_10_online/extracted
+2026-07-26 19:07:53,330 INFO [__main__] experiment done seconds=3888.07
+2026-07-26 19:07:53,330 INFO [__main__] ========================================================================
+2026-07-26T19:07:54+02:00 extraction done configuration=30/90 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
+
+2026-07-26T19:07:54+02:00 extraction start configuration=31/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 19:07:57,201 INFO [__main__] ========================================================================
+2026-07-26 19:07:57,201 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-26 19:07:57,546 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-26 19:07:57,546 INFO [__main__] dataset load start
+2026-07-26 19:07:57,547 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 19:07:58,658 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 19:07:58,659 INFO [__main__] model load start
+2026-07-26 19:08:09,276 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 19:08:09,278 INFO [__main__] extraction start split=adapt queries=365
+2026-07-26 19:09:55,341 INFO [__main__] extraction done split=adapt
+2026-07-26 19:09:55,341 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 19:10:04,181 INFO [__main__] extraction done split=eval
+2026-07-26 19:10:04,257 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/vanilla/vanilla_metrics.json
+2026-07-26 19:10:04,262 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-26 19:10:04,262 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/vanilla
+2026-07-26 19:10:04,262 INFO [__main__] experiment done seconds=127.06
+2026-07-26 19:10:04,263 INFO [__main__] ========================================================================
+2026-07-26T19:10:05+02:00 extraction done configuration=31/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=vanilla
+
+2026-07-26T19:10:05+02:00 extraction start configuration=32/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 19:10:07,656 INFO [__main__] ========================================================================
+2026-07-26 19:10:07,656 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-26 19:10:08,030 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 19:10:08,030 INFO [__main__] dataset load start
+2026-07-26 19:10:08,031 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 19:10:09,169 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 19:10:09,169 INFO [__main__] model load start
+2026-07-26 19:10:19,592 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 19:10:19,594 INFO [__main__] extraction start split=adapt queries=365
+2026-07-26 19:18:30,309 INFO [__main__] extraction done split=adapt
+2026-07-26 19:18:30,309 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 19:19:07,656 INFO [__main__] extraction done split=eval
+2026-07-26 19:19:08,442 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 19:19:08,442 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_1_online/extracted
+2026-07-26 19:19:08,442 INFO [__main__] experiment done seconds=540.78
+2026-07-26 19:19:08,442 INFO [__main__] ========================================================================
+2026-07-26T19:19:09+02:00 extraction done configuration=32/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-07-26T19:19:09+02:00 extraction start configuration=33/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 19:19:11,886 INFO [__main__] ========================================================================
+2026-07-26 19:19:11,886 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=168 horizon=24 neighbors=10 distance=raw/euclidean
+2026-07-26 19:19:12,293 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 19:19:12,293 INFO [__main__] dataset load start
+2026-07-26 19:19:12,294 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 19:19:13,396 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 19:19:13,396 INFO [__main__] model load start
+2026-07-26 19:19:23,864 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 19:19:23,866 INFO [__main__] extraction start split=adapt queries=365
+2026-07-26 19:55:21,944 INFO [__main__] extraction done split=adapt
+2026-07-26 19:55:21,944 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 19:58:16,213 INFO [__main__] extraction done split=eval
+2026-07-26 19:58:17,107 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 19:58:17,107 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_10_online/extracted
+2026-07-26 19:58:17,107 INFO [__main__] experiment done seconds=2345.22
+2026-07-26 19:58:17,107 INFO [__main__] ========================================================================
+2026-07-26T19:58:18+02:00 extraction done configuration=33/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online
+
+2026-07-26T19:58:18+02:00 extraction start configuration=34/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 19:58:20,939 INFO [__main__] ========================================================================
+2026-07-26 19:58:20,940 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=168 horizon=24 neighbors=1 distance=instance/euclidean
+2026-07-26 19:58:21,317 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 19:58:21,317 INFO [__main__] dataset load start
+2026-07-26 19:58:21,318 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 19:58:22,397 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 19:58:22,398 INFO [__main__] model load start
+2026-07-26 19:58:33,419 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 19:58:33,421 INFO [__main__] extraction start split=adapt queries=365
+2026-07-26 20:07:26,712 INFO [__main__] extraction done split=adapt
+2026-07-26 20:07:26,712 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 20:08:06,816 INFO [__main__] extraction done split=eval
+2026-07-26 20:08:07,631 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 20:08:07,631 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_1_online/extracted
+2026-07-26 20:08:07,631 INFO [__main__] experiment done seconds=586.69
+2026-07-26 20:08:07,631 INFO [__main__] ========================================================================
+2026-07-26T20:08:08+02:00 extraction done configuration=34/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-07-26T20:08:08+02:00 extraction start configuration=35/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 20:08:11,115 INFO [__main__] ========================================================================
+2026-07-26 20:08:11,115 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=168 horizon=24 neighbors=10 distance=instance/euclidean
+2026-07-26 20:08:11,526 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 20:08:11,526 INFO [__main__] dataset load start
+2026-07-26 20:08:11,527 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 20:08:12,616 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 20:08:12,617 INFO [__main__] model load start
+2026-07-26 20:08:23,068 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 20:08:23,070 INFO [__main__] extraction start split=adapt queries=365
+2026-07-26 20:47:02,576 INFO [__main__] extraction done split=adapt
+2026-07-26 20:47:02,576 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 20:50:00,442 INFO [__main__] extraction done split=eval
+2026-07-26 20:50:01,342 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 20:50:01,342 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/168_24/chronos2/instance_euclidean_10_online/extracted
+2026-07-26 20:50:01,342 INFO [__main__] experiment done seconds=2510.22
+2026-07-26 20:50:01,342 INFO [__main__] ========================================================================
+2026-07-26T20:50:02+02:00 extraction done configuration=35/90 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online
+
+2026-07-26T20:50:02+02:00 extraction start configuration=36/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 20:50:05,324 INFO [__main__] ========================================================================
+2026-07-26 20:50:05,324 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=336 horizon=48 neighbors=0 distance=raw/euclidean
+2026-07-26 20:50:05,684 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-26 20:50:05,684 INFO [__main__] dataset load start
+2026-07-26 20:50:05,685 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 20:50:06,768 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 20:50:06,768 INFO [__main__] model load start
+2026-07-26 20:50:18,658 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 20:50:18,660 INFO [__main__] extraction start split=adapt queries=364
+2026-07-26 20:53:19,240 INFO [__main__] extraction done split=adapt
+2026-07-26 20:53:19,240 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 20:53:33,236 INFO [__main__] extraction done split=eval
+2026-07-26 20:53:33,392 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/vanilla/vanilla_metrics.json
+2026-07-26 20:53:33,398 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-26 20:53:33,398 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/vanilla
+2026-07-26 20:53:33,398 INFO [__main__] experiment done seconds=208.07
+2026-07-26 20:53:33,398 INFO [__main__] ========================================================================
+2026-07-26T20:53:34+02:00 extraction done configuration=36/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=vanilla
+
+2026-07-26T20:53:34+02:00 extraction start configuration=37/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 20:53:36,853 INFO [__main__] ========================================================================
+2026-07-26 20:53:36,853 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=336 horizon=48 neighbors=1 distance=raw/euclidean
+2026-07-26 20:53:37,253 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 20:53:37,253 INFO [__main__] dataset load start
+2026-07-26 20:53:37,253 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 20:53:38,330 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 20:53:38,331 INFO [__main__] model load start
+2026-07-26 20:53:49,098 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 20:53:49,101 INFO [__main__] extraction start split=adapt queries=364
+2026-07-26 21:07:57,642 INFO [__main__] extraction done split=adapt
+2026-07-26 21:07:57,642 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 21:09:03,924 INFO [__main__] extraction done split=eval
+2026-07-26 21:09:04,905 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 21:09:04,906 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_1_online/extracted
+2026-07-26 21:09:04,906 INFO [__main__] experiment done seconds=928.05
+2026-07-26 21:09:04,906 INFO [__main__] ========================================================================
+2026-07-26T21:09:05+02:00 extraction done configuration=37/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online
+
+2026-07-26T21:09:05+02:00 extraction start configuration=38/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 21:09:08,510 INFO [__main__] ========================================================================
+2026-07-26 21:09:08,511 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=336 horizon=48 neighbors=10 distance=raw/euclidean
+2026-07-26 21:09:08,896 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 21:09:08,896 INFO [__main__] dataset load start
+2026-07-26 21:09:08,897 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 21:09:09,969 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 21:09:09,969 INFO [__main__] model load start
+2026-07-26 21:09:20,560 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 21:09:20,562 INFO [__main__] extraction start split=adapt queries=364
+2026-07-26 22:16:37,095 INFO [__main__] extraction done split=adapt
+2026-07-26 22:16:37,096 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 22:21:51,810 INFO [__main__] extraction done split=eval
+2026-07-26 22:21:52,813 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 22:21:52,813 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/raw_euclidean_10_online/extracted
+2026-07-26 22:21:52,813 INFO [__main__] experiment done seconds=4364.30
+2026-07-26 22:21:52,813 INFO [__main__] ========================================================================
+2026-07-26T22:21:54+02:00 extraction done configuration=38/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+
+2026-07-26T22:21:54+02:00 extraction start configuration=39/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 22:21:56,709 INFO [__main__] ========================================================================
+2026-07-26 22:21:56,709 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=336 horizon=48 neighbors=1 distance=instance/euclidean
+2026-07-26 22:21:57,068 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 22:21:57,068 INFO [__main__] dataset load start
+2026-07-26 22:21:57,068 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 22:21:58,146 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 22:21:58,147 INFO [__main__] model load start
+2026-07-26 22:22:08,888 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 22:22:08,890 INFO [__main__] extraction start split=adapt queries=364
+2026-07-26 22:36:47,885 INFO [__main__] extraction done split=adapt
+2026-07-26 22:36:47,885 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 22:37:54,764 INFO [__main__] extraction done split=eval
+2026-07-26 22:37:55,694 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 22:37:55,694 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_1_online/extracted
+2026-07-26 22:37:55,694 INFO [__main__] experiment done seconds=958.98
+2026-07-26 22:37:55,694 INFO [__main__] ========================================================================
+2026-07-26T22:37:56+02:00 extraction done configuration=39/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+
+2026-07-26T22:37:56+02:00 extraction start configuration=40/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 22:37:59,247 INFO [__main__] ========================================================================
+2026-07-26 22:37:59,247 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=336 horizon=48 neighbors=10 distance=instance/euclidean
+2026-07-26 22:37:59,670 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 22:37:59,670 INFO [__main__] dataset load start
+2026-07-26 22:37:59,671 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 22:38:00,845 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 22:38:00,845 INFO [__main__] model load start
+2026-07-26 22:38:11,467 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 22:38:11,469 INFO [__main__] extraction start split=adapt queries=364
+2026-07-26 23:45:06,881 INFO [__main__] extraction done split=adapt
+2026-07-26 23:45:06,881 INFO [__main__] extraction start split=eval queries=28
+2026-07-26 23:50:12,418 INFO [__main__] extraction done split=eval
+2026-07-26 23:50:13,526 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-26 23:50:13,526 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/336_48/chronos2/instance_euclidean_10_online/extracted
+2026-07-26 23:50:13,526 INFO [__main__] experiment done seconds=4334.27
+2026-07-26 23:50:13,526 INFO [__main__] ========================================================================
+2026-07-26T23:50:15+02:00 extraction done configuration=40/90 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+
+2026-07-26T23:50:15+02:00 extraction start configuration=41/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 23:50:17,812 INFO [__main__] ========================================================================
+2026-07-26 23:50:17,812 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=0 distance=raw/euclidean
+2026-07-26 23:50:18,242 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-26 23:50:18,242 INFO [__main__] dataset load start
+2026-07-26 23:50:18,243 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 23:50:19,322 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 23:50:19,322 INFO [__main__] model load start
+2026-07-26 23:50:30,345 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 23:50:30,347 INFO [__main__] extraction start split=adapt queries=359
+2026-07-26 23:55:04,959 INFO [__main__] extraction done split=adapt
+2026-07-26 23:55:04,960 INFO [__main__] extraction start split=eval queries=27
+2026-07-26 23:55:25,968 INFO [__main__] extraction done split=eval
+2026-07-26 23:55:26,373 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/vanilla/vanilla_metrics.json
+2026-07-26 23:55:26,380 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-26 23:55:26,380 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/vanilla
+2026-07-26 23:55:26,380 INFO [__main__] experiment done seconds=308.56
+2026-07-26 23:55:26,380 INFO [__main__] ========================================================================
+2026-07-26T23:55:27+02:00 extraction done configuration=41/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=vanilla
+
+2026-07-26T23:55:27+02:00 extraction start configuration=42/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-26 23:55:29,804 INFO [__main__] ========================================================================
+2026-07-26 23:55:29,804 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=1 distance=raw/euclidean
+2026-07-26 23:55:30,212 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-26 23:55:30,212 INFO [__main__] dataset load start
+2026-07-26 23:55:30,213 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 23:55:31,324 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-26 23:55:31,325 INFO [__main__] model load start
+2026-07-26 23:55:42,106 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-26 23:55:42,108 INFO [__main__] extraction start split=adapt queries=359
+2026-07-27 00:16:15,835 INFO [__main__] extraction done split=adapt
+2026-07-27 00:16:15,835 INFO [__main__] extraction start split=eval queries=27
+2026-07-27 00:17:47,330 INFO [__main__] extraction done split=eval
+2026-07-27 00:17:48,272 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 00:17:48,272 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 00:17:48,272 INFO [__main__] experiment done seconds=1338.46
+2026-07-27 00:17:48,272 INFO [__main__] ========================================================================
+2026-07-27T00:17:49+02:00 extraction done configuration=42/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-07-27T00:17:49+02:00 extraction start configuration=43/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 00:17:52,131 INFO [__main__] ========================================================================
+2026-07-27 00:17:52,131 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-07-27 00:17:52,574 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 00:17:52,574 INFO [__main__] dataset load start
+2026-07-27 00:17:52,575 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 00:17:53,675 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-27 00:17:53,675 INFO [__main__] model load start
+2026-07-27 00:18:04,876 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 00:18:04,878 INFO [__main__] extraction start split=adapt queries=359
+2026-07-27 02:04:33,159 INFO [__main__] extraction done split=adapt
+2026-07-27 02:04:33,160 INFO [__main__] extraction start split=eval queries=27
+2026-07-27 02:12:45,211 INFO [__main__] extraction done split=eval
+2026-07-27 02:12:46,363 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 02:12:46,363 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 02:12:46,363 INFO [__main__] experiment done seconds=6894.23
+2026-07-27 02:12:46,363 INFO [__main__] ========================================================================
+2026-07-27T02:12:47+02:00 extraction done configuration=43/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-07-27T02:12:47+02:00 extraction start configuration=44/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 02:12:50,723 INFO [__main__] ========================================================================
+2026-07-27 02:12:50,723 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=1 distance=instance/euclidean
+2026-07-27 02:12:51,190 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 02:12:51,190 INFO [__main__] dataset load start
+2026-07-27 02:12:51,191 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 02:12:52,282 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-27 02:12:52,283 INFO [__main__] model load start
+2026-07-27 02:13:03,553 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 02:13:03,556 INFO [__main__] extraction start split=adapt queries=359
+2026-07-27 02:34:10,988 INFO [__main__] extraction done split=adapt
+2026-07-27 02:34:10,988 INFO [__main__] extraction start split=eval queries=27
+2026-07-27 02:35:42,958 INFO [__main__] extraction done split=eval
+2026-07-27 02:35:43,955 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 02:35:43,955 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 02:35:43,955 INFO [__main__] experiment done seconds=1373.23
+2026-07-27 02:35:43,955 INFO [__main__] ========================================================================
+2026-07-27T02:35:44+02:00 extraction done configuration=44/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+
+2026-07-27T02:35:44+02:00 extraction start configuration=45/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 02:35:47,572 INFO [__main__] ========================================================================
+2026-07-27 02:35:47,573 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=10 distance=instance/euclidean
+2026-07-27 02:35:47,915 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 02:35:47,915 INFO [__main__] dataset load start
+2026-07-27 02:35:47,916 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 02:35:49,030 INFO [__main__] dataset load done dates=17544 users=860
+2026-07-27 02:35:49,030 INFO [__main__] model load start
+2026-07-27 02:35:59,709 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 02:35:59,711 INFO [__main__] extraction start split=adapt queries=359
+2026-07-27 04:14:25,305 INFO [__main__] extraction done split=adapt
+2026-07-27 04:14:25,305 INFO [__main__] extraction start split=eval queries=27
+2026-07-27 04:21:51,614 INFO [__main__] extraction done split=eval
+2026-07-27 04:21:52,862 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:21:52,862 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Traffic/504_168/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 04:21:52,862 INFO [__main__] experiment done seconds=6365.28
+2026-07-27 04:21:52,862 INFO [__main__] ========================================================================
+2026-07-27T04:21:54+02:00 extraction done configuration=45/90 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
+
+2026-07-27T04:21:54+02:00 extraction start configuration=46/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:21:57,382 INFO [__main__] ========================================================================
+2026-07-27 04:21:57,382 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-27 04:21:57,731 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:21:57,731 INFO [__main__] dataset load start
+2026-07-27 04:21:57,732 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:21:58,096 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:21:58,096 INFO [__main__] model load start
+2026-07-27 04:22:09,297 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:22:09,298 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 04:22:16,714 INFO [__main__] extraction done split=adapt
+2026-07-27 04:22:16,714 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:22:17,312 INFO [__main__] extraction done split=eval
+2026-07-27 04:22:17,319 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 04:22:17,323 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:22:17,323 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/vanilla
+2026-07-27 04:22:17,323 INFO [__main__] experiment done seconds=19.94
+2026-07-27 04:22:17,323 INFO [__main__] ========================================================================
+2026-07-27T04:22:18+02:00 extraction done configuration=46/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=vanilla
+
+2026-07-27T04:22:18+02:00 extraction start configuration=47/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:22:20,317 INFO [__main__] ========================================================================
+2026-07-27 04:22:20,318 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-27 04:22:20,665 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:22:20,665 INFO [__main__] dataset load start
+2026-07-27 04:22:20,666 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:22:21,026 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:22:21,026 INFO [__main__] model load start
+2026-07-27 04:22:28,491 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:22:28,492 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 04:23:12,457 INFO [__main__] extraction done split=adapt
+2026-07-27 04:23:12,458 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:23:15,282 INFO [__main__] extraction done split=eval
+2026-07-27 04:23:15,936 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:23:15,936 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 04:23:15,936 INFO [__main__] experiment done seconds=55.61
+2026-07-27 04:23:15,936 INFO [__main__] ========================================================================
+2026-07-27T04:23:16+02:00 extraction done configuration=47/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-07-27T04:23:16+02:00 extraction start configuration=48/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:23:19,300 INFO [__main__] ========================================================================
+2026-07-27 04:23:19,300 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=168 horizon=24 neighbors=10 distance=raw/euclidean
+2026-07-27 04:23:19,642 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:23:19,642 INFO [__main__] dataset load start
+2026-07-27 04:23:19,643 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:23:20,065 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:23:20,065 INFO [__main__] model load start
+2026-07-27 04:23:31,069 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:23:31,070 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 04:26:41,775 INFO [__main__] extraction done split=adapt
+2026-07-27 04:26:41,775 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:26:55,795 INFO [__main__] extraction done split=eval
+2026-07-27 04:26:56,403 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:26:56,404 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 04:26:56,404 INFO [__main__] experiment done seconds=217.10
+2026-07-27 04:26:56,404 INFO [__main__] ========================================================================
+2026-07-27T04:26:57+02:00 extraction done configuration=48/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online
+
+2026-07-27T04:26:57+02:00 extraction start configuration=49/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:26:59,913 INFO [__main__] ========================================================================
+2026-07-27 04:26:59,913 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=168 horizon=24 neighbors=1 distance=instance/euclidean
+2026-07-27 04:27:00,217 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:27:00,217 INFO [__main__] dataset load start
+2026-07-27 04:27:00,218 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:27:00,580 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:27:00,580 INFO [__main__] model load start
+2026-07-27 04:27:11,355 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:27:11,356 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 04:27:57,226 INFO [__main__] extraction done split=adapt
+2026-07-27 04:27:57,226 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:28:00,423 INFO [__main__] extraction done split=eval
+2026-07-27 04:28:01,072 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:28:01,072 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 04:28:01,072 INFO [__main__] experiment done seconds=61.15
+2026-07-27 04:28:01,072 INFO [__main__] ========================================================================
+2026-07-27T04:28:01+02:00 extraction done configuration=49/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-07-27T04:28:01+02:00 extraction start configuration=50/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:28:04,517 INFO [__main__] ========================================================================
+2026-07-27 04:28:04,517 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=168 horizon=24 neighbors=10 distance=instance/euclidean
+2026-07-27 04:28:04,870 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:28:04,871 INFO [__main__] dataset load start
+2026-07-27 04:28:04,871 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:28:05,243 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:28:05,244 INFO [__main__] model load start
+2026-07-27 04:28:15,888 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:28:15,890 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 04:31:24,206 INFO [__main__] extraction done split=adapt
+2026-07-27 04:31:24,206 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:31:39,776 INFO [__main__] extraction done split=eval
+2026-07-27 04:31:40,376 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:31:40,377 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/168_24/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 04:31:40,377 INFO [__main__] experiment done seconds=215.85
+2026-07-27 04:31:40,377 INFO [__main__] ========================================================================
+2026-07-27T04:31:41+02:00 extraction done configuration=50/90 dataset=Solar model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online
+
+2026-07-27T04:31:41+02:00 extraction start configuration=51/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:31:43,836 INFO [__main__] ========================================================================
+2026-07-27 04:31:43,836 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=336 horizon=48 neighbors=0 distance=raw/euclidean
+2026-07-27 04:31:44,138 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:31:44,138 INFO [__main__] dataset load start
+2026-07-27 04:31:44,139 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:31:44,522 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:31:44,522 INFO [__main__] model load start
+2026-07-27 04:31:55,226 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:31:55,228 INFO [__main__] extraction start split=adapt queries=181
+2026-07-27 04:32:06,351 INFO [__main__] extraction done split=adapt
+2026-07-27 04:32:06,351 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:32:07,169 INFO [__main__] extraction done split=eval
+2026-07-27 04:32:07,204 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 04:32:07,209 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:32:07,209 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/vanilla
+2026-07-27 04:32:07,209 INFO [__main__] experiment done seconds=23.37
+2026-07-27 04:32:07,209 INFO [__main__] ========================================================================
+2026-07-27T04:32:07+02:00 extraction done configuration=51/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=vanilla
+
+2026-07-27T04:32:07+02:00 extraction start configuration=52/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:32:10,159 INFO [__main__] ========================================================================
+2026-07-27 04:32:10,159 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=336 horizon=48 neighbors=1 distance=raw/euclidean
+2026-07-27 04:32:10,462 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:32:10,462 INFO [__main__] dataset load start
+2026-07-27 04:32:10,462 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:32:10,862 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:32:10,862 INFO [__main__] model load start
+2026-07-27 04:32:18,255 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:32:18,256 INFO [__main__] extraction start split=adapt queries=181
+2026-07-27 04:33:31,430 INFO [__main__] extraction done split=adapt
+2026-07-27 04:33:31,430 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:33:37,199 INFO [__main__] extraction done split=eval
+2026-07-27 04:33:37,922 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:33:37,922 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 04:33:37,922 INFO [__main__] experiment done seconds=87.76
+2026-07-27 04:33:37,922 INFO [__main__] ========================================================================
+2026-07-27T04:33:38+02:00 extraction done configuration=52/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online
+
+2026-07-27T04:33:38+02:00 extraction start configuration=53/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:33:41,460 INFO [__main__] ========================================================================
+2026-07-27 04:33:41,460 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=336 horizon=48 neighbors=10 distance=raw/euclidean
+2026-07-27 04:33:41,784 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:33:41,784 INFO [__main__] dataset load start
+2026-07-27 04:33:41,785 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:33:42,187 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:33:42,187 INFO [__main__] model load start
+2026-07-27 04:33:52,921 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:33:52,922 INFO [__main__] extraction start split=adapt queries=181
+2026-07-27 04:39:10,145 INFO [__main__] extraction done split=adapt
+2026-07-27 04:39:10,145 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:39:35,398 INFO [__main__] extraction done split=eval
+2026-07-27 04:39:36,004 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:39:36,005 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 04:39:36,005 INFO [__main__] experiment done seconds=354.54
+2026-07-27 04:39:36,005 INFO [__main__] ========================================================================
+2026-07-27T04:39:36+02:00 extraction done configuration=53/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+
+2026-07-27T04:39:36+02:00 extraction start configuration=54/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:39:39,469 INFO [__main__] ========================================================================
+2026-07-27 04:39:39,469 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=336 horizon=48 neighbors=1 distance=instance/euclidean
+2026-07-27 04:39:39,803 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:39:39,803 INFO [__main__] dataset load start
+2026-07-27 04:39:39,804 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:39:40,167 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:39:40,167 INFO [__main__] model load start
+2026-07-27 04:39:51,058 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:39:51,059 INFO [__main__] extraction start split=adapt queries=181
+2026-07-27 04:41:09,967 INFO [__main__] extraction done split=adapt
+2026-07-27 04:41:09,968 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:41:15,848 INFO [__main__] extraction done split=eval
+2026-07-27 04:41:16,581 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:41:16,582 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 04:41:16,582 INFO [__main__] experiment done seconds=97.11
+2026-07-27 04:41:16,582 INFO [__main__] ========================================================================
+2026-07-27T04:41:17+02:00 extraction done configuration=54/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+
+2026-07-27T04:41:17+02:00 extraction start configuration=55/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:41:20,144 INFO [__main__] ========================================================================
+2026-07-27 04:41:20,144 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=336 horizon=48 neighbors=10 distance=instance/euclidean
+2026-07-27 04:41:20,458 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:41:20,458 INFO [__main__] dataset load start
+2026-07-27 04:41:20,458 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:41:20,838 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:41:20,838 INFO [__main__] model load start
+2026-07-27 04:41:31,704 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:41:31,705 INFO [__main__] extraction start split=adapt queries=181
+2026-07-27 04:46:41,327 INFO [__main__] extraction done split=adapt
+2026-07-27 04:46:41,328 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 04:47:05,302 INFO [__main__] extraction done split=eval
+2026-07-27 04:47:05,923 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:47:05,923 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/336_48/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 04:47:05,923 INFO [__main__] experiment done seconds=345.77
+2026-07-27 04:47:05,923 INFO [__main__] ========================================================================
+2026-07-27T04:47:06+02:00 extraction done configuration=55/90 dataset=Solar model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+
+2026-07-27T04:47:06+02:00 extraction start configuration=56/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:47:09,550 INFO [__main__] ========================================================================
+2026-07-27 04:47:09,551 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=168 neighbors=0 distance=raw/euclidean
+2026-07-27 04:47:09,888 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:47:09,889 INFO [__main__] dataset load start
+2026-07-27 04:47:09,889 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:47:10,288 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:47:10,288 INFO [__main__] model load start
+2026-07-27 04:47:21,255 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:47:21,256 INFO [__main__] extraction start split=adapt queries=176
+2026-07-27 04:47:39,959 INFO [__main__] extraction done split=adapt
+2026-07-27 04:47:39,959 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 04:47:41,282 INFO [__main__] extraction done split=eval
+2026-07-27 04:47:41,308 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 04:47:41,313 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-27 04:47:41,313 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/vanilla
+2026-07-27 04:47:41,313 INFO [__main__] experiment done seconds=31.76
+2026-07-27 04:47:41,313 INFO [__main__] ========================================================================
+2026-07-27T04:47:42+02:00 extraction done configuration=56/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=vanilla
+
+2026-07-27T04:47:42+02:00 extraction start configuration=57/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:47:44,262 INFO [__main__] ========================================================================
+2026-07-27 04:47:44,262 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=168 neighbors=1 distance=raw/euclidean
+2026-07-27 04:47:44,584 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:47:44,584 INFO [__main__] dataset load start
+2026-07-27 04:47:44,585 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:47:44,956 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:47:44,956 INFO [__main__] model load start
+2026-07-27 04:47:52,364 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:47:52,365 INFO [__main__] extraction start split=adapt queries=176
+2026-07-27 04:49:37,099 INFO [__main__] extraction done split=adapt
+2026-07-27 04:49:37,100 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 04:49:45,062 INFO [__main__] extraction done split=eval
+2026-07-27 04:49:45,642 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:49:45,643 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 04:49:45,643 INFO [__main__] experiment done seconds=121.38
+2026-07-27 04:49:45,643 INFO [__main__] ========================================================================
+2026-07-27T04:49:46+02:00 extraction done configuration=57/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-07-27T04:49:46+02:00 extraction start configuration=58/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:49:49,204 INFO [__main__] ========================================================================
+2026-07-27 04:49:49,204 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-07-27 04:49:49,526 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:49:49,526 INFO [__main__] dataset load start
+2026-07-27 04:49:49,527 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:49:49,887 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:49:49,887 INFO [__main__] model load start
+2026-07-27 04:50:00,790 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:50:00,792 INFO [__main__] extraction start split=adapt queries=176
+2026-07-27 04:57:53,817 INFO [__main__] extraction done split=adapt
+2026-07-27 04:57:53,817 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 04:58:28,747 INFO [__main__] extraction done split=eval
+2026-07-27 04:58:29,389 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 04:58:29,389 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 04:58:29,389 INFO [__main__] experiment done seconds=520.18
+2026-07-27 04:58:29,390 INFO [__main__] ========================================================================
+2026-07-27T04:58:30+02:00 extraction done configuration=58/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-07-27T04:58:30+02:00 extraction start configuration=59/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 04:58:32,998 INFO [__main__] ========================================================================
+2026-07-27 04:58:32,999 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=168 neighbors=1 distance=instance/euclidean
+2026-07-27 04:58:33,325 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 04:58:33,325 INFO [__main__] dataset load start
+2026-07-27 04:58:33,326 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 04:58:33,732 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 04:58:33,733 INFO [__main__] model load start
+2026-07-27 04:58:44,725 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 04:58:44,726 INFO [__main__] extraction start split=adapt queries=176
+2026-07-27 05:00:34,049 INFO [__main__] extraction done split=adapt
+2026-07-27 05:00:34,049 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:00:42,227 INFO [__main__] extraction done split=eval
+2026-07-27 05:00:42,805 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:00:42,805 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 05:00:42,805 INFO [__main__] experiment done seconds=129.80
+2026-07-27 05:00:42,805 INFO [__main__] ========================================================================
+2026-07-27T05:00:43+02:00 extraction done configuration=59/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+
+2026-07-27T05:00:43+02:00 extraction start configuration=60/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:00:46,231 INFO [__main__] ========================================================================
+2026-07-27 05:00:46,231 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=168 neighbors=10 distance=instance/euclidean
+2026-07-27 05:00:46,525 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:00:46,525 INFO [__main__] dataset load start
+2026-07-27 05:00:46,526 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-27 05:00:46,920 INFO [__main__] dataset load done dates=8760 users=137
+2026-07-27 05:00:46,920 INFO [__main__] model load start
+2026-07-27 05:00:57,573 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:00:57,575 INFO [__main__] extraction start split=adapt queries=176
+2026-07-27 05:08:52,837 INFO [__main__] extraction done split=adapt
+2026-07-27 05:08:52,837 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:09:27,853 INFO [__main__] extraction done split=eval
+2026-07-27 05:09:28,640 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:09:28,640 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Solar/504_168/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 05:09:28,640 INFO [__main__] experiment done seconds=522.40
+2026-07-27 05:09:28,640 INFO [__main__] ========================================================================
+2026-07-27T05:09:29+02:00 extraction done configuration=60/90 dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
+
+2026-07-27T05:09:29+02:00 extraction start configuration=61/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:09:32,096 INFO [__main__] ========================================================================
+2026-07-27 05:09:32,096 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=168 horizon=24 neighbors=0 distance=raw/euclidean
+2026-07-27 05:09:32,413 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:09:32,413 INFO [__main__] dataset load start
+2026-07-27 05:09:32,414 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:09:32,638 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:09:32,639 INFO [__main__] model load start
+2026-07-27 05:09:43,409 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:09:43,410 INFO [__main__] extraction start split=adapt queries=183
+2026-07-27 05:09:47,028 INFO [__main__] extraction done split=adapt
+2026-07-27 05:09:47,028 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:09:47,382 INFO [__main__] extraction done split=eval
+2026-07-27 05:09:47,411 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 05:09:47,415 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:09:47,415 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/vanilla
+2026-07-27 05:09:47,415 INFO [__main__] experiment done seconds=15.31
+2026-07-27 05:09:47,415 INFO [__main__] ========================================================================
+2026-07-27T05:09:48+02:00 extraction done configuration=61/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=vanilla
+
+2026-07-27T05:09:48+02:00 extraction start configuration=62/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:09:50,333 INFO [__main__] ========================================================================
+2026-07-27 05:09:50,334 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=168 horizon=24 neighbors=1 distance=raw/euclidean
+2026-07-27 05:09:50,661 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:09:50,662 INFO [__main__] dataset load start
+2026-07-27 05:09:50,662 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:09:50,748 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:09:50,748 INFO [__main__] model load start
+2026-07-27 05:09:58,076 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:09:58,077 INFO [__main__] extraction start split=adapt queries=183
+2026-07-27 05:10:18,220 INFO [__main__] extraction done split=adapt
+2026-07-27 05:10:18,220 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:10:19,428 INFO [__main__] extraction done split=eval
+2026-07-27 05:10:19,902 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:10:19,903 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 05:10:19,903 INFO [__main__] experiment done seconds=29.56
+2026-07-27 05:10:19,903 INFO [__main__] ========================================================================
+2026-07-27T05:10:20+02:00 extraction done configuration=62/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-07-27T05:10:20+02:00 extraction start configuration=63/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:10:22,874 INFO [__main__] ========================================================================
+2026-07-27 05:10:22,875 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=168 horizon=24 neighbors=10 distance=raw/euclidean
+2026-07-27 05:10:23,230 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:10:23,230 INFO [__main__] dataset load start
+2026-07-27 05:10:23,231 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:10:23,316 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:10:23,316 INFO [__main__] model load start
+2026-07-27 05:10:30,616 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:10:30,617 INFO [__main__] extraction start split=adapt queries=183
+2026-07-27 05:10:59,141 INFO [__main__] extraction done split=adapt
+2026-07-27 05:10:59,141 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:11:01,046 INFO [__main__] extraction done split=eval
+2026-07-27 05:11:01,605 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:11:01,605 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 05:11:01,605 INFO [__main__] experiment done seconds=38.73
+2026-07-27 05:11:01,606 INFO [__main__] ========================================================================
+2026-07-27T05:11:02+02:00 extraction done configuration=63/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online
+
+2026-07-27T05:11:02+02:00 extraction start configuration=64/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:11:04,870 INFO [__main__] ========================================================================
+2026-07-27 05:11:04,870 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=168 horizon=24 neighbors=1 distance=instance/euclidean
+2026-07-27 05:11:05,225 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:11:05,225 INFO [__main__] dataset load start
+2026-07-27 05:11:05,226 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:11:05,323 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:11:05,323 INFO [__main__] model load start
+2026-07-27 05:11:15,474 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:11:15,475 INFO [__main__] extraction start split=adapt queries=183
+2026-07-27 05:11:34,689 INFO [__main__] extraction done split=adapt
+2026-07-27 05:11:34,689 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:11:36,054 INFO [__main__] extraction done split=eval
+2026-07-27 05:11:36,531 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:11:36,531 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 05:11:36,531 INFO [__main__] experiment done seconds=31.66
+2026-07-27 05:11:36,531 INFO [__main__] ========================================================================
+2026-07-27T05:11:37+02:00 extraction done configuration=64/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-07-27T05:11:37+02:00 extraction start configuration=65/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:11:39,562 INFO [__main__] ========================================================================
+2026-07-27 05:11:39,562 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=168 horizon=24 neighbors=10 distance=instance/euclidean
+2026-07-27 05:11:39,909 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:11:39,909 INFO [__main__] dataset load start
+2026-07-27 05:11:39,910 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:11:40,010 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:11:40,010 INFO [__main__] model load start
+2026-07-27 05:11:47,378 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:11:47,379 INFO [__main__] extraction start split=adapt queries=183
+2026-07-27 05:12:16,531 INFO [__main__] extraction done split=adapt
+2026-07-27 05:12:16,531 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:12:18,611 INFO [__main__] extraction done split=eval
+2026-07-27 05:12:19,143 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:12:19,143 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/168_24/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 05:12:19,143 INFO [__main__] experiment done seconds=39.58
+2026-07-27 05:12:19,143 INFO [__main__] ========================================================================
+2026-07-27T05:12:19+02:00 extraction done configuration=65/90 dataset=Weather model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online
+
+2026-07-27T05:12:19+02:00 extraction start configuration=66/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:12:22,461 INFO [__main__] ========================================================================
+2026-07-27 05:12:22,461 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=336 horizon=48 neighbors=0 distance=raw/euclidean
+2026-07-27 05:12:22,799 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:12:22,799 INFO [__main__] dataset load start
+2026-07-27 05:12:22,800 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:12:22,885 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:12:22,885 INFO [__main__] model load start
+2026-07-27 05:12:32,958 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:12:32,959 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 05:12:36,580 INFO [__main__] extraction done split=adapt
+2026-07-27 05:12:36,580 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:12:36,914 INFO [__main__] extraction done split=eval
+2026-07-27 05:12:36,990 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 05:12:36,994 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:12:36,994 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/vanilla
+2026-07-27 05:12:36,994 INFO [__main__] experiment done seconds=14.53
+2026-07-27 05:12:36,995 INFO [__main__] ========================================================================
+2026-07-27T05:12:37+02:00 extraction done configuration=66/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=vanilla
+
+2026-07-27T05:12:37+02:00 extraction start configuration=67/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:12:39,937 INFO [__main__] ========================================================================
+2026-07-27 05:12:39,937 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=336 horizon=48 neighbors=1 distance=raw/euclidean
+2026-07-27 05:12:40,228 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:12:40,228 INFO [__main__] dataset load start
+2026-07-27 05:12:40,228 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:12:40,316 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:12:40,316 INFO [__main__] model load start
+2026-07-27 05:12:47,626 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:12:47,628 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 05:13:06,141 INFO [__main__] extraction done split=adapt
+2026-07-27 05:13:06,142 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:13:07,323 INFO [__main__] extraction done split=eval
+2026-07-27 05:13:07,812 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:13:07,812 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 05:13:07,812 INFO [__main__] experiment done seconds=27.87
+2026-07-27 05:13:07,812 INFO [__main__] ========================================================================
+2026-07-27T05:13:08+02:00 extraction done configuration=67/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online
+
+2026-07-27T05:13:08+02:00 extraction start configuration=68/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:13:10,858 INFO [__main__] ========================================================================
+2026-07-27 05:13:10,858 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=336 horizon=48 neighbors=10 distance=raw/euclidean
+2026-07-27 05:13:11,212 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:13:11,213 INFO [__main__] dataset load start
+2026-07-27 05:13:11,213 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:13:11,298 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:13:11,298 INFO [__main__] model load start
+2026-07-27 05:13:18,581 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:13:18,582 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 05:14:10,566 INFO [__main__] extraction done split=adapt
+2026-07-27 05:14:10,566 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:14:14,436 INFO [__main__] extraction done split=eval
+2026-07-27 05:14:15,021 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:14:15,022 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 05:14:15,022 INFO [__main__] experiment done seconds=64.16
+2026-07-27 05:14:15,022 INFO [__main__] ========================================================================
+2026-07-27T05:14:15+02:00 extraction done configuration=68/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+
+2026-07-27T05:14:15+02:00 extraction start configuration=69/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:14:18,512 INFO [__main__] ========================================================================
+2026-07-27 05:14:18,512 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=336 horizon=48 neighbors=1 distance=instance/euclidean
+2026-07-27 05:14:18,852 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:14:18,852 INFO [__main__] dataset load start
+2026-07-27 05:14:18,853 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:14:18,953 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:14:18,953 INFO [__main__] model load start
+2026-07-27 05:14:29,592 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:14:29,593 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 05:14:50,558 INFO [__main__] extraction done split=adapt
+2026-07-27 05:14:50,558 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:14:51,806 INFO [__main__] extraction done split=eval
+2026-07-27 05:14:52,285 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:14:52,285 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 05:14:52,285 INFO [__main__] experiment done seconds=33.77
+2026-07-27 05:14:52,285 INFO [__main__] ========================================================================
+2026-07-27T05:14:53+02:00 extraction done configuration=69/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+
+2026-07-27T05:14:53+02:00 extraction start configuration=70/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:14:55,307 INFO [__main__] ========================================================================
+2026-07-27 05:14:55,307 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=336 horizon=48 neighbors=10 distance=instance/euclidean
+2026-07-27 05:14:55,620 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:14:55,620 INFO [__main__] dataset load start
+2026-07-27 05:14:55,620 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:14:55,707 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:14:55,707 INFO [__main__] model load start
+2026-07-27 05:15:03,115 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:15:03,117 INFO [__main__] extraction start split=adapt queries=182
+2026-07-27 05:15:54,106 INFO [__main__] extraction done split=adapt
+2026-07-27 05:15:54,107 INFO [__main__] extraction start split=eval queries=14
+2026-07-27 05:15:57,203 INFO [__main__] extraction done split=eval
+2026-07-27 05:15:57,758 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:15:57,759 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/336_48/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 05:15:57,759 INFO [__main__] experiment done seconds=62.45
+2026-07-27 05:15:57,759 INFO [__main__] ========================================================================
+2026-07-27T05:15:58+02:00 extraction done configuration=70/90 dataset=Weather model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+
+2026-07-27T05:15:58+02:00 extraction start configuration=71/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=vanilla datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:16:01,264 INFO [__main__] ========================================================================
+2026-07-27 05:16:01,265 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=504 horizon=168 neighbors=0 distance=raw/euclidean
+2026-07-27 05:16:01,587 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/vanilla reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:16:01,587 INFO [__main__] dataset load start
+2026-07-27 05:16:01,588 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:16:01,676 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:16:01,676 INFO [__main__] model load start
+2026-07-27 05:16:12,427 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:16:12,429 INFO [__main__] extraction start split=adapt queries=177
+2026-07-27 05:16:16,047 INFO [__main__] extraction done split=adapt
+2026-07-27 05:16:16,047 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:16:16,389 INFO [__main__] extraction done split=eval
+2026-07-27 05:16:16,446 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/vanilla/vanilla_metrics.json
+2026-07-27 05:16:16,451 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/vanilla/extraction_manifest.json
+2026-07-27 05:16:16,451 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/vanilla
+2026-07-27 05:16:16,451 INFO [__main__] experiment done seconds=15.18
+2026-07-27 05:16:16,451 INFO [__main__] ========================================================================
+2026-07-27T05:16:17+02:00 extraction done configuration=71/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=vanilla
+
+2026-07-27T05:16:17+02:00 extraction start configuration=72/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:16:19,337 INFO [__main__] ========================================================================
+2026-07-27 05:16:19,337 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=504 horizon=168 neighbors=1 distance=raw/euclidean
+2026-07-27 05:16:19,650 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:16:19,650 INFO [__main__] dataset load start
+2026-07-27 05:16:19,650 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:16:19,749 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:16:19,749 INFO [__main__] model load start
+2026-07-27 05:16:27,664 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:16:27,666 INFO [__main__] extraction start split=adapt queries=177
+2026-07-27 05:16:47,460 INFO [__main__] extraction done split=adapt
+2026-07-27 05:16:47,460 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:16:48,796 INFO [__main__] extraction done split=eval
+2026-07-27 05:16:49,269 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:16:49,269 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_1_online/extracted
+2026-07-27 05:16:49,269 INFO [__main__] experiment done seconds=29.93
+2026-07-27 05:16:49,269 INFO [__main__] ========================================================================
+2026-07-27T05:16:50+02:00 extraction done configuration=72/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-07-27T05:16:50+02:00 extraction start configuration=73/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:16:52,265 INFO [__main__] ========================================================================
+2026-07-27 05:16:52,265 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-07-27 05:16:52,561 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:16:52,561 INFO [__main__] dataset load start
+2026-07-27 05:16:52,562 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:16:52,647 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:16:52,647 INFO [__main__] model load start
+2026-07-27 05:16:59,941 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:16:59,943 INFO [__main__] extraction start split=adapt queries=177
+2026-07-27 05:18:12,958 INFO [__main__] extraction done split=adapt
+2026-07-27 05:18:12,958 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:18:18,515 INFO [__main__] extraction done split=eval
+2026-07-27 05:18:19,142 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:18:19,142 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/raw_euclidean_10_online/extracted
+2026-07-27 05:18:19,142 INFO [__main__] experiment done seconds=86.87
+2026-07-27 05:18:19,142 INFO [__main__] ========================================================================
+2026-07-27T05:18:19+02:00 extraction done configuration=73/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-07-27T05:18:20+02:00 extraction start configuration=74/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:18:22,671 INFO [__main__] ========================================================================
+2026-07-27 05:18:22,671 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=504 horizon=168 neighbors=1 distance=instance/euclidean
+2026-07-27 05:18:23,011 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_1_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:18:23,011 INFO [__main__] dataset load start
+2026-07-27 05:18:23,011 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:18:23,098 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:18:23,098 INFO [__main__] model load start
+2026-07-27 05:18:33,763 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:18:33,764 INFO [__main__] extraction start split=adapt queries=177
+2026-07-27 05:18:54,779 INFO [__main__] extraction done split=adapt
+2026-07-27 05:18:54,779 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:18:56,220 INFO [__main__] extraction done split=eval
+2026-07-27 05:18:56,699 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_1_online/extracted/extraction_manifest.json
+2026-07-27 05:18:56,699 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_1_online/extracted
+2026-07-27 05:18:56,699 INFO [__main__] experiment done seconds=34.02
+2026-07-27 05:18:56,699 INFO [__main__] ========================================================================
+2026-07-27T05:18:57+02:00 extraction done configuration=74/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+
+2026-07-27T05:18:57+02:00 extraction start configuration=75/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online datastore_stride=24 adapt_stride=24 eval_stride=128 max_store_windows=30000 seed=1
+2026-07-27 05:18:59,688 INFO [__main__] ========================================================================
+2026-07-27 05:18:59,688 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos2 lags=504 horizon=168 neighbors=10 distance=instance/euclidean
+2026-07-27 05:19:00,018 INFO [__main__] existing extraction not reusable dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_10_online/extracted reason=missing completion marker: /home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:19:00,018 INFO [__main__] dataset load start
+2026-07-27 05:19:00,019 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-07-27 05:19:00,114 INFO [__main__] dataset load done dates=8784 users=17
+2026-07-27 05:19:00,115 INFO [__main__] model load start
+2026-07-27 05:19:07,463 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-07-27 05:19:07,464 INFO [__main__] extraction start split=adapt queries=177
+2026-07-27 05:20:19,881 INFO [__main__] extraction done split=adapt
+2026-07-27 05:20:19,881 INFO [__main__] extraction start split=eval queries=13
+2026-07-27 05:20:25,385 INFO [__main__] extraction done split=eval
+2026-07-27 05:20:25,942 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_10_online/extracted/extraction_manifest.json
+2026-07-27 05:20:25,943 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/adaptation/Weather/504_168/chronos2/instance_euclidean_10_online/extracted
+2026-07-27 05:20:25,943 INFO [__main__] experiment done seconds=86.25
+2026-07-27 05:20:25,943 INFO [__main__] ========================================================================
+2026-07-27T05:20:26+02:00 extraction done configuration=75/90 dataset=Weather model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
