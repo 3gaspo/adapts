@@ -132,7 +132,7 @@ cluster checkouts and shared with RevIN.
 The main study uses
 
 ```text
-D = {ETTh1, Electricity, Traffic, Solar, Weather, Exchange}
+D = {ETTh1, Electricity, Traffic, Solar, Weather, exchange_rate}
 S = {168:24, 336:48, 504:168}
 ```
 
@@ -155,6 +155,8 @@ reproduction. `large` remains an alias of `full`.
 The generic `extraction.slurm`, `baselines.slurm`, `gates.slurm`,
 `tables.slurm`, and `run_all.sh` launchers default to `test`; select a
 publication profile explicitly.
+The `exchange_rate` key resolves the shared
+`datasets/exchange_rate/exchange_rate.csv` layout used by the other projects.
 
 Each experiment is one sequential Slurm job. Run the screen first:
 

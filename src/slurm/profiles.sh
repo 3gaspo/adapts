@@ -27,35 +27,35 @@ adaptation_profile_defaults() {
       DEFAULT_MAX_STORE_WINDOWS=2048
       ;;
     screen)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="168:24,336:48,504:168"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="1,10"
       ;;
     k_ablation)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="168:24,336:48,504:168"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="1,3,5,10,15,20"
       ;;
     h_ablation)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="504:24,504:168,504:504"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="10"
       ;;
     l_ablation)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="24:24,168:24,504:24"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="10"
       ;;
     crossrag)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos-bolt"
       DEFAULT_SETTINGS_CSV="512:64"
       DEFAULT_DISTANCE_SPACES_CSV="minmax"
@@ -70,14 +70,14 @@ adaptation_profile_defaults() {
       DEFAULT_NEIGHBORS_CSV="1,3,10"
       ;;
     full|large)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="1,3,10"
       ;;
     ultra)
-      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+      DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2,tabpfnts"
       DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"

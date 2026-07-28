@@ -25,7 +25,7 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
   full|large|ultra)
-    DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,Exchange"
+    DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
     DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
