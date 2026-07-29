@@ -906,3 +906,128 @@
 2026-07-29 10:15:57,351 INFO [__main__] gate fitting start candidate=context
 2026-07-29 10:19:02,629 INFO [__main__] gate fitting done candidate=context
 2026-07-29 10:19:02,630 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 10:22:22,762 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 10:22:26,275 INFO [__main__] feature-importance outputs=16
+2026-07-29 10:22:27,426 INFO [__main__] experiment done seconds=394.82
+2026-07-29 10:22:27,426 INFO [__main__] ========================================================================
+2026-07-29T10:22:28+02:00 gates done configuration=15/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-29 10:22:30,506 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/168_24/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-29T10:22:30+02:00 gates start configuration=16/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 10:22:33,059 INFO [__main__] ========================================================================
+2026-07-29 10:22:33,059 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 10:22:51,546 INFO [__main__] gate fitting start candidate=context
+2026-07-29 10:26:18,587 INFO [__main__] gate fitting done candidate=context
+2026-07-29 10:26:18,587 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 10:29:56,334 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 10:29:59,827 INFO [__main__] feature-importance outputs=16
+2026-07-29 10:30:00,943 INFO [__main__] experiment done seconds=447.88
+2026-07-29 10:30:00,943 INFO [__main__] ========================================================================
+2026-07-29T10:30:01+02:00 gates done configuration=16/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-29 10:30:04,232 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/336_48/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-29T10:30:04+02:00 gates start configuration=17/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 10:30:07,436 INFO [__main__] ========================================================================
+2026-07-29 10:30:07,436 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 10:30:16,543 INFO [__main__] gate fitting start candidate=context
+2026-07-29 10:35:48,048 INFO [__main__] gate fitting done candidate=context
+2026-07-29 10:35:48,048 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 10:42:16,354 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 10:42:21,297 INFO [__main__] feature-importance outputs=16
+2026-07-29 10:42:24,514 INFO [__main__] experiment done seconds=737.07
+2026-07-29 10:42:24,514 INFO [__main__] ========================================================================
+2026-07-29T10:42:25+02:00 gates done configuration=17/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online
+2026-07-29 10:42:28,155 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/336_48/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-29T10:42:28+02:00 gates start configuration=18/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 10:42:30,777 INFO [__main__] ========================================================================
+2026-07-29 10:42:30,777 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 10:43:04,293 INFO [__main__] gate fitting start candidate=context
+2026-07-29 10:49:40,982 INFO [__main__] gate fitting done candidate=context
+2026-07-29 10:49:40,982 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 10:56:55,852 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 10:57:00,925 INFO [__main__] feature-importance outputs=16
+2026-07-29 10:57:03,680 INFO [__main__] experiment done seconds=872.88
+2026-07-29 10:57:03,680 INFO [__main__] ========================================================================
+2026-07-29T10:57:04+02:00 gates done configuration=18/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+2026-07-29 10:57:07,337 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_1_online/extracted status=complete
+
+2026-07-29T10:57:07+02:00 gates start configuration=19/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 10:57:09,994 INFO [__main__] ========================================================================
+2026-07-29 10:57:09,994 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 10:57:19,234 INFO [__main__] gate fitting start candidate=context
+2026-07-29 11:02:51,709 INFO [__main__] gate fitting done candidate=context
+2026-07-29 11:02:51,709 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 11:09:19,668 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 11:09:24,598 INFO [__main__] feature-importance outputs=16
+2026-07-29 11:09:28,051 INFO [__main__] experiment done seconds=738.04
+2026-07-29 11:09:28,051 INFO [__main__] ========================================================================
+2026-07-29T11:09:29+02:00 gates done configuration=19/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+2026-07-29 11:09:31,983 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/336_48/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-29T11:09:32+02:00 gates start configuration=20/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 11:09:34,619 INFO [__main__] ========================================================================
+2026-07-29 11:09:34,620 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 11:10:11,513 INFO [__main__] gate fitting start candidate=context
+2026-07-29 11:17:00,883 INFO [__main__] gate fitting done candidate=context
+2026-07-29 11:17:00,884 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 11:24:01,889 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 11:24:06,899 INFO [__main__] feature-importance outputs=16
+2026-07-29 11:24:09,730 INFO [__main__] experiment done seconds=875.10
+2026-07-29 11:24:09,730 INFO [__main__] ========================================================================
+2026-07-29T11:24:10+02:00 gates done configuration=20/72 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+2026-07-29 11:24:13,272 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-29T11:24:13+02:00 gates start configuration=21/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 11:24:15,934 INFO [__main__] ========================================================================
+2026-07-29 11:24:15,934 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 11:24:28,583 INFO [__main__] gate fitting start candidate=context
+2026-07-29 11:41:19,421 INFO [__main__] gate fitting done candidate=context
+2026-07-29 11:41:19,421 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 12:03:58,667 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 12:04:10,756 INFO [__main__] feature-importance outputs=16
+2026-07-29 12:04:21,612 INFO [__main__] experiment done seconds=2405.67
+2026-07-29 12:04:21,612 INFO [__main__] ========================================================================
+2026-07-29T12:04:23+02:00 gates done configuration=21/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-07-29 12:04:25,615 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/504_168/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-29T12:04:25+02:00 gates start configuration=22/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 12:04:28,210 INFO [__main__] ========================================================================
+2026-07-29 12:04:28,210 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 12:05:22,918 INFO [__main__] gate fitting start candidate=context
+2026-07-29 12:27:12,471 INFO [__main__] gate fitting done candidate=context
+2026-07-29 12:27:12,471 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 12:52:29,642 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 12:52:41,406 INFO [__main__] feature-importance outputs=16
+2026-07-29 12:52:51,172 INFO [__main__] experiment done seconds=2902.96
+2026-07-29 12:52:51,172 INFO [__main__] ========================================================================
+2026-07-29T12:52:52+02:00 gates done configuration=22/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+2026-07-29 12:52:55,366 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_1_online/extracted status=complete
+
+2026-07-29T12:52:55+02:00 gates start configuration=23/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 12:52:57,960 INFO [__main__] ========================================================================
+2026-07-29 12:52:57,960 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 12:53:10,378 INFO [__main__] gate fitting start candidate=context
+2026-07-29 13:10:17,256 INFO [__main__] gate fitting done candidate=context
+2026-07-29 13:10:17,257 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 13:31:44,830 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 13:31:57,261 INFO [__main__] feature-importance outputs=16
+2026-07-29 13:32:08,411 INFO [__main__] experiment done seconds=2350.45
+2026-07-29 13:32:08,411 INFO [__main__] ========================================================================
+2026-07-29T13:32:09+02:00 gates done configuration=23/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+2026-07-29 13:32:12,485 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/504_168/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-29T13:32:12+02:00 gates start configuration=24/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-29 13:32:15,019 INFO [__main__] ========================================================================
+2026-07-29 13:32:15,019 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-29 13:33:11,025 INFO [__main__] gate fitting start candidate=context
+2026-07-29 13:54:44,442 INFO [__main__] gate fitting done candidate=context
+2026-07-29 13:54:44,442 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-29 14:19:27,830 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-29 14:19:39,800 INFO [__main__] feature-importance outputs=16
+2026-07-29 14:19:50,696 INFO [__main__] experiment done seconds=2855.67
+2026-07-29 14:19:50,696 INFO [__main__] ========================================================================
+2026-07-29T14:19:52+02:00 gates done configuration=24/72 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
+2026-07-29 14:19:54,984 INFO [__main__] extraction validation directory=outputs/adaptation/Traffic/168_24/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-29T14:19:55+02:00 gates start configuration=25/72 dataset=Traffic model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online family=gates iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=1 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
