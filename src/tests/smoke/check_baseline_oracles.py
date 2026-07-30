@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import torch
@@ -15,19 +16,22 @@ if str(ROOT) not in sys.path:
 
 from src.data.neighbors import neighbor_to_query_scale  # noqa: E402
 from src.adaptors.baselines.evaluate import (  # noqa: E402
-    add_context_gate_predictions,
-    add_eval_fitted_baselines,
-    add_true_context_oracles,
     TRAINABLE_BASELINES,
+    compact_baseline_arrays,
+    compact_gate_arrays,
     fit_gate,
     flatten_payload,
     horizon_gate_feature_names,
     horizon_gate_features,
     predict_gate,
     ridge_no_intercept,
+    run_streamed_baselines,
+    run_streamed_gates,
     scalar_gate_features,
     subsample_fit_arrays,
 )
+from src.experiments.prediction_store import load_prediction_store  # noqa: E402
+from src.experiments.splits import chronological_resplit_arrays  # noqa: E402
 
 
 def has_catboost() -> bool:
@@ -39,21 +43,6 @@ def has_catboost() -> bool:
 
 
 def main() -> None:
-    arrays = {
-        "pred": np.asarray([[0.0, 2.0], [10.0, 10.0]], dtype=np.float32),
-        "pred_c": np.asarray([[1.0, 3.0], [8.0, 12.0]], dtype=np.float32),
-        "y": np.asarray([[1.0, 2.0], [9.0, 10.0]], dtype=np.float32),
-    }
-    predictions: dict[str, np.ndarray] = {}
-    add_true_context_oracles(predictions, arrays)
-    np.testing.assert_array_equal(
-        predictions["oracle_context_shared"],
-        np.asarray([[0.0, 2.0], [10.0, 10.0]], dtype=np.float32),
-    )
-    np.testing.assert_array_equal(
-        predictions["oracle_context_horizon"],
-        np.asarray([[1.0, 2.0], [10.0, 10.0]], dtype=np.float32),
-    )
     coefficient = ridge_no_intercept(
         np.ones((2, 1), dtype=np.float64),
         np.ones(2, dtype=np.float64),
@@ -84,6 +73,16 @@ def main() -> None:
     assert sampled_a["y"].shape[0] == 4
     np.testing.assert_array_equal(sampled_a["y"], sampled_b["y"])
     assert subsample_fit_arrays(fit_arrays, None, seed=7) is fit_arrays
+    chronological = {
+        "query_t": np.repeat(np.arange(5), 2),
+        "y": np.arange(20, dtype=np.float32).reshape(10, 2),
+    }
+    chronological_train, chronological_valid, _ = chronological_resplit_arrays(
+        chronological,
+        0.4,
+    )
+    assert np.shares_memory(chronological_train["y"], chronological["y"])
+    assert np.shares_memory(chronological_valid["y"], chronological["y"])
 
     query = np.asarray([[3.0, 7.0]], dtype=np.float32)
     neighbor = np.asarray([[[8.0, 12.0]]], dtype=np.float32)
@@ -113,6 +112,10 @@ def main() -> None:
         "train_neighbor_user_idx": torch.tensor([[[3]]]),
     }
     flattened = flatten_payload(payload, "train")
+    gate_flattened = flatten_payload(payload, "train", family="gates")
+    baseline_flattened = flatten_payload(payload, "train", family="baselines")
+    assert "pred_neighbors" not in gate_flattened
+    assert "e" not in baseline_flattened
     np.testing.assert_allclose(flattened["y_c"], np.asarray([[[9.0, 11.0]]]))
     np.testing.assert_allclose(flattened["e"], np.asarray([[[2.0, 4.0]]]))
     np.testing.assert_allclose(flattened["pred_neighbors"], np.asarray([[[7.0, 7.0]]]))
@@ -140,50 +143,69 @@ def main() -> None:
     assert len(horizon_features) == 2
     assert horizon_features[0].shape[1] == len(horizon_gate_feature_names(2))
 
-    gate_predictions, gate_artifacts, gate_diagnostics = add_context_gate_predictions(
-        {split: {} for split in ("adapt", "eval")},
-        flattened,
-        {split: flattened for split in ("adapt", "eval")},
-        iterations=1,
-        learning_rate=0.1,
-        depth=1,
-        seed=1,
-    )
-    assert set(gate_predictions["eval"]) == {
-        "bayes_context_shared",
-        "bayes_context_horizon",
-        "catboost_context_classifier_shared",
-        "catboost_context_classifier_horizon",
-        "catboost_context_regressor_shared",
-        "catboost_context_regressor_horizon",
-        "oracle_context_shared",
-        "oracle_context_horizon",
-    }
-    assert set(gate_artifacts["models"]) == {"classifier", "regressor"}
-    assert set(gate_artifacts["no_feature"]) == {"shared_score", "horizon_score"}
-    assert set(gate_diagnostics["eval"]) == {
-        "context_bayes_shared_score",
-        "context_bayes_horizon_score",
-        "context_classifier_shared_score",
-        "context_classifier_shared_target",
-        "context_classifier_horizon_score",
-        "context_classifier_horizon_target",
-        "context_regressor_shared_score",
-        "context_regressor_shared_target",
-        "context_regressor_horizon_score",
-        "context_regressor_horizon_target",
-    }
+    with TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        gate_arrays = compact_gate_arrays(flattened)
+        _, gate_artifacts, _ = run_streamed_gates(
+            {"adapt": gate_arrays, "eval": gate_arrays},
+            {
+                "T1": gate_arrays,
+                "T2": gate_arrays,
+                "T1+T2": gate_arrays,
+                "T3_oracle": gate_arrays,
+            },
+            output_dir=root / "gates",
+            selected_methods=(
+                "oracle_context_shared",
+                "oracle_context_horizon",
+            ),
+            iterations=1,
+            learning_rate=0.1,
+            depth=1,
+            early_stopping_rounds=1,
+            seed=1,
+            task_type="CPU",
+            devices=None,
+            thread_count=1,
+            feature_importance_top_k=1,
+        )
+        gate_store = load_prediction_store(root / "gates")
+        gate_predictions = gate_store["splits"]["eval"]["predictions"]
+        assert set(gate_predictions) == {
+            "vanilla",
+            "oracle_context_shared",
+            "oracle_context_horizon",
+        }
+        np.testing.assert_array_equal(
+            gate_predictions["oracle_context_shared"],
+            gate_arrays["pred_c"],
+        )
+        np.testing.assert_array_equal(
+            gate_predictions["oracle_context_horizon"],
+            gate_arrays["pred_c"],
+        )
+        assert gate_artifacts["format"] == "adaptation_gate_models"
 
-    baseline_predictions = {"eval": {}}
-    eval_fit_artifacts = add_eval_fitted_baselines(
-        baseline_predictions,
-        flattened,
-        l2_grid=(1e-3,),
-    )
-    assert set(baseline_predictions["eval"]) == {
-        f"{name}_eval_fit" for name in TRAINABLE_BASELINES
-    }
-    assert set(eval_fit_artifacts["models"]) == set(TRAINABLE_BASELINES)
+        baseline_arrays = compact_baseline_arrays(flattened)
+        _, baseline_artifacts, _ = run_streamed_baselines(
+            {"adapt": baseline_arrays, "eval": baseline_arrays},
+            {
+                "T1": baseline_arrays,
+                "T2": baseline_arrays,
+                "T1+T2": baseline_arrays,
+                "T3_oracle": baseline_arrays,
+            },
+            output_dir=root / "baselines",
+            selected_methods=TRAINABLE_BASELINES,
+            l2_grid=(1e-3,),
+            fit_on_eval=True,
+        )
+        baseline_store = load_prediction_store(root / "baselines")
+        baseline_predictions = baseline_store["splits"]["eval"]["predictions"]
+        assert {
+            f"{name}_eval_fit" for name in TRAINABLE_BASELINES
+        } <= set(baseline_predictions)
+        assert set(baseline_artifacts["models"]) == set(TRAINABLE_BASELINES)
 
     gate_x = np.asarray([[0.0], [0.1], [0.9], [1.0]], dtype=np.float32)
     gate_y = np.asarray([[-4.0], [-1.0], [1.0], [4.0]], dtype=np.float32)
@@ -197,7 +219,7 @@ def main() -> None:
             seed=1,
         )
         differences = predict_gate(gate, gate_x)
-        assert differences.shape == gate_y.shape
+        assert differences.shape == (gate_y.shape[0],)
         assert differences[:2].mean() < 0.0 < differences[2:].mean()
 
         classifier = fit_gate(
@@ -210,7 +232,7 @@ def main() -> None:
             objective="classifier",
         )
         classifier_scores = predict_gate(classifier, gate_x)
-        assert classifier_scores.shape == gate_y.shape
+        assert classifier_scores.shape == (gate_y.shape[0],)
         assert classifier_scores[:2].mean() < 0.0 < classifier_scores[2:].mean()
 
     constant_classifier = fit_gate(
@@ -224,7 +246,7 @@ def main() -> None:
     )
     np.testing.assert_array_equal(
         predict_gate(constant_classifier, gate_x),
-        np.full_like(gate_y, 0.5, dtype=np.float64),
+        np.full(gate_y.shape[0], 0.5, dtype=np.float32),
     )
     print("baseline oracle checks passed")
 

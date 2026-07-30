@@ -223,7 +223,7 @@ def load_model(
     """Load a minimal extraction forecaster.
 
     Built-ins include ``persistence``, ``linear``, ``patchtst``, ``chronos2``,
-    ``chronos_bolt``, and ``tabpfnts``.
+    ``chronos-bolt``, and ``tabpfnts``.
     """
     from .chronos_model import Chronos, ChronosBolt
     from .patchtst import PatchTST
@@ -232,17 +232,10 @@ def load_model(
     key = str(name).lower()
     registry = {
         "persistence": Persistence,
-        "repeat_last": Persistence,
         "linear": Linear,
         "patchtst": PatchTST,
-        "patch": PatchTST,
-        "chronos": Chronos,
         "chronos2": Chronos,
-        "chronos_2": Chronos,
-        "chronos_bolt": ChronosBolt,
         "chronos-bolt": ChronosBolt,
-        "tabpfn": TabPFNTS,
-        "tabpfn_ts": TabPFNTS,
         "tabpfnts": TabPFNTS,
     }
     if key not in registry:

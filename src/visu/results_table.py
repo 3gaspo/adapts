@@ -29,7 +29,7 @@ class Result:
 
 
 _RUN_NAME_RE = re.compile(
-    r"(?:chronos_)?(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
+    r"(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
     r"_(euclidean|cosine|pearson)_(\d+)_(online|fixed)"
 )
 
@@ -231,17 +231,20 @@ _METHOD_LABELS = {
     "residual_ridge_horizon": "residual-ridge-h",
     "full_ridge_shared": "full-ridge-s",
     "full_ridge_horizon": "full-ridge-h",
-    # Legacy labels keep already-produced small-mode tables readable.
-    "horizon_knn_weighted": "Y-kNN-w",
-    "horizon_knn_mean": "Y-kNN",
-    "horizon_mix_scalar": "Y-mix-s",
-    "horizon_ridge_shared": "Y-ridge",
-    "horizon_mix_scalar_eval_fit": "Y-mix-s-fit-T3",
-    "horizon_ridge_shared_eval_fit": "Y-ridge-fit-T3",
-    "residual_mix_scalar": "R-mix-s",
-    "residual_mix_scalar_eval_fit": "R-mix-s-fit-T3",
-    "residual_ridge_shared_eval_fit": "R-ridge-fit-T3",
-    "residual_ridge_horizon_eval_fit": "R-ridge-h-fit-T3",
+    "aggr_y_mix_shared_eval_fit": "aggr-Y-lambda-s-fit-T3",
+    "aggr_y_mix_horizon_eval_fit": "aggr-Y-lambda-h-fit-T3",
+    "context_ridge_shared_eval_fit": "VC-ridge-s-fit-T3",
+    "context_ridge_horizon_eval_fit": "VC-ridge-h-fit-T3",
+    "aggr_y_ridge_shared_eval_fit": "aggr-Y-ridge-s-fit-T3",
+    "aggr_y_ridge_horizon_eval_fit": "aggr-Y-ridge-h-fit-T3",
+    "y_ridge_shared_eval_fit": "Y-ridge-s-fit-T3",
+    "y_ridge_horizon_eval_fit": "Y-ridge-h-fit-T3",
+    "cov_y_ridge_shared_eval_fit": "VCY-ridge-s-fit-T3",
+    "cov_horizon_ridge_shared_eval_fit": "cov-h-ridge-s-fit-T3",
+    "cov_horizon_ridge_horizon_eval_fit": "cov-h-ridge-h-fit-T3",
+    "residual_ridge_shared_eval_fit": "residual-ridge-s-fit-T3",
+    "residual_ridge_horizon_eval_fit": "residual-ridge-h-fit-T3",
+    "full_ridge_shared_eval_fit": "full-ridge-s-fit-T3",
     "full_ridge_horizon_eval_fit": "full-ridge-h-fit-T3",
     "bayes_context_shared": "bayes-C-s",
     "bayes_context_horizon": "bayes-h",
@@ -259,12 +262,12 @@ _METHOD_LABELS = {
     "oracle_context_horizon": "oracle-C-h",
     "oracle_aggr_y_shared": "oracle-Y-s",
     "oracle_aggr_y_horizon": "oracle-Y-h",
-    "bayes_context_scalar": "bayes-s",
-    "catboost_context_classifier_scalar": "cb-cls-s",
-    "catboost_context_regressor_scalar": "cb-reg-s",
-    "oracle_context_scalar": "oracle-s",
+    "vanilla_branch": "TS-IFA-V",
+    "context_branch": "TS-IFA-C",
+    "transformed_branch": "TS-IFA-phi",
     "residual_branch": "TS-IFA-R",
     "memory_branch": "TS-IFA-M",
+    "ridge_rooter": "TS-IFA-ridge",
     "crossrag": "Cross-RAG",
 }
 
@@ -284,7 +287,7 @@ def _short_run_name(run: str) -> str:
         if mode == "fixed":
             parts.append("fixed")
         return "_".join(parts)
-    short = run.removeprefix("chronos_").replace("_euclidean_", "_L2_")
+    short = run.replace("_euclidean_", "_L2_")
     return short.removesuffix("_online")
 
 

@@ -51,7 +51,7 @@ plus `extraction_manifest.json`.  The manifest is written atomically only after
 all payloads exist and records the exact extraction signature, the resolved
 dataset-config path and content hash, and file sizes.
 `--skip-complete` therefore skips a matching complete run but re-runs a partial,
-changed, or legacy extraction.
+changed, or obsolete extraction.
 
 Downstream results are profile-separated under
 `outputs/adaptation_results/<experiment_mode>/`; extraction payloads remain
@@ -59,19 +59,30 @@ shared under `outputs/adaptation/`. Their contracts are:
 
 ```text
 outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
-  <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,baseline_timing.json,...}
-  <retrieval>/gates/{gate_metrics.json,gate_artifacts.pt,gate_timing.json,...}
+  <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,prediction_manifest.json,result_manifest.json,...}
+  <retrieval>/gates/{gate_metrics.json,gate_artifacts.json,prediction_manifest.json,result_manifest.json,...}
   <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json}
-  <retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,...}
+  <retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,prediction_manifest.json,result_manifest.json,...}
   tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,...}
 ```
+
+Baseline, gate, and TS-IFA predictions use the sole current disk-backed
+`prediction_manifest.json` contract. Each array is a separate `.npy` file below
+`predictions/`; the dashboard reads only this contract. `result_manifest.json`
+is written last and is the completion marker. Obsolete or partial result
+folders are not accepted and are replaced when the run is launched again.
+Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
+from `gate_artifacts.json`. TS-IFA stores T3 neural-rooter coefficients under
+the prediction store's `gate_diagnostics` kind and its fixed coefficient matrix
+in `ridge_rooter.pt`.
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
 they are intentionally excluded from the deployable main comparison.
 Ridge fits accumulate float64 sufficient statistics in bounded chunks, so they
 use the complete selected fitting split without materializing the full design
-matrix. This changes memory use, not the fitted objective.
+matrix. Predictions are written, scored in chunks, and released one method at a
+time. These changes bound memory without changing the fitted objective.
 
 Baseline and gate fitting may optionally use reproducible subsets of the
 already-extracted payloads through `MAX_T1_FIT_SAMPLES`,
@@ -80,8 +91,7 @@ already-extracted payloads through `MAX_T1_FIT_SAMPLES`,
 `SEED`. The first three limits affect only T1 fitting, T2 validation, and the
 final T1+T2 refit respectively. The T3 maximum applies only to explicitly
 optimistic `_eval_fit` methods. Final T3 scoring always uses every evaluation
-sample. Legacy `MAX_TRAIN_FIT_SAMPLES` and `MAX_ORACLE_FIT_SAMPLES` are accepted
-as aliases for the first two controls.
+sample.
 
 For period-aligned retrieval, neighbor query dates `r_j` satisfy
 `(s-r_j) mod P = 0`. In fixed mode, both the neighbor lookback and future lie
@@ -103,10 +113,8 @@ sbatch extraction.slurm
 ```
 
 `CHRONOS2_WEIGHTS_PATH`, `CHRONOS_BOLT_WEIGHTS_PATH`, and
-`TABPFN_WEIGHTS_PATH` can override individual model paths. `CHRONOS_WEIGHTS_PATH`
-remains a legacy alias for Chronos-2. The canonical model names are
-`chronos2`, `chronos-bolt`, and `tabpfnts` (`chronos_bolt` is accepted as an
-alias).
+`TABPFN_WEIGHTS_PATH` can override individual model paths. The model names are
+`chronos2`, `chronos-bolt`, and `tabpfnts`.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -114,7 +122,7 @@ Dataset directories may contain a sibling `config.json`. It is discovered by
 the Python loader even for direct runs; `--dataset-config` accepts an explicit
 JSON file or directory. Portable fields such as `drop_users`, `date_col`, and
 aggregation settings live at the top level. Adaptation-only values belong under
-`adaptation` (`ts_ifa` remains a supported legacy alias). Project-scoped values
+`adaptation`. Project-scoped values
 override other settings, while `drop_users` is merged additively with both the
 top-level list and `--drop-users`. The loader logs the selected path and applied
 keys.
@@ -151,7 +159,7 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   crossed with `S`.
 
 `test`, `small`, `full`, and `ultra` remain for smoke testing and historical
-reproduction. `large` remains an alias of `full`.
+reproduction.
 The generic `extraction.slurm`, `baselines.slurm`, `gates.slurm`,
 `tables.slurm`, and `run_all.sh` launchers default to `test`; select a
 publication profile explicitly.
@@ -221,9 +229,11 @@ All sweep dimensions remain overridable through `DATASETS_CSV`, `MODELS_CSV`,
 `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, `DISTANCE_METRICS_CSV`, and
 `NEIGHBORS_CSV`. Settings use `L:H`. `MAX_T1_FIT_SAMPLES`,
 `MAX_T2_VALID_SAMPLES`, and `MAX_ADAPT_REFIT_SAMPLES` affect fitting only;
-complete T3 scoring is never subsampled. Gates use eight concurrent horizon
-fits with two CatBoost threads each by default, matching the 16-CPU Slurm
-allocation.
+complete T3 scoring is never subsampled. Gate horizons are fitted serially with
+two CatBoost threads by default. Each model is scored, saved in CatBoost's
+native format, and released before the next model is fitted. Gate summaries are
+computed in bounded chunks, horizon feature matrices are materialized lazily,
+and predictions and diagnostic scores are disk-backed.
 
 ## Tables and averages
 
@@ -242,42 +252,57 @@ Use `FAMILIES_CSV=baselines`, `FAMILIES_CSV=gates`, or include `ts_ifa` after
 those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;
 `nmse` is the default.
 
-## TS-IFA status and quick overfitting controls
+## TS-IFA staged architecture
 
-The current architecture forms vanilla, context, residual-attention, and
-memory-attention candidates, then learns a separate four-way mixture at every
-horizon.  That final horizon-wise gate is expressive enough to overfit, and the
-old training loop always evaluated the last step on T3 even when an earlier T2
-checkpoint was better.
+TS-IFA exposes four candidates by default: vanilla, context, a
+residual-attention branch over analogue `[history, prediction]` states, and a
+direct memory-attention branch. The past-only `sign(x)`/`sqrt(abs(x))` frozen
+forecast is an optional fifth candidate and is disabled by default.
+The final rooter computes unconstrained horizon-wise coefficients with one
+candidate-conditioned scorer shared across the active type tokens. It does
+not consume handcrafted retrieval distances or dispersion features.
 
-The trainer now supports `--restore-best-validation`,
-`--early-stopping-patience`, `--early-stopping-min-delta`, and separate
-`--max-valid-samples`.  The Slurm launcher restores the best T2 checkpoint by
-default while leaving early stopping disabled (`EARLY_STOPPING_PATIENCE=0`) so
-the historical optimization length remains reproducible.  A first controlled
-tuning run should compare:
+`LEARNABLE_TRANSFORMED_COVARIATE=true` adds
+`u=MLP(x)` and a T1-trained transformed forecast head. It automatically enables
+the fifth candidate and works with old payloads by anchoring it to vanilla.
+It can be combined with `TRANSFORMED_EXPERT=true`, in which case it is anchored
+to the precomputed sign/root forecast instead. Producing that frozen forecast
+requires `COMPUTE_TRANSFORMED_PREDICTION=true` during extraction.
 
-- best-checkpoint restoration alone;
-- patience 5-10 T2 evaluations;
-- dropout 0.1 versus 0;
-- half-sized attention/MLP dimensions before increasing capacity.
+Training is deliberately staged:
 
-Keep these comparisons on one dataset/setting/retrieval seed until the T2 curve
-is stable.  The next architecture experiment should replace the horizon-wise
-final mixture with a scalar/shared or low-rank gate, or regularize its departure
-from the vanilla weight.  That is a substantive model change and has not been
-made without evidence.  Baseline/gate results can proceed independently.
+- the residual, memory, and optional learned transformed branches optimize
+  their own losses on T1;
+- the branches are frozen before both a 256-coefficient horizon-wise ridge
+  rooter and the neural rooter are trained independently on T2;
+- T3 is evaluated once, with no checkpoint selection or refit.
 
-The default `MIXTURE_GATE_INIT=-6` gives each non-vanilla branch only about
-0.25% initial mixture weight. Auxiliary branch losses still provide gradients,
-but such a small weight can slow coupling between the branches and the final
-gate. After establishing best-T2 restoration and early stopping, sweep initial
-logits such as `-6`, `-3`, and `-1` on the same pilot configuration.
+Vanilla-anchoring initialization makes both learned branches and the complete
+neural model exactly equal to vanilla at step zero. Optional regularizers cover
+branch/final vanilla anchoring, coefficient L2, and first-order horizon
+smoothness. Set `VANILLA_ANCHOR`, `COEFFICIENT_L2`, or `HORIZON_SMOOTHNESS` to
+zero to disable each term; set `VANILLA_ANCHORING_INIT=false` to disable the
+initialization.
+
+Each run saves `branches.pt`, `ridge_rooter.pt`, `ts_ifa.pt`, and T3 metrics and
+disk-backed predictions for every candidate, the ridge rooter, and the neural
+rooter. Evaluation writes and scores predictions batch by batch, while copied
+T1/T2/T3 tensors let the original extraction payloads be released before
+training. The extraction contract itself is unchanged, so completed extractions
+whose manifest matches the current signature remain valid.
 
 TS-IFA smoke submission:
 
 ```bash
 EXPERIMENT_MODE=test sbatch ts_ifa.slurm
+EXPERIMENT_MODE=test FAMILIES_CSV=ts_ifa sbatch tables.slurm
+
+# Optional learned candidate; no re-extraction needed:
+EXPERIMENT_MODE=test LEARNABLE_TRANSFORMED_COVARIATE=true sbatch ts_ifa.slurm
+
+# Optional frozen sign/root candidate:
+EXPERIMENT_MODE=test COMPUTE_TRANSFORMED_PREDICTION=true sbatch extraction.slurm
+EXPERIMENT_MODE=test TRANSFORMED_EXPERT=true sbatch ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
@@ -305,8 +330,8 @@ Implementation shells:
   horizon-ridge, and optimistic appendix references.
 - `run_gates.sh` uses the same evaluator with `--family gates` to fit and score
   the candidate gates.
-- `run_ts_ifa.sh` trains TS-IFA with validation checkpoint selection and writes
-  T3 metrics.
+- `run_ts_ifa.sh` trains T1 branches, fits T2 ridge and neural rooters, and
+  writes complete per-candidate and T3 comparison metrics.
 - `run_univariate.sh` runs direct Chronos forecasts without retrieval.
 - `build_tables.sh` verifies the selected sweep is complete before producing
   full and equal-configuration-average tables.
@@ -321,13 +346,31 @@ The runnable Python modules are:
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
   with `--family baselines` or `--family gates`.
-- `src.adaptors.ts_ifa.train`: TS-IFA training, T2 selection, and T3 evaluation.
+- `src.adaptors.ts_ifa.train`: staged T1 branch training, T2 rooter fitting, and
+  T3 evaluation.
 - `src.visu.sweep_results_table`: full and averaged publication tables.
 - `src.visu.results_table` and `src.visu.selected_methods`: focused table
   utilities for individual result folders and selected method subsets.
 - `src.visu.dashboard`: interactive retrieval diagnostics. Library modules such
   as `features.py`, `runtime.py`, `models/*.py`, and `data/*.py` support these
   entry points and are not separate jobs.
+
+The dashboard takes the extraction directory and the corresponding
+profile-separated result directory as distinct inputs. It loads a result family
+only when its current `result_manifest.json` is complete and points to the
+current prediction store. Configure `CLUSTER_EXPERIMENT_MODE`, dataset,
+`L_H` setting, model, and retrieval name in
+`src/visu/retrieval_dashboard.ipynb`; the notebook derives both paths from that
+single configuration. Its interactive sections cover retrieved examples,
+window and horizon errors, gate summaries and threshold curves, CatBoost gate
+importance, fitted baseline coefficient importance, and TS-IFA ridge/neural
+rooter coefficient heatmaps.
+
+TS-IFA outputs generated before neural-rooter coefficient diagnostics were
+introduced remain sufficient for the fixed ridge heatmap, but rerun
+`ts_ifa.slurm` for the affected configurations to populate the neural-rooter
+heatmap. The launcher treats prediction stores without that diagnostic as
+incomplete.
 
 ## Local checks
 

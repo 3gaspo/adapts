@@ -24,13 +24,13 @@ case "$EXPERIMENT_MODE" in
     DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504"
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
-  full|large|ultra)
+  full|ultra)
     DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
     DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"
     DEFAULT_EVAL_QUERY_STRIDE=128
     ;;
   *)
-    log_error "univariate.slurm supports only test, small, full, large, or ultra"
+    log_error "univariate.slurm supports only test, small, full, or ultra"
     return 2
     ;;
 esac
@@ -39,7 +39,7 @@ SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
 SPLITS="${SPLITS:-0.3,0.5,0.2}"
 SEED="${SEED:-1}"
-CHRONOS2_WEIGHTS_PATH="${CHRONOS2_WEIGHTS_PATH:-${CHRONOS_WEIGHTS_PATH:-}}"
+CHRONOS2_WEIGHTS_PATH="${CHRONOS2_WEIGHTS_PATH:-}"
 [ -n "$CHRONOS2_WEIGHTS_PATH" ] || CHRONOS2_WEIGHTS_PATH="$(find_weight_path chronos2)"
 CHRONOS_KWARGS="{\"weights_path\":\"$CHRONOS2_WEIGHTS_PATH\",\"device_map\":\"cuda\",\"context_mode\":\"future_included\"}"
 

@@ -24,7 +24,7 @@ def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
         for dataset, offset in [("electricity", 0.0), ("solar", 0.2)]:
-            setting = root / dataset / "168_24" / "chronos"
+            setting = root / dataset / "168_24" / "chronos2"
             _write(
                 setting / "vanilla" / "vanilla_metrics.json",
                 [{"split": "eval", "baseline": "vanilla", "nmse": 1.0 + offset, "mse": 0.01}],
@@ -82,9 +82,12 @@ def main() -> None:
                     {
                         "adapted_nmse": ts_ifa,
                         "adapted_mse": 0.005,
-                        "vanilla_nmse": 1.0 + offset,
+                        "vanilla_branch_nmse": 1.0 + offset,
+                        "context_branch_nmse": 0.95 + offset,
+                        "transformed_branch_nmse": 0.93 + offset,
                         "residual_branch_nmse": residual_branch,
                         "memory_branch_nmse": memory_branch,
+                        "ridge_rooter_nmse": ts_ifa + 0.01,
                     },
                 )
 
@@ -170,8 +173,10 @@ def main() -> None:
 
         ts_ifa = (root / "tables" / "average" / "ts_ifa_results.tex").read_text(encoding="utf-8")
         assert r"TS-IFA & " in ts_ifa
+        assert r"TS-IFA-phi & " in ts_ifa
         assert r"TS-IFA-R & " in ts_ifa
         assert r"TS-IFA-M & " in ts_ifa
+        assert r"TS-IFA-ridge & " in ts_ifa
 
     print("adaptation table checks passed")
 

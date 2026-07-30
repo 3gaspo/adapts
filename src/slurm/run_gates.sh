@@ -39,12 +39,11 @@ GATE_EARLY_STOPPING_ROUNDS="${GATE_EARLY_STOPPING_ROUNDS:-50}"
 GATE_TASK_TYPE="${GATE_TASK_TYPE:-CPU}"
 GATE_TASK_TYPE="${GATE_TASK_TYPE^^}"
 GATE_THREAD_COUNT="${GATE_THREAD_COUNT:-2}"
-GATE_HORIZON_JOBS="${GATE_HORIZON_JOBS:-8}"
 GATE_DEVICES="${GATE_DEVICES:-}"
 VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
 SEED="${SEED:-1}"
-MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-${MAX_TRAIN_FIT_SAMPLES:-}}"
-MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-${MAX_ORACLE_FIT_SAMPLES:-}}"
+MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-}"
+MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-}"
 MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
 require_resolved_profile_grid
@@ -60,20 +59,15 @@ FIT_SAMPLE_ARGS=(--fit-sample-seed "$FIT_SAMPLE_SEED")
 METHOD_ARGS=()
 [ -z "$GATE_METHODS_CSV" ] || METHOD_ARGS+=(--methods "$GATE_METHODS_CSV")
 
-ALLOCATED_CPUS="${SLURM_CPUS_PER_TASK:-$((GATE_THREAD_COUNT * GATE_HORIZON_JOBS))}"
-if [ "$GATE_TASK_TYPE" = GPU ] && [ "$GATE_HORIZON_JOBS" -ne 1 ]; then
-  log_error "GPU gates require GATE_HORIZON_JOBS=1"
-  return 2
-fi
+ALLOCATED_CPUS="${SLURM_CPUS_PER_TASK:-$GATE_THREAD_COUNT}"
 if [ "$GATE_TASK_TYPE" = CPU ] &&
-  [ $((GATE_THREAD_COUNT * GATE_HORIZON_JOBS)) -gt "$ALLOCATED_CPUS" ]; then
-  log_error "gate jobs*threads exceeds allocated CPUs: $GATE_HORIZON_JOBS*$GATE_THREAD_COUNT > $ALLOCATED_CPUS"
+  [ "$GATE_THREAD_COUNT" -gt "$ALLOCATED_CPUS" ]; then
+  log_error "gate threads exceed allocated CPUs: $GATE_THREAD_COUNT > $ALLOCATED_CPUS"
   return 2
 fi
 GATE_EXECUTION_ARGS=(
   --gate-task-type "$GATE_TASK_TYPE"
   --gate-thread-count "$GATE_THREAD_COUNT"
-  --gate-horizon-jobs "$GATE_HORIZON_JOBS"
 )
 [ -z "$GATE_DEVICES" ] || GATE_EXECUTION_ARGS+=(--gate-devices "$GATE_DEVICES")
 
@@ -103,9 +97,16 @@ gate_complete() {
   local output="$1"
   [ -s "$output/gate_metrics.csv" ] &&
     [ -s "$output/gate_metrics.json" ] &&
-    [ -s "$output/gate_artifacts.pt" ] &&
-    [ -s "$output/visualization_payload.pt" ] &&
-    [ -s "$output/gate_timing.json" ]
+    [ -s "$output/gate_artifacts.json" ] &&
+    [ -s "$output/prediction_manifest.json" ] &&
+    [ -s "$output/gate_timing.json" ] &&
+    [ -s "$output/result_manifest.json" ] &&
+    grep -Eq '"format"[[:space:]]*:[[:space:]]*"adaptation_evaluation_result"' \
+      "$output/result_manifest.json" &&
+    grep -Eq '"family"[[:space:]]*:[[:space:]]*"gates"' \
+      "$output/result_manifest.json" &&
+    grep -Eq '"format"[[:space:]]*:[[:space:]]*"adaptation_prediction_store"' \
+      "$output/prediction_manifest.json"
 }
 
 run_task() {
@@ -135,7 +136,7 @@ run_task() {
     log "skip complete family=gates dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return
   fi
-  log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH early_stopping_rounds=$GATE_EARLY_STOPPING_ROUNDS task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_jobs=$GATE_HORIZON_JOBS validation_fraction=$VALIDATION_FRACTION seed=$SEED max_t1_fit_samples=${MAX_T1_FIT_SAMPLES:-none} max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none} max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
+  log_section "gates start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING family=gates iterations=$GATE_ITERATIONS learning_rate=$GATE_LEARNING_RATE depth=$GATE_DEPTH early_stopping_rounds=$GATE_EARLY_STOPPING_ROUNDS task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_fits=serial validation_fraction=$VALIDATION_FRACTION seed=$SEED max_t1_fit_samples=${MAX_T1_FIT_SAMPLES:-none} max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none} max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none} fit_sample_seed=$FIT_SAMPLE_SEED"
   srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
@@ -152,13 +153,14 @@ run_task() {
   assert_files gate-output \
     "$OUTPUT_DIR/gate_metrics.csv" \
     "$OUTPUT_DIR/gate_metrics.json" \
-    "$OUTPUT_DIR/gate_artifacts.pt" \
-    "$OUTPUT_DIR/visualization_payload.pt" \
-    "$OUTPUT_DIR/gate_timing.json"
+    "$OUTPUT_DIR/gate_artifacts.json" \
+    "$OUTPUT_DIR/prediction_manifest.json" \
+    "$OUTPUT_DIR/gate_timing.json" \
+    "$OUTPUT_DIR/result_manifest.json"
   log "gates done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 
-log_section "job start kind=gates experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=${GATE_METHODS_CSV:-all} task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_jobs=$GATE_HORIZON_JOBS allocated_cpus=$ALLOCATED_CPUS results_root=$RESULTS_ROOT"
+log_section "job start kind=gates experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=${GATE_METHODS_CSV:-all} task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_fits=serial allocated_cpus=$ALLOCATED_CPUS results_root=$RESULTS_ROOT"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done

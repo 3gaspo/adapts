@@ -82,12 +82,10 @@ def _dataset_config_path(
 
 def _dataset_config_options(raw: Mapping[str, Any]) -> dict[str, Any]:
     options = {key: raw[key] for key in DATASET_CONFIG_KEYS if key in raw}
-    for scope in ("ts_ifa", "adaptation"):
-        scoped = raw.get(scope)
-        if scoped is None:
-            continue
+    scoped = raw.get("adaptation")
+    if scoped is not None:
         if not isinstance(scoped, Mapping):
-            raise ValueError(f"dataset config field {scope!r} must be an object")
+            raise ValueError("dataset config field 'adaptation' must be an object")
         if "drop_users" in scoped:
             options["drop_users"] = _merge_drop_users(
                 options.get("drop_users"), scoped["drop_users"]

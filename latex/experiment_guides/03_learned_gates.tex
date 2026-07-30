@@ -103,6 +103,16 @@ learning rate are fixed experimental choices, while \Ttwo selects effective
 capacity through early stopping. Feature importance is saved separately for
 each candidate, objective, and decision shape.
 
+The implementation fits horizons serially.  For every gate it selects the tree
+count, releases the selection model, refits one final model, writes that model
+in CatBoost's native format, scores disk-backed arrays, and releases the model
+before continuing.  Gate summaries are computed in bounded row chunks and a
+single horizon feature matrix is materialized at a time.  Predictions and
+diagnostic scores are separate NumPy arrays indexed by the sole current
+\code{prediction\_manifest.json}; \code{gate\_artifacts.json} indexes the
+models, and \code{result\_manifest.json} is written last as the completion
+marker.
+
 This refit is valid because $C$ and $\widehat Y$ are fixed candidates. For a
 future gate whose candidate is itself trained, the stage-two protocol is
 different: fit the candidate on \Tone and the gate on \Ttwo without refitting

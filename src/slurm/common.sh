@@ -26,9 +26,9 @@ is_true() {
 
 require_experiment_mode() {
   case "${EXPERIMENT_MODE:-test}" in
-    test|screen|k_ablation|h_ablation|l_ablation|crossrag|small|full|ultra|large) ;;
+    test|screen|k_ablation|h_ablation|l_ablation|crossrag|small|full|ultra) ;;
     *)
-      log_error "EXPERIMENT_MODE must be test, screen, k_ablation, h_ablation, l_ablation, crossrag, small, full, or ultra (large aliases full; got ${EXPERIMENT_MODE:-})"
+      log_error "EXPERIMENT_MODE must be test, screen, k_ablation, h_ablation, l_ablation, crossrag, small, full, or ultra (got ${EXPERIMENT_MODE:-})"
       return 2
       ;;
   esac

@@ -69,7 +69,7 @@ adaptation_profile_defaults() {
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="1,3,10"
       ;;
-    full|large)
+    full)
       DEFAULT_DATASETS_CSV="ETTh1,Electricity,Traffic,Solar,Weather,exchange_rate"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="168:24,504:24,504:168,504:504,512:64"

@@ -42,22 +42,23 @@ SPLITS="${SPLITS:-0.3,0.5,0.2}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 PERIOD="${PERIOD:-24}"
 SEED="${SEED:-1}"
+COMPUTE_TRANSFORMED_PREDICTION="${COMPUTE_TRANSFORMED_PREDICTION:-false}"
 
 model_kwargs() {
   local model="$1"
   local weight_path
   case "$model" in
-    chronos2|chronos)
-      weight_path="${CHRONOS2_WEIGHTS_PATH:-${CHRONOS_WEIGHTS_PATH:-}}"
+    chronos2)
+      weight_path="${CHRONOS2_WEIGHTS_PATH:-}"
       [ -n "$weight_path" ] || weight_path="$(find_weight_path chronos2)"
       printf '{"weights_path":"%s","device_map":"cuda","context_mode":"future_included"}\n' "$weight_path"
       ;;
-    chronos_bolt|chronos-bolt)
+    chronos-bolt)
       weight_path="${CHRONOS_BOLT_WEIGHTS_PATH:-}"
       [ -n "$weight_path" ] || weight_path="$(find_weight_path chronos-bolt-base)"
       printf '{"weights_path":"%s","device_map":"cuda"}\n' "$weight_path"
       ;;
-    tabpfnts|tabpfn|tabpfn_ts)
+    tabpfnts)
       weight_path="${TABPFN_WEIGHTS_PATH:-}"
       [ -n "$weight_path" ] || weight_path="$(find_weight_path tabpfnts/tabpfn-v2.5-regressor-v2.5_default.ckpt)"
       printf '{"weights_path":"%s","device":"cuda","context_mode":"future_included"}\n' "$weight_path"
@@ -79,10 +80,13 @@ is_true "$SKIP_COMPLETE" && SKIP_ARGS+=(--skip-complete)
 run_extraction() {
   local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
   local dataset_dir config model_options
-  local data_args=()
+  local data_args=() transformed_args=()
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
+  if is_true "$COMPUTE_TRANSFORMED_PREDICTION"; then
+    transformed_args+=(--compute-transformed-prediction)
+  fi
   model_options="$(model_kwargs "$model")"
   srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \
@@ -107,6 +111,7 @@ run_extraction() {
     --output-dir "$output_root" \
     --save-name "$save_name" \
     --seed "$SEED" \
+    "${transformed_args[@]}" \
     "${SKIP_ARGS[@]}"
 }
 
@@ -165,12 +170,12 @@ run_task() {
     retrieval_setting="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
     run_root="$MODEL_ROOT/$retrieval_setting"
   fi
-  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
+  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting datastore_stride=$DATASTORE_STRIDE adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS compute_transformed_prediction=$COMPUTE_TRANSFORMED_PREDICTION seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root"
   log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 
-log_section "job start kind=adaptation_extraction experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=adaptation_extraction experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE compute_transformed_prediction=$COMPUTE_TRANSFORMED_PREDICTION tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV"
 for ((task_id = 0; task_id < ${#TASK_DATASETS[@]}; task_id++)); do
   run_task "$task_id"
 done

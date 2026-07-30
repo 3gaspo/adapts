@@ -10,6 +10,7 @@
 #SBATCH --mem=40000
 
 # Select the same profile and winner-method environment used by upstream jobs.
+# Use FAMILIES_CSV=ts_ifa after ts_ifa.slurm to tabulate every branch and rooter.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

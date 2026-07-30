@@ -12,6 +12,7 @@
 
 # Profiles: test, screen, k_ablation, h_ablation, l_ablation, crossrag,
 # plus the historical small/full/ultra grids.
+# COMPUTE_TRANSFORMED_PREDICTION=true optionally extracts the sign/root expert.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"

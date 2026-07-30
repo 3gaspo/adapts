@@ -1,16 +1,18 @@
-"""Train TS-IFA from extraction payloads."""
+"""Train TS-IFA branches on T1, then train and compare rooters on T2."""
 
 from __future__ import annotations
 
 import argparse
-import copy
+import gc
 import json
 import logging
 from dataclasses import asdict
 from pathlib import Path
+import shutil
 from time import perf_counter
-from typing import Any
+from typing import Any, Callable
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from einops import rearrange
@@ -18,9 +20,10 @@ from torch.utils.data import DataLoader, Dataset
 
 from src.data.load_dataset import set_seed
 from src.data.neighbors import neighbor_to_query_scale
+from src.experiments.prediction_store import PredictionStore
 from src.experiments.runtime import log_experiment_separator, setup_logging
 from src.experiments.splits import chronological_date_slices
-from src.models.models import parameter_counts, resolve_device
+from src.models.models import resolve_device
 
 from .model import TSIFAConfig, TimeSeriesInformedForecastingAdapter
 
@@ -59,14 +62,17 @@ class PredictionPayloadDataset(Dataset):
         prefix: str,
         date_slice: slice | None = None,
         max_samples: int | None = None,
+        use_transformed_prediction: bool = False,
     ):
         self.prefix = prefix
         missing = [f"{prefix}_{name}" for name in self.required if f"{prefix}_{name}" not in payload]
         if missing:
-            raise KeyError(f"payload is missing required keys: {missing}")
+            raise KeyError(f"payload is missing required TS-IFA keys {missing}")
 
         date_slice = slice(None) if date_slice is None else date_slice
-        x = payload[f"{prefix}_X_values"][date_slice].float()
+        transformed_key = f"{prefix}_preds_transformed"
+        self.has_transformed_prediction = transformed_key in payload
+        x = payload[f"{prefix}_X_values"][date_slice].float().clone()
         self.n_dates = int(x.shape[0])
         self.n_users = int(x.shape[1])
         x_c_raw = payload[f"{prefix}_Xc_values"][date_slice].float()
@@ -81,15 +87,24 @@ class PredictionPayloadDataset(Dataset):
         residual_c = neighbor_to_query_scale(x, x_c_raw, residual_c_raw, residual=True)
         pred_neighbors = neighbor_to_query_scale(x, x_c_raw, pred_neighbors_raw)
 
+        pred = payload[f"{prefix}_preds"][date_slice].float().clone()
+        pred_transformed = (
+            payload[transformed_key][date_slice].float().clone()
+            if self.has_transformed_prediction and use_transformed_prediction
+            else pred
+        )
         self.tensors = {
             "x": flatten_time_user(x),
             "x_c": flatten_time_user(x_c),
-            "y": flatten_time_user(payload[f"{prefix}_Y_values"][date_slice]),
-            "y_c": flatten_time_user(y_c),
-            "pred": flatten_time_user(payload[f"{prefix}_preds"][date_slice]),
-            "pred_context": flatten_time_user(
-                payload[f"{prefix}_preds_context"][date_slice]
+            "y": flatten_time_user(
+                payload[f"{prefix}_Y_values"][date_slice].float().clone()
             ),
+            "y_c": flatten_time_user(y_c),
+            "pred": flatten_time_user(pred),
+            "pred_context": flatten_time_user(
+                payload[f"{prefix}_preds_context"][date_slice].float().clone()
+            ),
+            "pred_transformed": flatten_time_user(pred_transformed),
             "pred_neighbors": flatten_time_user(pred_neighbors),
             "residual_c": flatten_time_user(residual_c),
         }
@@ -110,11 +125,11 @@ class PredictionPayloadDataset(Dataset):
 
 
 class RandomPredictionPayloadDataset(Dataset):
-    """Draw random examples from T1 so one epoch is one optimizer step."""
+    """Draw random examples from one chronological split."""
 
     def __init__(self, source: PredictionPayloadDataset, *, virtual_size: int):
         if len(source) == 0:
-            raise ValueError("cannot sample from an empty training payload")
+            raise ValueError("cannot sample from an empty payload")
         if int(virtual_size) <= 0:
             raise ValueError("virtual_size must be positive")
         self.source = source
@@ -149,15 +164,12 @@ def log_scale_diagnostics(name: str, dataset: PredictionPayloadDataset | None) -
         torch.tensor([0.0, 0.001, 0.01, 0.05, 0.1, 0.5], dtype=torch.float32),
     )
     LOGGER.info(
-        "payload scale split=%s samples=%s std_min=%.6g std_q001=%.6g std_q01=%.6g std_q05=%.6g std_q10=%.6g std_median=%.6g below_1e-8=%s below_1e-6=%s below_1e-3=%s",
+        "payload scale split=%s samples=%s std_min=%.6g std_q001=%.6g "
+        "std_q01=%.6g std_q05=%.6g std_q10=%.6g std_median=%.6g "
+        "below_1e-8=%s below_1e-6=%s below_1e-3=%s",
         name,
         len(dataset),
-        float(quantiles[0]),
-        float(quantiles[1]),
-        float(quantiles[2]),
-        float(quantiles[3]),
-        float(quantiles[4]),
-        float(quantiles[5]),
+        *(float(value) for value in quantiles),
         int((scale < 1e-8).sum().item()),
         int((scale < 1e-6).sum().item()),
         int((scale < 1e-3).sum().item()),
@@ -201,6 +213,7 @@ def prepare_batch(
             "y": (raw["y"] - q_mean) / q_std,
             "pred": (raw["pred"] - q_mean) / q_std,
             "pred_context": (raw["pred_context"] - q_mean) / q_std,
+            "pred_transformed": (raw["pred_transformed"] - q_mean) / q_std,
             "x_c": (raw["x_c"] - neighbor_mean) / neighbor_std,
             "y_c": (raw["y_c"] - neighbor_mean) / neighbor_std,
             "pred_neighbors": (raw["pred_neighbors"] - neighbor_mean) / neighbor_std,
@@ -225,39 +238,155 @@ def denormalize(
     return value
 
 
-def nmse_mean(pred: torch.Tensor, target: torch.Tensor, lookback: torch.Tensor, eps: float) -> torch.Tensor:
-    scale = lookback.std(dim=-1, keepdim=True, unbiased=False).clamp_min(eps)
-    return ((pred - target) / scale).pow(2).mean(dim=-1)
+def normalized_square(value: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
+    return (value / scale).pow(2).mean()
 
 
-def loss_components(
+def branch_loss_components(
     outputs: dict[str, torch.Tensor],
     batch: dict[str, torch.Tensor],
     state: dict[str, torch.Tensor],
     *,
-    beta: float,
-    gamma: float,
+    vanilla_anchor: float,
 ) -> dict[str, torch.Tensor]:
     scale = state["loss_scale"]
-    prediction = outputs["prediction"]
-    pred_loss = ((prediction - batch["y"]) / scale).pow(2).mean()
-    reg_loss = ((prediction - batch["pred"]) / scale).pow(2).mean()
-    residual_target = batch["y"] - batch["pred"]
-    residual_loss = ((outputs["residual_delta"] - residual_target) / scale).pow(2).mean()
-    memory_loss = ((outputs["memory_delta"] - residual_target) / scale).pow(2).mean()
-    branch_loss = residual_loss + memory_loss
-    total = pred_loss + float(beta) * reg_loss + float(gamma) * branch_loss
+    residual = normalized_square(outputs["residual_prediction"] - batch["y"], scale)
+    memory = normalized_square(outputs["memory_prediction"] - batch["y"], scale)
+    anchoring = (
+        normalized_square(outputs["residual_prediction"] - batch["pred"], scale)
+        + normalized_square(outputs["memory_prediction"] - batch["pred"], scale)
+    )
+    total = residual + memory
+    result = {
+        "loss": total,
+        "residual": residual,
+        "memory": memory,
+        "vanilla_anchoring": anchoring,
+    }
+    if "transformed_delta" in outputs:
+        transformed = normalized_square(
+            outputs["transformed_prediction"] - batch["y"],
+            scale,
+        )
+        transformed_anchoring = normalized_square(
+            outputs["transformed_prediction"] - batch["pred"],
+            scale,
+        )
+        total = total + transformed
+        anchoring = anchoring + transformed_anchoring
+        result["transformed"] = transformed
+    result["vanilla_anchoring"] = anchoring
+    result["loss"] = total + float(vanilla_anchor) * anchoring
+    return result
+
+
+def rooter_loss_components(
+    outputs: dict[str, torch.Tensor],
+    batch: dict[str, torch.Tensor],
+    state: dict[str, torch.Tensor],
+    *,
+    vanilla_anchor: float,
+    coefficient_l2: float,
+    horizon_smoothness: float,
+) -> dict[str, torch.Tensor]:
+    scale = state["loss_scale"]
+    prediction = normalized_square(outputs["prediction"] - batch["y"], scale)
+    anchoring = normalized_square(outputs["prediction"] - batch["pred"], scale)
+    coefficients = outputs["coefficients"]
+    ridge = coefficients.pow(2).mean()
+    if coefficients.shape[-1] > 1:
+        smoothness = torch.diff(coefficients, dim=-1).pow(2).mean()
+    else:
+        smoothness = coefficients.new_zeros(())
+    total = (
+        prediction
+        + float(vanilla_anchor) * anchoring
+        + float(coefficient_l2) * ridge
+        + float(horizon_smoothness) * smoothness
+    )
     return {
         "loss": total,
-        "prediction": pred_loss,
-        "regularization": reg_loss,
-        "residual": residual_loss,
-        "memory": memory_loss,
+        "prediction": prediction,
+        "vanilla_anchoring": anchoring,
+        "coefficient_l2": ridge,
+        "horizon_smoothness": smoothness,
     }
 
 
 def move_batch(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
     return {key: value.to(device) for key, value in batch.items()}
+
+
+def nmse_mean(
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    lookback: torch.Tensor,
+    eps: float,
+) -> torch.Tensor:
+    scale = lookback.std(dim=-1, keepdim=True, unbiased=False).clamp_min(eps)
+    return ((pred - target) / scale).pow(2).mean(dim=-1)
+
+
+def ridge_prediction(
+    outputs: dict[str, torch.Tensor],
+    vanilla: torch.Tensor,
+    coefficients: torch.Tensor,
+) -> torch.Tensor:
+    return vanilla + (
+        outputs["candidates"] * coefficients.to(outputs["candidates"]).unsqueeze(0)
+    ).sum(dim=1)
+
+
+def fit_horizon_ridge_rooter(
+    model: TimeSeriesInformedForecastingAdapter,
+    loader: DataLoader,
+    *,
+    device: torch.device,
+    normalization: str,
+    eps: float,
+    alpha: float,
+) -> torch.Tensor:
+    """Fit a no-intercept, horizon-wise ridge rooter from exact T2 statistics."""
+    if alpha < 0:
+        raise ValueError("ridge rooter alpha cannot be negative")
+    model.eval()
+    horizon = model.config.horizon
+    candidates = len(model.candidate_names)
+    xtx = torch.zeros(horizon, candidates, candidates, dtype=torch.float64)
+    xty = torch.zeros(horizon, candidates, dtype=torch.float64)
+    n_samples = 0
+    with torch.inference_mode():
+        for raw_cpu in loader:
+            raw = move_batch(raw_cpu, device)
+            batch, _ = prepare_batch(raw, normalization=normalization, eps=eps)
+            outputs = model.forward_branches(batch)
+            design = outputs["candidates"].detach().cpu().double()
+            target = (batch["y"] - batch["pred"]).detach().cpu().double()
+            xtx += torch.einsum("bjh,bkh->hjk", design, design)
+            xty += torch.einsum("bjh,bh->hj", design, target)
+            n_samples += int(design.shape[0])
+    if n_samples == 0:
+        raise ValueError("cannot fit ridge rooter on an empty T2 split")
+
+    scale = torch.sqrt(
+        torch.diagonal(xtx, dim1=-2, dim2=-1) / float(n_samples)
+    ).clamp_min(1e-12)
+    scaled_xtx = xtx / (scale.unsqueeze(-1) * scale.unsqueeze(-2))
+    scaled_xty = xty / scale
+    regularized = scaled_xtx + float(alpha) * torch.eye(
+        candidates,
+        dtype=torch.float64,
+    ).unsqueeze(0)
+    try:
+        scaled_coefficients = torch.linalg.solve(regularized, scaled_xty.unsqueeze(-1)).squeeze(-1)
+    except RuntimeError:
+        scaled_coefficients = torch.einsum(
+            "hjk,hk->hj",
+            torch.linalg.pinv(regularized),
+            scaled_xty,
+        )
+    coefficients = scaled_coefficients / scale
+    return rearrange(coefficients.float(), "horizon candidate -> candidate horizon")
 
 
 def evaluate(
@@ -267,55 +396,101 @@ def evaluate(
     device: torch.device,
     normalization: str,
     eps: float,
-    prediction_output: dict[str, torch.Tensor] | None = None,
+    ridge_coefficients: torch.Tensor | None = None,
+    prediction_store: PredictionStore | None = None,
 ) -> dict[str, float]:
     model.eval()
+    variants = (
+        "adapted",
+        *(f"{name}_branch" for name in model.candidate_names),
+    )
+    if ridge_coefficients is not None:
+        variants = (*variants, "ridge_rooter")
     sums = {
-        "adapted_nmse": 0.0,
-        "vanilla_nmse": 0.0,
-        "context_nmse": 0.0,
-        "residual_branch_nmse": 0.0,
-        "memory_branch_nmse": 0.0,
-        "adapted_mse": 0.0,
-        "adapted_mae": 0.0,
+        f"{variant}_{metric}": 0.0
+        for variant in variants
+        for metric in ("nmse", "mse", "mae")
     }
-    prediction_batches: dict[str, list[torch.Tensor]] = {
-        "ts_ifa": [],
-        "ts_ifa_residual_branch": [],
-        "ts_ifa_memory_branch": [],
-    }
+    prediction_arrays = (
+        {
+            variant: prediction_store.open(
+                "eval",
+                "predictions",
+                f"ts_ifa_{variant}",
+                shape=(len(loader.dataset), model.config.horizon),
+                dtype=np.float32,
+            )
+            for variant in variants
+        }
+        if prediction_store is not None
+        else {}
+    )
+    coefficient_array = (
+        prediction_store.open(
+            "eval",
+            "gate_diagnostics",
+            "neural_rooter_coefficients",
+            shape=(
+                len(loader.dataset),
+                len(model.candidate_names),
+                model.config.horizon,
+            ),
+            dtype=np.float32,
+        )
+        if prediction_store is not None
+        else None
+    )
     count = 0
     with torch.inference_mode():
         for raw_cpu in loader:
             raw = move_batch(raw_cpu, device)
             batch, state = prepare_batch(raw, normalization=normalization, eps=eps)
             outputs = model(batch)
-            adapted = denormalize(outputs["prediction"], state, normalization)
-            residual = denormalize(outputs["residual_prediction"], state, normalization)
-            memory = denormalize(outputs["memory_prediction"], state, normalization)
-            y = raw["y"]
-            n = y.shape[0]
-
-            if prediction_output is not None:
-                prediction_batches["ts_ifa"].append(adapted.detach().cpu())
-                prediction_batches["ts_ifa_residual_branch"].append(residual.detach().cpu())
-                prediction_batches["ts_ifa_memory_branch"].append(memory.detach().cpu())
-
-            sums["adapted_nmse"] += nmse_mean(adapted, y, raw["x"], eps).sum().item()
-            sums["vanilla_nmse"] += nmse_mean(raw["pred"], y, raw["x"], eps).sum().item()
-            sums["context_nmse"] += nmse_mean(raw["pred_context"], y, raw["x"], eps).sum().item()
-            sums["residual_branch_nmse"] += nmse_mean(residual, y, raw["x"], eps).sum().item()
-            sums["memory_branch_nmse"] += nmse_mean(memory, y, raw["x"], eps).sum().item()
-            sums["adapted_mse"] += F.mse_loss(adapted, y, reduction="sum").item() / y.shape[-1]
-            sums["adapted_mae"] += F.l1_loss(adapted, y, reduction="sum").item() / y.shape[-1]
-            count += n
-    if prediction_output is not None:
-        prediction_output.update(
-            {
-                name: torch.cat(batches, dim=0) if batches else torch.empty(0)
-                for name, batches in prediction_batches.items()
+            normalized_predictions = {
+                "adapted": outputs["prediction"],
+                **{
+                    f"{name}_branch": outputs["candidates"][:, index]
+                    for index, name in enumerate(model.candidate_names)
+                },
             }
-        )
+            if ridge_coefficients is not None:
+                normalized_predictions["ridge_rooter"] = ridge_prediction(
+                    outputs,
+                    batch["pred"],
+                    ridge_coefficients,
+                )
+            predictions = {
+                name: denormalize(value, state, normalization)
+                for name, value in normalized_predictions.items()
+            }
+            y = raw["y"]
+            n = int(y.shape[0])
+            for name, prediction in predictions.items():
+                sums[f"{name}_nmse"] += nmse_mean(prediction, y, raw["x"], eps).sum().item()
+                sums[f"{name}_mse"] += F.mse_loss(
+                    prediction,
+                    y,
+                    reduction="sum",
+                ).item() / y.shape[-1]
+                sums[f"{name}_mae"] += F.l1_loss(
+                    prediction,
+                    y,
+                    reduction="sum",
+                ).item() / y.shape[-1]
+                if prediction_store is not None:
+                    prediction_arrays[name][count : count + n] = (
+                        prediction.detach().cpu().numpy()
+                    )
+            if coefficient_array is not None:
+                coefficient_array[count : count + n] = (
+                    outputs["coefficients"].detach().cpu().numpy()
+                )
+            count += n
+
+    for prediction in prediction_arrays.values():
+        prediction.flush()
+    if coefficient_array is not None:
+        coefficient_array.flush()
     return {key: value / max(count, 1) for key, value in sums.items()}
 
 
@@ -330,41 +505,213 @@ def resolve_step_frequency(value: int | None, *, default: int, name: str) -> int
     return frequency
 
 
-def plot_loss_curve(
-    history: list[dict[str, Any]],
-    output_path: Path,
+def _set_stage_mode(model: TimeSeriesInformedForecastingAdapter, stage: str) -> None:
+    model.train()
+    inactive = model.rooter_modules() if stage == "branches" else model.branch_modules()
+    for module in inactive:
+        module.eval()
+
+
+def train_stage(
+    model: TimeSeriesInformedForecastingAdapter,
     *,
-    train_steps: list[dict[str, Any]] | None = None,
-    plot_step_train_loss: bool = False,
+    stage: str,
+    loader: DataLoader,
+    diagnostic_loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    loss_function: Callable[
+        [dict[str, torch.Tensor], dict[str, torch.Tensor], dict[str, torch.Tensor]],
+        dict[str, torch.Tensor],
+    ],
+    epochs: int,
+    device: torch.device,
+    normalization: str,
+    eps: float,
+    grad_clip: float,
+    valid_eval_freq: int,
+    logging_eval_freq: int,
+    ridge_coefficients: torch.Tensor | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    history: list[dict[str, Any]] = []
+    train_steps: list[dict[str, Any]] = []
+    recent_totals: dict[str, float] = {}
+    recent_seen = 0
+    step = 0
+    total_steps = int(epochs) * max(1, len(loader))
+    LOGGER.info(
+        "stage start stage=%s epochs=%s total_steps=%s valid_eval_freq=%s logging_eval_freq=%s",
+        stage,
+        epochs,
+        total_steps,
+        valid_eval_freq,
+        logging_eval_freq,
+    )
+    for epoch in range(1, int(epochs) + 1):
+        _set_stage_mode(model, stage)
+        for raw_cpu in loader:
+            step += 1
+            raw = move_batch(raw_cpu, device)
+            batch, state = prepare_batch(raw, normalization=normalization, eps=eps)
+            optimizer.zero_grad(set_to_none=True)
+            outputs = model.forward_branches(batch) if stage == "branches" else model(batch)
+            losses = loss_function(outputs, batch, state)
+            losses["loss"].backward()
+            if grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(
+                    model.branch_parameters() if stage == "branches" else model.rooter_parameters(),
+                    grad_clip,
+                )
+            optimizer.step()
+
+            batch_size = int(raw["x"].shape[0])
+            loss_values = {key: float(value.detach().item()) for key, value in losses.items()}
+            train_steps.append(
+                {
+                    "stage": stage,
+                    "epoch": epoch,
+                    "step": step,
+                    **{f"train_{key}": value for key, value in loss_values.items()},
+                }
+            )
+            if not recent_totals:
+                recent_totals = {key: 0.0 for key in loss_values}
+            recent_seen += batch_size
+            for key, value in loss_values.items():
+                recent_totals[key] += value * batch_size
+
+            final_step = step == total_steps
+            should_evaluate = step % valid_eval_freq == 0 or final_step
+            should_log = step % logging_eval_freq == 0 or final_step
+            if not should_evaluate:
+                continue
+            row = {
+                "stage": stage,
+                "epoch": epoch,
+                "step": step,
+                **{
+                    f"train_batch_{key}": value / max(recent_seen, 1)
+                    for key, value in recent_totals.items()
+                },
+            }
+            diagnostic = evaluate(
+                model,
+                diagnostic_loader,
+                device=device,
+                normalization=normalization,
+                eps=eps,
+                ridge_coefficients=ridge_coefficients,
+            )
+            row.update({f"t2_{key}": value for key, value in diagnostic.items()})
+            history.append(row)
+            if should_log:
+                focus = (
+                    diagnostic["adapted_nmse"]
+                    if stage == "rooter"
+                    else sum(
+                        diagnostic[key]
+                        for key in (
+                            "residual_branch_nmse",
+                            "memory_branch_nmse",
+                            "transformed_branch_nmse",
+                        )
+                        if key in diagnostic
+                    )
+                    / sum(
+                        key in diagnostic
+                        for key in (
+                            "residual_branch_nmse",
+                            "memory_branch_nmse",
+                            "transformed_branch_nmse",
+                        )
+                    )
+                )
+                LOGGER.info(
+                    "stage progress stage=%s step=%s/%s train_interval_loss=%.6f "
+                    "t2_focus_nmse=%.6f",
+                    stage,
+                    step,
+                    total_steps,
+                    row["train_batch_loss"],
+                    focus,
+                )
+            recent_totals = {key: 0.0 for key in recent_totals}
+            recent_seen = 0
+    return history, train_steps
+
+
+def plot_training(
+    branch_history: list[dict[str, Any]],
+    rooter_history: list[dict[str, Any]],
+    output_path: Path,
 ) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    if not history:
-        return
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    if branch_history:
+        steps = [row["step"] for row in branch_history]
+        axes[0].plot(
+            steps,
+            [row["train_batch_residual"] for row in branch_history],
+            label="T1 residual train",
+        )
+        axes[0].plot(
+            steps,
+            [row["train_batch_memory"] for row in branch_history],
+            label="T1 memory train",
+        )
+        axes[0].plot(
+            steps,
+            [row["t2_residual_branch_nmse"] for row in branch_history],
+            label="T2 residual",
+        )
+        axes[0].plot(
+            steps,
+            [row["t2_memory_branch_nmse"] for row in branch_history],
+            label="T2 memory",
+        )
+        if "train_batch_transformed" in branch_history[0]:
+            axes[0].plot(
+                steps,
+                [row["train_batch_transformed"] for row in branch_history],
+                label="T1 transformed train",
+            )
+            axes[0].plot(
+                steps,
+                [row["t2_transformed_branch_nmse"] for row in branch_history],
+                label="T2 transformed",
+            )
+    axes[0].set_title("T1 branch training")
+    axes[0].set_xlabel("Step")
+    axes[0].set_ylabel("nMSE")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend()
 
-    steps = [row.get("step", row["epoch"]) for row in history]
-    train_batch_nmse = [
-        row.get("train_batch_nmse", row.get("train_nmse", row.get("train_prediction")))
-        for row in history
-    ]
-    valid_nmse = [row.get("valid_adapted_nmse") for row in history]
-
-    fig, ax = plt.subplots(figsize=(6, 4))
-    if plot_step_train_loss and train_steps:
-        step_x = [row["step"] for row in train_steps]
-        step_y = [row.get("train_nmse", row.get("train_prediction")) for row in train_steps]
-        ax.plot(step_x, step_y, label="train step nMSE", linewidth=1, alpha=0.35)
-    ax.plot(steps, train_batch_nmse, marker="o", label="train interval nMSE", linewidth=2)
-    if any(value is not None for value in valid_nmse):
-        ax.plot(steps, valid_nmse, marker="o", label="T2 validation nMSE", linewidth=2)
-    ax.set_xlabel("Step")
-    ax.set_ylabel("nMSE")
-    ax.set_title("TS-IFA training")
-    ax.grid(True, alpha=0.3)
-    ax.legend()
+    if rooter_history:
+        steps = [row["step"] for row in rooter_history]
+        axes[1].plot(
+            steps,
+            [row["train_batch_prediction"] for row in rooter_history],
+            label="T2 rooter train",
+        )
+        axes[1].plot(
+            steps,
+            [row["t2_adapted_nmse"] for row in rooter_history],
+            label="T2 neural rooter",
+        )
+        if "t2_ridge_rooter_nmse" in rooter_history[0]:
+            axes[1].plot(
+                steps,
+                [row["t2_ridge_rooter_nmse"] for row in rooter_history],
+                label="T2 ridge rooter",
+            )
+    axes[1].set_title("T2 rooter training")
+    axes[1].set_xlabel("Step")
+    axes[1].set_ylabel("nMSE")
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend()
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -376,73 +723,90 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--adapt-payload", default=None)
     parser.add_argument("--eval-payload", default=None)
     parser.add_argument("--output-dir", default=None)
-    parser.add_argument("--epochs", type=int, default=10000)
+    parser.add_argument("--branch-epochs", type=int, default=10000)
+    parser.add_argument("--rooter-epochs", type=int, default=10000)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--eval-batch-size", type=int, default=None)
     parser.add_argument(
         "--valid-eval-freq",
         type=int,
         default=None,
-        help="Run full T2 validation every N optimizer steps. Defaults to one epoch.",
+        help="Run deterministic T2 diagnostics every N optimizer steps in each stage.",
     )
     parser.add_argument(
         "--logging-eval-freq",
         type=int,
         default=None,
-        help="Print the latest train interval and T2 validation metrics every N optimizer steps. Defaults to one epoch.",
+        help="Log interval-average train and T2 metrics every N optimizer steps.",
+    )
+    parser.add_argument("--branch-lr", type=float, default=1e-5)
+    parser.add_argument("--rooter-lr", type=float, default=1e-5)
+    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument(
+        "--vanilla-anchor",
+        type=float,
+        default=1e-2,
+        help="Vanilla-anchoring regularizer used in both training stages; 0 disables it.",
     )
     parser.add_argument(
-        "--plot-step-train-loss",
-        action="store_true",
-        help="Include noisy per-step train nMSE in training_nmse.pdf. Disabled by default.",
+        "--coefficient-l2",
+        type=float,
+        default=1e-2,
+        help="Ridge penalty on neural rooter coefficients; 0 disables it.",
     )
-    parser.add_argument("--lr", type=float, default=1e-5)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--beta", type=float, default=1e-2, help="Penalty toward vanilla prediction")
-    parser.add_argument("--gamma", type=float, default=1e-2, help="Branch delta supervision weight")
+    parser.add_argument(
+        "--horizon-smoothness",
+        type=float,
+        default=1e-2,
+        help="First-order horizon penalty on rooter coefficients; 0 disables it.",
+    )
+    parser.add_argument("--ridge-rooter-alpha", type=float, default=1e-2)
     parser.add_argument("--normalization", default="instance", choices=["instance", "none"])
     parser.add_argument("--device", default="auto")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--max-train-samples", type=int, default=None)
     parser.add_argument("--max-valid-samples", type=int, default=None)
-    parser.add_argument("--max-eval-samples", type=int, default=None)
     parser.add_argument(
         "--validation-fraction",
         type=float,
         default=0.2,
-        help="Chronological fraction of pooled T1+T2 query dates assigned to T2",
+        help="Chronological fraction of pooled T1+T2 query dates assigned to T2/rooter fitting",
     )
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--grad-clip", type=float, default=1.0)
     parser.add_argument("--residual-heads", type=int, default=4)
     parser.add_argument("--memory-heads", type=int, default=4)
-    parser.add_argument("--mixture-heads", type=int, default=4)
+    parser.add_argument("--rooter-heads", type=int, default=None)
     parser.add_argument("--residual-attn-dim", type=int, default=32)
     parser.add_argument("--memory-attn-dim", type=int, default=32)
-    parser.add_argument("--mixture-attn-dim", type=int, default=32)
+    parser.add_argument("--rooter-attn-dim", type=int, default=None)
     parser.add_argument("--residual-hidden", type=int, default=128)
     parser.add_argument("--memory-hidden", type=int, default=128)
-    parser.add_argument("--mixture-hidden", type=int, default=128)
-    parser.add_argument("--mixture-key-dim", type=int, default=64, help="Deprecated; kept for old launch configs")
-    parser.add_argument("--mixture-gate-init", type=float, default=-6.0)
+    parser.add_argument("--rooter-hidden", type=int, default=None)
+    parser.add_argument("--transformed-hidden", type=int, default=128)
+    parser.add_argument(
+        "--precomputed-transformed-expert",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Include the extracted sign/sqrt frozen expert; disabled by default.",
+    )
+    parser.add_argument(
+        "--learnable-transformed-covariate",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Add u=MLP(x) to the transformed expert and train its forecast head on T1. "
+            "This also enables the transformed candidate."
+        ),
+    )
+    parser.add_argument(
+        "--vanilla-anchoring-init",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Initialize both learned branches and the rooter to return vanilla exactly.",
+    )
     parser.add_argument("--dropout", type=float, default=0.0)
-    parser.add_argument(
-        "--restore-best-validation",
-        action="store_true",
-        help="Restore the checkpoint with the lowest T2 adapted nMSE before final T3 evaluation",
-    )
-    parser.add_argument(
-        "--early-stopping-patience",
-        type=int,
-        default=0,
-        help="Stop after this many non-improving T2 evaluations; 0 disables early stopping",
-    )
-    parser.add_argument(
-        "--early-stopping-min-delta",
-        type=float,
-        default=0.0,
-        help="Minimum T2 nMSE decrease counted as an improvement",
-    )
+
     return parser.parse_args()
 
 
@@ -463,8 +827,38 @@ def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path | None, Path]:
         output_dir = base / "ts_ifa"
     else:
         output_dir = adapt_payload.parent / "ts_ifa"
-    output_dir.mkdir(parents=True, exist_ok=True)
     return adapt_payload, eval_payload, output_dir
+
+
+def _resolved_epochs(args: argparse.Namespace) -> tuple[int, int]:
+    branch_epochs = int(args.branch_epochs)
+    rooter_epochs = int(args.rooter_epochs)
+    if branch_epochs <= 0 or rooter_epochs <= 0:
+        raise ValueError("branch and rooter epochs must be positive")
+    return branch_epochs, rooter_epochs
+
+
+def _state_dict_cpu(model: TimeSeriesInformedForecastingAdapter) -> dict[str, torch.Tensor]:
+    return {name: value.detach().cpu() for name, value in model.state_dict().items()}
+
+
+def _branch_state_dict_cpu(
+    model: TimeSeriesInformedForecastingAdapter,
+) -> dict[str, torch.Tensor]:
+    prefixes = (
+        "residual_attention.",
+        "residual_head.",
+        "memory_attention.",
+        "memory_skip.",
+        "memory_head.",
+        "transformed_covariate.",
+        "transformed_head.",
+    )
+    return {
+        name: value.detach().cpu()
+        for name, value in model.state_dict().items()
+        if name.startswith(prefixes)
+    }
 
 
 def main() -> dict[str, Path]:
@@ -474,16 +868,31 @@ def main() -> dict[str, Path]:
     experiment_start = perf_counter()
     set_seed(args.seed)
     adapt_payload_path, eval_payload_path, output_dir = resolve_paths(args)
+    if not adapt_payload_path.is_file():
+        raise FileNotFoundError(adapt_payload_path)
+    if eval_payload_path is not None and not eval_payload_path.is_file():
+        raise FileNotFoundError(eval_payload_path)
+    input_directories = {adapt_payload_path.resolve().parent}
+    if eval_payload_path is not None:
+        input_directories.add(eval_payload_path.resolve().parent)
+    if output_dir.resolve() in input_directories:
+        raise ValueError("output directory must differ from extraction directories")
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    branch_epochs, rooter_epochs = _resolved_epochs(args)
     LOGGER.info(
-        "experiment start kind=ts_ifa_train input=%s epochs=%s batch_size=%s",
+        "experiment start kind=ts_ifa_train input=%s branch_epochs=%s rooter_epochs=%s "
+        "batch_size=%s",
         adapt_payload_path.parent,
-        args.epochs,
+        branch_epochs,
+        rooter_epochs,
         args.batch_size,
     )
-    LOGGER.info("payload load start")
+
     adapt_payload = torch_load(adapt_payload_path)
     n_adapt_dates = int(adapt_payload["adapt_X_values"].shape[0])
-    train_dates, valid_dates = chronological_date_slices(
+    train_dates, rooter_dates = chronological_date_slices(
         n_adapt_dates,
         args.validation_fraction,
     )
@@ -492,366 +901,356 @@ def main() -> dict[str, Path]:
         prefix="adapt",
         date_slice=train_dates,
         max_samples=args.max_train_samples,
+        use_transformed_prediction=args.precomputed_transformed_expert,
     )
-    valid_dataset = PredictionPayloadDataset(
+    rooter_dataset = PredictionPayloadDataset(
         adapt_payload,
         prefix="adapt",
-        date_slice=valid_dates,
+        date_slice=rooter_dates,
         max_samples=args.max_valid_samples,
+        use_transformed_prediction=args.precomputed_transformed_expert,
     )
+    del adapt_payload
+    gc.collect()
     eval_dataset = None
     if eval_payload_path is not None and eval_payload_path.exists():
+        eval_payload = torch_load(eval_payload_path)
         eval_dataset = PredictionPayloadDataset(
-            torch_load(eval_payload_path),
+            eval_payload,
             prefix="eval",
-            max_samples=args.max_eval_samples,
+            use_transformed_prediction=args.precomputed_transformed_expert,
         )
-    ensure_compatible(train_dataset, valid_dataset, name="validation")
+        del eval_payload
+        gc.collect()
+    ensure_compatible(train_dataset, rooter_dataset, name="rooter")
     ensure_compatible(train_dataset, eval_dataset, name="evaluation")
+    if args.precomputed_transformed_expert:
+        missing_transformed = [
+            name
+            for name, dataset in (
+                ("T1", train_dataset),
+                ("T2", rooter_dataset),
+                ("T3", eval_dataset),
+            )
+            if dataset is not None and not dataset.has_transformed_prediction
+        ]
+        if missing_transformed:
+            raise ValueError(
+                "the precomputed transformed expert was requested but is absent "
+                f"from {missing_transformed}; rerun extraction with "
+                "--compute-transformed-prediction or disable the expert"
+            )
     LOGGER.info(
-        "payload load done train_samples=%s valid_samples=%s eval_samples=%s",
+        "payload load done t1_samples=%s t2_samples=%s t3_samples=%s",
         len(train_dataset),
-        len(valid_dataset),
+        len(rooter_dataset),
         len(eval_dataset) if eval_dataset is not None else 0,
     )
-    log_scale_diagnostics("train", train_dataset)
-    log_scale_diagnostics("valid", valid_dataset)
-    log_scale_diagnostics("eval", eval_dataset)
+    log_scale_diagnostics("T1", train_dataset)
+    log_scale_diagnostics("T2", rooter_dataset)
+    log_scale_diagnostics("T3", eval_dataset)
 
     eval_batch_size = args.eval_batch_size or args.batch_size
-    random_train_dataset = RandomPredictionPayloadDataset(
-        train_dataset,
-        virtual_size=args.batch_size,
-    )
-    train_loader = DataLoader(
-        random_train_dataset,
+    branch_loader = DataLoader(
+        RandomPredictionPayloadDataset(train_dataset, virtual_size=args.batch_size),
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
     )
-    valid_loader = DataLoader(
-        valid_dataset,
+    rooter_train_loader = DataLoader(
+        RandomPredictionPayloadDataset(rooter_dataset, virtual_size=args.batch_size),
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+    )
+    rooter_full_loader = DataLoader(
+        rooter_dataset,
         batch_size=eval_batch_size,
         shuffle=False,
         num_workers=args.num_workers,
     )
-    eval_loader = None
-    if eval_dataset is not None:
-        eval_loader = DataLoader(
+    eval_loader = (
+        DataLoader(
             eval_dataset,
             batch_size=eval_batch_size,
             shuffle=False,
             num_workers=args.num_workers,
         )
+        if eval_dataset is not None
+        else None
+    )
 
+    rooter_heads = args.rooter_heads or 4
+    rooter_attn_dim = args.rooter_attn_dim or 32
+    rooter_hidden = args.rooter_hidden or 128
     config = TSIFAConfig(
         lags=train_dataset.lags,
         horizon=train_dataset.horizon,
         neighbors=train_dataset.neighbors,
         residual_heads=args.residual_heads,
         memory_heads=args.memory_heads,
-        mixture_heads=args.mixture_heads,
+        rooter_heads=rooter_heads,
         residual_attn_dim=args.residual_attn_dim,
         memory_attn_dim=args.memory_attn_dim,
-        mixture_attn_dim=args.mixture_attn_dim,
+        rooter_attn_dim=rooter_attn_dim,
         residual_hidden=args.residual_hidden,
         memory_hidden=args.memory_hidden,
-        mixture_hidden=args.mixture_hidden,
-        mixture_key_dim=args.mixture_key_dim,
-        mixture_gate_init=args.mixture_gate_init,
+        rooter_hidden=rooter_hidden,
+        transformed_hidden=args.transformed_hidden,
+        precomputed_transformed_expert=bool(args.precomputed_transformed_expert),
+        learnable_transformed_covariate=bool(args.learnable_transformed_covariate),
+        vanilla_anchoring_init=bool(args.vanilla_anchoring_init),
         dropout=args.dropout,
     )
     device = resolve_device(args.device)
     model = TimeSeriesInformedForecastingAdapter(config).to(device)
-    total_parameters, trainable_parameters = parameter_counts(model)
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=args.lr,
-        weight_decay=args.weight_decay,
-    )
+    total_parameters = sum(parameter.numel() for parameter in model.parameters())
+    branch_parameters = sum(parameter.numel() for parameter in model.branch_parameters())
+    neural_rooter_parameters = sum(parameter.numel() for parameter in model.rooter_parameters())
+    ridge_rooter_parameters = len(model.candidate_names) * config.horizon
     LOGGER.info(
-        "model ready name=TS-IFA device=%s parameters_total=%s parameters_trainable=%s",
+        "model ready name=TS-IFA device=%s parameters_total=%s branches=%s "
+        "neural_rooter=%s ridge_rooter=%s",
         device,
         f"{total_parameters:,}",
-        f"{trainable_parameters:,}",
+        f"{branch_parameters:,}",
+        f"{neural_rooter_parameters:,}",
+        f"{ridge_rooter_parameters:,}",
     )
 
-    history: list[dict[str, Any]] = []
-    train_steps: list[dict[str, Any]] = []
     eps = 1e-8
-    start_time = perf_counter()
-    steps_per_epoch = max(1, len(train_loader))
-    total_steps = int(args.epochs) * steps_per_epoch
     valid_eval_freq = resolve_step_frequency(
         args.valid_eval_freq,
-        default=steps_per_epoch,
+        default=1,
         name="valid_eval_freq",
     )
     logging_eval_freq = resolve_step_frequency(
         args.logging_eval_freq,
-        default=steps_per_epoch,
+        default=valid_eval_freq,
         name="logging_eval_freq",
     )
     if logging_eval_freq % valid_eval_freq != 0:
         raise ValueError("logging_eval_freq must be a multiple of valid_eval_freq")
-    if args.early_stopping_patience < 0:
-        raise ValueError("early_stopping_patience cannot be negative")
-    if args.early_stopping_min_delta < 0:
-        raise ValueError("early_stopping_min_delta cannot be negative")
-    LOGGER.info(
-        "training start epochs=%s steps_per_epoch=%s total_steps=%s valid_eval_freq=%s logging_eval_freq=%s",
-        args.epochs,
-        steps_per_epoch,
-        total_steps,
-        valid_eval_freq,
-        logging_eval_freq,
+
+    training_start = perf_counter()
+    model.set_trainable_stage("branches")
+    branch_optimizer = torch.optim.AdamW(
+        model.branch_parameters(),
+        lr=args.branch_lr,
+        weight_decay=args.weight_decay,
     )
-    recent_totals = {
-        "loss": 0.0,
-        "prediction": 0.0,
-        "regularization": 0.0,
-        "residual": 0.0,
-        "memory": 0.0,
-    }
-    recent_seen = 0
-    step = 0
-    best_valid_nmse = float("inf")
-    best_step: int | None = None
-    best_state: dict[str, torch.Tensor] | None = None
-    non_improving_evaluations = 0
-    stopped_early = False
-    for epoch in range(1, args.epochs + 1):
-        model.train()
-        for raw_cpu in train_loader:
-            step += 1
-            raw = move_batch(raw_cpu, device)
-            batch, state = prepare_batch(raw, normalization=args.normalization, eps=eps)
-            optimizer.zero_grad(set_to_none=True)
-            outputs = model(batch)
-            losses = loss_components(
-                outputs,
-                batch,
-                state,
-                beta=args.beta,
-                gamma=args.gamma,
-            )
-            losses["loss"].backward()
-            if args.grad_clip and args.grad_clip > 0:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-            optimizer.step()
-            batch_size = raw["x"].shape[0]
-            step_row = {
-                "epoch": epoch,
-                "step": step,
-                **{f"train_{key}": losses[key].detach().item() for key in recent_totals},
-            }
-            step_row["train_nmse"] = step_row["train_prediction"]
-            train_steps.append(step_row)
-            recent_seen += batch_size
-            for key in recent_totals:
-                recent_totals[key] += losses[key].detach().item() * batch_size
+    branch_history, branch_steps = train_stage(
+        model,
+        stage="branches",
+        loader=branch_loader,
+        diagnostic_loader=rooter_full_loader,
+        optimizer=branch_optimizer,
+        loss_function=lambda outputs, batch, state: branch_loss_components(
+            outputs,
+            batch,
+            state,
+            vanilla_anchor=args.vanilla_anchor,
+        ),
+        epochs=branch_epochs,
+        device=device,
+        normalization=args.normalization,
+        eps=eps,
+        grad_clip=args.grad_clip,
+        valid_eval_freq=valid_eval_freq,
+        logging_eval_freq=logging_eval_freq,
+    )
 
-            should_valid_eval = step % valid_eval_freq == 0
-            should_logging_eval = step % logging_eval_freq == 0
-            if not (should_valid_eval or should_logging_eval):
-                continue
+    branches_path = output_dir / "branches.pt"
+    torch.save(
+        {
+            "branch_state_dict": _branch_state_dict_cpu(model),
+            "config": asdict(config),
+            "stage": "T1_branches",
+            "candidate_names": model.candidate_names,
+            "parameter_counts": {"branches": branch_parameters},
+        },
+        branches_path,
+    )
 
-            row: dict[str, Any] = {
-                "epoch": epoch,
-                "step": step,
-                **{
-                    f"train_batch_{key}": value / max(recent_seen, 1)
-                    for key, value in recent_totals.items()
-                },
-            }
-            row["train_nmse"] = row["train_batch_prediction"]
-            row["train_batch_nmse"] = row["train_batch_prediction"]
+    LOGGER.info("ridge rooter fit start split=T2 alpha=%s", args.ridge_rooter_alpha)
+    ridge_coefficients = fit_horizon_ridge_rooter(
+        model,
+        rooter_full_loader,
+        device=device,
+        normalization=args.normalization,
+        eps=eps,
+        alpha=args.ridge_rooter_alpha,
+    )
+    ridge_path = output_dir / "ridge_rooter.pt"
+    torch.save(
+        {
+            "coefficients": ridge_coefficients,
+            "candidate_names": model.candidate_names,
+            "alpha": args.ridge_rooter_alpha,
+            "fit_split": "T2",
+            "parameter_count": ridge_rooter_parameters,
+        },
+        ridge_path,
+    )
 
-            valid_metrics = evaluate(
-                model,
-                valid_loader,
-                device=device,
-                normalization=args.normalization,
-                eps=eps,
-            )
-            row.update({f"valid_{key}": value for key, value in valid_metrics.items()})
+    model.set_trainable_stage("rooter")
+    rooter_optimizer = torch.optim.AdamW(
+        model.rooter_parameters(),
+        lr=args.rooter_lr,
+        weight_decay=args.weight_decay,
+    )
+    rooter_history, rooter_steps = train_stage(
+        model,
+        stage="rooter",
+        loader=rooter_train_loader,
+        diagnostic_loader=rooter_full_loader,
+        optimizer=rooter_optimizer,
+        loss_function=lambda outputs, batch, state: rooter_loss_components(
+            outputs,
+            batch,
+            state,
+            vanilla_anchor=args.vanilla_anchor,
+            coefficient_l2=args.coefficient_l2,
+            horizon_smoothness=args.horizon_smoothness,
+        ),
+        epochs=rooter_epochs,
+        device=device,
+        normalization=args.normalization,
+        eps=eps,
+        grad_clip=args.grad_clip,
+        valid_eval_freq=valid_eval_freq,
+        logging_eval_freq=logging_eval_freq,
+        ridge_coefficients=ridge_coefficients,
+    )
+    model.set_trainable_stage("all")
+    LOGGER.info("training done seconds=%.2f", perf_counter() - training_start)
 
-            current_valid_nmse = float(row["valid_adapted_nmse"])
-            if current_valid_nmse < best_valid_nmse - float(args.early_stopping_min_delta):
-                best_valid_nmse = current_valid_nmse
-                best_step = step
-                best_state = copy.deepcopy(model.state_dict())
-                non_improving_evaluations = 0
-            else:
-                non_improving_evaluations += 1
-
-            if should_logging_eval:
-                LOGGER.info(
-                    "training progress step=%s/%s epoch=%s/%s train_interval_nmse=%.6f valid_nmse=%.6f",
-                    step,
-                    total_steps,
-                    epoch,
-                    args.epochs,
-                    row["train_batch_nmse"],
-                    row["valid_adapted_nmse"],
-                )
-
-            history.append(row)
-            recent_totals = {key: 0.0 for key in recent_totals}
-            recent_seen = 0
-            if (
-                args.early_stopping_patience > 0
-                and non_improving_evaluations >= args.early_stopping_patience
-            ):
-                stopped_early = True
-                LOGGER.info(
-                    "early stopping step=%s best_step=%s best_valid_nmse=%.6f patience=%s",
-                    step,
-                    best_step,
-                    best_valid_nmse,
-                    args.early_stopping_patience,
-                )
-                break
-        if stopped_early:
-            break
-    if recent_seen:
-        row = {
-            "epoch": args.epochs,
-            "step": step,
-            **{
-                f"train_batch_{key}": value / recent_seen
-                for key, value in recent_totals.items()
-            },
-        }
-        row["train_nmse"] = row["train_batch_prediction"]
-        row["train_batch_nmse"] = row["train_batch_prediction"]
-        valid_metrics = evaluate(
-            model,
-            valid_loader,
-            device=device,
-            normalization=args.normalization,
-            eps=eps,
-        )
-        row.update({f"valid_{key}": value for key, value in valid_metrics.items()})
-        current_valid_nmse = float(row["valid_adapted_nmse"])
-        if current_valid_nmse < best_valid_nmse - float(args.early_stopping_min_delta):
-            best_valid_nmse = current_valid_nmse
-            best_step = step
-            best_state = copy.deepcopy(model.state_dict())
-        history.append(row)
-        LOGGER.info(
-            "training final step=%s train_interval_nmse=%.6f valid_nmse=%.6f",
-            step,
-            row["train_batch_nmse"],
-            row["valid_adapted_nmse"],
-        )
-    restore_best = bool(args.restore_best_validation or args.early_stopping_patience > 0)
-    if restore_best and best_state is not None:
-        model.load_state_dict(best_state)
-        LOGGER.info(
-            "best T2 checkpoint restored step=%s valid_nmse=%.6f",
-            best_step,
-            best_valid_nmse,
-        )
-    LOGGER.info("training done seconds=%.2f", perf_counter() - start_time)
-
-    final_eval = {}
-    eval_predictions: dict[str, torch.Tensor] = {}
+    final_eval: dict[str, float] = {}
+    prediction_store = PredictionStore(output_dir)
     if eval_loader is not None:
-        LOGGER.info("evaluation start")
+        LOGGER.info("evaluation start split=T3")
         final_eval = evaluate(
             model,
             eval_loader,
             device=device,
             normalization=args.normalization,
             eps=eps,
-            prediction_output=eval_predictions,
+            ridge_coefficients=ridge_coefficients,
+            prediction_store=prediction_store,
         )
-        LOGGER.info("evaluation done adapted_nmse=%.6f", final_eval["adapted_nmse"])
+        LOGGER.info(
+            "evaluation done neural_nmse=%.6f ridge_nmse=%.6f residual_nmse=%.6f "
+            "memory_nmse=%.6f transformed_nmse=%s",
+            final_eval["adapted_nmse"],
+            final_eval["ridge_rooter_nmse"],
+            final_eval["residual_branch_nmse"],
+            final_eval["memory_branch_nmse"],
+            (
+                f"{final_eval['transformed_branch_nmse']:.6f}"
+                if "transformed_branch_nmse" in final_eval
+                else "disabled"
+            ),
+        )
+    prediction_manifest = prediction_store.finalize(
+        metadata={
+            "family": "ts_ifa",
+            "candidate_names": list(model.candidate_names),
+            "gate_diagnostics": ["neural_rooter_coefficients"],
+        }
+    )
 
     checkpoint_path = output_dir / "ts_ifa.pt"
     history_path = output_dir / "training_history.json"
     metrics_path = output_dir / "eval_metrics.json"
-    predictions_path = output_dir / "eval_predictions.pt"
     config_path = output_dir / "config.json"
     plot_path = output_dir / "training_nmse.pdf"
     torch.save(
         {
-            "model_state_dict": model.state_dict(),
+            "model_state_dict": _state_dict_cpu(model),
             "config": asdict(config),
             "model_name": "TS-IFA",
+            "candidate_names": model.candidate_names,
             "parameter_counts": {
                 "total": total_parameters,
-                "trainable": trainable_parameters,
+                "trainable": total_parameters,
+                "branches": branch_parameters,
+                "neural_rooter": neural_rooter_parameters,
+                "ridge_rooter": ridge_rooter_parameters,
+                "branches_plus_ridge_rooter": branch_parameters + ridge_rooter_parameters,
             },
             "normalization": args.normalization,
             "adapt_payload": str(adapt_payload_path),
-            "validation_fraction": args.validation_fraction,
             "eval_payload": str(eval_payload_path) if eval_payload_path else None,
-            "epochs": args.epochs,
-            "epochs_requested": args.epochs,
-            "steps": step,
-            "steps_per_epoch": steps_per_epoch,
-            "valid_eval_freq": valid_eval_freq,
-            "logging_eval_freq": logging_eval_freq,
-            "best_validation_step": best_step,
-            "best_validation_nmse": best_valid_nmse if best_step is not None else None,
-            "restored_best_validation": restore_best and best_state is not None,
-            "stopped_early": stopped_early,
+            "branch_epochs": branch_epochs,
+            "rooter_epochs": rooter_epochs,
         },
         checkpoint_path,
     )
-    save_json(history_path, {"history": history, "train_steps": train_steps})
-    save_json(metrics_path, final_eval)
-    torch.save(
+    save_json(
+        history_path,
         {
-            "format_version": 1,
-            "split": "eval",
-            "predictions": eval_predictions,
+            "history": [*branch_history, *rooter_history],
+            "branch_history": branch_history,
+            "rooter_history": rooter_history,
+            "train_steps": [*branch_steps, *rooter_steps],
         },
-        predictions_path,
     )
-    plot_loss_curve(
-        history,
-        plot_path,
-        train_steps=train_steps,
-        plot_step_train_loss=args.plot_step_train_loss,
-    )
+    save_json(metrics_path, final_eval)
+    plot_training(branch_history, rooter_history, plot_path)
     save_json(
         config_path,
         {
             "name": "TS-IFA",
             "model": asdict(config),
+            "candidate_names": model.candidate_names,
             "parameters": {
                 "total": total_parameters,
-                "trainable": trainable_parameters,
+                "trainable": total_parameters,
+                "branches": branch_parameters,
+                "neural_rooter": neural_rooter_parameters,
+                "ridge_rooter": ridge_rooter_parameters,
+                "branches_plus_ridge_rooter": branch_parameters + ridge_rooter_parameters,
             },
             "training": {
-                "optimizer": "AdamW",
-                "lr": args.lr,
+                "pipeline": ["T1_branches", "T2_rooters", "T3_evaluation"],
+                "branch_optimizer": "AdamW",
+                "rooter_optimizer": "AdamW",
+                "branch_lr": args.branch_lr,
+                "rooter_lr": args.rooter_lr,
                 "weight_decay": args.weight_decay,
-                "loss": "normalized_mse",
                 "normalization": args.normalization,
-                "beta": args.beta,
-                "gamma": args.gamma,
-                "gamma_components": ["residual_delta", "memory_delta"],
-                "train_split": "T1",
-                "validation_split": "T2",
+                "regularizers": {
+                    "vanilla_anchor": args.vanilla_anchor,
+                    "coefficient_l2": args.coefficient_l2,
+                    "first_order_horizon_smoothness": args.horizon_smoothness,
+                },
+                "ridge_rooter_alpha": args.ridge_rooter_alpha,
+                "branch_train_split": "T1",
+                "rooter_train_split": "T2",
                 "final_eval_split": "T3",
+                "branch_epochs": branch_epochs,
+                "rooter_epochs": rooter_epochs,
                 "random_epoch_size": args.batch_size,
-                "steps_requested": total_steps,
-                "steps": step,
-                "steps_per_epoch": steps_per_epoch,
                 "valid_eval_freq": valid_eval_freq,
                 "logging_eval_freq": logging_eval_freq,
-                "plot_step_train_loss": bool(args.plot_step_train_loss),
-                "early_stopping_patience": args.early_stopping_patience,
-                "early_stopping_min_delta": args.early_stopping_min_delta,
-                "best_validation_step": best_step,
-                "best_validation_nmse": best_valid_nmse if best_step is not None else None,
-                "restored_best_validation": restore_best and best_state is not None,
-                "stopped_early": stopped_early,
-                "seconds": perf_counter() - start_time,
+                "seconds": perf_counter() - training_start,
+            },
+        },
+    )
+    result_manifest = output_dir / "result_manifest.json"
+    save_json(
+        result_manifest,
+        {
+            "format": "adaptation_ts_ifa_result",
+            "files": {
+                "checkpoint": checkpoint_path.name,
+                "branches": branches_path.name,
+                "ridge_rooter": ridge_path.name,
+                "history": history_path.name,
+                "metrics": metrics_path.name,
+                "predictions": prediction_manifest.name,
+                "config": config_path.name,
+                "plot": plot_path.name,
             },
         },
     )
@@ -860,11 +1259,14 @@ def main() -> dict[str, Path]:
     log_experiment_separator(LOGGER)
     return {
         "checkpoint": checkpoint_path,
+        "branches": branches_path,
+        "ridge_rooter": ridge_path,
         "history": history_path,
         "metrics": metrics_path,
-        "predictions": predictions_path,
+        "predictions": prediction_manifest,
         "config": config_path,
         "plot": plot_path,
+        "manifest": result_manifest,
     }
 
 

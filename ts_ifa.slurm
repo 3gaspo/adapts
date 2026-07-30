@@ -11,6 +11,10 @@
 #SBATCH --mem=40000
 
 # Select test, small, full (Chronos), or ultra (Chronos and TabPFN-TS).
+# One run reports all five candidates, the T2 ridge rooter, and full neural TS-IFA.
+# Optional controls include BRANCH_EPOCHS, ROOTER_EPOCHS, VANILLA_ANCHOR,
+# COEFFICIENT_L2, HORIZON_SMOOTHNESS, and RIDGE_ROOTER_ALPHA.
+# TRANSFORMED_EXPERT and LEARNABLE_TRANSFORMED_COVARIATE are both off by default.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

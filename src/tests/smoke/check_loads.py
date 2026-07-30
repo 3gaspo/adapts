@@ -18,7 +18,10 @@ if str(ROOT) not in sys.path:
 
 from src.data.load_dataset import load_csv_dataset, resolve_csv_path, split_bounds  # noqa: E402
 from src.data.neighbors import aligned_store_dates, build_window_batch, period_eval_dates  # noqa: E402
-from src.experiments.extraction import context_on_query_scale  # noqa: E402
+from src.experiments.extraction import (  # noqa: E402
+    context_on_query_scale,
+    transformed_past_covariates,
+)
 from src.models.chronos_model import Chronos  # noqa: E402
 from src.models.models import ForecastModel, Linear, load_pretrained_model, parameter_counts  # noqa: E402
 
@@ -158,6 +161,13 @@ def main() -> None:
         lags=2,
     )
     torch.testing.assert_close(scaled_context, torch.tensor([[[3.0, 7.0, 9.0, 11.0]]]))
+    transformed = transformed_past_covariates(
+        torch.tensor([[[-4.0, -1.0, 0.0, 9.0]]])
+    )
+    torch.testing.assert_close(
+        transformed,
+        torch.tensor([[[-1.0, -1.0, 0.0, 1.0], [2.0, 1.0, 0.0, 3.0]]]),
+    )
 
     assert split_bounds(100, "0.3,0.5,0.2") == (30, 80, 100)
     eval_dates = period_eval_dates(

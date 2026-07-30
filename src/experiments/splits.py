@@ -39,21 +39,22 @@ def chronological_resplit_arrays(
     train_dates = unique_dates[train_slice]
     valid_dates = unique_dates[valid_slice]
     boundary = valid_dates[0]
-    train_mask = query_t < boundary
-    valid_mask = query_t >= boundary
+    if np.any(query_t[1:] < query_t[:-1]):
+        raise ValueError("query_t must be chronologically ordered")
+    boundary_row = int(np.searchsorted(query_t, boundary, side="left"))
     n_samples = query_t.shape[0]
     for name, value in arrays.items():
         if value.shape[0] != n_samples:
             raise ValueError(f"array {name!r} is not aligned with query_t")
-    train = {name: value[train_mask] for name, value in arrays.items()}
-    valid = {name: value[valid_mask] for name, value in arrays.items()}
+    train = {name: value[:boundary_row] for name, value in arrays.items()}
+    valid = {name: value[boundary_row:] for name, value in arrays.items()}
     metadata = {
         "validation_fraction": float(validation_fraction),
         "available_dates": int(len(unique_dates)),
         "t1_dates": int(len(train_dates)),
         "t2_dates": int(len(valid_dates)),
-        "t1_samples": int(train_mask.sum()),
-        "t2_samples": int(valid_mask.sum()),
+        "t1_samples": boundary_row,
+        "t2_samples": n_samples - boundary_row,
         "t1_first_query_date": int(train_dates[0]),
         "t1_last_query_date": int(train_dates[-1]),
         "t2_first_query_date": int(valid_dates[0]),

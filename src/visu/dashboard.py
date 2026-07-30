@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import csv
 from html import escape
+import json
 from pathlib import Path
+import re
 from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
+from src.experiments.artifacts import validate_extraction
+from src.experiments.prediction_store import load_prediction_store
 
 
 def torch_load(path: str | Path) -> dict[str, Any]:
@@ -29,9 +35,16 @@ def _flatten_optional(payload: dict[str, Any], key: str) -> np.ndarray | None:
     return _flatten(value)
 
 
-def load_dashboard_data(run_dir: str | Path) -> dict[str, Any]:
-    """Load extraction, baseline, and optional TS-IFA plotting artifacts."""
-    root = Path(run_dir).expanduser()
+def load_dashboard_data(
+    extraction_dir: str | Path,
+    result_dir: str | Path,
+) -> dict[str, Any]:
+    """Load current extraction and completed result artifacts."""
+    root = Path(extraction_dir).expanduser()
+    result_root = Path(result_dir).expanduser()
+    extraction_complete, extraction_reason = validate_extraction(root)
+    if not extraction_complete:
+        raise ValueError(f"Extraction is not complete: {extraction_reason}")
     extracted: dict[str, dict[str, Any]] = {}
     for split in ("adapt", "eval"):
         path = root / f"{split}_prediction_payload.pt"
@@ -40,38 +53,96 @@ def load_dashboard_data(run_dir: str | Path) -> dict[str, Any]:
     if not extracted:
         raise FileNotFoundError(f"No *_prediction_payload.pt files found under {root}")
 
-    visualization_paths = [
-        root / "baseline_adapters" / "visualization_payload.pt",
-        root / "baselines" / "visualization_payload.pt",
-        root / "gates" / "visualization_payload.pt",
+    result_specs = [
+        (result_root / "baselines", "adaptation_evaluation_result", "baselines"),
+        (result_root / "gates", "adaptation_evaluation_result", "gates"),
+        (result_root / "ts_ifa" / "TS-IFA", "adaptation_ts_ifa_result", None),
     ]
     baseline: dict[str, Any] = {"splits": {}}
-    for path in visualization_paths:
-        if not path.exists():
+    baseline_artifacts: dict[str, Any] = {"models": {}}
+    gate_importances: dict[str, dict[str, np.ndarray]] = {}
+    ts_ifa_artifacts: dict[str, Any] = {}
+    loaded_result_dirs: list[Path] = []
+    for current_dir, expected_format, expected_family in result_specs:
+        result_manifest = current_dir / "result_manifest.json"
+        if not result_manifest.exists():
             continue
-        payload = torch_load(path)
-        for split, split_payload in payload.get("splits", {}).items():
+        completion = json.loads(result_manifest.read_text(encoding="utf-8"))
+        if completion.get("format") != expected_format:
+            raise ValueError(f"{result_manifest} is not a current result manifest")
+        if expected_family is not None and completion.get("family") != expected_family:
+            raise ValueError(f"{result_manifest} has the wrong result family")
+        if completion.get("files", {}).get("predictions") != "prediction_manifest.json":
+            raise ValueError(f"{result_manifest} does not index current predictions")
+        payload = load_prediction_store(current_dir)
+        loaded_result_dirs.append(current_dir)
+        for split, split_payload in payload["splits"].items():
             merged = baseline["splits"].setdefault(
                 split, {"predictions": {}, "gate_diagnostics": {}}
             )
             merged["predictions"].update(split_payload.get("predictions", {}))
             merged["gate_diagnostics"].update(split_payload.get("gate_diagnostics", {}))
-    combined_visualization_path = next(
-        (path for path in visualization_paths if path.exists()),
-        root / "baselines" / "visualization_payload.pt",
-    )
-    ts_ifa_path = root / "ts_ifa" / "eval_predictions.pt"
-    ts_ifa = torch_load(ts_ifa_path) if ts_ifa_path.exists() else {"predictions": {}}
+        files = completion.get("files", {})
+        if expected_family == "baselines":
+            artifact_path = current_dir / str(files.get("artifacts", ""))
+            if not artifact_path.is_file():
+                raise FileNotFoundError(f"Missing baseline artifacts: {artifact_path}")
+            baseline_artifacts = torch_load(artifact_path)
+            if baseline_artifacts.get("format") != "adaptation_baseline_models":
+                raise ValueError(f"{artifact_path} is not a current baseline artifact")
+        elif expected_family == "gates":
+            artifact_path = current_dir / str(files.get("artifacts", ""))
+            if not artifact_path.is_file():
+                raise FileNotFoundError(f"Missing gate artifacts: {artifact_path}")
+            gate_artifacts = json.loads(artifact_path.read_text(encoding="utf-8"))
+            if gate_artifacts.get("format") != "adaptation_gate_models":
+                raise ValueError(f"{artifact_path} is not a current gate artifact")
+            for relative in gate_artifacts.get("feature_importance_files", []):
+                importance_path = current_dir / str(relative)
+                if importance_path.suffix.lower() != ".csv":
+                    continue
+                method_suffix = importance_path.stem.removeprefix("feature_importance_")
+                with importance_path.open(newline="", encoding="utf-8") as handle:
+                    rows = list(csv.DictReader(handle))
+                gate_importances[f"catboost_{method_suffix}"] = {
+                    "feature": np.asarray([row["feature"] for row in rows], dtype=object),
+                    "importance": np.asarray(
+                        [float(row["importance"]) for row in rows],
+                        dtype=np.float64,
+                    ),
+                }
+        elif expected_family is None:
+            ridge_path = current_dir / str(files.get("ridge_rooter", ""))
+            if not ridge_path.is_file():
+                raise FileNotFoundError(f"Missing TS-IFA ridge rooter: {ridge_path}")
+            ridge_payload = torch_load(ridge_path)
+            ts_ifa_artifacts = {
+                "candidate_names": list(
+                    ridge_payload.get(
+                        "candidate_names",
+                        payload.get("metadata", {}).get("candidate_names", []),
+                    )
+                ),
+                "ridge_rooter_coefficients": np.asarray(
+                    ridge_payload["coefficients"].detach().cpu(),
+                    dtype=np.float64,
+                ),
+            }
 
     data = {
         "run_dir": root,
+        "result_dir": result_root,
         "extracted": extracted,
         "baseline": baseline,
-        "ts_ifa": ts_ifa,
+        "baseline_artifacts": baseline_artifacts,
+        "gate_importances": gate_importances,
+        "ts_ifa_artifacts": ts_ifa_artifacts,
         "paths": {
-            "baseline": combined_visualization_path,
-            "gates": root / "gates" / "visualization_payload.pt",
-            "ts_ifa": ts_ifa_path,
+            "extraction_manifest": root / "extraction_manifest.json",
+            "results": [
+                result_dir / "prediction_manifest.json"
+                for result_dir in loaded_result_dirs
+            ],
         },
     }
     for split in extracted:
@@ -114,15 +185,6 @@ def split_arrays(data: dict[str, Any], split: str) -> dict[str, Any]:
     baseline_split = data["baseline"].get("splits", {}).get(split, {})
     for name, value in baseline_split.get("predictions", {}).items():
         predictions[name] = np.asarray(value)
-    if split == "eval":
-        for name, value in data["ts_ifa"].get("predictions", {}).items():
-            if torch.is_tensor(value) and value.numel() > 0:
-                prediction = value.numpy()
-                if prediction.shape[0] < dates * users:
-                    padded = np.full((dates * users, prediction.shape[1]), np.nan, dtype=prediction.dtype)
-                    padded[: prediction.shape[0]] = prediction
-                    prediction = padded
-                predictions[name] = prediction
     n_samples = dates * users
     invalid = {name: value.shape for name, value in predictions.items() if value.shape[0] != n_samples}
     if invalid:
@@ -346,6 +408,12 @@ def _format_metric_value(value: float) -> str:
     return f"{value:.3e}"
 
 
+def _symlog_linthresh(values: np.ndarray) -> float:
+    finite = np.abs(np.asarray(values, dtype=np.float64))
+    finite = finite[np.isfinite(finite) & (finite > 0.0)]
+    return max(float(np.nanpercentile(finite, 10)), 1e-8) if finite.size else 1.0
+
+
 def horizon_values(
     data: dict[str, Any],
     split: str,
@@ -428,6 +496,8 @@ def plot_window_metric_scatter(
     view: str,
     scalar_feature_name: str,
     *,
+    x_log_scale: bool = False,
+    y_log_scale: bool = False,
     max_points: int = 5000,
 ) -> plt.Figure:
     feature_map = scalar_feature_values(data, split)
@@ -462,6 +532,10 @@ def plot_window_metric_scatter(
         ax.axhline(0.0, color="0.4", linewidth=1, linestyle="--")
     ax.set_xlabel(scalar_feature_name)
     ax.set_ylabel(ylabel)
+    if x_log_scale:
+        ax.set_xscale("symlog", linthresh=_symlog_linthresh(x_values))
+    if y_log_scale:
+        ax.set_yscale("symlog", linthresh=_symlog_linthresh(y_values))
     title = f"{split}: {prediction_name} - {metric} ({view})"
     if view != "direct":
         title += f" vs {reference_name}"
@@ -513,60 +587,53 @@ def plot_horizon(
     return fig
 
 
+def _relative_improvement_pct(reference: float, current: float) -> float:
+    if not np.isfinite(reference) or not np.isfinite(current) or abs(reference) <= 1e-12:
+        return float("nan")
+    return float(100.0 * (reference - current) / reference)
+
+
+def _gate_candidate_prediction_name(gate_name: str) -> str:
+    match = re.fullmatch(
+        r"(?:bayes|catboost|oracle)_(context|aggr_y)(?:_[a-z]+)?_(?:shared|horizon)",
+        gate_name,
+    )
+    if match is None:
+        raise ValueError(f"Cannot identify the gated candidate from {gate_name!r}")
+    return "context_forecast" if match.group(1) == "context" else "aggr_y"
+
+
 def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
     options: list[tuple[str, str]] = []
     for key in sorted(diagnostics):
-        if not key.endswith("_score") or "_bayes_" in key:
+        match = re.fullmatch(
+            r"(catboost_(context|aggr_y)_(classifier|regressor)_(shared|horizon))_score",
+            key,
+        )
+        if match is None:
             continue
-        stem = key.removesuffix("_score")
-        if f"{stem}_target" not in diagnostics:
+        stem, candidate, _, shape = match.groups()
+        if f"{candidate}_{shape}_target" not in diagnostics:
             continue
         label = stem.replace("_", " ")
-        if stem.endswith("_horizon"):
+        if shape == "horizon":
             label += " (all horizons)"
         options.append((label, stem))
-    # Backward-compatible options for artifacts produced before gate families
-    # were split into classifier and regressor variants.
-    if "scalar_score" in diagnostics:
-        options.append(("scalar gate", "scalar"))
-    if "horizon_score" in diagnostics:
-        options.append(("horizon gate (all horizons)", "horizon_all"))
     return options
 
 
 def _gate_score_target(data: dict[str, Any], split: str, gate_name: str) -> tuple[np.ndarray, np.ndarray]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
-    direct_score = f"{gate_name}_score"
-    direct_target = f"{gate_name}_target"
-    if direct_score in diagnostics and direct_target in diagnostics:
-        score = diagnostics[direct_score]
-        target = diagnostics[direct_target]
-    elif gate_name == "scalar":
-        score = diagnostics["scalar_score"].reshape(-1)
-        target = diagnostics["scalar_target"].reshape(-1)
-    elif gate_name == "horizon_all":
-        score = diagnostics["horizon_score"]
-        target = diagnostics["horizon_target"]
-    elif gate_name.startswith("horizon_"):
-        horizon = int(gate_name.rsplit("_", 1)[1])
-        score = diagnostics["horizon_score"][:, horizon]
-        target = diagnostics["horizon_target"][:, horizon]
-    elif gate_name.endswith("_scalar"):
-        objective = gate_name.removesuffix("_scalar")
-        score = diagnostics[f"{objective}_scalar_score"].reshape(-1)
-        target = diagnostics[f"{objective}_scalar_target"].reshape(-1)
-    elif gate_name.endswith("_horizon_all"):
-        objective = gate_name.removesuffix("_horizon_all")
-        score = diagnostics[f"{objective}_horizon_score"]
-        target = diagnostics[f"{objective}_horizon_target"]
-    elif "_horizon_" in gate_name:
-        objective, horizon_text = gate_name.rsplit("_horizon_", 1)
-        horizon = int(horizon_text)
-        score = diagnostics[f"{objective}_horizon_score"][:, horizon]
-        target = diagnostics[f"{objective}_horizon_target"][:, horizon]
-    else:
+    match = re.fullmatch(
+        r"catboost_(context|aggr_y)_(classifier|regressor)_(shared|horizon)",
+        gate_name,
+    )
+    if match is None:
         raise ValueError(gate_name)
+    candidate, _, shape = match.groups()
+    score = diagnostics[f"{gate_name}_score"]
+    target = diagnostics[f"{candidate}_{shape}_target"]
     return np.asarray(score, dtype=np.float64), np.asarray(target, dtype=np.float64)
 
 
@@ -662,23 +729,47 @@ def _nmse_for_prediction(arrays: dict[str, Any], prediction_name: str) -> float:
 
 def gate_summary_rows(data: dict[str, Any], split: str) -> list[dict[str, float | str]]:
     arrays = split_arrays(data, split)
+    vanilla_nmse = _nmse_for_prediction(arrays, "vanilla")
+    context_nmse = _nmse_for_prediction(arrays, "context_forecast")
     rows: list[dict[str, float | str]] = []
     for name in gate_prediction_names(data, split):
+        nmse = _nmse_for_prediction(arrays, name)
         rows.append(
             {
                 "name": name,
                 "shape": _gate_shape(name),
                 "right_pct": _gate_right_percent(arrays, name),
-                "nmse": _nmse_for_prediction(arrays, name),
+                "nmse": nmse,
+                "relative_nmse_pct": (
+                    float(100.0 * nmse / vanilla_nmse)
+                    if abs(vanilla_nmse) > 1e-12
+                    else float("nan")
+                ),
+                "improvement_vanilla_pct": _relative_improvement_pct(vanilla_nmse, nmse),
+                "improvement_context_pct": _relative_improvement_pct(context_nmse, nmse),
             }
         )
     return rows
 
 
-def gate_summary_html(rows: list[dict[str, float | str]]) -> str:
+def gate_summary_html(
+    rows: list[dict[str, float | str]],
+    *,
+    vanilla_nmse: float,
+    context_nmse: float,
+) -> str:
+    summary = (
+        f"<p><b>References:</b> vanilla nMSE={_format_metric_value(vanilla_nmse)}; "
+        f"context-informed nMSE={_format_metric_value(context_nmse)}.</p>"
+    )
     if not rows:
-        return "<b>No gate or oracle predictions found.</b>"
-    header = "<tr><th>gate/oracle</th><th>shape</th><th>% right</th><th>nMSE</th></tr>"
+        return summary + "<b>No gate or oracle predictions found.</b>"
+    header = (
+        "<tr><th>gate/oracle</th><th>shape</th><th>% right</th>"
+        "<th>nMSE to y</th><th>relative nMSE vs vanilla (%)</th>"
+        "<th>improvement vs vanilla (%)</th>"
+        "<th>improvement vs context-informed (%)</th></tr>"
+    )
     body = []
     for row in rows:
         body.append(
@@ -687,10 +778,14 @@ def gate_summary_html(rows: list[dict[str, float | str]]) -> str:
             f"<td>{escape(str(row['shape']))}</td>"
             f"<td>{_format_metric_value(float(row['right_pct']))}</td>"
             f"<td>{_format_metric_value(float(row['nmse']))}</td>"
+            f"<td>{_format_metric_value(float(row['relative_nmse_pct']))}</td>"
+            f"<td>{_format_metric_value(float(row['improvement_vanilla_pct']))}</td>"
+            f"<td>{_format_metric_value(float(row['improvement_context_pct']))}</td>"
             "</tr>"
         )
     return (
-        "<table>"
+        summary
+        + "<table>"
         "<style>table{border-collapse:collapse}td,th{border:1px solid #bbb;padding:3px 6px;text-align:right}"
         "td:first-child,th:first-child{text-align:left}</style>"
         + header
@@ -705,7 +800,7 @@ def gate_threshold_sweep(
     gate_name: str,
     *,
     points: int = 101,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> dict[str, np.ndarray]:
     arrays = split_arrays(data, split)
     score, target = _gate_score_target(data, split, gate_name)
     score = np.asarray(score, dtype=np.float64)
@@ -715,46 +810,235 @@ def gate_threshold_sweep(
         raise ValueError(f"No finite gate scores for {gate_name}")
     thresholds = np.linspace(float(np.nanmin(finite_score)), float(np.nanmax(finite_score)), points)
     vanilla = np.asarray(arrays["predictions"]["vanilla"], dtype=np.float64)
-    context = np.asarray(arrays["predictions"]["context_forecast"], dtype=np.float64)
+    candidate_name = _gate_candidate_prediction_name(gate_name)
+    candidate = np.asarray(arrays["predictions"][candidate_name], dtype=np.float64)
     y = np.asarray(arrays["y"], dtype=np.float64)
     x = np.asarray(arrays["x"], dtype=np.float64)
     right_pct = np.empty_like(thresholds)
+    true_positive_rate_pct = np.empty_like(thresholds)
     nmse = np.empty_like(thresholds)
+    relative_improvement_vanilla_pct = np.empty_like(thresholds)
     target_label = target > 0.0
     finite_target = np.isfinite(score) & np.isfinite(target)
     scalar_gate = score.ndim == 1
+    vanilla_values, _ = _prediction_metric_values(vanilla, y, x, "nmse")
+    vanilla_nmse = float(np.nanmean(vanilla_values))
     for index, threshold in enumerate(thresholds):
         decision = score > threshold
         if scalar_gate:
             right_mask = finite_target
-            prediction = np.where(decision[:, None], context, vanilla)
+            prediction = np.where(decision[:, None], candidate, vanilla)
         else:
             right_mask = finite_target
-            prediction = np.where(decision, context, vanilla)
+            prediction = np.where(decision, candidate, vanilla)
         right_pct[index] = (
             100.0 * np.mean(decision[right_mask] == target_label[right_mask])
             if np.any(right_mask)
             else np.nan
         )
+        positive_mask = right_mask & target_label
+        true_positive_rate_pct[index] = (
+            100.0 * np.mean(decision[positive_mask])
+            if np.any(positive_mask)
+            else np.nan
+        )
         metric_values, _ = _prediction_metric_values(prediction, y, x, "nmse")
         nmse[index] = np.nanmean(metric_values)
-    return thresholds, right_pct, nmse
+        relative_improvement_vanilla_pct[index] = _relative_improvement_pct(
+            vanilla_nmse,
+            float(nmse[index]),
+        )
+    return {
+        "threshold": thresholds,
+        "right_pct": right_pct,
+        "true_positive_rate_pct": true_positive_rate_pct,
+        "nmse": nmse,
+        "relative_improvement_vanilla_pct": relative_improvement_vanilla_pct,
+    }
 
 
 def plot_gate_threshold_sweep(data: dict[str, Any], split: str, gate_name: str) -> plt.Figure:
-    thresholds, right_pct, nmse = gate_threshold_sweep(data, split, gate_name)
-    fig, (ax_right, ax_nmse) = plt.subplots(1, 2, figsize=(12, 4.5))
-    ax_right.plot(thresholds, right_pct, linewidth=2.1)
+    values = gate_threshold_sweep(data, split, gate_name)
+    thresholds = values["threshold"]
+    fig, (ax_right, ax_nmse, ax_improvement) = plt.subplots(1, 3, figsize=(17, 4.5))
+    ax_right.plot(thresholds, values["right_pct"], linewidth=2.1, label="% right")
+    ax_right.plot(
+        thresholds,
+        values["true_positive_rate_pct"],
+        linewidth=2.1,
+        label="true-positive rate",
+    )
     ax_right.axvline(0.0, color="0.4", linewidth=1, linestyle="--")
     ax_right.set_xlabel("Decision threshold")
-    ax_right.set_ylabel("% right")
+    ax_right.set_ylabel("Percent")
+    ax_right.legend(loc="best")
     ax_right.grid(True, alpha=0.25)
-    ax_nmse.plot(thresholds, nmse, linewidth=2.1, color="tab:orange")
+    ax_nmse.plot(thresholds, values["nmse"], linewidth=2.1, color="tab:orange")
     ax_nmse.axvline(0.0, color="0.4", linewidth=1, linestyle="--")
     ax_nmse.set_xlabel("Decision threshold")
     ax_nmse.set_ylabel("nMSE")
     ax_nmse.grid(True, alpha=0.25)
+    ax_improvement.plot(
+        thresholds,
+        values["relative_improvement_vanilla_pct"],
+        linewidth=2.1,
+        color="tab:green",
+    )
+    ax_improvement.axhline(0.0, color="0.4", linewidth=1, linestyle="--")
+    ax_improvement.axvline(0.0, color="0.4", linewidth=1, linestyle="--")
+    ax_improvement.set_xlabel("Decision threshold")
+    ax_improvement.set_ylabel("nMSE improvement vs vanilla (%)")
+    ax_improvement.grid(True, alpha=0.25)
     fig.suptitle(f"{split}: {gate_name} threshold sweep")
+    fig.tight_layout()
+    return fig
+
+
+def baseline_importance_options(data: dict[str, Any]) -> list[str]:
+    return sorted(data.get("baseline_artifacts", {}).get("models", {}))
+
+
+def baseline_feature_importance(
+    data: dict[str, Any],
+    baseline_name: str,
+) -> tuple[list[str], np.ndarray, str]:
+    model = data["baseline_artifacts"]["models"][baseline_name]
+    if model["kind"] == "ridge":
+        coefficients = np.asarray(model["coef"], dtype=np.float64)
+        importance = (
+            np.abs(coefficients)
+            if coefficients.ndim == 1
+            else np.nanmean(np.abs(coefficients), axis=0)
+        )
+        names = [str(name) for name in model["signals"]]
+        detail = (
+            "absolute shared coefficient"
+            if coefficients.ndim == 1
+            else "mean absolute coefficient over horizons"
+        )
+    elif model["kind"] == "lambda":
+        coefficients = np.asarray(model["lambda"], dtype=np.float64)
+        importance = np.asarray([float(np.nanmean(np.abs(coefficients)))])
+        names = ["aggr_y"]
+        detail = (
+            "absolute mixing coefficient"
+            if coefficients.ndim == 0
+            else "mean absolute mixing coefficient over horizons"
+        )
+    else:
+        raise ValueError(f"Unsupported baseline artifact kind: {model['kind']!r}")
+    return names, importance, detail
+
+
+def _plot_importance_bars(
+    names: list[str] | np.ndarray,
+    importance: np.ndarray,
+    *,
+    title: str,
+    xlabel: str,
+) -> plt.Figure:
+    names_array = np.asarray(names, dtype=object)
+    values = np.asarray(importance, dtype=np.float64)
+    order = np.argsort(values)
+    fig, ax = plt.subplots(figsize=(8, max(3.0, 0.42 * len(values))))
+    ax.barh(names_array[order], values[order])
+    ax.set_xlabel(xlabel)
+    ax.set_title(title)
+    ax.grid(True, axis="x", alpha=0.25)
+    fig.tight_layout()
+    return fig
+
+
+def plot_baseline_feature_importance(
+    data: dict[str, Any],
+    baseline_name: str,
+) -> plt.Figure:
+    names, importance, detail = baseline_feature_importance(data, baseline_name)
+    return _plot_importance_bars(
+        names,
+        importance,
+        title=f"{baseline_name}: coefficient importance",
+        xlabel=detail,
+    )
+
+
+def gate_importance_options(data: dict[str, Any]) -> list[str]:
+    return sorted(data.get("gate_importances", {}))
+
+
+def plot_gate_feature_importance(
+    data: dict[str, Any],
+    gate_name: str,
+) -> plt.Figure:
+    values = data["gate_importances"][gate_name]
+    return _plot_importance_bars(
+        values["feature"],
+        values["importance"],
+        title=f"{gate_name}: CatBoost feature importance",
+        xlabel="Mean CatBoost feature importance",
+    )
+
+
+def ts_ifa_coefficient_options(data: dict[str, Any]) -> list[tuple[str, str]]:
+    artifacts = data.get("ts_ifa_artifacts", {})
+    options: list[tuple[str, str]] = []
+    if "ridge_rooter_coefficients" in artifacts:
+        options.append(("ridge rooter", "ridge_rooter"))
+    diagnostics = (
+        data.get("baseline", {})
+        .get("splits", {})
+        .get("eval", {})
+        .get("gate_diagnostics", {})
+    )
+    if "neural_rooter_coefficients" in diagnostics:
+        options.append(("neural rooter (mean over T3 windows)", "neural_rooter_mean"))
+    return options
+
+
+def ts_ifa_coefficients(data: dict[str, Any], coefficient_name: str) -> tuple[np.ndarray, list[str]]:
+    artifacts = data["ts_ifa_artifacts"]
+    names = [str(name) for name in artifacts.get("candidate_names", [])]
+    if coefficient_name == "ridge_rooter":
+        values = np.asarray(artifacts["ridge_rooter_coefficients"], dtype=np.float64)
+    elif coefficient_name == "neural_rooter_mean":
+        diagnostics = data["baseline"]["splits"]["eval"]["gate_diagnostics"]
+        values = np.nanmean(
+            np.asarray(diagnostics["neural_rooter_coefficients"], dtype=np.float64),
+            axis=0,
+        )
+    else:
+        raise ValueError(f"Unknown TS-IFA coefficient view: {coefficient_name}")
+    if values.ndim != 2:
+        raise ValueError(f"TS-IFA coefficients must be candidate x horizon, found {values.shape}")
+    if not names:
+        names = [f"candidate {index + 1}" for index in range(values.shape[0])]
+    if len(names) != values.shape[0]:
+        raise ValueError(
+            f"TS-IFA candidate-name mismatch: {len(names)} names for {values.shape[0]} rows"
+        )
+    return values, names
+
+
+def plot_ts_ifa_coefficients(
+    data: dict[str, Any],
+    coefficient_name: str,
+) -> plt.Figure:
+    values, names = ts_ifa_coefficients(data, coefficient_name)
+    maximum = max(float(np.nanmax(np.abs(values))), 1e-8)
+    fig, ax = plt.subplots(figsize=(max(9.0, 0.08 * values.shape[1]), max(3.5, 0.55 * len(names))))
+    image = ax.imshow(
+        values,
+        aspect="auto",
+        interpolation="nearest",
+        cmap="coolwarm",
+        vmin=-maximum,
+        vmax=maximum,
+    )
+    ax.set_xlabel("Forecast horizon")
+    ax.set_ylabel("Candidate")
+    ax.set_yticks(np.arange(len(names)), labels=names)
+    ax.set_title(f"TS-IFA {coefficient_name.replace('_', ' ')} coefficients")
+    fig.colorbar(image, ax=ax, label="Coefficient")
     fig.tight_layout()
     return fig
 
@@ -767,10 +1051,14 @@ def _preview_names(names: list[str], limit: int = 6) -> str:
 
 
 def data_summary(data: dict[str, Any]) -> str:
+    manifests = data["paths"]["results"]
     lines = [
         "Loaded splits: " + ", ".join(available_splits(data)),
-        f"Baseline visualization payload: {data['paths']['baseline']} {data['paths']['baseline'].exists()}",
-        f"TS-IFA prediction payload: {data['paths']['ts_ifa']} {data['paths']['ts_ifa'].exists()}",
+        "Current prediction manifests: "
+        + (", ".join(str(path) for path in manifests) if manifests else "none"),
+        f"Baseline coefficient models: {len(baseline_importance_options(data))}",
+        f"Gate feature-importance models: {len(gate_importance_options(data))}",
+        f"TS-IFA coefficient views: {len(ts_ifa_coefficient_options(data))}",
     ]
     for split in available_splits(data):
         arrays = split_arrays(data, split)
@@ -873,13 +1161,8 @@ def window_scatter_section(data: dict[str, Any]) -> Any:
         value=_default_scalar_feature(scatter_features) if scatter_features else "",
         description="x:",
     )
-    scatter_help = widgets.HTML(
-        value=(
-            "<small>Each point is one query window. The y-axis first averages L_i,h over horizons "
-            "for that window; relative view is then computed per window as "
-            "(L_i(y')-L_i(y''))/L_i(y'').</small>"
-        )
-    )
+    scatter_log_x = widgets.ToggleButton(value=False, description="log x", icon="arrows-h")
+    scatter_log_y = widgets.ToggleButton(value=False, description="log y", icon="arrows-v")
     scatter_output = widgets.Output()
 
     def update_scatter_controls(*_: Any, redraw: bool = True) -> None:
@@ -904,6 +1187,8 @@ def window_scatter_section(data: dict[str, Any]) -> Any:
                 scatter_metric.value,
                 scatter_view.value,
                 scatter_feature.value,
+                x_log_scale=scatter_log_x.value,
+                y_log_scale=scatter_log_y.value,
             )
             display(fig)
             plt.close(fig)
@@ -920,14 +1205,22 @@ def window_scatter_section(data: dict[str, Any]) -> Any:
         draw_scatter()
 
     scatter_split.observe(update_scatter_names, names="value")
-    for control in [scatter_prediction, scatter_reference, scatter_metric, scatter_view, scatter_feature]:
+    for control in [
+        scatter_prediction,
+        scatter_reference,
+        scatter_metric,
+        scatter_view,
+        scatter_feature,
+        scatter_log_x,
+        scatter_log_y,
+    ]:
         control.observe(draw_scatter, names="value")
     section = widgets.VBox(
         [
             widgets.HBox([scatter_split, scatter_prediction]),
             widgets.HBox([scatter_metric, scatter_view, scatter_feature]),
+            widgets.HBox([scatter_log_x, scatter_log_y]),
             scatter_reference_box,
-            scatter_help,
             scatter_output,
         ]
     )
@@ -953,16 +1246,6 @@ def horizon_section(data: dict[str, Any]) -> Any:
     horizon_reference_box = widgets.HBox([horizon_reference])
     horizon_metric = widgets.Dropdown(options=["mse", "nmse", "difference"], value="mse", description="metric:")
     horizon_view = widgets.Dropdown(options=["direct", "improvement", "relative"], value="direct", description="view:")
-    horizon_help = widgets.HTML(
-        value=(
-            "<small>Metrics are computed per sample and horizon against ground truth: "
-            "mse=(y'-y)^2, nmse=((y'-y)/std(lookback))^2, difference=y'-y. "
-            "direct plots mean_i L_i,h(y'), improvement plots mean_i L_i,h(y')-mean_i L_i,h(y''), "
-            "and relative applies (A-B)/B after those horizon-wise means. "
-            "The title reports the mean of the plotted horizon values; relative view also reports "
-            "the per-window relative mean.</small>"
-        )
-    )
     horizon_output = widgets.Output()
 
     def update_horizon_controls(*_: Any, redraw: bool = True) -> None:
@@ -1001,7 +1284,6 @@ def horizon_section(data: dict[str, Any]) -> Any:
             widgets.HBox([horizon_split, horizon_prediction]),
             widgets.HBox([horizon_metric, horizon_view]),
             horizon_reference_box,
-            horizon_help,
             horizon_output,
         ]
     )
@@ -1027,10 +1309,19 @@ def gates_section(data: dict[str, Any]) -> Any:
     roc_summary = widgets.HTML()
     roc_output = widgets.Output()
     threshold_output = widgets.Output()
+    importance_output = widgets.Output()
 
     def refresh_gate_table() -> None:
         rows = gate_summary_rows(data, gate_split.value) if gate_split.value else []
-        gate_table.value = gate_summary_html(rows)
+        if not gate_split.value:
+            gate_table.value = "<b>No gate or oracle predictions found.</b>"
+            return
+        arrays = split_arrays(data, gate_split.value)
+        gate_table.value = gate_summary_html(
+            rows,
+            vanilla_nmse=_nmse_for_prediction(arrays, "vanilla"),
+            context_nmse=_nmse_for_prediction(arrays, "context_forecast"),
+        )
 
     def draw_gates(*_: Any) -> None:
         refresh_gate_table()
@@ -1054,6 +1345,14 @@ def gates_section(data: dict[str, Any]) -> Any:
                 fig = plot_gate_threshold_sweep(data, gate_split.value, gate_choice.value)
                 display(fig)
                 plt.close(fig)
+        with importance_output:
+            clear_output(wait=True)
+            if gate_choice.value in data.get("gate_importances", {}):
+                fig = plot_gate_feature_importance(data, gate_choice.value)
+                display(fig)
+                plt.close(fig)
+            elif gate_choice.value:
+                print(f"No saved feature importance for {gate_choice.value}.")
 
     def update_gate_options(*_: Any) -> None:
         options = gate_options(data, gate_split.value) if gate_split.value else [("no scored gate", "")]
@@ -1069,7 +1368,57 @@ def gates_section(data: dict[str, Any]) -> Any:
             roc_summary,
             roc_output,
             threshold_output,
+            importance_output,
         ]
     )
     draw_gates()
     return section
+
+
+def baseline_section(data: dict[str, Any]) -> Any:
+    widgets, clear_output, display = _notebook_runtime()
+    names = baseline_importance_options(data)
+    baseline_choice = widgets.Dropdown(
+        options=names or [""],
+        value=(names or [""])[0],
+        description="baseline:",
+    )
+    output = widgets.Output()
+
+    def draw_baseline(*_: Any) -> None:
+        with output:
+            clear_output(wait=True)
+            if not baseline_choice.value:
+                print("No fitted baseline coefficient artifacts were loaded.")
+                return
+            fig = plot_baseline_feature_importance(data, baseline_choice.value)
+            display(fig)
+            plt.close(fig)
+
+    baseline_choice.observe(draw_baseline, names="value")
+    draw_baseline()
+    return widgets.VBox([baseline_choice, output])
+
+
+def ts_ifa_section(data: dict[str, Any]) -> Any:
+    widgets, clear_output, display = _notebook_runtime()
+    options = ts_ifa_coefficient_options(data)
+    coefficient_choice = widgets.Dropdown(
+        options=options or [("no TS-IFA coefficients", "")],
+        description="rooter:",
+    )
+    output = widgets.Output()
+
+    def draw_coefficients(*_: Any) -> None:
+        with output:
+            clear_output(wait=True)
+            if not coefficient_choice.value:
+                print("No completed TS-IFA coefficient artifacts were loaded.")
+                return
+            fig = plot_ts_ifa_coefficients(data, coefficient_choice.value)
+            display(fig)
+            plt.close(fig)
+
+    coefficient_choice.observe(draw_coefficients, names="value")
+    draw_coefficients()
+    return widgets.VBox([coefficient_choice, output])

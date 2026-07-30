@@ -34,8 +34,8 @@ L2_GRID="${L2_GRID:-0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10}"
 VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
 FIT_BASELINES_ON_EVAL="${FIT_BASELINES_ON_EVAL:-false}"
 SEED="${SEED:-1}"
-MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-${MAX_TRAIN_FIT_SAMPLES:-}}"
-MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-${MAX_ORACLE_FIT_SAMPLES:-}}"
+MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-}"
+MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-}"
 MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
@@ -82,8 +82,15 @@ baseline_complete() {
   [ -s "$output/baseline_metrics.csv" ] &&
     [ -s "$output/baseline_metrics.json" ] &&
     [ -s "$output/baseline_artifacts.pt" ] &&
-    [ -s "$output/visualization_payload.pt" ] &&
-    [ -s "$output/baseline_timing.json" ]
+    [ -s "$output/prediction_manifest.json" ] &&
+    [ -s "$output/baseline_timing.json" ] &&
+    [ -s "$output/result_manifest.json" ] &&
+    grep -Eq '"format"[[:space:]]*:[[:space:]]*"adaptation_evaluation_result"' \
+      "$output/result_manifest.json" &&
+    grep -Eq '"family"[[:space:]]*:[[:space:]]*"baselines"' \
+      "$output/result_manifest.json" &&
+    grep -Eq '"format"[[:space:]]*:[[:space:]]*"adaptation_prediction_store"' \
+      "$output/prediction_manifest.json"
 }
 
 run_task() {
@@ -128,8 +135,9 @@ run_task() {
     "$OUTPUT_DIR/baseline_metrics.csv" \
     "$OUTPUT_DIR/baseline_metrics.json" \
     "$OUTPUT_DIR/baseline_artifacts.pt" \
-    "$OUTPUT_DIR/visualization_payload.pt" \
-    "$OUTPUT_DIR/baseline_timing.json"
+    "$OUTPUT_DIR/prediction_manifest.json" \
+    "$OUTPUT_DIR/baseline_timing.json" \
+    "$OUTPUT_DIR/result_manifest.json"
   log "baselines done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
 }
 

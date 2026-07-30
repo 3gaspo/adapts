@@ -6,76 +6,242 @@
 \begin{document}
 \maketitle
 
-\section{Theoretical overview and goal}
-TS-IFA is a trainable adapter around a frozen forecast backbone.  It forms four
-candidates: vanilla prediction $\hat y_0$, context-conditioned prediction
-$\hat y_c$, a residual-attention prediction $\hat y_r$, and a memory-attention
-prediction $\hat y_m$.  Cross-attention reads retrieved examples and the final
-forecast is a horizon-wise convex mixture
+\section{Final architecture}
+TS-IFA is a lightweight adapter around a frozen forecast backbone $F$.  All
+quantities below are expressed after query-scale instance normalization.  For a
+query history $x\in\mathbb R^L$, retrieved histories
+$x^c_j\in\mathbb R^L$, retrieved futures $y^c_j\in\mathbb R^H$, and $K$
+neighbors, define
 \[
- \hat y_h=\sum_{b\in\{0,c,r,m\}}\pi_{b,h}\hat y_{b,h},
- \qquad \pi_{b,h}=\operatorname{softmax}_b(a_{b,h}).
+ p=F(x),\qquad p^c=F(x;\{x^c_j,y^c_j\}_{j=1}^K),\qquad
+ n_j=F(x^c_j),\qquad e_j=y^c_j-n_j .
 \]
-Residual attention uses neighbor backbone errors as values; memory attention
-uses neighbor futures.  A third attention block produces mixture logits from
-query and neighbor look-backs.  The horizon-specific four-way mixture is the
-highest-capacity final component and is the first target for simplification if
-\Ttwo overfitting persists.
-
-\goal{Learn a small, backbone-agnostic adaptation mechanism that can exploit
-retrieved forecasts, outcomes, and errors while remaining anchored to the
-reliable vanilla forecast.}
-
-\section{Objective and initialization}
-With nMSE scaling, training minimizes
+An optional transformed frozen expert uses past-only covariates:
 \[
- \mathcal L=\mathcal L_{\rm pred}
- +\beta\lVert\hat y-\hat y_0\rVert^2_{\rm n}
- +\gamma\bigl(\lVert\Delta_r-(y-\hat y_0)\rVert^2_{\rm n}
- +\lVert\Delta_m-(y-\hat y_0)\rVert^2_{\rm n}\bigr).
+ \phi(x)=\bigl(\operatorname{sgn}(x),\sqrt{|x|}\bigr),\qquad
+ p^\phi=F(x;\text{past covariates } \phi(x)).
 \]
-Correction heads are zero-initialized.  Non-vanilla mixture logits start at
-$-6$, so the initial adapter is close to the backbone and learns deviations
-only when supported by data.
+No future value of $\phi$ is supplied.  A backbone that ignores past
+covariates simply gives $p^\phi=p$.  This extraction is disabled by default,
+so payloads created before this expert was introduced remain valid.
 
-\section{Implementation details}
-Extraction stores pooled \Tone+\Ttwo rather than prescribing their boundary.
-TS-IFA assigns the final 20\% of whole query dates in that pool to \Ttwo.
-This model-local split uses the same $X_s=(s-L,s]$, $Y_s=(s,s+H]$
-convention as every baseline.
+Independently, a learned transformed covariate may be enabled:
+\[
+ u_\psi=T_\psi(x)\in\mathbb R^H,\qquad
+ c_\phi=\widetilde p^\phi+G_\phi([\widetilde p^\phi,u_\psi]),
+ \qquad
+ \widetilde p^\phi=
+ \begin{cases}
+ p^\phi,&\text{if the precomputed expert is enabled},\\
+ p,&\text{otherwise}.
+ \end{cases}
+\]
+Both $T_\psi$ and $G_\phi$ are MLPs trained on \Tone.  Thus the learned
+covariate can be studied without rerunning extraction; enabling both options
+uses the precomputed sign/root forecast as its anchor.
 
-Each attention block uses four heads of dimension 32, followed by a 128-unit
-GELU MLP.  Inputs are instance-normalized on the query scale.  AdamW uses
-learning rate $10^{-5}$, weight decay $10^{-4}$, gradient clipping 1,
-$\beta=\gamma=10^{-2}$, batch size 256, and 10,000 epochs.  Every epoch draws
-one random batch from \Tone.  Full deterministic \Ttwo validation and interval
-logging occur every 1,000 optimizer steps; \Tthree is evaluated only after
-training.
+\subsection{Learned branches}
+Residual attention retrieves errors from analogous \emph{states}, not merely
+analogous histories:
+\[
+ q_r=[x,p],\qquad k^r_j=[x^c_j,n_j],\qquad v^r_j=e_j,
+ \qquad
+ z_r=A_r(q_r,\{k^r_j\},\{v^r_j\})\in\mathbb R^H,
+\]
+\[
+ c_r=p+M_r([p,z_r]).
+\]
+There is one query token and $K$ neighbor tokens.  Thus the attention produces
+one mixture over neighbors, not a separate attention distribution per forecast
+horizon.
 
-The trainer restores the lowest-nMSE \Ttwo checkpoint before touching
-\Tthree and can stop after a configurable number of non-improving validation
-evaluations.  The launcher enables best-checkpoint restoration but leaves early
-stopping disabled by default for backward-compatible optimization length.
-Unlike ridge and fixed-candidate CatBoost gates, TS-IFA is not refit on
-\Tone+\Ttwo after checkpoint selection: doing so would remove the validation
-signal used to select its weights.
-Dropout and reduced attention/MLP dimensions should be screened on one pilot
-configuration before widening the sweep.  A scalar/shared or low-rank final
-mixture is the next architecture ablation, not yet a default change.
+The memory branch reads retrieved horizons directly:
+\[
+ z_m=A_m(x,\{x^c_j\},\{y^c_j\})\in\mathbb R^H,\qquad
+ c_m=W_m[p,z_m]+M_m([p,z_m]).
+\]
+Unlike $c_r$, $c_m$ is a direct forecast rather than a named residual
+correction.  Its linear skip $W_m$ and nonlinear MLP jointly learn a mixture of
+the vanilla forecast and retrieved horizons.
 
-The small sweep covers Traffic/Electricity/Solar and the four RevIN reproduction
-settings with raw/instance Euclidean retrieval, $k\in\{1,3,10\}$, and Chronos.
-Full adds ETTh1 (all seven variables), Weather, Exchange, and 512--64 while retaining
-Chronos; ultra adds TabPFN-TS after the Chronos architecture is stable. Implementation is under
-\code{src/adaptors/ts\_ifa/}; the launcher is
-\code{ts\_ifa.slurm}. Saved artifacts include the model,
-resolved configuration, full step history, interval-average train and \Ttwo
-validation plot, \Tthree metrics, and branch predictions.
+\subsection{Candidate-conditioned, unconstrained rooter}
+The default four candidate forecasts are
+\[
+ (c_0,c_1,c_2,c_3)=(p,p^c,c_r,c_m).
+\]
+If either transformed option is enabled, the fifth candidate is inserted:
+\[
+(c_0,c_1,c_2,c_3,c_4)=(p,p^c,c_\phi,c_r,c_m),
+\]
+The rooter is deliberately not given hand-designed distances, neighbor
+dispersion, or retrieval statistics.  It learns its own retrieval state:
+\[
+ z_g=A_g(x,\{x^c_j\},\{x^c_j\})\in\mathbb R^D.
+\]
+Each active candidate has a learned type token $\tau_j\in\mathbb R^D$.  One MLP
+$S_\theta$, shared across candidates, produces an entire horizon-wise
+coefficient vector:
+\[
+ a_j=S_\theta\!\left(
+ \operatorname{LN}(z_g),\operatorname{LN}(p),
+ \operatorname{LN}(c_j),\operatorname{LN}(\tau_j)
+ \right)\in\mathbb R^H,
+\]
+\[
+ \boxed{\quad \widehat y
+ =p+\sum_{j=0}^{J-1}a_j\odot c_j,\qquad J\in\{4,5\}.\quad}
+\]
+The coefficients are unconstrained: there is no sigmoid, softmax, or convexity
+constraint.  This retains the extrapolation ability observed for ridge
+baselines.  The vanilla fallback is $a_j=0$ for every $j$.  A direct fallback
+to candidate $c_j$ is representable by $a_0=-1$, $a_j=1$, and all other
+coefficients zero.
+
+\section{Initialization and optional regularization}
+With vanilla-anchoring initialization enabled,
+\[
+ M_r^{\rm out}=0,\qquad W_m=[I_H\;\;0],\qquad M_m^{\rm out}=0,
+ \qquad G_\phi^{\rm out}=0,
+ \qquad S_\theta^{\rm out}=0.
+\]
+Consequently $c_r=c_m=\widehat y=p$ exactly at step zero; when the learned
+transformed branch is enabled, $c_\phi=\widetilde p^\phi$.  This initialization
+is optional; disabling it restores the standard PyTorch initialization.
+
+The branches are trained on \Tone with
+\[
+ \mathcal L_B=
+ \ell_n(c_r,y)+\ell_n(c_m,y)
+ +\mathbb I_{\rm learn\text{-}\phi}\ell_n(c_\phi,y)
+ +\lambda_V\{\ell_n(c_r,p)+\ell_n(c_m,p)
+ +\mathbb I_{\rm learn\text{-}\phi}\ell_n(c_\phi,p)\},
+\]
+where $\ell_n$ is normalized MSE.  After branch training, all branch weights
+are frozen.  The neural rooter is trained on \Ttwo with
+\[
+ \mathcal L_R=
+ \ell_n(\widehat y,y)
+ +\lambda_V\ell_n(\widehat y,p)
+ +\lambda_2\frac1{JH}\sum_{j,h}a_{j,h}^2
+ +\lambda_S\frac1{J(H-1)}
+   \sum_{j,h=1}^{H-1}(a_{j,h+1}-a_{j,h})^2.
+\]
+The three regularizers are independent and optional: setting the corresponding
+coefficient to zero removes it.  Defaults are
+$\lambda_V=\lambda_2=\lambda_S=10^{-2}$.
+
+\section{Separate ridge rooter}
+The frozen \Tone branches permit a rooter-only comparison on exactly the same
+candidate bank.  A horizon-wise, no-intercept ridge rooter is fitted from exact
+\Ttwo sufficient statistics:
+\[
+ A_{\rm ridge}=\arg\min_{A\in\mathbb R^{J\times H}}
+ \sum_{i,h}\left[
+ y_{i,h}-p_{i,h}-\sum_{j=0}^{J-1} A_{j,h}c_{i,j,h}
+ \right]^2+\alpha\lVert A\rVert_F^2.
+\]
+Candidate columns are RMS-scaled before solving and mapped back afterward.
+The fit uses all selected \Ttwo examples and has exactly $JH$ learned
+coefficients: $4H$ by default and $5H$ with a transformed candidate.  It does
+not see \Tthree.
+
+\section{Training and evaluation protocol}
+Extraction pools \Tone+\Ttwo and assigns the final 20\% of whole query dates
+to \Ttwo.  The staged pipeline is:
+\[
+ \text{\Tone: train }(c_r,c_m[,c_\phi])
+ \quad\longrightarrow\quad
+ \text{\Ttwo: fit ridge and neural rooters with branches frozen}
+ \quad\longrightarrow\quad
+ \text{\Tthree: evaluate once}.
+\]
+Each optimization epoch draws one random batch; deterministic full-\Ttwo
+diagnostics retain \code{--valid-eval-freq} and interval-average logs retain
+\code{--logging-eval-freq}.  There is no \Tthree checkpoint selection or refit.
+The neural and ridge rooters are deliberately trained independently, so the
+same branch checkpoint can support additional rooter experiments.
+
+The launcher \code{ts\_ifa.slurm} writes the \Tone branch checkpoint, neural
+checkpoint, ridge coefficients, histories, and complete \Tthree predictions.
+Predictions are written batch by batch as separate NumPy arrays indexed by the
+sole current \code{prediction\_manifest.json}; no aggregate prediction
+checkpoint is retained.  \code{result\_manifest.json} is written last as the
+completion marker.
+The metric artifact always reports vanilla, context, residual, and memory
+candidates, and reports transformed performance only when that candidate is
+active; it also reports the ridge-rooted system and full neural TS-IFA.
+
+\section{Dimensions and exact parameter count}
+The reference comparison uses $L=512$, $H=64$, $K=15$, four attention heads,
+per-head dimension 32, hence $D=128$, and 128-unit MLP hidden layers.  $K$
+changes computation but not parameter count.
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+Component & Parameters\\
+\midrule
+Residual attention $A_r$ & 363,328\\
+Residual MLP $M_r$ & 24,768\\
+\textbf{Residual branch} & \textbf{388,096}\\
+Memory attention $A_m$ & 346,944\\
+Memory skip and MLP $(W_m,M_m)$ & 33,024\\
+\textbf{Memory branch} & \textbf{379,968}\\
+\midrule
+\textbf{Both learned branches} & \textbf{768,064}\\
+Global rooter attention $A_g$ & 412,544\\
+Shared scorer, layer norms, and four type tokens & 58,688\\
+\textbf{Default neural rooter} & \textbf{471,232}\\
+\midrule
+\textbf{Default full neural TS-IFA} & \textbf{1,239,296}\\
+Horizon-wise default ridge rooter only ($4H$) & 256\\
+\textbf{Default branches plus ridge rooter} & \textbf{768,320}\\
+\midrule
+Precomputed transformed candidate: fifth type token & $+128$\\
+Learned $(T_\psi,G_\phi)$ modules & $+98,688$\\
+\textbf{Full TS-IFA with learned transformed candidate} & \textbf{1,338,112}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Parameter comparison}
+Counts below compare trainable adaptation parameters and exclude the frozen
+forecast backbone.  Chronos-2 has 120M parameters and Chronos-Bolt-base 205M
+according to the
+\href{https://github.com/amazon-science/chronos-forecasting}{official Chronos
+model table}.  TS-RAG and Cross-RAG counts cover the added modules in their
+\href{https://github.com/UConn-DSIS/TS-RAG/blob/main/TS-RAG/models/ChronosBolt.py}{official
+TS-RAG implementation} and
+\href{https://github.com/seunghan96/cross-rag/blob/main/cross-rag/models/CrossRAG.py}{official
+Cross-RAG implementation}.
+
+\begin{center}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Method & Trainable params. & $\times$ TS-IFA & \% Chronos-2 & \% Bolt-base\\
+\midrule
+\textbf{TS-IFA, default} & \textbf{1,239,296} & \textbf{1.000} & \textbf{1.033} & \textbf{0.605}\\
+TS-RAG & 4,775,425 & 3.853 & 3.980 & 2.329\\
+Cross-RAG & 8,712,192 & 7.030 & 7.260 & 4.250\\
+Full horizon-wise ridge baseline & 2,048 & 0.00165 & 0.00171 & 0.00100\\
+Max.\ single CatBoost horizon gate & $\leq384,000$ & $\leq0.310$ & $\leq0.320$ & $\leq0.187$\\
+\textbf{TS-IFA branches + ridge rooter} & \textbf{768,320} & \textbf{0.620} & \textbf{0.640} & \textbf{0.375}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For $K=15$, the unrelated full retrieval-ridge baseline has
+$H(2+2K)=2,048$ coefficients.  The CatBoost value is an upper-bound scalar
+complexity for 64 depth-4, 300-tree horizon models:
+$64\cdot300\cdot(16\text{ leaves}+4\text{ splits})=384,000$; early stopping can
+reduce it and tree structure is not directly equivalent to dense neural
+parameters.
 
 \section{Interpretation}
-Report TS-IFA beside vanilla, context, residual, and memory branches.  This
-distinguishes gains from better candidates from gains due to mixture learning.
-Selection must use \Ttwo; the untouched \Tthree period is the only final test.
-Attention weights are diagnostics and should not be interpreted as causal
-feature importance.
+Report every active candidate, ridge-rooted TS-IFA, and neural TS-IFA together.
+This separates candidate quality from rooter quality and tests whether the
+471k-parameter conditional rooter earns its capacity over the 256-coefficient
+default ridge alternative (320 with the transformed candidate).  Attention
+weights remain diagnostics rather than causal feature importance.
 \end{document}

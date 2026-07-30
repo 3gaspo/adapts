@@ -76,7 +76,14 @@ GATE_DIAGNOSTIC_VARIANTS = (
 )
 
 TS_IFA_MAIN_VARIANTS = ("TS-IFA",)
-TS_IFA_BRANCH_VARIANTS = ("residual_branch", "memory_branch")
+TS_IFA_BRANCH_VARIANTS = (
+    "vanilla_branch",
+    "context_branch",
+    "transformed_branch",
+    "residual_branch",
+    "memory_branch",
+    "ridge_rooter",
+)
 
 FULL_VARIANTS = (
     *BASELINE_HELDOUT_VARIANTS,
@@ -196,6 +203,18 @@ def _select_variants(
     if family.name in {"crossrag", "comparison"}:
         selected_set.add("crossrag")
     return tuple(variant for variant in available if variant in selected_set)
+
+
+def _present_variants(
+    family: Family,
+    variants: Sequence[str],
+    results: Sequence[Result],
+) -> tuple[str, ...]:
+    """Drop optional TS-IFA branches that were disabled for the selected run."""
+    if family.name != "ts_ifa":
+        return tuple(variants)
+    present = {result.method.rsplit("/", 1)[-1] for result in results}
+    return tuple(variant for variant in variants if variant in present)
 
 
 def _filter_models(results: Sequence[Result], models: Sequence[str] | None) -> list[Result]:
@@ -333,9 +352,7 @@ def _reference_label(results: Sequence[Result]) -> str:
     models = sorted({result.model for result in results if result.model}, key=str.casefold)
     if len(models) == 1:
         display = {
-            "chronos": "Chronos",
             "chronos2": "Chronos-2",
-            "chronos_bolt": "Chronos-Bolt",
             "chronos-bolt": "Chronos-Bolt",
             "tabpfnts": "TabPFN-TS",
         }.get(models[0], models[0])
@@ -671,7 +688,11 @@ def generate_full_results_tables(
             (
                 Family(
                     family.name,
-                    _select_variants(family, family.full_variants, variants),
+                    _present_variants(
+                        family,
+                        _select_variants(family, family.full_variants, variants),
+                        records,
+                    ),
                     family.average_variants,
                     family.diagnostic_variants,
                     family.output_name,
@@ -731,8 +752,16 @@ def generate_average_results_tables(
                 Family(
                     family.name,
                     family.full_variants,
-                    _select_variants(family, family.average_variants, variants),
-                    _select_variants(family, family.diagnostic_variants, variants),
+                    _present_variants(
+                        family,
+                        _select_variants(family, family.average_variants, variants),
+                        records,
+                    ),
+                    _present_variants(
+                        family,
+                        _select_variants(family, family.diagnostic_variants, variants),
+                        records,
+                    ),
                     family.output_name,
                     family.caption,
                     family.label,
@@ -765,11 +794,6 @@ def generate_average_results_tables(
         allowed_methods=allowed_methods,
     )
     return outputs
-
-
-def generate_sweep_results_tables(*args, **kwargs) -> list[Path]:
-    """Backward-compatible alias for averaged sweep tables."""
-    return generate_average_results_tables(*args, **kwargs)
 
 
 def _parse_neighbors(value: str | Sequence[str] | None) -> list[int]:

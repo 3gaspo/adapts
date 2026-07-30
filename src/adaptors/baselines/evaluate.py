@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
+import gc
 import json
 import logging
 from pathlib import Path
+import shutil
 from time import perf_counter
 from typing import Any, Sequence
 
@@ -16,12 +17,16 @@ import torch
 from einops import rearrange
 
 from src.data.neighbors import neighbor_to_query_scale
+from src.experiments.prediction_store import PredictionStore
 from src.experiments.runtime import log_experiment_separator, setup_logging
 from src.experiments.splits import chronological_resplit_arrays
 
 
 LOGGER = logging.getLogger(__name__)
 RIDGE_CHUNK_ROWS = 65_536
+GATE_FEATURE_CHUNK_ROWS = 2_048
+METRIC_CHUNK_ROWS = 16_384
+AGGREGATION_CHUNK_ROWS = 16_384
 DEFAULT_L2_GRID = (0.0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0)
 
 
@@ -45,20 +50,34 @@ def softmax_np(x: np.ndarray, axis: int = -1) -> np.ndarray:
     return exp / np.maximum(exp.sum(axis=axis, keepdims=True), 1e-12)
 
 
-def flatten_payload(payload: dict[str, Any], prefix: str) -> dict[str, np.ndarray]:
+def flatten_payload(
+    payload: dict[str, Any],
+    prefix: str,
+    *,
+    family: str | None = None,
+) -> dict[str, np.ndarray]:
+    if family not in {None, "baselines", "gates"}:
+        raise ValueError(f"unknown payload family {family!r}")
     x = payload[f"{prefix}_X_values"].float()
     x_c = payload[f"{prefix}_Xc_values"].float()
     y_c_raw = payload[f"{prefix}_Yc_values"].float()
     e_raw = payload[f"{prefix}_E_values"].float()
-    pred_neighbors_raw = y_c_raw - e_raw
     y_c = neighbor_to_query_scale(x, x_c, y_c_raw)
-    e = neighbor_to_query_scale(x, x_c, e_raw, residual=True)
-    pred_neighbors = neighbor_to_query_scale(x, x_c, pred_neighbors_raw)
+    e = (
+        neighbor_to_query_scale(x, x_c, e_raw, residual=True)
+        if family != "baselines"
+        else None
+    )
+    pred_neighbors = (
+        neighbor_to_query_scale(x, x_c, y_c_raw - e_raw)
+        if family != "gates"
+        else None
+    )
     query_t = payload[f"{prefix}_query_t"]
     query_user = payload[f"{prefix}_query_user_idx"]
     neighbor_t = payload[f"{prefix}_neighbor_t"]
     neighbor_user = payload[f"{prefix}_neighbor_user_idx"]
-    return {
+    arrays = {
         "pred": rearrange(
             payload[f"{prefix}_preds"].float(),
             "date user horizon -> (date user) horizon",
@@ -74,14 +93,6 @@ def flatten_payload(payload: dict[str, Any], prefix: str) -> dict[str, np.ndarra
         "x": rearrange(x, "date user lags -> (date user) lags").numpy(),
         "y_c": rearrange(
             y_c,
-            "date user neighbor horizon -> (date user) neighbor horizon",
-        ).numpy(),
-        "e": rearrange(
-            e,
-            "date user neighbor horizon -> (date user) neighbor horizon",
-        ).numpy(),
-        "pred_neighbors": rearrange(
-            pred_neighbors,
             "date user neighbor horizon -> (date user) neighbor horizon",
         ).numpy(),
         "distance": rearrange(
@@ -114,6 +125,17 @@ def flatten_payload(payload: dict[str, Any], prefix: str) -> dict[str, np.ndarra
             "date user -> (date user)",
         ).numpy(),
     }
+    if e is not None:
+        arrays["e"] = rearrange(
+            e,
+            "date user neighbor horizon -> (date user) neighbor horizon",
+        ).numpy()
+    if pred_neighbors is not None:
+        arrays["pred_neighbors"] = rearrange(
+            pred_neighbors,
+            "date user neighbor horizon -> (date user) neighbor horizon",
+        ).numpy()
+    return arrays
 
 
 def distance_weights(arrays: dict[str, np.ndarray], eps: float = 1e-8) -> np.ndarray:
@@ -124,8 +146,18 @@ def distance_weights(arrays: dict[str, np.ndarray], eps: float = 1e-8) -> np.nda
 
 
 def weighted_neighbor_horizon(arrays: dict[str, np.ndarray]) -> np.ndarray:
-    weights = distance_weights(arrays)
-    return (weights[:, :, None] * arrays["y_c"]).sum(axis=1)
+    if "aggr_y" in arrays:
+        return arrays["aggr_y"]
+    n_samples, _, horizon = arrays["y_c"].shape
+    aggregate = np.empty((n_samples, horizon), dtype=np.float64)
+    for start in range(0, n_samples, AGGREGATION_CHUNK_ROWS):
+        stop = min(start + AGGREGATION_CHUNK_ROWS, n_samples)
+        chunk = {name: value[start:stop] for name, value in arrays.items()}
+        weights = distance_weights(chunk)
+        aggregate[start:stop] = (
+            weights[:, :, None] * arrays["y_c"][start:stop]
+        ).sum(axis=1)
+    return aggregate
 
 
 def _ridge_no_intercept_from_chunks(
@@ -208,6 +240,23 @@ def subsample_fit_arrays(
     )
     indices.sort()
     return {name: value[indices] for name, value in arrays.items()}
+
+
+def _contiguous_fit_partition(
+    fit_arrays: dict[str, dict[str, np.ndarray]],
+) -> bool:
+    train = fit_arrays["T1"]["y"]
+    valid = fit_arrays["T2"]["y"]
+    refit = fit_arrays["T1+T2"]["y"]
+    n_train = train.shape[0]
+    if n_train + valid.shape[0] != refit.shape[0]:
+        return False
+    return (
+        int(train.__array_interface__["data"][0])
+        == int(refit.__array_interface__["data"][0])
+        and int(valid.__array_interface__["data"][0])
+        == int(refit[n_train:].__array_interface__["data"][0])
+    )
 
 
 RIDGE_DESIGNS: dict[str, tuple[str, ...]] = {
@@ -385,7 +434,11 @@ def _predict_anchored_ridge(
 
 
 def _normalized_mse(arrays: dict[str, np.ndarray], prediction: np.ndarray) -> float:
-    scale = np.maximum(arrays["x"].std(axis=1, keepdims=True), 1e-8)
+    scale = (
+        arrays["scale"]
+        if "scale" in arrays
+        else np.maximum(arrays["x"].std(axis=1, keepdims=True), 1e-8)
+    )
     return float(np.mean(((prediction - arrays["y"]) / scale) ** 2))
 
 
@@ -501,61 +554,132 @@ def fit_baseline_adapters(
     return artifacts
 
 
-def predict_baseline_adapters(
+def iter_baseline_predictions(
     arrays: dict[str, np.ndarray],
     artifacts: dict[str, Any],
-    methods: Sequence[str] | None = None,
-) -> dict[str, np.ndarray]:
-    selected = set(BASELINE_METHODS if methods is None else methods)
-    predictions: dict[str, np.ndarray] = {"vanilla": arrays["pred"]}
+    *,
+    methods: Sequence[str],
+):
+    """Yield one complete prediction at a time so callers can release it."""
+    selected = set(methods)
+    yield "vanilla", arrays["pred"]
     if "context_forecast" in selected:
-        predictions["context_forecast"] = arrays["pred_c"]
+        yield "context_forecast", arrays["pred_c"]
     if "aggr_y" in selected:
-        predictions["aggr_y"] = weighted_neighbor_horizon(arrays)
+        yield "aggr_y", weighted_neighbor_horizon(arrays)
     if "y_mean" in selected:
-        predictions["y_mean"] = arrays["y_c"].mean(axis=1)
+        yield "y_mean", arrays["y_c"].mean(axis=1)
     for name, model in artifacts["models"].items():
+        if name not in selected:
+            continue
         if model["kind"] == "lambda":
-            predictions[name] = _predict_convex_lambda(
-                arrays,
-                model["lambda"],
-            )
+            prediction = _predict_convex_lambda(arrays, model["lambda"])
         else:
-            predictions[name] = _predict_anchored_ridge(
+            prediction = _predict_anchored_ridge(
                 arrays,
                 design=model["design"],
                 mode=model["mode"],
                 coefficients=model["coef"],
             )
-    return predictions
+        yield name, prediction
 
 
-def add_eval_fitted_baselines(
-    predictions_by_split: dict[str, dict[str, np.ndarray]],
-    eval_fit_arrays: dict[str, np.ndarray],
+def run_streamed_baselines(
+    arrays_by_split: dict[str, dict[str, np.ndarray]],
+    fit_arrays: dict[str, dict[str, np.ndarray]],
     *,
-    eval_scoring_arrays: dict[str, np.ndarray] | None = None,
-    l2_grid: Sequence[float] | float = DEFAULT_L2_GRID,
-    methods: Sequence[str] | None = None,
-) -> dict[str, Any]:
-    """Add explicitly optimistic T3 in-sample appendix diagnostics."""
+    output_dir: Path,
+    selected_methods: Sequence[str],
+    l2_grid: Sequence[float],
+    fit_on_eval: bool,
+) -> tuple[list[dict[str, Any]], dict[str, Any], Path]:
+    """Fit baseline coefficients once and persist one prediction at a time."""
     artifacts = fit_baseline_adapters(
-        eval_fit_arrays,
-        eval_fit_arrays,
-        eval_fit_arrays,
+        fit_arrays["T1"],
+        fit_arrays["T2"],
+        fit_arrays["T1+T2"],
         l2_grid,
-        methods=methods,
+        methods=selected_methods,
     )
-    scoring = eval_fit_arrays if eval_scoring_arrays is None else eval_scoring_arrays
-    predictions = predict_baseline_adapters(scoring, artifacts, methods=methods)
-    predictions_by_split["eval"].update(
-        {
-            f"{name}_eval_fit": predictions[name]
-            for name in TRAINABLE_BASELINES
-            if name in predictions
+    eval_fit_artifacts = (
+        fit_baseline_adapters(
+            fit_arrays["T3_oracle"],
+            fit_arrays["T3_oracle"],
+            fit_arrays["T3_oracle"],
+            l2_grid,
+            methods=selected_methods,
+        )
+        if fit_on_eval
+        else None
+    )
+    store = PredictionStore(output_dir)
+    rows: list[dict[str, Any]] = []
+    reference_nmse = vanilla_nmse(arrays_by_split["eval"])
+    for split, arrays in arrays_by_split.items():
+        for name, prediction in iter_baseline_predictions(
+            arrays,
+            artifacts,
+            methods=selected_methods,
+        ):
+            path = store.write(split, "predictions", name, prediction)
+            if split == "eval":
+                saved = np.load(path, mmap_mode="r", allow_pickle=False)
+                rows.append(
+                    evaluate_prediction(
+                        "eval",
+                        arrays,
+                        name,
+                        saved,
+                        vanilla_nmse=reference_nmse,
+                    )
+                )
+                del saved
+            if prediction is not arrays.get("pred") and prediction is not arrays.get(
+                "pred_c"
+            ):
+                del prediction
+        gc.collect()
+    if eval_fit_artifacts is not None:
+        arrays = arrays_by_split["eval"]
+        for name, prediction in iter_baseline_predictions(
+            arrays,
+            eval_fit_artifacts,
+            methods=selected_methods,
+        ):
+            if name not in TRAINABLE_BASELINES:
+                continue
+            output_name = f"{name}_eval_fit"
+            path = store.write("eval", "predictions", output_name, prediction)
+            saved = np.load(path, mmap_mode="r", allow_pickle=False)
+            rows.append(
+                evaluate_prediction(
+                    "eval",
+                    arrays,
+                    output_name,
+                    saved,
+                    vanilla_nmse=reference_nmse,
+                )
+            )
+            del saved, prediction
+        gc.collect()
+    saved_artifacts = {
+        "format": "adaptation_baseline_models",
+        "protocol": artifacts["protocol"],
+        "l2_grid": list(artifacts["l2_grid"]),
+        "models": artifacts["models"],
+        "eval_fit_models": (
+            None if eval_fit_artifacts is None else eval_fit_artifacts["models"]
+        ),
+    }
+    artifact_path = output_dir / "baseline_artifacts.pt"
+    torch.save(saved_artifacts, artifact_path)
+    prediction_manifest = store.finalize(
+        metadata={
+            "family": "baselines",
+            "fit_on_eval": bool(fit_on_eval),
         }
     )
-    return artifacts
+    return rows, saved_artifacts, prediction_manifest
 
 
 STATIC_GATE_FEATURE_NAMES = (
@@ -611,7 +735,12 @@ GATE_ADAPTIVE_METHODS = tuple(
     )
     for suffix in suffixes
 )
-GATE_METHODS = (*GATE_DIRECT_METHODS, *GATE_ADAPTIVE_METHODS)
+GATE_ORACLE_METHODS = tuple(
+    f"oracle_{candidate}_{shape}"
+    for candidate in GATE_CANDIDATES
+    for shape in ("shared", "horizon")
+)
+GATE_METHODS = (*GATE_DIRECT_METHODS, *GATE_ADAPTIVE_METHODS, *GATE_ORACLE_METHODS)
 
 
 def horizon_gate_feature_names(horizon: int | None = None) -> tuple[str, ...]:
@@ -640,13 +769,17 @@ def _candidate_prediction(
     raise ValueError(f"unknown gate candidate {candidate!r}")
 
 
-def _static_gate_features(
+def _static_gate_features_dense(
     arrays: dict[str, np.ndarray],
 ) -> tuple[list[np.ndarray], dict[str, np.ndarray]]:
     pred = arrays["pred"]
     weights = distance_weights(arrays)
     y_minus_v = arrays["y_c"] - pred[:, None, :]
-    y_minus_n = arrays["y_c"] - arrays["pred_neighbors"]
+    y_minus_n = (
+        arrays["e"]
+        if "e" in arrays
+        else arrays["y_c"] - arrays["pred_neighbors"]
+    )
     yv_horizon_mean = y_minus_v.mean(axis=2)
     yn_horizon_mean = y_minus_n.mean(axis=2)
     values = [
@@ -669,6 +802,7 @@ def _static_gate_features(
         arrays["distance"].mean(axis=1),
     ]
     local = {
+        "aggr_y": np.sum(weights[:, :, None] * arrays["y_c"], axis=1),
         "yv_mean": np.sum(weights[:, :, None] * y_minus_v, axis=1),
         "yv_std": np.sqrt(
             np.maximum(
@@ -703,6 +837,86 @@ def _static_gate_features(
     return values, local
 
 
+def compact_gate_arrays(
+    arrays: dict[str, np.ndarray],
+    *,
+    chunk_rows: int = GATE_FEATURE_CHUNK_ROWS,
+) -> dict[str, np.ndarray]:
+    """Retain only gate inputs and compute neighbor summaries in bounded chunks."""
+    n_samples, horizon = arrays["y"].shape
+    static = np.empty((n_samples, len(STATIC_GATE_FEATURE_NAMES)), dtype=np.float32)
+    local = np.empty((n_samples, horizon, 4), dtype=np.float32)
+    aggregate = np.empty((n_samples, horizon), dtype=np.float32)
+    for start in range(0, n_samples, int(chunk_rows)):
+        stop = min(start + int(chunk_rows), n_samples)
+        chunk = {name: value[start:stop] for name, value in arrays.items()}
+        values, horizon_values = _static_gate_features_dense(chunk)
+        aggregate[start:stop] = horizon_values["aggr_y"]
+        static[start:stop] = np.stack(values, axis=1).astype(
+            np.float32,
+            copy=False,
+        )
+        local[start:stop] = np.stack(
+            [
+                horizon_values["yv_mean"],
+                horizon_values["yv_std"],
+                horizon_values["yn_mean"],
+                horizon_values["yn_std"],
+            ],
+            axis=-1,
+        ).astype(np.float32, copy=False)
+    return {
+        "pred": arrays["pred"].astype(np.float32, copy=False),
+        "pred_c": arrays["pred_c"].astype(np.float32, copy=False),
+        "aggr_y": aggregate,
+        "y": arrays["y"].astype(np.float32, copy=False),
+        "scale": np.maximum(
+            arrays["x"].std(axis=1, keepdims=True),
+            1e-8,
+        ).astype(np.float32, copy=False),
+        "query_t": arrays["query_t"],
+        "gate_static": static,
+        "gate_local": local,
+    }
+
+
+def compact_baseline_arrays(
+    arrays: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
+    """Drop extraction tensors that baseline fitting and scoring never consume."""
+    return {
+        "pred": arrays["pred"].astype(np.float32, copy=False),
+        "pred_c": arrays["pred_c"].astype(np.float32, copy=False),
+        "y": arrays["y"].astype(np.float32, copy=False),
+        "y_c": arrays["y_c"].astype(np.float32, copy=False),
+        "pred_neighbors": arrays["pred_neighbors"].astype(np.float32, copy=False),
+        "distance": arrays["distance"].astype(np.float32, copy=False),
+        "scale": np.maximum(
+            arrays["x"].std(axis=1, keepdims=True),
+            1e-8,
+        ).astype(np.float32, copy=False),
+        "query_t": arrays["query_t"],
+    }
+
+
+def _static_gate_features(
+    arrays: dict[str, np.ndarray],
+) -> tuple[list[np.ndarray], dict[str, np.ndarray]]:
+    if "gate_static" not in arrays:
+        return _static_gate_features_dense(arrays)
+    static = arrays["gate_static"]
+    local = arrays["gate_local"]
+    return (
+        [static[:, index] for index in range(static.shape[1])],
+        {
+            "yv_mean": local[:, :, 0],
+            "yv_std": local[:, :, 1],
+            "yn_mean": local[:, :, 2],
+            "yn_std": local[:, :, 3],
+        },
+    )
+
+
 def scalar_gate_features(
     arrays: dict[str, np.ndarray],
     candidate: str = "context",
@@ -730,8 +944,21 @@ class HorizonGateFeatureView(Sequence[np.ndarray]):
         self.candidate_delta = (
             _candidate_prediction(arrays, candidate) - arrays["pred"]
         )
-        static, self.local = _static_gate_features(arrays)
-        self.common = np.stack(static, axis=1).astype(np.float32, copy=False)
+        if "gate_static" in arrays:
+            self.common = arrays["gate_static"]
+            local = arrays["gate_local"]
+            self.local = {
+                "yv_mean": local[:, :, 0],
+                "yv_std": local[:, :, 1],
+                "yn_mean": local[:, :, 2],
+                "yn_std": local[:, :, 3],
+            }
+        else:
+            static, self.local = _static_gate_features(arrays)
+            self.common = np.stack(static, axis=1).astype(
+                np.float32,
+                copy=False,
+            )
 
     def __len__(self) -> int:
         return int(self.candidate_delta.shape[1])
@@ -879,7 +1106,7 @@ def fit_loss_difference_regressor(
     devices: str | None = None,
     thread_count: int | None = None,
 ) -> dict[str, Any]:
-    target = np.asarray(y_np, dtype=np.float64).reshape(-1)
+    target = np.asarray(y_np, dtype=np.float32).reshape(-1)
     if np.ptp(target) <= 1e-12:
         return {"constant": float(target.mean()), "selected_iterations": 0}
     selected = int(iterations)
@@ -901,6 +1128,8 @@ def fit_loss_difference_regressor(
             use_best_model=True,
         )
         selected = _selected_iterations(selector, iterations)
+        del selector
+        gc.collect()
     if refit_x_np is not None and refit_y_np is not None:
         final_x = refit_x_np
         final_y = np.asarray(refit_y_np).reshape(-1)
@@ -981,6 +1210,8 @@ def fit_improvement_classifier(
             use_best_model=True,
         )
         selected = _selected_iterations(selector, iterations)
+        del selector
+        gc.collect()
     if refit_x_np is not None:
         final_x = refit_x_np
     else:
@@ -1019,136 +1250,51 @@ def fit_gate(
     task_type: str = "CPU",
     devices: str | None = None,
     thread_count: int | None = None,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     if x_np.shape[0] == 0:
         raise ValueError("cannot train gates from an empty T1 slice")
-    targets = np.asarray(y_np)
-    if targets.ndim == 1:
-        targets = targets[:, None]
-    valid_targets = None if valid_y_np is None else np.asarray(valid_y_np)
-    if valid_targets is not None and valid_targets.ndim == 1:
-        valid_targets = valid_targets[:, None]
-    refit_targets = None if refit_y_np is None else np.asarray(refit_y_np)
-    if refit_targets is not None and refit_targets.ndim == 1:
-        refit_targets = refit_targets[:, None]
+    targets = np.asarray(y_np).reshape(-1)
+    valid_targets = (
+        None if valid_y_np is None else np.asarray(valid_y_np).reshape(-1)
+    )
+    refit_targets = (
+        None if refit_y_np is None else np.asarray(refit_y_np).reshape(-1)
+    )
+    if targets.shape[0] != x_np.shape[0]:
+        raise ValueError("gate features and targets must align")
+    if (
+        valid_x_np is not None
+        and valid_targets is not None
+        and valid_targets.shape[0] != valid_x_np.shape[0]
+    ):
+        raise ValueError("validation gate features and targets must align")
+    if (
+        refit_x_np is not None
+        and refit_targets is not None
+        and refit_targets.shape[0] != refit_x_np.shape[0]
+    ):
+        raise ValueError("refit gate features and targets must align")
     fit_one = (
         fit_improvement_classifier
         if objective == "classifier"
         else fit_loss_difference_regressor
     )
-    return [
-        fit_one(
-            x_np,
-            targets[:, output_idx],
-            valid_x_np=valid_x_np,
-            valid_y_np=(
-                None
-                if valid_targets is None
-                else valid_targets[:, output_idx]
-            ),
-            refit_x_np=refit_x_np,
-            refit_y_np=(
-                None
-                if refit_targets is None
-                else refit_targets[:, output_idx]
-            ),
-            iterations=iterations,
-            learning_rate=learning_rate,
-            depth=depth,
-            seed=seed + output_idx,
-            early_stopping_rounds=early_stopping_rounds,
-            task_type=task_type,
-            devices=devices,
-            thread_count=thread_count,
-        )
-        for output_idx in range(targets.shape[1])
-    ]
-
-
-def fit_horizon_gate_models(
-    train_features: Sequence[np.ndarray],
-    train_targets: np.ndarray,
-    *,
-    valid_features: Sequence[np.ndarray],
-    valid_targets: np.ndarray,
-    refit_features: Sequence[np.ndarray],
-    refit_targets: np.ndarray,
-    iterations: int,
-    learning_rate: float,
-    depth: int,
-    seed: int,
-    objective: str,
-    early_stopping_rounds: int,
-    task_type: str = "CPU",
-    devices: str | None = None,
-    thread_count: int | None = None,
-    horizon_jobs: int = 1,
-) -> list[dict[str, Any]]:
-    """Fit independent horizon gates, optionally concurrently on CPU."""
-    jobs = int(horizon_jobs)
-    if jobs <= 0:
-        raise ValueError("horizon_jobs must be positive")
-    mode = str(task_type).upper()
-    if mode == "GPU" and jobs != 1:
-        raise ValueError("GPU horizon fits must be serial within one process")
-    horizon = int(np.asarray(train_targets).shape[1])
-    if not (
-        len(train_features)
-        == len(valid_features)
-        == len(refit_features)
-        == horizon
-        == int(np.asarray(valid_targets).shape[1])
-        == int(np.asarray(refit_targets).shape[1])
-    ):
-        raise ValueError("horizon gate features and targets must align")
-
-    def fit_one_horizon(h: int) -> dict[str, Any]:
-        return fit_gate(
-            train_features[h],
-            train_targets[:, h],
-            valid_x_np=valid_features[h],
-            valid_y_np=valid_targets[:, h],
-            refit_x_np=refit_features[h],
-            refit_y_np=refit_targets[:, h],
-            iterations=iterations,
-            learning_rate=learning_rate,
-            depth=depth,
-            early_stopping_rounds=early_stopping_rounds,
-            seed=seed + h,
-            objective=objective,
-            task_type=mode,
-            devices=devices,
-            thread_count=thread_count,
-        )[0]
-
-    if jobs == 1:
-        return [fit_one_horizon(h) for h in range(horizon)]
-    with ThreadPoolExecutor(max_workers=jobs) as executor:
-        return list(executor.map(fit_one_horizon, range(horizon)))
-
-
-def predict_gate(
-    models: list[dict[str, Any]],
-    features: np.ndarray | Sequence[np.ndarray],
-) -> np.ndarray:
-    per_model_features: Sequence[np.ndarray] = (
-        [features] * len(models)
-        if isinstance(features, np.ndarray)
-        else features
+    return fit_one(
+        x_np,
+        targets,
+        valid_x_np=valid_x_np,
+        valid_y_np=valid_targets,
+        refit_x_np=refit_x_np,
+        refit_y_np=refit_targets,
+        iterations=iterations,
+        learning_rate=learning_rate,
+        depth=depth,
+        seed=seed,
+        early_stopping_rounds=early_stopping_rounds,
+        task_type=task_type,
+        devices=devices,
+        thread_count=thread_count,
     )
-    if len(per_model_features) != len(models):
-        raise ValueError("one horizon feature matrix is required per gate model")
-    columns = []
-    for index, model in enumerate(models):
-        x_np = per_model_features[index]
-        if "constant" in model:
-            score = np.full(x_np.shape[0], model["constant"], dtype=np.float64)
-        elif "classifier" in model:
-            score = model["classifier"].predict_proba(x_np)[:, 1] - 0.5
-        else:
-            score = model["regressor"].predict(x_np)
-        columns.append(score)
-    return np.column_stack(columns)
 
 
 def _fit_no_feature_gates(arrays: dict[str, np.ndarray], candidate: str) -> dict[str, Any]:
@@ -1162,405 +1308,662 @@ def _fit_no_feature_gates(arrays: dict[str, np.ndarray], candidate: str) -> dict
     }
 
 
-def _add_no_feature_gates(
-    predictions: dict[str, np.ndarray],
+def _gate_targets(
     arrays: dict[str, np.ndarray],
     candidate: str,
-    artifacts: dict[str, Any],
-    shapes: Sequence[str] = ("shared", "horizon"),
 ) -> dict[str, np.ndarray]:
-    pred = arrays["pred"]
     candidate_prediction = _candidate_prediction(arrays, candidate)
-    shared_score = float(artifacts["shared_score"])
-    horizon_score = np.asarray(artifacts["horizon_score"])
-    diagnostics: dict[str, np.ndarray] = {}
-    if "shared" in shapes:
-        predictions[f"bayes_{candidate}_shared"] = (
-            candidate_prediction if shared_score > 0.0 else pred
-        )
-        diagnostics[f"{candidate}_bayes_shared_score"] = np.full(
-            pred.shape[0],
-            shared_score,
-        )
-    if "horizon" in shapes:
-        predictions[f"bayes_{candidate}_horizon"] = np.where(
-            horizon_score[None, :] > 0.0,
-            candidate_prediction,
-            pred,
-        )
-        diagnostics[f"{candidate}_bayes_horizon_score"] = np.repeat(
-            horizon_score[None, :],
-            pred.shape[0],
-            axis=0,
-        )
-    return diagnostics
+    improvement = (
+        (arrays["y"] - arrays["pred"]) ** 2
+        - (arrays["y"] - candidate_prediction) ** 2
+    )
+    return {
+        "shared": improvement.mean(axis=1, keepdims=True),
+        "horizon": improvement,
+    }
 
 
-def _add_true_oracles(
-    predictions: dict[str, np.ndarray],
-    arrays: dict[str, np.ndarray],
-    candidate: str,
-) -> None:
-    pred = arrays["pred"]
-    candidate_prediction = _candidate_prediction(arrays, candidate)
-    target = arrays["y"]
-    base_loss = (target - pred) ** 2
-    candidate_loss = (target - candidate_prediction) ** 2
-    shared = candidate_loss.mean(axis=1, keepdims=True) < base_loss.mean(
-        axis=1,
-        keepdims=True,
-    )
-    predictions[f"oracle_{candidate}_shared"] = np.where(
-        shared,
-        candidate_prediction,
-        pred,
-    )
-    predictions[f"oracle_{candidate}_horizon"] = np.where(
-        candidate_loss < base_loss,
-        candidate_prediction,
-        pred,
+def predict_gate(model: dict[str, Any], features: np.ndarray) -> np.ndarray:
+    if "constant" in model:
+        return np.full(features.shape[0], model["constant"], dtype=np.float32)
+    if "classifier" in model:
+        return (
+            model["classifier"].predict_proba(features)[:, 1] - 0.5
+        ).astype(np.float32, copy=False)
+    return np.asarray(
+        model["regressor"].predict(features),
+        dtype=np.float32,
     )
 
 
-def add_true_context_oracles(
-    predictions: dict[str, np.ndarray],
-    arrays: dict[str, np.ndarray],
-) -> None:
-    """Compatibility wrapper using the new shared/horizon naming."""
-    _add_true_oracles(predictions, arrays, "context")
-
-
-def add_candidate_gate_predictions(
-    base_predictions_by_split: dict[str, dict[str, np.ndarray]],
-    train_arrays: dict[str, np.ndarray],
-    valid_arrays: dict[str, np.ndarray],
-    refit_arrays: dict[str, np.ndarray],
-    arrays_by_split: dict[str, dict[str, np.ndarray]],
+def _save_gate_model(
+    model: dict[str, Any],
     *,
+    output_dir: Path,
+    model_dir: Path,
+    stem: str,
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "selected_iterations": int(model.get("selected_iterations", 0)),
+    }
+    if "constant" in model:
+        entry.update({"kind": "constant", "value": float(model["constant"])})
+        return entry
+    kind = "classifier" if "classifier" in model else "regressor"
+    path = model_dir / f"{stem}.cbm"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    model[kind].save_model(str(path))
+    entry.update(
+        {
+            "kind": kind,
+            "path": path.relative_to(output_dir).as_posix(),
+        }
+    )
+    return entry
+
+
+def _model_feature_importance(model: dict[str, Any]) -> np.ndarray | None:
+    estimator = model.get("classifier", model.get("regressor"))
+    if estimator is None:
+        return None
+    return np.asarray(estimator.get_feature_importance(), dtype=np.float64)
+
+
+def _write_gated_prediction(
+    store: PredictionStore,
+    *,
+    split: str,
+    method: str,
+    arrays: dict[str, np.ndarray],
     candidate: str,
+    score: np.ndarray,
+    shared: bool,
+) -> np.memmap:
+    prediction = store.open(
+        split,
+        "predictions",
+        method,
+        shape=arrays["pred"].shape,
+        dtype=np.float32,
+    )
+    candidate_prediction = _candidate_prediction(arrays, candidate)
+    for start in range(0, arrays["pred"].shape[0], METRIC_CHUNK_ROWS):
+        stop = min(start + METRIC_CHUNK_ROWS, arrays["pred"].shape[0])
+        decision = np.asarray(score[start:stop]) > 0.0
+        if shared:
+            decision = decision.reshape(-1, 1)
+        prediction[start:stop] = np.where(
+            decision,
+            candidate_prediction[start:stop],
+            arrays["pred"][start:stop],
+        )
+    prediction.flush()
+    return prediction
+
+
+def _save_importance_outputs(
+    importances: dict[str, tuple[tuple[str, ...], list[np.ndarray]]],
+    output_dir: Path,
+    *,
+    top_k: int,
+) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if not any(values for _, values in importances.values()):
+        return []
+    try:
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError:  # pragma: no cover
+        LOGGER.warning("matplotlib unavailable; skipping feature importance plots")
+        return []
+    saved: list[Path] = []
+    for method, (names, values) in importances.items():
+        if not values:
+            continue
+        importance = np.mean(np.stack(values), axis=0)
+        order = np.argsort(importance)[::-1][: min(int(top_k), len(names))]
+        frame = pd.DataFrame(
+            {
+                "feature": np.asarray(names, dtype=object)[order],
+                "importance": importance[order],
+            }
+        )
+        stem = f"feature_importance_{method.removeprefix('catboost_')}"
+        csv_path = output_dir / f"{stem}.csv"
+        frame.to_csv(csv_path, index=False)
+        saved.append(csv_path)
+        fig, ax = plt.subplots(figsize=(8, max(3.0, 0.32 * len(frame))))
+        ax.barh(frame["feature"][::-1], frame["importance"][::-1])
+        ax.set_xlabel("Mean CatBoost feature importance")
+        ax.set_title(method)
+        fig.tight_layout()
+        png_path = output_dir / f"{stem}.png"
+        fig.savefig(png_path, dpi=180)
+        plt.close(fig)
+        saved.append(png_path)
+    return saved
+
+
+def run_streamed_gates(
+    arrays_by_split: dict[str, dict[str, np.ndarray]],
+    fit_arrays: dict[str, dict[str, np.ndarray]],
+    *,
+    output_dir: Path,
+    selected_methods: Sequence[str],
     iterations: int,
     learning_rate: float,
     depth: int,
     early_stopping_rounds: int,
     seed: int,
-    task_type: str = "CPU",
-    devices: str | None = None,
-    thread_count: int | None = None,
-    horizon_jobs: int = 1,
-    methods: Sequence[str] | None = None,
-) -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any], dict[str, dict[str, np.ndarray]]]:
-    def targets(arrays: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-        candidate_prediction = _candidate_prediction(arrays, candidate)
-        base_loss = (arrays["y"] - arrays["pred"]) ** 2
-        candidate_loss = (arrays["y"] - candidate_prediction) ** 2
-        improvement = base_loss - candidate_loss
-        return {
-            "shared": improvement.mean(axis=1, keepdims=True),
-            "horizon": improvement,
-        }
-
-    selected = set(GATE_METHODS if methods is None else methods)
-    bayes_shapes = tuple(
-        shape
-        for shape in ("shared", "horizon")
-        if f"bayes_{candidate}_{shape}" in selected
-    )
-    catboost_specs = tuple(
-        (objective, shape)
-        for objective in ("classifier", "regressor")
-        for shape in ("shared", "horizon")
-        if f"catboost_{candidate}_{objective}_{shape}" in selected
-    )
-    required_shapes = {shape for _, shape in catboost_specs}
-    train_targets = targets(train_arrays)
-    valid_targets = targets(valid_arrays)
-    refit_targets = targets(refit_arrays)
-    train_features: dict[str, Any] = {}
-    valid_features: dict[str, Any] = {}
-    refit_features: dict[str, Any] = {}
-    if "shared" in required_shapes:
-        train_features["shared"] = scalar_gate_features(train_arrays, candidate)
-        valid_features["shared"] = scalar_gate_features(valid_arrays, candidate)
-        refit_features["shared"] = scalar_gate_features(refit_arrays, candidate)
-    if "horizon" in required_shapes:
-        train_features["horizon"] = horizon_gate_features(train_arrays, candidate)
-        valid_features["horizon"] = horizon_gate_features(valid_arrays, candidate)
-        refit_features["horizon"] = horizon_gate_features(refit_arrays, candidate)
-    models: dict[str, dict[str, list[dict[str, Any]]]] = {}
-    for objective_index, objective in enumerate(("classifier", "regressor")):
-        objective_shapes = {
-            shape for selected_objective, shape in catboost_specs
-            if selected_objective == objective
-        }
-        if not objective_shapes:
-            continue
-        models[objective] = {}
-        if "shared" in objective_shapes:
-            models[objective]["shared"] = fit_gate(
-                train_features["shared"],
-                train_targets["shared"],
-                valid_x_np=valid_features["shared"],
-                valid_y_np=valid_targets["shared"],
-                refit_x_np=refit_features["shared"],
-                refit_y_np=refit_targets["shared"],
-                iterations=iterations,
-                learning_rate=learning_rate,
-                depth=depth,
-                early_stopping_rounds=early_stopping_rounds,
-                seed=seed + objective_index * 10_000,
-                objective=objective,
-                task_type=task_type,
-                devices=devices,
-                thread_count=thread_count,
-            )
-        if "horizon" in objective_shapes:
-            models[objective]["horizon"] = fit_horizon_gate_models(
-                train_features["horizon"],
-                train_targets["horizon"],
-                valid_features=valid_features["horizon"],
-                valid_targets=valid_targets["horizon"],
-                refit_features=refit_features["horizon"],
-                refit_targets=refit_targets["horizon"],
-                iterations=iterations,
-                learning_rate=learning_rate,
-                depth=depth,
-                early_stopping_rounds=early_stopping_rounds,
-                seed=seed + objective_index * 10_000 + 1_000,
-                objective=objective,
-                task_type=task_type,
-                devices=devices,
-                thread_count=thread_count,
-                horizon_jobs=horizon_jobs,
-            )
-
-    no_feature = (
-        _fit_no_feature_gates(refit_arrays, candidate)
-        if bayes_shapes
-        else None
-    )
-    out: dict[str, dict[str, np.ndarray]] = {}
-    diagnostics: dict[str, dict[str, np.ndarray]] = {}
-    for split, arrays in arrays_by_split.items():
-        split_predictions = dict(base_predictions_by_split[split])
-        candidate_prediction = _candidate_prediction(arrays, candidate)
-        diagnostics[split] = (
-            _add_no_feature_gates(
-                split_predictions,
-                arrays,
-                candidate,
-                no_feature,
-                shapes=bayes_shapes,
-            )
-            if no_feature is not None
-            else {}
-        )
-        split_features: dict[str, Any] = {}
-        if "shared" in required_shapes:
-            split_features["shared"] = scalar_gate_features(arrays, candidate)
-        if "horizon" in required_shapes:
-            split_features["horizon"] = horizon_gate_features(arrays, candidate)
-        split_targets = targets(arrays)
-        for objective, objective_models in models.items():
-            for shape, shape_models in objective_models.items():
-                score = predict_gate(
-                    shape_models,
-                    split_features[shape],
-                )
-                decision = score > 0.0
-                if shape == "shared":
-                    decision = decision[:, :1]
-                name = f"catboost_{candidate}_{objective}_{shape}"
-                split_predictions[name] = np.where(
-                    decision,
-                    candidate_prediction,
-                    arrays["pred"],
-                )
-                diagnostics[split][f"{candidate}_{objective}_{shape}_score"] = (
-                    score[:, 0] if shape == "shared" else score
-                )
-                diagnostics[split][f"{candidate}_{objective}_{shape}_target"] = (
-                    split_targets[shape][:, 0]
-                    if shape == "shared"
-                    else split_targets[shape]
-                )
-        _add_true_oracles(split_predictions, arrays, candidate)
-        out[split] = split_predictions
-    artifacts = {
-        "candidate": candidate,
-        "backend": "catboost",
-        "execution": {
+    task_type: str,
+    devices: str | None,
+    thread_count: int | None,
+    feature_importance_top_k: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any], Path]:
+    """Fit and score each gate model once, releasing it immediately after use."""
+    selected = set(selected_methods)
+    store = PredictionStore(output_dir)
+    model_root = output_dir / "models"
+    model_root.mkdir(parents=True, exist_ok=True)
+    metric_rows: list[dict[str, Any]] = []
+    reference_nmse = vanilla_nmse(arrays_by_split["eval"])
+    model_manifest: dict[str, Any] = {
+        "format": "adaptation_gate_models",
+        "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+        "config": {
+            "iterations": int(iterations),
+            "learning_rate": float(learning_rate),
+            "depth": int(depth),
+            "early_stopping_rounds": int(early_stopping_rounds),
+            "seed": int(seed),
             "task_type": str(task_type).upper(),
             "devices": devices,
             "thread_count": thread_count,
-            "horizon_jobs": int(horizon_jobs),
+            "horizon_fits": "serial",
+            "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
+            "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
         },
-        "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
-        "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
-        "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
-        "models": models,
-        "no_feature": no_feature,
-        "methods": sorted(selected),
+        "models": {},
+        "bayes": {},
     }
-    return out, artifacts, diagnostics
+    importances: dict[str, tuple[tuple[str, ...], list[np.ndarray]]] = {}
 
-
-def add_context_gate_predictions(
-    base_predictions_by_split: dict[str, dict[str, np.ndarray]],
-    train_arrays: dict[str, np.ndarray],
-    arrays_by_split: dict[str, dict[str, np.ndarray]],
-    *,
-    iterations: int,
-    learning_rate: float,
-    depth: int,
-    seed: int,
-    valid_arrays: dict[str, np.ndarray] | None = None,
-    refit_arrays: dict[str, np.ndarray] | None = None,
-    early_stopping_rounds: int = 50,
-    task_type: str = "CPU",
-    devices: str | None = None,
-    thread_count: int | None = None,
-    horizon_jobs: int = 1,
-) -> tuple[dict[str, dict[str, np.ndarray]], dict[str, Any], dict[str, dict[str, np.ndarray]]]:
-    """Compatibility wrapper for the context candidate."""
-    return add_candidate_gate_predictions(
-        base_predictions_by_split,
-        train_arrays,
-        train_arrays if valid_arrays is None else valid_arrays,
-        train_arrays if refit_arrays is None else refit_arrays,
-        arrays_by_split,
-        candidate="context",
-        iterations=iterations,
-        learning_rate=learning_rate,
-        depth=depth,
-        early_stopping_rounds=early_stopping_rounds,
-        seed=seed,
-        task_type=task_type,
-        devices=devices,
-        thread_count=thread_count,
-        horizon_jobs=horizon_jobs,
-    )
-
-
-def visualization_payload(
-    predictions_by_split: dict[str, dict[str, np.ndarray]],
-    gate_diagnostics: dict[str, dict[str, np.ndarray]],
-) -> dict[str, Any]:
-    return {
-        "format_version": 2,
-        "description": "Predictions and gate diagnostics for pooled adaptation and held-out evaluation.",
-        "splits": {
-            split: {
-                "predictions": {
-                    name: torch.as_tensor(value, dtype=torch.float32)
-                    for name, value in predictions.items()
-                },
-                "gate_diagnostics": {
-                    name: torch.as_tensor(value, dtype=torch.float32)
-                    for name, value in gate_diagnostics.get(split, {}).items()
-                },
-            }
-            for split, predictions in predictions_by_split.items()
-        },
-    }
-
-
-def _model_feature_importance(model: dict[str, Any]) -> np.ndarray | None:
-    estimator = model.get("classifier") or model.get("regressor")
-    if estimator is None or not hasattr(estimator, "get_feature_importance"):
-        return None
-    return np.asarray(estimator.get_feature_importance(), dtype=np.float64)
-
-
-def _mean_feature_importance(
-    models: list[dict[str, Any]],
-    feature_names: Sequence[str],
-) -> np.ndarray | None:
-    values = [
-        importance
-        for model in models
-        if (importance := _model_feature_importance(model)) is not None
-        and importance.shape[0] == len(feature_names)
-    ]
-    return None if not values else np.mean(np.stack(values), axis=0)
-
-
-def save_gate_feature_importance_plots(
-    gate_artifacts: dict[str, Any],
-    output_dir: Path,
-    *,
-    top_k: int = 20,
-) -> list[Path]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    try:
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError:  # pragma: no cover
-        LOGGER.warning("matplotlib unavailable; skipping feature importance")
-        return []
-    saved: list[Path] = []
-    for candidate, candidate_artifacts in gate_artifacts.items():
-        for objective, by_shape in candidate_artifacts["models"].items():
-            for shape, names in (
-                ("shared", SCALAR_GATE_FEATURE_NAMES),
-                ("horizon", HORIZON_GATE_FEATURE_NAMES),
-            ):
-                importance = _mean_feature_importance(by_shape.get(shape, []), names)
-                if importance is None:
-                    continue
-                order = np.argsort(importance)[::-1][
-                    : max(1, min(int(top_k), len(importance)))
-                ]
-                selected_names = np.asarray(names, dtype=object)[order]
-                selected_values = importance[order]
-                stem = f"feature_importance_{candidate}_{objective}_{shape}"
-                csv_path = output_dir / f"{stem}.csv"
-                pd.DataFrame(
-                    {"feature": selected_names, "importance": selected_values}
-                ).to_csv(csv_path, index=False)
-                saved.append(csv_path)
-                fig, ax = plt.subplots(
-                    figsize=(8, max(4, 0.32 * len(order)))
+    def save_prediction(
+        split: str,
+        method: str,
+        prediction: np.ndarray,
+    ) -> None:
+        path = store.write(split, "predictions", method, prediction)
+        if split == "eval":
+            saved = np.load(path, mmap_mode="r", allow_pickle=False)
+            metric_rows.append(
+                evaluate_prediction(
+                    "eval",
+                    arrays_by_split["eval"],
+                    method,
+                    saved,
+                    vanilla_nmse=reference_nmse,
                 )
-                y = np.arange(len(order))
-                ax.barh(y, selected_values[::-1])
-                ax.set_yticks(y, labels=list(selected_names[::-1]))
-                ax.set_xlabel("mean CatBoost feature importance")
-                ax.set_title(f"{candidate} {objective} {shape} gate")
-                ax.grid(True, axis="x", alpha=0.25)
-                fig.tight_layout()
-                png_path = output_dir / f"{stem}.png"
-                fig.savefig(png_path, dpi=180)
-                plt.close(fig)
-                saved.append(png_path)
-    return saved
+            )
+            del saved
+
+    for split, arrays in arrays_by_split.items():
+        save_prediction(split, "vanilla", arrays["pred"])
+        if "context_forecast" in selected:
+            save_prediction(split, "context_forecast", arrays["pred_c"])
+        if "aggr_y" in selected:
+            save_prediction(split, "aggr_y", arrays["aggr_y"])
+
+    for candidate_index, candidate in enumerate(GATE_CANDIDATES):
+        candidate_methods = {
+            method for method in selected
+            if f"_{candidate}_" in method
+        }
+        if not candidate_methods:
+            continue
+        LOGGER.info("gate fitting start candidate=%s", candidate)
+        catboost_required = any(
+            method.startswith("catboost_") for method in candidate_methods
+        )
+        contiguous_partition = (
+            catboost_required and _contiguous_fit_partition(fit_arrays)
+        )
+        refit_is_adapt = (
+            fit_arrays["T1+T2"] is arrays_by_split["adapt"]
+        )
+        train_targets: dict[str, np.ndarray] = {}
+        valid_targets: dict[str, np.ndarray] = {}
+        refit_targets: dict[str, np.ndarray] = {}
+        scalar_features: dict[str, np.ndarray] = {}
+        horizon_features: dict[str, Sequence[np.ndarray]] = {}
+        if catboost_required:
+            n_train = fit_arrays["T1"]["y"].shape[0]
+            refit_targets = _gate_targets(fit_arrays["T1+T2"], candidate)
+            if contiguous_partition:
+                train_targets = {
+                    name: value[:n_train]
+                    for name, value in refit_targets.items()
+                }
+                valid_targets = {
+                    name: value[n_train:]
+                    for name, value in refit_targets.items()
+                }
+            else:
+                train_targets = _gate_targets(fit_arrays["T1"], candidate)
+                valid_targets = _gate_targets(fit_arrays["T2"], candidate)
+
+            refit_scalar = scalar_gate_features(
+                fit_arrays["T1+T2"],
+                candidate,
+            )
+            scalar_features["T1+T2"] = refit_scalar
+            if contiguous_partition:
+                scalar_features["T1"] = refit_scalar[:n_train]
+                scalar_features["T2"] = refit_scalar[n_train:]
+            else:
+                scalar_features["T1"] = scalar_gate_features(
+                    fit_arrays["T1"],
+                    candidate,
+                )
+                scalar_features["T2"] = scalar_gate_features(
+                    fit_arrays["T2"],
+                    candidate,
+                )
+            scalar_features["eval"] = scalar_gate_features(
+                arrays_by_split["eval"],
+                candidate,
+            )
+            scalar_features["adapt"] = (
+                refit_scalar
+                if refit_is_adapt
+                else scalar_gate_features(arrays_by_split["adapt"], candidate)
+            )
+
+            horizon_features["T1+T2"] = horizon_gate_features(
+                fit_arrays["T1+T2"],
+                candidate,
+            )
+            if not contiguous_partition:
+                horizon_features["T1"] = horizon_gate_features(
+                    fit_arrays["T1"],
+                    candidate,
+                )
+                horizon_features["T2"] = horizon_gate_features(
+                    fit_arrays["T2"],
+                    candidate,
+                )
+            horizon_features["eval"] = horizon_gate_features(
+                arrays_by_split["eval"],
+                candidate,
+            )
+            horizon_features["adapt"] = (
+                horizon_features["T1+T2"]
+                if refit_is_adapt
+                else horizon_gate_features(arrays_by_split["adapt"], candidate)
+            )
+
+            for split, arrays in arrays_by_split.items():
+                shared_target = store.open(
+                    split,
+                    "gate_diagnostics",
+                    f"{candidate}_shared_target",
+                    shape=(arrays["y"].shape[0],),
+                    dtype=np.float32,
+                )
+                horizon_target = store.open(
+                    split,
+                    "gate_diagnostics",
+                    f"{candidate}_horizon_target",
+                    shape=arrays["y"].shape,
+                    dtype=np.float32,
+                )
+                candidate_prediction = _candidate_prediction(arrays, candidate)
+                for start in range(0, arrays["y"].shape[0], METRIC_CHUNK_ROWS):
+                    stop = min(start + METRIC_CHUNK_ROWS, arrays["y"].shape[0])
+                    improvement = (
+                        (arrays["y"][start:stop] - arrays["pred"][start:stop]) ** 2
+                        - (
+                            arrays["y"][start:stop]
+                            - candidate_prediction[start:stop]
+                        )
+                        ** 2
+                    )
+                    shared_target[start:stop] = improvement.mean(axis=1)
+                    horizon_target[start:stop] = improvement
+                shared_target.flush()
+                horizon_target.flush()
+                del shared_target, horizon_target
+
+        bayes = (
+            _fit_no_feature_gates(fit_arrays["T1+T2"], candidate)
+            if any(method.startswith("bayes_") for method in candidate_methods)
+            else None
+        )
+        if bayes is not None:
+            model_manifest["bayes"][candidate] = {
+                "shared_score": float(bayes["shared_score"]),
+                "horizon_score": np.asarray(bayes["horizon_score"]).tolist(),
+            }
+        for shape in ("shared", "horizon"):
+            method = f"bayes_{candidate}_{shape}"
+            if method not in candidate_methods:
+                continue
+            assert bayes is not None
+            score = (
+                np.asarray([bayes["shared_score"]], dtype=np.float32)
+                if shape == "shared"
+                else np.asarray(bayes["horizon_score"], dtype=np.float32)
+            )
+            store.write("fit", "gate_diagnostics", f"{method}_score", score)
+            for split, arrays in arrays_by_split.items():
+                expanded = (
+                    np.full(arrays["pred"].shape[0], score[0], dtype=np.float32)
+                    if shape == "shared"
+                    else np.broadcast_to(score, arrays["pred"].shape)
+                )
+                prediction = _write_gated_prediction(
+                    store,
+                    split=split,
+                    method=method,
+                    arrays=arrays,
+                    candidate=candidate,
+                    score=expanded,
+                    shared=shape == "shared",
+                )
+                if split == "eval":
+                    metric_rows.append(
+                        evaluate_prediction(
+                            "eval",
+                            arrays,
+                            method,
+                            prediction,
+                            vanilla_nmse=reference_nmse,
+                        )
+                    )
+                del prediction
+
+        for shape in ("shared", "horizon"):
+            method = f"oracle_{candidate}_{shape}"
+            if method not in candidate_methods:
+                continue
+            for split, arrays in arrays_by_split.items():
+                prediction = store.open(
+                    split,
+                    "predictions",
+                    method,
+                    shape=arrays["pred"].shape,
+                    dtype=np.float32,
+                )
+                candidate_prediction = _candidate_prediction(arrays, candidate)
+                for start in range(0, arrays["pred"].shape[0], METRIC_CHUNK_ROWS):
+                    stop = min(start + METRIC_CHUNK_ROWS, arrays["pred"].shape[0])
+                    base_loss = (
+                        arrays["y"][start:stop] - arrays["pred"][start:stop]
+                    ) ** 2
+                    candidate_loss = (
+                        arrays["y"][start:stop]
+                        - candidate_prediction[start:stop]
+                    ) ** 2
+                    decision = candidate_loss < base_loss
+                    if shape == "shared":
+                        decision = (
+                            candidate_loss.mean(axis=1, keepdims=True)
+                            < base_loss.mean(axis=1, keepdims=True)
+                        )
+                    prediction[start:stop] = np.where(
+                        decision,
+                        candidate_prediction[start:stop],
+                        arrays["pred"][start:stop],
+                    )
+                prediction.flush()
+                if split == "eval":
+                    metric_rows.append(
+                        evaluate_prediction(
+                            "eval",
+                            arrays,
+                            method,
+                            prediction,
+                            vanilla_nmse=reference_nmse,
+                        )
+                    )
+                del prediction
+
+        for objective_index, objective in enumerate(("classifier", "regressor")):
+            for shape in ("shared", "horizon"):
+                method = f"catboost_{candidate}_{objective}_{shape}"
+                if method not in candidate_methods:
+                    continue
+                names = (
+                    SCALAR_GATE_FEATURE_NAMES
+                    if shape == "shared"
+                    else HORIZON_GATE_FEATURE_NAMES
+                )
+                importance_values: list[np.ndarray] = []
+                entries: list[dict[str, Any]] = []
+                if shape == "shared":
+                    model = fit_gate(
+                        scalar_features["T1"],
+                        train_targets["shared"],
+                        valid_x_np=scalar_features["T2"],
+                        valid_y_np=valid_targets["shared"],
+                        refit_x_np=scalar_features["T1+T2"],
+                        refit_y_np=refit_targets["shared"],
+                        iterations=iterations,
+                        learning_rate=learning_rate,
+                        depth=depth,
+                        early_stopping_rounds=early_stopping_rounds,
+                        seed=seed + candidate_index * 100_000
+                        + objective_index * 10_000,
+                        objective=objective,
+                        task_type=task_type,
+                        devices=devices,
+                        thread_count=thread_count,
+                    )
+                    entries.append(
+                        _save_gate_model(
+                            model,
+                            output_dir=output_dir,
+                            model_dir=model_root / method,
+                            stem="shared",
+                        )
+                    )
+                    importance = _model_feature_importance(model)
+                    if importance is not None:
+                        importance_values.append(importance)
+                    for split, arrays in arrays_by_split.items():
+                        score = predict_gate(model, scalar_features[split])
+                        store.write(
+                            split,
+                            "gate_diagnostics",
+                            f"{method}_score",
+                            score,
+                        )
+                        prediction = _write_gated_prediction(
+                            store,
+                            split=split,
+                            method=method,
+                            arrays=arrays,
+                            candidate=candidate,
+                            score=score,
+                            shared=True,
+                        )
+                        if split == "eval":
+                            metric_rows.append(
+                                evaluate_prediction(
+                                    "eval",
+                                    arrays,
+                                    method,
+                                    prediction,
+                                    vanilla_nmse=reference_nmse,
+                                )
+                            )
+                        del prediction, score
+                    del model
+                else:
+                    score_arrays = {
+                        split: store.open(
+                            split,
+                            "gate_diagnostics",
+                            f"{method}_score",
+                            shape=arrays["pred"].shape,
+                            dtype=np.float32,
+                        )
+                        for split, arrays in arrays_by_split.items()
+                    }
+                    horizon = fit_arrays["T1"]["y"].shape[1]
+                    for h in range(horizon):
+                        refit_x = horizon_features["T1+T2"][h]
+                        if contiguous_partition:
+                            train_x = refit_x[:n_train]
+                            valid_x = refit_x[n_train:]
+                        else:
+                            train_x = horizon_features["T1"][h]
+                            valid_x = horizon_features["T2"][h]
+                        model = fit_gate(
+                            train_x,
+                            train_targets["horizon"][:, h],
+                            valid_x_np=valid_x,
+                            valid_y_np=valid_targets["horizon"][:, h],
+                            refit_x_np=refit_x,
+                            refit_y_np=refit_targets["horizon"][:, h],
+                            iterations=iterations,
+                            learning_rate=learning_rate,
+                            depth=depth,
+                            early_stopping_rounds=early_stopping_rounds,
+                            seed=seed + candidate_index * 100_000
+                            + objective_index * 10_000 + 1_000 + h,
+                            objective=objective,
+                            task_type=task_type,
+                            devices=devices,
+                            thread_count=thread_count,
+                        )
+                        entries.append(
+                            _save_gate_model(
+                                model,
+                                output_dir=output_dir,
+                                model_dir=model_root / method,
+                                stem=f"horizon_{h:04d}",
+                            )
+                        )
+                        importance = _model_feature_importance(model)
+                        if importance is not None:
+                            importance_values.append(importance)
+                        for split in arrays_by_split:
+                            scoring_x = (
+                                refit_x
+                                if split == "adapt" and refit_is_adapt
+                                else horizon_features[split][h]
+                            )
+                            score_arrays[split][:, h] = predict_gate(
+                                model,
+                                scoring_x,
+                            )
+                            del scoring_x
+                        del model, train_x, valid_x, refit_x
+                        if (h + 1) % 8 == 0:
+                            gc.collect()
+                    for score in score_arrays.values():
+                        score.flush()
+                    for split, arrays in arrays_by_split.items():
+                        prediction = _write_gated_prediction(
+                            store,
+                            split=split,
+                            method=method,
+                            arrays=arrays,
+                            candidate=candidate,
+                            score=score_arrays[split],
+                            shared=False,
+                        )
+                        if split == "eval":
+                            metric_rows.append(
+                                evaluate_prediction(
+                                    "eval",
+                                    arrays,
+                                    method,
+                                    prediction,
+                                    vanilla_nmse=reference_nmse,
+                                )
+                            )
+                        del prediction
+                    del score_arrays
+                model_manifest["models"][method] = entries
+                importances[method] = (names, importance_values)
+                gc.collect()
+
+        del scalar_features, horizon_features
+        del train_targets, valid_targets, refit_targets
+        gc.collect()
+        LOGGER.info("gate fitting done candidate=%s", candidate)
+
+    importance_paths = _save_importance_outputs(
+        importances,
+        output_dir / "plots",
+        top_k=feature_importance_top_k,
+    )
+    model_manifest["feature_importance_files"] = [
+        path.relative_to(output_dir).as_posix() for path in importance_paths
+    ]
+    artifact_path = output_dir / "gate_artifacts.json"
+    artifact_path.write_text(json.dumps(model_manifest, indent=2), encoding="utf-8")
+    prediction_manifest = store.finalize(
+        metadata={
+            "family": "gates",
+            "diagnostics": "scores_only",
+        }
+    )
+    return metric_rows, model_manifest, prediction_manifest
 
 
-def evaluate_predictions(
+def _metric_sums(
+    arrays: dict[str, np.ndarray],
+    prediction: np.ndarray,
+) -> tuple[float, float, float, int]:
+    y = arrays["y"]
+    scale = (
+        arrays["scale"]
+        if "scale" in arrays
+        else np.maximum(arrays["x"].std(axis=1, keepdims=True), 1e-8)
+    )
+    mse_sum = 0.0
+    mae_sum = 0.0
+    nmse_sum = 0.0
+    count = int(y.size)
+    for start in range(0, y.shape[0], METRIC_CHUNK_ROWS):
+        stop = min(start + METRIC_CHUNK_ROWS, y.shape[0])
+        error = np.asarray(prediction[start:stop], dtype=np.float64) - y[
+            start:stop
+        ].astype(np.float64)
+        mse_sum += float(np.sum(error * error))
+        mae_sum += float(np.sum(np.abs(error)))
+        normalized = error / scale[start:stop]
+        nmse_sum += float(np.sum(normalized * normalized))
+    return mse_sum, mae_sum, nmse_sum, count
+
+
+def evaluate_prediction(
     split: str,
     arrays: dict[str, np.ndarray],
-    predictions: dict[str, np.ndarray],
-) -> list[dict[str, Any]]:
-    rows = []
-    y = arrays["y"]
-    scale = np.maximum(arrays["x"].std(axis=1, keepdims=True), 1e-8)
-    vanilla_nmse = np.mean(((arrays["pred"] - y) / scale) ** 2)
-    for name, prediction in predictions.items():
-        error = prediction - y
-        nmse = np.mean((error / scale) ** 2)
-        rows.append(
-            {
-                "split": split,
-                "baseline": name,
-                "mse": float(np.mean(error**2)),
-                "mae": float(np.mean(np.abs(error))),
-                "nmse": float(nmse),
-                "relative_nmse_improvement_pct": float(
-                    100.0
-                    * (vanilla_nmse - nmse)
-                    / max(vanilla_nmse, 1e-12)
-                ),
-            }
-        )
-    return rows
+    name: str,
+    prediction: np.ndarray,
+    *,
+    vanilla_nmse: float,
+) -> dict[str, Any]:
+    mse_sum, mae_sum, nmse_sum, count = _metric_sums(arrays, prediction)
+    nmse = nmse_sum / max(count, 1)
+    return {
+        "split": split,
+        "baseline": name,
+        "mse": mse_sum / max(count, 1),
+        "mae": mae_sum / max(count, 1),
+        "nmse": nmse,
+        "relative_nmse_improvement_pct": (
+            100.0 * (vanilla_nmse - nmse) / max(vanilla_nmse, 1e-12)
+        ),
+    }
+
+
+def vanilla_nmse(arrays: dict[str, np.ndarray]) -> float:
+    _, _, nmse_sum, count = _metric_sums(arrays, arrays["pred"])
+    return nmse_sum / max(count, 1)
 
 
 def write_metric_outputs(
@@ -1601,7 +2004,6 @@ def _parse_methods(value: str | None, family: str) -> tuple[str, ...]:
     allowed = {
         "baselines": set(BASELINE_METHODS),
         "gates": set(GATE_METHODS),
-        "all": set((*BASELINE_METHODS, *GATE_METHODS)),
     }[family]
     if value is None:
         return tuple(sorted(allowed))
@@ -1625,7 +2027,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--output-dir", default=None)
-    parser.add_argument("--family", choices=("all", "baselines", "gates"), default="all")
+    parser.add_argument(
+        "--family",
+        choices=("baselines", "gates"),
+        default="baselines",
+    )
     parser.add_argument(
         "--methods",
         default=None,
@@ -1641,17 +2047,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Append explicitly optimistic T3 in-sample diagnostics",
     )
-    parser.add_argument("--gate-iterations", "--gate-epochs", dest="gate_iterations", type=int, default=300)
-    parser.add_argument("--gate-learning-rate", "--gate-lr", dest="gate_learning_rate", type=float, default=3e-2)
+    parser.add_argument("--gate-iterations", type=int, default=300)
+    parser.add_argument("--gate-learning-rate", type=float, default=3e-2)
     parser.add_argument("--gate-depth", type=int, default=4)
     parser.add_argument("--gate-early-stopping-rounds", type=int, default=50)
     parser.add_argument("--gate-task-type", choices=("CPU", "GPU"), default="CPU")
     parser.add_argument("--gate-devices", default=None)
     parser.add_argument("--gate-thread-count", type=int, default=None)
-    parser.add_argument("--gate-horizon-jobs", type=int, default=1)
     parser.add_argument("--feature-importance-top-k", type=int, default=20)
-    parser.add_argument("--max-t1-fit-samples", "--max-train-fit-samples", dest="max_t1_fit_samples", type=int, default=None)
-    parser.add_argument("--max-t2-valid-samples", "--max-oracle-fit-samples", dest="max_t2_valid_samples", type=int, default=None)
+    parser.add_argument("--max-t1-fit-samples", type=int, default=None)
+    parser.add_argument("--max-t2-valid-samples", type=int, default=None)
     parser.add_argument("--max-adapt-refit-samples", type=int, default=None)
     parser.add_argument("--max-eval-fit-samples", type=int, default=None)
     parser.add_argument("--fit-sample-seed", type=int, default=None)
@@ -1673,24 +2078,36 @@ def main() -> dict[str, Path]:
     )
     LOGGER.info("selected methods=%s", selected_methods)
     input_dir = Path(args.input_dir).expanduser()
-    default_subdir = {
-        "all": "baseline_adapters",
-        "baselines": "baselines",
-        "gates": "gates",
-    }[args.family]
+    default_subdir = {"baselines": "baselines", "gates": "gates"}[args.family]
     output_dir = (
         Path(args.output_dir).expanduser()
         if args.output_dir
         else input_dir / default_subdir
     )
-    output_dir.mkdir(parents=True, exist_ok=True)
-    arrays_by_split = {
-        prefix: flatten_payload(
-            torch_load(input_dir / f"{prefix}_prediction_payload.pt"),
-            prefix,
-        )
+    if output_dir.resolve() == input_dir.resolve():
+        raise ValueError("output directory must differ from the extraction directory")
+    payload_paths = [
+        input_dir / f"{prefix}_prediction_payload.pt"
         for prefix in ("adapt", "eval")
-    }
+    ]
+    missing_payloads = [path for path in payload_paths if not path.is_file()]
+    if missing_payloads:
+        raise FileNotFoundError(f"missing extraction payloads: {missing_payloads}")
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    arrays_by_split: dict[str, dict[str, np.ndarray]] = {}
+    for prefix, payload_path in zip(("adapt", "eval"), payload_paths, strict=True):
+        payload = torch_load(payload_path)
+        dense = flatten_payload(payload, prefix, family=args.family)
+        del payload
+        arrays_by_split[prefix] = (
+            compact_gate_arrays(dense)
+            if args.family == "gates"
+            else compact_baseline_arrays(dense)
+        )
+        del dense
+        gc.collect()
     t1_arrays, t2_arrays, resplit = chronological_resplit_arrays(
         arrays_by_split["adapt"],
         args.validation_fraction,
@@ -1733,148 +2150,39 @@ def main() -> dict[str, Path]:
         for name, arrays in fit_arrays.items()
     }
     l2_grid = _parse_float_grid(args.l2_grid)
-    predictions_by_split: dict[str, dict[str, np.ndarray]] = {
-        split: {} for split in arrays_by_split
-    }
-    baseline_artifacts = None
-    eval_fit_artifacts = None
-    if args.family in {"all", "baselines"}:
+    if args.family == "baselines":
         LOGGER.info("baseline selection start l2_grid=%s", l2_grid)
-        baseline_artifacts = fit_baseline_adapters(
-            fit_arrays["T1"],
-            fit_arrays["T2"],
-            fit_arrays["T1+T2"],
-            l2_grid,
-            methods=selected_baselines,
+        rows, _, prediction_manifest = run_streamed_baselines(
+            arrays_by_split,
+            fit_arrays,
+            output_dir=output_dir,
+            selected_methods=selected_baselines,
+            l2_grid=l2_grid,
+            fit_on_eval=args.fit_baselines_on_eval,
         )
-        predictions_by_split = {
-            split: predict_baseline_adapters(
-                arrays,
-                baseline_artifacts,
-                methods=selected_baselines,
-            )
-            for split, arrays in arrays_by_split.items()
-        }
-        if args.fit_baselines_on_eval:
-            eval_fit_artifacts = add_eval_fitted_baselines(
-                predictions_by_split,
-                fit_arrays["T3_oracle"],
-                eval_scoring_arrays=arrays_by_split["eval"],
-                l2_grid=l2_grid,
-                methods=selected_baselines,
-            )
         LOGGER.info("baseline selection done")
     else:
-        predictions_by_split = {
-            split: {
-                "vanilla": arrays["pred"],
-                **(
-                    {"context_forecast": arrays["pred_c"]}
-                    if "context_forecast" in selected_gates
-                    else {}
-                ),
-                **(
-                    {"aggr_y": weighted_neighbor_horizon(arrays)}
-                    if "aggr_y" in selected_gates
-                    else {}
-                ),
-            }
-            for split, arrays in arrays_by_split.items()
-        }
-
-    gate_artifacts: dict[str, Any] = {}
-    gate_diagnostics = {split: {} for split in arrays_by_split}
-    if args.family in {"all", "gates"}:
-        for candidate_index, candidate in enumerate(("context", "aggr_y")):
-            candidate_methods = tuple(
-                method
-                for method in selected_gates
-                if method == {
-                    "context": "context_forecast",
-                    "aggr_y": "aggr_y",
-                }[candidate]
-                or f"_{candidate}_" in method
-            )
-            adaptive_methods = tuple(
-                method for method in candidate_methods
-                if method in GATE_ADAPTIVE_METHODS
-            )
-            if not adaptive_methods:
-                continue
-            LOGGER.info("gate fitting start candidate=%s", candidate)
-            candidate_predictions, artifacts, diagnostics = add_candidate_gate_predictions(
-                predictions_by_split,
-                fit_arrays["T1"],
-                fit_arrays["T2"],
-                fit_arrays["T1+T2"],
-                arrays_by_split,
-                candidate=candidate,
-                iterations=args.gate_iterations,
-                learning_rate=args.gate_learning_rate,
-                depth=args.gate_depth,
-                early_stopping_rounds=args.gate_early_stopping_rounds,
-                seed=args.seed + candidate_index * 100_000,
-                task_type=args.gate_task_type,
-                devices=args.gate_devices,
-                thread_count=args.gate_thread_count,
-                horizon_jobs=args.gate_horizon_jobs,
-                methods=adaptive_methods,
-            )
-            predictions_by_split = candidate_predictions
-            gate_artifacts[candidate] = artifacts
-            for split in gate_diagnostics:
-                gate_diagnostics[split].update(diagnostics[split])
-            LOGGER.info("gate fitting done candidate=%s", candidate)
-
-    rows = evaluate_predictions(
-        "eval",
-        arrays_by_split["eval"],
-        predictions_by_split["eval"],
-    )
+        rows, _, prediction_manifest = run_streamed_gates(
+            arrays_by_split,
+            fit_arrays,
+            output_dir=output_dir,
+            selected_methods=selected_gates,
+            iterations=args.gate_iterations,
+            learning_rate=args.gate_learning_rate,
+            depth=args.gate_depth,
+            early_stopping_rounds=args.gate_early_stopping_rounds,
+            seed=args.seed,
+            task_type=args.gate_task_type,
+            devices=args.gate_devices,
+            thread_count=args.gate_thread_count,
+            feature_importance_top_k=args.feature_importance_top_k,
+        )
     frame = pd.DataFrame(rows)
     metrics_stem = "gate_metrics" if args.family == "gates" else "baseline_metrics"
     artifact_path = output_dir / (
-        "gate_artifacts.pt" if args.family == "gates" else "baseline_artifacts.pt"
+        "gate_artifacts.json" if args.family == "gates" else "baseline_artifacts.pt"
     )
-    visualization_path = output_dir / "visualization_payload.pt"
     csv_path, json_path = write_metric_outputs(frame, output_dir, metrics_stem)
-    saved_artifacts: dict[str, Any] = {
-        "family": args.family,
-        "methods": list(selected_methods),
-        "split_protocol": resplit,
-        "fit_sampling": fit_sampling,
-    }
-    if baseline_artifacts is not None:
-        saved_artifacts["baseline_artifacts"] = baseline_artifacts
-    if eval_fit_artifacts is not None:
-        saved_artifacts["eval_fit_baseline_artifacts"] = eval_fit_artifacts
-    if gate_artifacts:
-        saved_artifacts["gate_artifacts"] = gate_artifacts
-        saved_artifacts["gate_config"] = {
-            "candidates": sorted(gate_artifacts),
-            "protocol": "T1 fit, T2 early stopping, T1+T2 refit, T3 score",
-            "iterations": args.gate_iterations,
-            "learning_rate": args.gate_learning_rate,
-            "depth": args.gate_depth,
-            "early_stopping_rounds": args.gate_early_stopping_rounds,
-            "task_type": args.gate_task_type,
-            "devices": args.gate_devices,
-            "thread_count": args.gate_thread_count,
-            "horizon_jobs": args.gate_horizon_jobs,
-            "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
-            "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
-        }
-        importance = save_gate_feature_importance_plots(
-            gate_artifacts,
-            output_dir / "plots",
-            top_k=args.feature_importance_top_k,
-        )
-        LOGGER.info("feature-importance outputs=%s", len(importance))
-    torch.save(saved_artifacts, artifact_path)
-    torch.save(
-        visualization_payload(predictions_by_split, gate_diagnostics),
-        visualization_path,
-    )
     elapsed_seconds = perf_counter() - started
     timing_path = output_dir / (
         "gate_timing.json" if args.family == "gates" else "baseline_timing.json"
@@ -1892,14 +2200,36 @@ def main() -> dict[str, Path]:
         ),
         encoding="utf-8",
     )
+    result_manifest = output_dir / "result_manifest.json"
+    result_manifest.write_text(
+        json.dumps(
+            {
+                "format": "adaptation_evaluation_result",
+                "family": args.family,
+                "methods": list(selected_methods),
+                "split_protocol": resplit,
+                "fit_sampling": fit_sampling,
+                "files": {
+                    "metrics_csv": csv_path.name,
+                    "metrics_json": json_path.name,
+                    "artifacts": artifact_path.name,
+                    "predictions": prediction_manifest.name,
+                    "timing": timing_path.name,
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     LOGGER.info("experiment done seconds=%.2f", elapsed_seconds)
     log_experiment_separator(LOGGER)
     return {
         "csv": csv_path,
         "json": json_path,
         "artifacts": artifact_path,
-        "visualization": visualization_path,
+        "predictions": prediction_manifest,
         "timing": timing_path,
+        "manifest": result_manifest,
     }
 
 
