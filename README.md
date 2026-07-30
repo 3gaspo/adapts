@@ -366,11 +366,10 @@ window and horizon errors, gate summaries and threshold curves, CatBoost gate
 importance, fitted baseline coefficient importance, and TS-IFA ridge/neural
 rooter coefficient heatmaps.
 
-TS-IFA outputs generated before neural-rooter coefficient diagnostics were
-introduced remain sufficient for the fixed ridge heatmap, but rerun
-`ts_ifa.slurm` for the affected configurations to populate the neural-rooter
-heatmap. The launcher treats prediction stores without that diagnostic as
-incomplete.
+Every TS-IFA output must use the current result and prediction-store contracts
+and include the neural-rooter coefficient diagnostics. Older outputs are
+incomplete and unsupported; rerun `ts_ifa.slurm` for every affected
+configuration.
 
 ## Local checks
 
