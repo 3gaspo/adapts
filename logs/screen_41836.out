@@ -645,3 +645,128 @@
 2026-07-30 23:12:22,953 INFO [__main__] ========================================================================
 2026-07-30T23:12:23+02:00 baselines done configuration=1/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
 2026-07-30 23:12:25,257 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/168_24/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:12:25+02:00 baselines start configuration=2/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:12:27,824 INFO [__main__] ========================================================================
+2026-07-30 23:12:27,825 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:12:29,320 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:12:29,940 INFO [__main__] baseline selection done
+2026-07-30 23:12:30,038 INFO [__main__] experiment done seconds=2.21
+2026-07-30 23:12:30,039 INFO [__main__] ========================================================================
+2026-07-30T23:12:30+02:00 baselines done configuration=2/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online
+2026-07-30 23:12:32,389 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/168_24/chronos2/instance_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:12:32+02:00 baselines start configuration=3/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:12:34,971 INFO [__main__] ========================================================================
+2026-07-30 23:12:34,972 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:12:36,439 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:12:36,775 INFO [__main__] baseline selection done
+2026-07-30 23:12:36,872 INFO [__main__] experiment done seconds=1.90
+2026-07-30 23:12:36,872 INFO [__main__] ========================================================================
+2026-07-30T23:12:37+02:00 baselines done configuration=3/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+2026-07-30 23:12:39,197 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/168_24/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:12:39+02:00 baselines start configuration=4/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:12:41,910 INFO [__main__] ========================================================================
+2026-07-30 23:12:41,910 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:12:43,374 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:12:43,995 INFO [__main__] baseline selection done
+2026-07-30 23:12:44,092 INFO [__main__] experiment done seconds=2.18
+2026-07-30 23:12:44,092 INFO [__main__] ========================================================================
+2026-07-30T23:12:44+02:00 baselines done configuration=4/72 dataset=ETTh1 model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_10_online
+2026-07-30 23:12:46,380 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/336_48/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:12:46+02:00 baselines start configuration=5/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:12:48,832 INFO [__main__] ========================================================================
+2026-07-30 23:12:48,832 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:12:50,271 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:12:50,739 INFO [__main__] baseline selection done
+2026-07-30 23:12:50,873 INFO [__main__] experiment done seconds=2.04
+2026-07-30 23:12:50,873 INFO [__main__] ========================================================================
+2026-07-30T23:12:51+02:00 baselines done configuration=5/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_1_online
+2026-07-30 23:12:53,398 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/336_48/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:12:53+02:00 baselines start configuration=6/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:12:55,913 INFO [__main__] ========================================================================
+2026-07-30 23:12:55,913 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:12:57,392 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:12:58,287 INFO [__main__] baseline selection done
+2026-07-30 23:12:58,381 INFO [__main__] experiment done seconds=2.47
+2026-07-30 23:12:58,382 INFO [__main__] ========================================================================
+2026-07-30T23:12:58+02:00 baselines done configuration=6/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_10_online
+2026-07-30 23:13:00,667 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/336_48/chronos2/instance_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:13:01+02:00 baselines start configuration=7/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:03,279 INFO [__main__] ========================================================================
+2026-07-30 23:13:03,279 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:04,893 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:05,402 INFO [__main__] baseline selection done
+2026-07-30 23:13:05,496 INFO [__main__] experiment done seconds=2.21
+2026-07-30 23:13:05,496 INFO [__main__] ========================================================================
+2026-07-30T23:13:05+02:00 baselines done configuration=7/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_1_online
+2026-07-30 23:13:07,788 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/336_48/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:13:08+02:00 baselines start configuration=8/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:10,364 INFO [__main__] ========================================================================
+2026-07-30 23:13:10,364 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:12,425 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:13,353 INFO [__main__] baseline selection done
+2026-07-30 23:13:13,450 INFO [__main__] experiment done seconds=3.08
+2026-07-30 23:13:13,450 INFO [__main__] ========================================================================
+2026-07-30T23:13:13+02:00 baselines done configuration=8/72 dataset=ETTh1 model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_10_online
+2026-07-30 23:13:15,779 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/504_168/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:13:16+02:00 baselines start configuration=9/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:18,304 INFO [__main__] ========================================================================
+2026-07-30 23:13:18,304 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:20,013 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:20,972 INFO [__main__] baseline selection done
+2026-07-30 23:13:21,066 INFO [__main__] experiment done seconds=2.76
+2026-07-30 23:13:21,066 INFO [__main__] ========================================================================
+2026-07-30T23:13:21+02:00 baselines done configuration=9/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-07-30 23:13:23,338 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/504_168/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:13:23+02:00 baselines start configuration=10/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:25,856 INFO [__main__] ========================================================================
+2026-07-30 23:13:25,856 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:28,168 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:30,171 INFO [__main__] baseline selection done
+2026-07-30 23:13:30,267 INFO [__main__] experiment done seconds=4.41
+2026-07-30 23:13:30,267 INFO [__main__] ========================================================================
+2026-07-30T23:13:30+02:00 baselines done configuration=10/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+2026-07-30 23:13:32,591 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/504_168/chronos2/instance_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:13:32+02:00 baselines start configuration=11/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:35,161 INFO [__main__] ========================================================================
+2026-07-30 23:13:35,162 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:36,764 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:37,740 INFO [__main__] baseline selection done
+2026-07-30 23:13:37,839 INFO [__main__] experiment done seconds=2.67
+2026-07-30 23:13:37,839 INFO [__main__] ========================================================================
+2026-07-30T23:13:38+02:00 baselines done configuration=11/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_1_online
+2026-07-30 23:13:40,176 INFO [__main__] extraction validation directory=outputs/adaptation/ETTh1/504_168/chronos2/instance_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:13:40+02:00 baselines start configuration=12/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:42,878 INFO [__main__] ========================================================================
+2026-07-30 23:13:42,878 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:45,101 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:13:47,258 INFO [__main__] baseline selection done
+2026-07-30 23:13:47,353 INFO [__main__] experiment done seconds=4.47
+2026-07-30 23:13:47,353 INFO [__main__] ========================================================================
+2026-07-30T23:13:47+02:00 baselines done configuration=12/72 dataset=ETTh1 model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_10_online
+2026-07-30 23:13:49,640 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/168_24/chronos2/raw_euclidean_1_online/extracted status=complete
+
+2026-07-30T23:13:49+02:00 baselines start configuration=13/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:13:52,209 INFO [__main__] ========================================================================
+2026-07-30 23:13:52,209 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:13:56,410 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-07-30 23:14:02,186 INFO [__main__] baseline selection done
+2026-07-30 23:14:02,281 INFO [__main__] experiment done seconds=10.07
+2026-07-30 23:14:02,281 INFO [__main__] ========================================================================
+2026-07-30T23:14:02+02:00 baselines done configuration=13/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
+2026-07-30 23:14:04,745 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/168_24/chronos2/raw_euclidean_10_online/extracted status=complete
+
+2026-07-30T23:14:05+02:00 baselines start configuration=14/72 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_10_online family=baselines l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none max_eval_fit_samples=none fit_sample_seed=1
+2026-07-30 23:14:07,333 INFO [__main__] ========================================================================
+2026-07-30 23:14:07,333 INFO [__main__] selected methods=('aggr_y', 'aggr_y_mix_horizon', 'aggr_y_mix_shared', 'aggr_y_ridge_horizon', 'aggr_y_ridge_shared', 'context_forecast', 'context_ridge_horizon', 'context_ridge_shared', 'cov_horizon_ridge_horizon', 'cov_horizon_ridge_shared', 'cov_y_ridge_shared', 'full_ridge_horizon', 'full_ridge_shared', 'residual_ridge_horizon', 'residual_ridge_shared', 'y_mean', 'y_ridge_horizon', 'y_ridge_shared')
+2026-07-30 23:14:21,160 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
