@@ -1,0 +1,656 @@
+{
+  "format": "adaptation_gate_models",
+  "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+  "config": {
+    "iterations": 300,
+    "learning_rate": 0.03,
+    "depth": 4,
+    "early_stopping_rounds": 50,
+    "seed": 1,
+    "task_type": "CPU",
+    "devices": null,
+    "thread_count": 2,
+    "horizon_fits": "serial",
+    "scalar_feature_names": [
+      "candidate_minus_vanilla_mean",
+      "candidate_minus_vanilla_std",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ],
+    "horizon_feature_names": [
+      "candidate_minus_vanilla_h",
+      "neighbor_y_minus_vanilla_mean_h",
+      "neighbor_y_minus_vanilla_std_h",
+      "neighbor_y_minus_neighbor_pred_mean_h",
+      "neighbor_y_minus_neighbor_pred_std_h",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ]
+  },
+  "models": {
+    "catboost_context_classifier_shared": [
+      {
+        "selected_iterations": 299,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_shared/shared.cbm"
+      }
+    ],
+    "catboost_context_classifier_horizon": [
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0000.cbm"
+      },
+      {
+        "selected_iterations": 299,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0001.cbm"
+      },
+      {
+        "selected_iterations": 299,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0002.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0003.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0004.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0005.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0006.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0007.cbm"
+      },
+      {
+        "selected_iterations": 296,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0008.cbm"
+      },
+      {
+        "selected_iterations": 295,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0009.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0010.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0011.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0012.cbm"
+      },
+      {
+        "selected_iterations": 17,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0013.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0014.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0015.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0016.cbm"
+      },
+      {
+        "selected_iterations": 299,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0017.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0018.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0019.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0020.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0021.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0022.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_context_classifier_horizon/horizon_0023.cbm"
+      }
+    ],
+    "catboost_context_regressor_shared": [
+      {
+        "selected_iterations": 18,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_shared/shared.cbm"
+      }
+    ],
+    "catboost_context_regressor_horizon": [
+      {
+        "selected_iterations": 257,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0000.cbm"
+      },
+      {
+        "selected_iterations": 80,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0001.cbm"
+      },
+      {
+        "selected_iterations": 242,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0002.cbm"
+      },
+      {
+        "selected_iterations": 38,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0003.cbm"
+      },
+      {
+        "selected_iterations": 22,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0004.cbm"
+      },
+      {
+        "selected_iterations": 6,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0005.cbm"
+      },
+      {
+        "selected_iterations": 1,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0006.cbm"
+      },
+      {
+        "selected_iterations": 82,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0007.cbm"
+      },
+      {
+        "selected_iterations": 57,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0008.cbm"
+      },
+      {
+        "selected_iterations": 24,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0009.cbm"
+      },
+      {
+        "selected_iterations": 169,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0010.cbm"
+      },
+      {
+        "selected_iterations": 80,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0011.cbm"
+      },
+      {
+        "selected_iterations": 59,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0012.cbm"
+      },
+      {
+        "selected_iterations": 4,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0013.cbm"
+      },
+      {
+        "selected_iterations": 5,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0014.cbm"
+      },
+      {
+        "selected_iterations": 1,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0015.cbm"
+      },
+      {
+        "selected_iterations": 3,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0016.cbm"
+      },
+      {
+        "selected_iterations": 13,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0017.cbm"
+      },
+      {
+        "selected_iterations": 1,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0018.cbm"
+      },
+      {
+        "selected_iterations": 3,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0019.cbm"
+      },
+      {
+        "selected_iterations": 8,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0020.cbm"
+      },
+      {
+        "selected_iterations": 6,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0021.cbm"
+      },
+      {
+        "selected_iterations": 1,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0022.cbm"
+      },
+      {
+        "selected_iterations": 267,
+        "kind": "regressor",
+        "path": "models/catboost_context_regressor_horizon/horizon_0023.cbm"
+      }
+    ],
+    "catboost_aggr_y_classifier_shared": [
+      {
+        "selected_iterations": 298,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_shared/shared.cbm"
+      }
+    ],
+    "catboost_aggr_y_classifier_horizon": [
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0000.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0001.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0002.cbm"
+      },
+      {
+        "selected_iterations": 298,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0003.cbm"
+      },
+      {
+        "selected_iterations": 294,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0004.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0005.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0006.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0007.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0008.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0009.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0010.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0011.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0012.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0013.cbm"
+      },
+      {
+        "selected_iterations": 298,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0014.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0015.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0016.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0017.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0018.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0019.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0020.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0021.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0022.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "classifier",
+        "path": "models/catboost_aggr_y_classifier_horizon/horizon_0023.cbm"
+      }
+    ],
+    "catboost_aggr_y_regressor_shared": [
+      {
+        "selected_iterations": 288,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_shared/shared.cbm"
+      }
+    ],
+    "catboost_aggr_y_regressor_horizon": [
+      {
+        "selected_iterations": 297,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0000.cbm"
+      },
+      {
+        "selected_iterations": 46,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0001.cbm"
+      },
+      {
+        "selected_iterations": 40,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0002.cbm"
+      },
+      {
+        "selected_iterations": 55,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0003.cbm"
+      },
+      {
+        "selected_iterations": 44,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0004.cbm"
+      },
+      {
+        "selected_iterations": 23,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0005.cbm"
+      },
+      {
+        "selected_iterations": 32,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0006.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0007.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0008.cbm"
+      },
+      {
+        "selected_iterations": 297,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0009.cbm"
+      },
+      {
+        "selected_iterations": 223,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0010.cbm"
+      },
+      {
+        "selected_iterations": 162,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0011.cbm"
+      },
+      {
+        "selected_iterations": 31,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0012.cbm"
+      },
+      {
+        "selected_iterations": 60,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0013.cbm"
+      },
+      {
+        "selected_iterations": 97,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0014.cbm"
+      },
+      {
+        "selected_iterations": 66,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0015.cbm"
+      },
+      {
+        "selected_iterations": 174,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0016.cbm"
+      },
+      {
+        "selected_iterations": 296,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0017.cbm"
+      },
+      {
+        "selected_iterations": 149,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0018.cbm"
+      },
+      {
+        "selected_iterations": 74,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0019.cbm"
+      },
+      {
+        "selected_iterations": 12,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0020.cbm"
+      },
+      {
+        "selected_iterations": 124,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0021.cbm"
+      },
+      {
+        "selected_iterations": 297,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0022.cbm"
+      },
+      {
+        "selected_iterations": 300,
+        "kind": "regressor",
+        "path": "models/catboost_aggr_y_regressor_horizon/horizon_0023.cbm"
+      }
+    ]
+  },
+  "bayes": {
+    "context": {
+      "shared_score": -1.5816689483472146e-05,
+      "horizon_score": [
+        -3.9709702832624316e-05,
+        -3.1240655516739935e-05,
+        -4.236870609020116e-06,
+        -4.831933438254055e-06,
+        -3.5473224215820665e-06,
+        3.6861337093796465e-07,
+        7.669316801184323e-06,
+        -1.0329949873266742e-05,
+        -3.558814205462113e-05,
+        -3.943818592233583e-05,
+        -5.895097638131119e-05,
+        -4.796924986294471e-05,
+        -1.7146117897937074e-05,
+        -1.340300400443084e-06,
+        -3.8733010114810895e-06,
+        -5.123535629536491e-06,
+        -3.937694145861315e-06,
+        7.1875047069625e-07,
+        2.394097577962384e-07,
+        1.7314604860985128e-08,
+        -1.796918581931095e-06,
+        -1.0893517355725635e-05,
+        -1.9319068087497726e-05,
+        -4.934150638291612e-05
+      ]
+    },
+    "aggr_y": {
+      "shared_score": -0.0002266666997456923,
+      "horizon_score": [
+        -0.0007147784344851971,
+        -0.0006140086916275322,
+        -0.0002726198872551322,
+        -0.000139613650389947,
+        -0.0001198973914142698,
+        -0.00013841345207765698,
+        -0.0001480885111959651,
+        -0.00025986236869357526,
+        -0.00035205279709771276,
+        -0.0004826746298931539,
+        -0.000473642983706668,
+        -0.00034720872645266354,
+        -0.000154723267769441,
+        -6.793565989937633e-05,
+        -6.211175059434026e-05,
+        -5.5947610235307366e-05,
+        -4.42407326772809e-05,
+        -4.183386772638187e-05,
+        -4.449783591553569e-05,
+        -4.364924825495109e-05,
+        -5.11868747707922e-05,
+        -0.00012229278218001127,
+        -0.0002374316391069442,
+        -0.00045136752305552363
+      ]
+    }
+  },
+  "feature_importance_files": [
+    "plots/feature_importance_context_classifier_shared.csv",
+    "plots/feature_importance_context_classifier_shared.png",
+    "plots/feature_importance_context_classifier_horizon.csv",
+    "plots/feature_importance_context_classifier_horizon.png",
+    "plots/feature_importance_context_regressor_shared.csv",
+    "plots/feature_importance_context_regressor_shared.png",
+    "plots/feature_importance_context_regressor_horizon.csv",
+    "plots/feature_importance_context_regressor_horizon.png",
+    "plots/feature_importance_aggr_y_classifier_shared.csv",
+    "plots/feature_importance_aggr_y_classifier_shared.png",
+    "plots/feature_importance_aggr_y_classifier_horizon.csv",
+    "plots/feature_importance_aggr_y_classifier_horizon.png",
+    "plots/feature_importance_aggr_y_regressor_shared.csv",
+    "plots/feature_importance_aggr_y_regressor_shared.png",
+    "plots/feature_importance_aggr_y_regressor_horizon.csv",
+    "plots/feature_importance_aggr_y_regressor_horizon.png"
+  ]
+}

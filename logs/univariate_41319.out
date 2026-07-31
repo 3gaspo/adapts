@@ -1,0 +1,19 @@
+
+2026-07-26T13:32:29+02:00 job start kind=univariate experiment_mode=test tasks=1 datasets=Electricity settings=168:24
+
+2026-07-26T13:32:29+02:00 univariate start configuration=1/1 dataset=Electricity lags=168 horizon=24 model=chronos2 eval_stride=256 normalization=instance seed=1
+2026-07-26 13:32:31,430 INFO [__main__] ========================================================================
+2026-07-26 13:32:31,430 INFO [__main__] experiment start kind=univariate dataset=Electricity model=chronos2 lags=168 horizon=24
+2026-07-26 13:32:31,823 INFO [__main__] dataset load start
+2026-07-26 13:32:31,824 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-07-26 13:32:32,517 INFO [__main__] dataset load done dates=26304 users=312
+2026-07-26 13:32:32,518 INFO [__main__] model load start
+2026-07-26 13:32:43,208 INFO [__main__] model load done device=cuda
+2026-07-26 13:32:43,215 INFO [__main__] evaluation start split=eval queries=21
+2026-07-26 13:34:10,902 INFO [__main__] evaluation done split=eval
+2026-07-26 13:34:11,719 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/univariate/Electricity/168_24/chronos2
+2026-07-26 13:34:11,719 INFO [__main__] experiment done seconds=100.29
+2026-07-26 13:34:11,719 INFO [__main__] ========================================================================
+2026-07-26T13:34:12+02:00 univariate done configuration=1/1 dataset=Electricity lags=168 horizon=24 model=chronos2
+
+2026-07-26T13:34:12+02:00 job done kind=univariate output=outputs/univariate

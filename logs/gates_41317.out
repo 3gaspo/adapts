@@ -1,0 +1,17 @@
+
+2026-07-26T13:31:49+02:00 job start kind=gates experiment_mode=test skip_complete=false tasks=1 datasets=Electricity models=chronos2 settings=168:24 distance_spaces=raw distance_metrics=euclidean neighbors=3 methods=all task_type=CPU thread_count=2 horizon_jobs=8 allocated_cpus=16 results_root=outputs/adaptation_results/test
+2026-07-26 13:31:51,482 INFO [__main__] extraction validation directory=outputs/adaptation/Electricity/168_24/chronos2/raw_euclidean_3_online/extracted status=complete
+
+2026-07-26T13:31:51+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_3_online family=gates iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 horizon_jobs=8 validation_fraction=0.2 seed=1 max_t1_fit_samples=none max_t2_valid_samples=none max_adapt_refit_samples=none fit_sample_seed=1
+2026-07-26 13:31:54,277 INFO [__main__] ========================================================================
+2026-07-26 13:31:54,278 INFO [__main__] selected methods=('aggr_y', 'bayes_aggr_y_horizon', 'bayes_aggr_y_shared', 'bayes_context_horizon', 'bayes_context_shared', 'catboost_aggr_y_classifier_horizon', 'catboost_aggr_y_classifier_shared', 'catboost_aggr_y_regressor_horizon', 'catboost_aggr_y_regressor_shared', 'catboost_context_classifier_horizon', 'catboost_context_classifier_shared', 'catboost_context_regressor_horizon', 'catboost_context_regressor_shared', 'context_forecast')
+2026-07-26 13:31:55,838 INFO [__main__] gate fitting start candidate=context
+2026-07-26 13:31:59,036 INFO [__main__] gate fitting done candidate=context
+2026-07-26 13:31:59,036 INFO [__main__] gate fitting start candidate=aggr_y
+2026-07-26 13:32:01,180 INFO [__main__] gate fitting done candidate=aggr_y
+2026-07-26 13:32:04,477 INFO [__main__] feature-importance outputs=16
+2026-07-26 13:32:04,627 INFO [__main__] experiment done seconds=10.35
+2026-07-26 13:32:04,628 INFO [__main__] ========================================================================
+2026-07-26T13:32:05+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_3_online
+
+2026-07-26T13:32:05+02:00 job done kind=gates output=outputs/adaptation_results/test

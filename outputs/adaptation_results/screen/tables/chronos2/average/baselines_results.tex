@@ -1,0 +1,47 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.62.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+Model & raw\_L2\_1 & raw\_L2\_10 & IN\_L2\_1 & IN\_L2\_10 \\
+\midrule
+ctx & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-4.57\%}\\{\scriptsize 0.64}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-10.53\%}\\{\scriptsize 0.70}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-9.75\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-11.02\%}\\{\scriptsize 0.69}\end{tabular} \\
+aggr-Y & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-155.02\%}\\{\scriptsize 1.78}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-83.67\%}\\{\scriptsize 1.29}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-112.77\%}\\{\scriptsize 1.36}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-55.78\%}\\{\scriptsize 0.99}\end{tabular} \\
+mean-Y & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-155.02\%}\\{\scriptsize 1.78}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-81.01\%}\\{\scriptsize 1.31}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-112.77\%}\\{\scriptsize 1.36}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-44.40\%}\\{\scriptsize 0.93}\end{tabular} \\
+aggr-Y-lambda-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.63\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.21\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.44\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.30\%}\\{\scriptsize 0.62}\end{tabular} \\
+aggr-Y-lambda-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.56\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.52\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.28\%}\\{\scriptsize 0.62}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{\textbf{-0.05\%}}\\{\scriptsize 0.62}\end{tabular} \\
+VC-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.88\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.66\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-3.22\%}\\{\scriptsize 0.66}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.66\%}\\{\scriptsize 0.65}\end{tabular} \\
+VC-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-41.49\%}\\{\scriptsize 0.75}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-41.02\%}\\{\scriptsize 0.75}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-41.62\%}\\{\scriptsize 0.75}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-41.28\%}\\{\scriptsize 0.75}\end{tabular} \\
+aggr-Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.44\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.18\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.70\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.44\%}\\{\scriptsize 0.65}\end{tabular} \\
+aggr-Y-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-30.96\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-30.49\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-31.10\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-30.27\%}\\{\scriptsize 0.72}\end{tabular} \\
+Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.44\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-23.24\%}\\{\scriptsize 0.85}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.70\%}\\{\scriptsize 0.65}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-27.47\%}\\{\scriptsize 0.91}\end{tabular} \\
+Y-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-30.96\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-61.66\%}\\{\scriptsize 1.04}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-31.10\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-62.12\%}\\{\scriptsize 1.05}\end{tabular} \\
+VCY-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.95\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-26.55\%}\\{\scriptsize 0.89}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-6.19\%}\\{\scriptsize 0.69}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-30.80\%}\\{\scriptsize 0.94}\end{tabular} \\
+cov-h-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.95\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.25\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-6.19\%}\\{\scriptsize 0.69}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.58\%}\\{\scriptsize 0.68}\end{tabular} \\
+cov-h-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-43.07\%}\\{\scriptsize 0.78}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-41.02\%}\\{\scriptsize 0.77}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-43.31\%}\\{\scriptsize 0.78}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-38.53\%}\\{\scriptsize 0.77}\end{tabular} \\
+residual-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.92\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-45.98\%}\\{\scriptsize 1.10}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.94\%}\\{\scriptsize 0.68}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-52.28\%}\\{\scriptsize 1.17}\end{tabular} \\
+residual-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-33.84\%}\\{\scriptsize 0.76}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-64.80\%}\\{\scriptsize 1.26}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-33.38\%}\\{\scriptsize 0.76}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-69.26\%}\\{\scriptsize 1.30}\end{tabular} \\
+full-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-9.54\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-47.21\%}\\{\scriptsize 1.12}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-9.73\%}\\{\scriptsize 0.72}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-52.14\%}\\{\scriptsize 1.17}\end{tabular} \\
+full-ridge-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-45.87\%}\\{\scriptsize 0.82}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-70.86\%}\\{\scriptsize 1.28}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-45.82\%}\\{\scriptsize 0.82}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-76.87\%}\\{\scriptsize 1.34}\end{tabular} \\
+\midrule
+aggr-Y-lambda-s-fit-T3 & -- & -- & -- & -- \\
+aggr-Y-lambda-h-fit-T3 & -- & -- & -- & -- \\
+VC-ridge-s-fit-T3 & -- & -- & -- & -- \\
+VC-ridge-h-fit-T3 & -- & -- & -- & -- \\
+aggr-Y-ridge-s-fit-T3 & -- & -- & -- & -- \\
+aggr-Y-ridge-h-fit-T3 & -- & -- & -- & -- \\
+Y-ridge-s-fit-T3 & -- & -- & -- & -- \\
+Y-ridge-h-fit-T3 & -- & -- & -- & -- \\
+VCY-ridge-s-fit-T3 & -- & -- & -- & -- \\
+cov-h-ridge-s-fit-T3 & -- & -- & -- & -- \\
+cov-h-ridge-h-fit-T3 & -- & -- & -- & -- \\
+residual-ridge-s-fit-T3 & -- & -- & -- & -- \\
+residual-ridge-h-fit-T3 & -- & -- & -- & -- \\
+full-ridge-s-fit-T3 & -- & -- & -- & -- \\
+full-ridge-h-fit-T3 & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}
