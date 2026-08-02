@@ -8,7 +8,7 @@ require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
-OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
+OUT_ROOT="${OUT_ROOT:-outputs/extractions}"
 RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/${EXPERIMENT_MODE:-test}}"
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
@@ -132,10 +132,10 @@ run_task() {
   VANILLA_DEST="$RESULTS_ROOT/$dataset/${L}_${H}/$model/vanilla"
   assert_files vanilla-metrics "$VANILLA_SOURCE" "$VANILLA_TIMING_SOURCE" "$INPUT_DIR/extraction_timing.json"
   mkdir -p "$VANILLA_DEST"
-  cp "$VANILLA_SOURCE" "$VANILLA_DEST/vanilla_metrics.json"
-  cp "$VANILLA_TIMING_SOURCE" "$VANILLA_DEST/extraction_timing.json"
+  copy_if_needed "$VANILLA_SOURCE" "$VANILLA_DEST/vanilla_metrics.json"
+  copy_if_needed "$VANILLA_TIMING_SOURCE" "$VANILLA_DEST/extraction_timing.json"
   mkdir -p "$RESULT_RUN_ROOT"
-  cp "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
+  copy_if_needed "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
   if is_true "$SKIP_COMPLETE" && gate_complete "$OUTPUT_DIR" &&
     result_methods_match "$OUTPUT_DIR/result_manifest.json" "$GATE_METHODS_CSV" &&
     [ "$OUTPUT_DIR/gate_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then

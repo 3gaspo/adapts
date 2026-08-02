@@ -13,7 +13,7 @@ export PYTHONPATH="$PROJECT_ROOT"
 # directories or edit the candidate paths in common.sh.
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
-: "${OUT_ROOT:=outputs/adaptation}"
+: "${OUT_ROOT:=outputs/extractions}"
 : "${EXPERIMENT_MODE:=test}"
 require_experiment_mode
 

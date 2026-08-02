@@ -669,7 +669,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--search-chunk-size", type=int, default=512)
-    parser.add_argument("--output-dir", default="outputs/adaptation")
+    parser.add_argument("--output-dir", default="outputs/extractions")
     parser.add_argument("--save-name", default="neighbors")
     parser.add_argument(
         "--skip-complete",

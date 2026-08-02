@@ -9,7 +9,7 @@ require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
-OUT_ROOT="${OUT_ROOT:-outputs/adaptation}"
+OUT_ROOT="${OUT_ROOT:-outputs/extractions}"
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/$EXPERIMENT_MODE}"
 require_experiment_mode

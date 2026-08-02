@@ -189,6 +189,27 @@ require_project_root() {
   mkdir -p logs outputs
 }
 
+copy_if_needed() {
+  local source="$1"
+  local destination="$2"
+  local destination_dir temporary
+  if [ -f "$destination" ] && cmp -s "$source" "$destination"; then
+    return 0
+  fi
+  destination_dir="$(dirname "$destination")"
+  mkdir -p "$destination_dir"
+  temporary="$(mktemp "$destination_dir/.${destination##*/}.XXXXXX")"
+  if ! cp "$source" "$temporary"; then
+    rm -f "$temporary"
+    return 1
+  fi
+  if [ -f "$destination" ] && cmp -s "$temporary" "$destination"; then
+    rm -f "$temporary"
+    return 0
+  fi
+  mv -f "$temporary" "$destination"
+}
+
 require_extraction() {
   local directory="$1"
   if ! python -m src.experiments.artifacts "$directory"; then

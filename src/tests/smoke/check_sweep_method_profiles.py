@@ -75,6 +75,8 @@ def main() -> None:
     assert not (ROOT / "src" / "slurm" / "run_univariate.sh").exists()
 
     common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")
+    assert "copy_if_needed()" in common
+    assert 'mktemp "$destination_dir/.${destination##*/}.XXXXXX"' in common
     assert "small" not in re.search(
         r"require_experiment_mode\(\) \{.*?\n\}", common, flags=re.DOTALL
     ).group()
@@ -142,9 +144,22 @@ def main() -> None:
     gate_runner = (ROOT / "src" / "slurm" / "run_gates.sh").read_text(
         encoding="utf-8"
     )
+    ts_ifa_runner = (ROOT / "src" / "slurm" / "run_ts_ifa.sh").read_text(
+        encoding="utf-8"
+    )
+    crossrag_runner = (ROOT / "src" / "slurm" / "run_crossrag.sh").read_text(
+        encoding="utf-8"
+    )
     table_runner = (ROOT / "src" / "slurm" / "build_tables.sh").read_text(
         encoding="utf-8"
     )
+    for runner in (baseline_runner, gate_runner, ts_ifa_runner, crossrag_runner):
+        assert 'OUT_ROOT="${OUT_ROOT:-outputs/extractions}"' in runner
+        assert runner.count("copy_if_needed") == 3
+    assert 'OUT_ROOT="${OUT_ROOT:-outputs/extractions}"' in table_runner
+    assert ': "${OUT_ROOT:=outputs/extractions}"' in (
+        ROOT / "src" / "slurm" / "extract_adaptation.sh"
+    ).read_text(encoding="utf-8")
     assert 'test|screen) DEFAULT_BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"' in baseline_runner
     assert 'test|screen) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"' in gate_runner
     assert 'PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"' in table_runner

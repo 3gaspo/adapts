@@ -45,7 +45,7 @@ never separated. The model-specific protocols are:
 Nothing fitted on T3 belongs in the main comparison.
 
 Extraction writes to
-`outputs/adaptation/<dataset>/<L>_<H>/<model>/<retrieval>/extracted/`.
+`outputs/extractions/<dataset>/<L>_<H>/<model>/<retrieval>/extracted/`.
 A usable extraction contains adapt/eval prediction and feature payloads
 plus `extraction_manifest.json`.  The manifest is written atomically only after
 all payloads exist and records the exact extraction signature, the resolved
@@ -53,9 +53,21 @@ dataset-config path and content hash, and file sizes.
 `--skip-complete` therefore skips a matching complete run but re-runs a partial,
 changed, or obsolete extraction.
 
+This extraction root replaces `outputs/adaptation/` without a compatibility
+reader. Git does not move ignored payloads already present on a persistent
+cluster checkout, so migrate them once after pulling this change:
+
+```bash
+mkdir -p outputs/extractions
+rsync -a --remove-source-files outputs/adaptation/ outputs/extractions/
+```
+
+After migration, downstream jobs reuse the extraction manifests and payloads
+from `outputs/extractions/`; extraction does not need to be rerun.
+
 Downstream results are profile-separated under
 `outputs/adaptation_results/<experiment_mode>/`; extraction payloads remain
-shared under `outputs/adaptation/`. Their contracts are:
+shared under `outputs/extractions/`. Their contracts are:
 
 ```text
 outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
@@ -74,7 +86,9 @@ folders are not accepted and are replaced when the run is launched again.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
 from `gate_artifacts.json`. TS-IFA stores T3 neural-rooter coefficients under
 the prediction store's `gate_diagnostics` kind and its fixed coefficient matrix
-in `ridge_rooter.pt`.
+in `ridge_rooter.pt`. Downstream launchers publish the shared vanilla metrics
+and extraction timing only when the destination is absent or stale; this
+publication is atomic, so baseline, gate, and TS-IFA jobs may start in parallel.
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
