@@ -639,7 +639,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--distance-space",
         default="instance",
-        choices=["raw", "instance", "minmax", "encoder"],
+        choices=["raw", "instance", "minmax", "fourier", "encoder"],
         help="Lookback space used by neighbor search",
     )
     parser.add_argument("--distance-metric", default="euclidean", choices=["euclidean", "cosine", "pearson"])

@@ -14,7 +14,7 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
 adaptation_profile_defaults
 case "$EXPERIMENT_MODE" in
-  test|k_ablation|h_ablation|l_ablation|crossrag)
+  test|horizon_baselines_ablation|k_ablation|h_ablation|l_ablation|crossrag)
     DEFAULT_SKIP_COMPLETE=false
     ;;
   *)
@@ -27,7 +27,11 @@ SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
-BASELINE_METHODS_CSV="${BASELINE_METHODS_CSV:-}"
+case "$EXPERIMENT_MODE" in
+  test|screen) DEFAULT_BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV" ;;
+  *) DEFAULT_BASELINE_METHODS_CSV="" ;;
+esac
+BASELINE_METHODS_CSV="${BASELINE_METHODS_CSV:-$DEFAULT_BASELINE_METHODS_CSV}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 L2_GRID="${L2_GRID:-0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10}"
@@ -40,6 +44,7 @@ MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
 require_resolved_profile_grid
+require_profile_neighbors "$NEIGHBORS_CSV"
 if requires_selected_methods && [ -z "$BASELINE_METHODS_CSV" ]; then
   log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE requires BASELINE_METHODS_CSV for the baseline candidate run"
   return 2
@@ -116,6 +121,7 @@ run_task() {
   mkdir -p "$RESULT_RUN_ROOT"
   cp "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
   if is_true "$SKIP_COMPLETE" && baseline_complete "$OUTPUT_DIR" &&
+    result_methods_match "$OUTPUT_DIR/result_manifest.json" "$BASELINE_METHODS_CSV" &&
     [ "$OUTPUT_DIR/baseline_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
     log "skip complete family=baselines dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return

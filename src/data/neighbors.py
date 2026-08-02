@@ -253,6 +253,8 @@ def build_window_batch(
         features = normalize_windows(lookbacks)
     elif space == "minmax":
         features = minmax_windows(lookbacks)
+    elif space == "fourier":
+        features = fourier_features(lookbacks)
     elif space == "encoder":
         if model is None:
             raise ValueError(f"distance_space={distance_space!r} requires a model")

@@ -26,12 +26,58 @@ is_true() {
 
 require_experiment_mode() {
   case "${EXPERIMENT_MODE:-test}" in
-    test|screen|k_ablation|h_ablation|l_ablation|crossrag|small|full|ultra) ;;
+    test|screen|full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) ;;
     *)
-      log_error "EXPERIMENT_MODE must be test, screen, k_ablation, h_ablation, l_ablation, crossrag, small, full, or ultra (got ${EXPERIMENT_MODE:-})"
+      log_error "unknown EXPERIMENT_MODE=${EXPERIMENT_MODE:-}"
       return 2
       ;;
   esac
+}
+
+require_scale_experiment_mode() {
+  case "${EXPERIMENT_MODE:-test}" in
+    test|full|ultra) ;;
+    *)
+      log_error "this front supports only EXPERIMENT_MODE=test, full, or ultra; use the dedicated screen/ablation front for ${EXPERIMENT_MODE:-}"
+      return 2
+      ;;
+  esac
+}
+
+require_test_experiment_mode() {
+  if [ "${EXPERIMENT_MODE:-test}" != test ]; then
+      log_error "this smoke front supports only EXPERIMENT_MODE=test; use benchmark.slurm for the final full/ultra comparison"
+      return 2
+  fi
+}
+
+require_benchmark_experiment_mode() {
+  case "${EXPERIMENT_MODE:-full}" in
+    full|ultra) ;;
+    *)
+      log_error "benchmark.slurm supports only EXPERIMENT_MODE=full or ultra"
+      return 2
+      ;;
+  esac
+}
+
+result_methods_match() {
+  local manifest="$1" expected_csv="$2"
+  python -c '
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+actual = set(manifest["methods"])
+expected = {item.strip() for item in sys.argv[2].replace(";", ",").split(",") if item.strip()}
+metric_fields = set(manifest.get("metric_fields", ()))
+raise SystemExit(
+    0
+    if (not expected or actual == expected) and "positive_window_pct" in metric_fields
+    else 1
+)
+' "$manifest" "$expected_csv"
 }
 
 activate_project_environment() {

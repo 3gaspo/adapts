@@ -28,10 +28,22 @@ else
 fi
 FAMILIES_CSV="${FAMILIES_CSV:-$DEFAULT_FAMILIES_CSV}"
 TABLE_KINDS_CSV="${TABLE_KINDS_CSV:-full,average}"
+PROFILE_METHODS_CSV=""
+case "$EXPERIMENT_MODE" in
+  test|screen)
+    if [ "$FAMILIES_CSV" = baselines ]; then
+      PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"
+    elif [ "$FAMILIES_CSV" = gates ]; then
+      PROFILE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"
+    elif [ "$FAMILIES_CSV" = baselines,gates ]; then
+      PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"
+    fi
+    ;;
+esac
 if [ -n "${BASELINE_METHODS_CSV:-}" ] && [ -n "${GATE_METHODS_CSV:-}" ]; then
   DEFAULT_METHODS_CSV="${BASELINE_METHODS_CSV},${GATE_METHODS_CSV}"
 else
-  DEFAULT_METHODS_CSV="${BASELINE_METHODS_CSV:-${GATE_METHODS_CSV:-}}"
+  DEFAULT_METHODS_CSV="${BASELINE_METHODS_CSV:-${GATE_METHODS_CSV:-$PROFILE_METHODS_CSV}}"
 fi
 METHODS_CSV="${METHODS_CSV:-$DEFAULT_METHODS_CSV}"
 PIPELINES_CSV="${PIPELINES_CSV:-}"
@@ -49,7 +61,7 @@ if [ "$EXPERIMENT_MODE" = crossrag ] && [ -z "$CANDIDATE_FAMILY" ]; then
   fi
 fi
 require_resolved_profile_grid
-if requires_selected_methods && [ -z "$METHODS_CSV" ]; then
+if requires_selected_methods && [ -z "$METHODS_CSV" ] && [ "$FAMILIES_CSV" != ts_ifa ]; then
   log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE requires METHODS_CSV for candidate-only tables"
   return 2
 fi
@@ -151,6 +163,16 @@ for model in "${MODELS[@]}"; do
     for family in "${FAMILIES[@]}"; do
       assert_files table-output "$OUTPUT_DIR/${family}_results.tex"
     done
+    if [ "$table_kind" = average ]; then
+      for family in "${FAMILIES[@]}"; do
+        case "$family" in
+          baselines|gates|full|comparison)
+            assert_files table-output "$OUTPUT_DIR/positive_windows_results.tex"
+            break
+            ;;
+        esac
+      done
+    fi
     log "table done model=$model kind=$table_kind output=$OUTPUT_DIR"
   done
 done

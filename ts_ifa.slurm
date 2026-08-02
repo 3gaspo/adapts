@@ -10,7 +10,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Select test, small, full (Chronos), or ultra (Chronos and TabPFN-TS).
+# Select test, full (Chronos-2), or ultra (Chronos-2 and TabPFN-TS).
 # One run reports all five candidates, the T2 ridge rooter, and full neural TS-IFA.
 # Optional controls include BRANCH_EPOCHS, ROOTER_EPOCHS, VANILLA_ANCHOR,
 # COEFFICIENT_L2, HORIZON_SMOOTHNESS, and RIDGE_ROOTER_ALPHA.
@@ -19,4 +19,6 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 export PROJECT_ROOT EXPERIMENT_MODE
+source "$PROJECT_ROOT/src/slurm/common.sh"
+require_scale_experiment_mode || exit $?
 source "$PROJECT_ROOT/src/slurm/run_ts_ifa.sh"

@@ -124,6 +124,12 @@ def flatten_payload(
             (query_t.unsqueeze(-1) - neighbor_t).float().mean(dim=-1),
             "date user -> (date user)",
         ).numpy(),
+        "neighbor_age_std": rearrange(
+            (query_t.unsqueeze(-1) - neighbor_t)
+            .float()
+            .std(dim=-1, unbiased=False),
+            "date user -> (date user)",
+        ).numpy(),
     }
     if e is not None:
         arrays["e"] = rearrange(
@@ -277,6 +283,7 @@ RIDGE_MODELS: tuple[tuple[str, str, str], ...] = (
     ("y_ridge_shared", "y", "shared"),
     ("y_ridge_horizon", "y", "horizon"),
     ("cov_y_ridge_shared", "cov_y", "shared"),
+    ("cov_y_ridge_horizon", "cov_y", "horizon"),
     ("cov_horizon_ridge_shared", "cov_horizon", "shared"),
     ("cov_horizon_ridge_horizon", "cov_horizon", "horizon"),
     ("residual_ridge_shared", "residual", "shared"),
@@ -697,6 +704,7 @@ STATIC_GATE_FEATURE_NAMES = (
     "neighbor_lookback_stds_std_raw",
     "same_user_ratio",
     "neighbor_age_mean",
+    "neighbor_age_std",
     "neighbor_weight_std",
     "neighbor_weight_max",
     "distance_mean",
@@ -797,6 +805,7 @@ def _static_gate_features_dense(
         arrays["neighbor_lookback_std_std"],
         arrays["same_user_ratio"],
         arrays["neighbor_age_mean"],
+        arrays["neighbor_age_std"],
         weights.std(axis=1),
         weights.max(axis=1),
         arrays["distance"].mean(axis=1),
@@ -1916,7 +1925,7 @@ def run_streamed_gates(
 def _metric_sums(
     arrays: dict[str, np.ndarray],
     prediction: np.ndarray,
-) -> tuple[float, float, float, int]:
+) -> tuple[float, float, float, int, int, int]:
     y = arrays["y"]
     scale = (
         arrays["scale"]
@@ -1927,6 +1936,8 @@ def _metric_sums(
     mae_sum = 0.0
     nmse_sum = 0.0
     count = int(y.size)
+    positive_windows = 0
+    window_count = int(y.shape[0])
     for start in range(0, y.shape[0], METRIC_CHUNK_ROWS):
         stop = min(start + METRIC_CHUNK_ROWS, y.shape[0])
         error = np.asarray(prediction[start:stop], dtype=np.float64) - y[
@@ -1936,7 +1947,16 @@ def _metric_sums(
         mae_sum += float(np.sum(np.abs(error)))
         normalized = error / scale[start:stop]
         nmse_sum += float(np.sum(normalized * normalized))
-    return mse_sum, mae_sum, nmse_sum, count
+        vanilla_error = arrays["pred"][start:stop].astype(np.float64) - y[
+            start:stop
+        ].astype(np.float64)
+        positive_windows += int(
+            np.sum(
+                np.mean(error * error, axis=1)
+                < np.mean(vanilla_error * vanilla_error, axis=1)
+            )
+        )
+    return mse_sum, mae_sum, nmse_sum, count, positive_windows, window_count
 
 
 def evaluate_prediction(
@@ -1947,7 +1967,14 @@ def evaluate_prediction(
     *,
     vanilla_nmse: float,
 ) -> dict[str, Any]:
-    mse_sum, mae_sum, nmse_sum, count = _metric_sums(arrays, prediction)
+    (
+        mse_sum,
+        mae_sum,
+        nmse_sum,
+        count,
+        positive_windows,
+        window_count,
+    ) = _metric_sums(arrays, prediction)
     nmse = nmse_sum / max(count, 1)
     return {
         "split": split,
@@ -1955,6 +1982,7 @@ def evaluate_prediction(
         "mse": mse_sum / max(count, 1),
         "mae": mae_sum / max(count, 1),
         "nmse": nmse,
+        "positive_window_pct": 100.0 * positive_windows / max(window_count, 1),
         "relative_nmse_improvement_pct": (
             100.0 * (vanilla_nmse - nmse) / max(vanilla_nmse, 1e-12)
         ),
@@ -1962,7 +1990,7 @@ def evaluate_prediction(
 
 
 def vanilla_nmse(arrays: dict[str, np.ndarray]) -> float:
-    _, _, nmse_sum, count = _metric_sums(arrays, arrays["pred"])
+    _, _, nmse_sum, count, _, _ = _metric_sums(arrays, arrays["pred"])
     return nmse_sum / max(count, 1)
 
 
@@ -2209,6 +2237,7 @@ def main() -> dict[str, Path]:
                 "methods": list(selected_methods),
                 "split_protocol": resplit,
                 "fit_sampling": fit_sampling,
+                "metric_fields": list(frame.columns),
                 "files": {
                     "metrics_csv": csv_path.name,
                     "metrics_json": json_path.name,

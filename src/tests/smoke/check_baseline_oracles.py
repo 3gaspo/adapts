@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -125,6 +126,7 @@ def main() -> None:
     np.testing.assert_allclose(flattened["neighbor_lookback_std_std"], np.asarray([0.0]))
     np.testing.assert_allclose(flattened["same_user_ratio"], np.asarray([1.0]))
     np.testing.assert_allclose(flattened["neighbor_age_mean"], np.asarray([12.0]))
+    np.testing.assert_allclose(flattened["neighbor_age_std"], np.asarray([0.0]))
     scalar_features = scalar_gate_features(flattened)
     horizon_features = horizon_gate_features(flattened)
     np.testing.assert_allclose(
@@ -139,14 +141,14 @@ def main() -> None:
         horizon_features[1][0, :5],
         np.asarray([1.0, 4.0, 0.0, 4.0, 0.0]),
     )
-    assert scalar_features.shape[1] == 19
+    assert scalar_features.shape[1] == 20
     assert len(horizon_features) == 2
     assert horizon_features[0].shape[1] == len(horizon_gate_feature_names(2))
 
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
         gate_arrays = compact_gate_arrays(flattened)
-        _, gate_artifacts, _ = run_streamed_gates(
+        gate_rows, gate_artifacts, _ = run_streamed_gates(
             {"adapt": gate_arrays, "eval": gate_arrays},
             {
                 "T1": gate_arrays,
@@ -185,6 +187,9 @@ def main() -> None:
             gate_arrays["pred_c"],
         )
         assert gate_artifacts["format"] == "adaptation_gate_models"
+        gate_metrics = {row["baseline"]: row for row in gate_rows}
+        assert gate_metrics["vanilla"]["positive_window_pct"] == 0.0
+        assert gate_metrics["oracle_context_shared"]["positive_window_pct"] == 100.0
 
         baseline_arrays = compact_baseline_arrays(flattened)
         _, baseline_artifacts, _ = run_streamed_baselines(
@@ -206,6 +211,8 @@ def main() -> None:
             f"{name}_eval_fit" for name in TRAINABLE_BASELINES
         } <= set(baseline_predictions)
         assert set(baseline_artifacts["models"]) == set(TRAINABLE_BASELINES)
+        del baseline_predictions, baseline_store, gate_predictions, gate_store
+        gc.collect()
 
     gate_x = np.asarray([[0.0], [0.1], [0.9], [1.0]], dtype=np.float32)
     gate_y = np.asarray([[-4.0], [-1.0], [1.0], [4.0]], dtype=np.float32)

@@ -10,9 +10,10 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Full method screen; no winner names are needed here.
+# Chronos-2 primary shared-method screen; no winner names are needed here.
 EXPERIMENT_MODE=screen
+MODELS_CSV=chronos2
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE
+export PROJECT_ROOT EXPERIMENT_MODE MODELS_CSV
 source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"

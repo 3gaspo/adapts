@@ -1,6 +1,6 @@
 \documentclass[10pt]{article}
 \input{common}
-\title{Adaptation Experiment 1: Univariate Control}
+\title{Adaptation Experiment 1: Vanilla Backbone Reference}
 \author{}
 \date{}
 \begin{document}
@@ -53,12 +53,18 @@ Dataset preparation automatically reads the sibling \code{config.json}.
 Portable top-level options and adaptation-scoped options are combined before
 the chronological split; user exclusions are additive and the selected config
 path is logged. The same preparation contract is used by extraction, the
-univariate control, and all downstream adapters.
+univariate control, and all downstream adapters. ETT, Weather, and Exchange
+Rate retain every non-date variate; constant-window audits do not remove their
+scarce channels.
 
-The test profile uses Electricity 168--24 with sparse evaluation. The small
-profile reproduces the three-dataset subset; full widens the Chronos control to
-six datasets and adds the Cross-RAG setting. Ultra has the same direct Chronos
-control because this reference launcher has no second backbone.
+The test profile uses Electricity 504--168 with sparse evaluation. Full widens
+the Chronos control to eight homogeneous-panel datasets and uses the same three
+look-back--horizon settings as the retrieval screen. The four additional ETT
+panels separate temperature from load at hourly and 15-minute cadences.
+Original ETTh1, ETTh2, ETTm1, ETTm2 and Weather are excluded because their
+channels mix unlike physical quantities; they are reserved for the retrieval
+study's mixed-quantity ablation. Ultra has the same direct Chronos control
+because this reference launcher has no second backbone.
 
 \begin{table}[h]
 \centering
@@ -66,8 +72,8 @@ control because this reference launcher has no second backbone.
 \toprule
 Component & Current sweep value \\
 \midrule
-Datasets & Traffic, Electricity, Solar \\
-Look-back--horizon & 168--24, 504--24, 504--168, 504--504 \\
+Datasets & Electricity, Traffic, Solar, Exchange, four separated ETT panels \\
+Look-back--horizon & 168--24, 336--48, 504--168 \\
 Backbone & Chronos \\
 Input normalization & Instance normalization \\
 Evaluation stride & 128 dates \\
@@ -76,8 +82,12 @@ Seed & 1 \\
 \end{tabular}
 \end{table}
 
-\textbf{Implementation:} \code{src/experiments/experiment\_univariate.py}\\
-\textbf{Launcher:} \code{univariate.slurm}
+The current pipeline produces this reference inside every retrieval extraction,
+so it shares the exact backbone, target windows, and evaluation dates used by
+the adapted candidates. There is no separate Slurm front.\\
+\textbf{Implementation:} \code{src/experiments/extraction.py}\\
+\textbf{Launchers:} \code{extraction.slurm}, \code{screen.slurm}, and
+\code{benchmark.slurm}
 
 It writes window-level losses,
 a JSON summary, a tensor payload, error distributions, horizon-error curves,

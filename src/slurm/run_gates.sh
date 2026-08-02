@@ -29,7 +29,11 @@ SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
-GATE_METHODS_CSV="${GATE_METHODS_CSV:-}"
+case "$EXPERIMENT_MODE" in
+  test|screen) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV" ;;
+  *) DEFAULT_GATE_METHODS_CSV="" ;;
+esac
+GATE_METHODS_CSV="${GATE_METHODS_CSV:-$DEFAULT_GATE_METHODS_CSV}"
 GATE_ITERATIONS="${GATE_ITERATIONS:-$DEFAULT_GATE_ITERATIONS}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-$DEFAULT_SKIP_COMPLETE}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
@@ -47,6 +51,7 @@ MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-}"
 MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 FIT_SAMPLE_SEED="${FIT_SAMPLE_SEED:-$SEED}"
 require_resolved_profile_grid
+require_profile_neighbors "$NEIGHBORS_CSV"
 if requires_selected_methods && [ -z "$GATE_METHODS_CSV" ]; then
   log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE requires GATE_METHODS_CSV for the gate candidate run"
   return 2
@@ -132,6 +137,7 @@ run_task() {
   mkdir -p "$RESULT_RUN_ROOT"
   cp "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
   if is_true "$SKIP_COMPLETE" && gate_complete "$OUTPUT_DIR" &&
+    result_methods_match "$OUTPUT_DIR/result_manifest.json" "$GATE_METHODS_CSV" &&
     [ "$OUTPUT_DIR/gate_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
     log "skip complete family=gates dataset=$dataset model=$model lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
     return

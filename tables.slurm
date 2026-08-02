@@ -15,4 +15,6 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 export PROJECT_ROOT EXPERIMENT_MODE
+source "$PROJECT_ROOT/src/slurm/common.sh"
+require_scale_experiment_mode || exit $?
 source "$PROJECT_ROOT/src/slurm/build_tables.sh"

@@ -284,6 +284,7 @@ SCALAR_FEATURE_ORDER = (
     "neighbor_lookback_stds_std_raw",
     "same_user_ratio",
     "neighbor_age_mean",
+    "neighbor_age_std",
     "neighbor_weight_std",
     "neighbor_weight_max",
     "distance_mean",
@@ -336,6 +337,10 @@ def scalar_feature_values(data: dict[str, Any], split: str) -> dict[str, np.ndar
             axis=1,
         ),
         "neighbor_age_mean": np.nanmean(
+            arrays["query_t"][:, None] - arrays["neighbor_t"],
+            axis=1,
+        ),
+        "neighbor_age_std": np.nanstd(
             arrays["query_t"][:, None] - arrays["neighbor_t"],
             axis=1,
         ),

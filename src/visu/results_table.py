@@ -111,7 +111,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         for row in payload if isinstance(payload, list) else ():
             if not isinstance(row, Mapping):
                 continue
-            for metric in ("mse", "mae", "nmse"):
+            for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
                     results.append(
                         Result(
@@ -142,7 +142,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         for row in payload if isinstance(payload, list) else ():
             if not isinstance(row, Mapping) or "baseline" not in row:
                 continue
-            for metric in ("mse", "mae", "nmse"):
+            for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
                     results.append(
                         Result(dataset, setting, f"{run}/{row['baseline']}", str(row.get("split", "eval")), metric,
@@ -225,6 +225,7 @@ _METHOD_LABELS = {
     "y_ridge_shared": "Y-ridge-s",
     "y_ridge_horizon": "Y-ridge-h",
     "cov_y_ridge_shared": "VCY-ridge-s",
+    "cov_y_ridge_horizon": "VCY-ridge-h",
     "cov_horizon_ridge_shared": "cov-h-ridge-s",
     "cov_horizon_ridge_horizon": "cov-h-ridge-h",
     "residual_ridge_shared": "residual-ridge-s",
@@ -240,6 +241,7 @@ _METHOD_LABELS = {
     "y_ridge_shared_eval_fit": "Y-ridge-s-fit-T3",
     "y_ridge_horizon_eval_fit": "Y-ridge-h-fit-T3",
     "cov_y_ridge_shared_eval_fit": "VCY-ridge-s-fit-T3",
+    "cov_y_ridge_horizon_eval_fit": "VCY-ridge-h-fit-T3",
     "cov_horizon_ridge_shared_eval_fit": "cov-h-ridge-s-fit-T3",
     "cov_horizon_ridge_horizon_eval_fit": "cov-h-ridge-h-fit-T3",
     "residual_ridge_shared_eval_fit": "residual-ridge-s-fit-T3",
@@ -280,6 +282,7 @@ def _short_run_name(run: str) -> str:
             "in": "IN",
             "instance": "IN",
             "minmax": "MM",
+            "fourier": "FFT",
             "encoder": "ENC",
         }.get(space, space)
         metric = "L2" if metric == "euclidean" else metric

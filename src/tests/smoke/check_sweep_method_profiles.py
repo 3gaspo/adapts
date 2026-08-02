@@ -1,0 +1,171 @@
+"""Check that primary and ablation sweeps keep disjoint expensive methods."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+PROFILES = ROOT / "src" / "slurm" / "profiles.sh"
+
+
+def csv_assignment(text: str, name: str) -> tuple[str, ...]:
+    match = re.search(rf'^{name}="([^"]+)"$', text, flags=re.MULTILINE)
+    assert match is not None, name
+    return tuple(match.group(1).split(","))
+
+
+def main() -> None:
+    text = PROFILES.read_text(encoding="utf-8")
+    primary_datasets = csv_assignment(text, "PRIMARY_DATASETS_CSV")
+    full_datasets = csv_assignment(text, "FULL_DATASETS_CSV")
+    mixed_datasets = csv_assignment(text, "MIXED_QUANTITY_DATASETS_CSV")
+    primary_settings = csv_assignment(text, "PRIMARY_SETTINGS_CSV")
+    primary_baselines = csv_assignment(text, "PRIMARY_BASELINE_METHODS_CSV")
+    primary_gates = csv_assignment(text, "PRIMARY_GATE_METHODS_CSV")
+    neighbor_defaults = re.findall(r'^\s*DEFAULT_NEIGHBORS_CSV="([^"]*)"$', text, flags=re.MULTILINE)
+
+    assert primary_datasets == ("Electricity", "Traffic", "Solar", "exchange_rate")
+    assert full_datasets == (
+        "Electricity",
+        "Traffic",
+        "Solar",
+        "exchange_rate",
+        "ETT_T_1H",
+        "ETT_L_1H",
+        "ETT_T_15T",
+        "ETT_L_15T",
+    )
+    assert mixed_datasets == ("ETTh1", "ETTh2", "ETTm1", "ETTm2", "Weather")
+    assert primary_settings == ("168:24", "336:48", "504:168")
+    assert set(primary_datasets) < set(full_datasets)
+    assert set(full_datasets).isdisjoint(mixed_datasets)
+
+    assert primary_baselines
+    assert all(not method.endswith("_horizon") for method in primary_baselines)
+
+    primary_catboost = {
+        method for method in primary_gates if method.startswith("catboost_")
+    }
+    assert primary_catboost == {
+        "catboost_context_regressor_shared",
+        "catboost_aggr_y_regressor_shared",
+    }
+
+    assert set(neighbor_defaults) == {"", "3", "1,3", "1,3,5,10,15,20", "15"}
+    assert neighbor_defaults.count("1,3") == 6
+    assert neighbor_defaults.count("3") == 1
+    assert 'DEFAULT_SETTINGS_CSV="504:168"' in text
+    assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 5
+    assert 'EXPERIMENT_MODE=test permits only K=3' in text
+
+    for scale_front in (
+        "extraction.slurm",
+        "tables.slurm",
+        "ts_ifa.slurm",
+    ):
+        front_text = (ROOT / scale_front).read_text(encoding="utf-8")
+        assert "require_scale_experiment_mode || exit $?" in front_text
+    for test_front in ("baselines.slurm", "gates.slurm"):
+        front_text = (ROOT / test_front).read_text(encoding="utf-8")
+        assert "require_test_experiment_mode || exit $?" in front_text
+    assert not (ROOT / "run_all.sh").exists()
+    assert not (ROOT / "univariate.slurm").exists()
+    assert not (ROOT / "src" / "slurm" / "run_univariate.sh").exists()
+
+    common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")
+    assert "small" not in re.search(
+        r"require_experiment_mode\(\) \{.*?\n\}", common, flags=re.DOTALL
+    ).group()
+    benchmark_front = (ROOT / "benchmark.slurm").read_text(encoding="utf-8")
+    assert 'EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"' in benchmark_front
+    assert 'RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/full}"' in benchmark_front
+    assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in benchmark_front
+    assert "require_benchmark_experiment_mode || exit $?" in benchmark_front
+    assert 'source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"' in benchmark_front
+    screen_front = (ROOT / "screen.slurm").read_text(encoding="utf-8")
+    assert "EXPERIMENT_MODE=screen" in screen_front
+    assert "MODELS_CSV=chronos2" in screen_front
+
+    for front, implementation in (
+        ("mixed_quantity_ablation.slurm", "run_profile_experiment.sh"),
+        ("horizon_baselines_ablation.slurm", "run_horizon_baselines_ablation.sh"),
+        ("catboost_ablation.slurm", "run_catboost_ablation.sh"),
+    ):
+        front_text = (ROOT / front).read_text(encoding="utf-8")
+        assert 'PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"' in front_text
+        assert f'source "$PROJECT_ROOT/src/slurm/{implementation}"' in front_text
+
+    mixed_front = (ROOT / "mixed_quantity_ablation.slurm").read_text(encoding="utf-8")
+    assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in mixed_front
+    catboost_front = (ROOT / "catboost_ablation.slurm").read_text(encoding="utf-8")
+    assert 'CATBOOST_WINNERS_CSV="${CATBOOST_WINNERS_CSV:-}"' in catboost_front
+    for selected_front in (
+        "k_ablation.slurm",
+        "h_ablation.slurm",
+        "l_ablation.slurm",
+        "crossrag.slurm",
+    ):
+        assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in (
+            ROOT / selected_front
+        ).read_text(encoding="utf-8")
+    horizon_front = (ROOT / "horizon_baselines_ablation.slurm").read_text(
+        encoding="utf-8"
+    )
+    assert "SHARED_BASELINE_WINNERS_CSV" in horizon_front
+    assert "euclidean_10" not in horizon_front
+
+    profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'if [ "$EXPERIMENT_MODE" = screen ]; then' in profile_runner
+    assert 'outside the primary K={1,3} policy' in profile_runner
+    assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
+    assert 'full|ultra) SKIP_COMPLETE=true' in profile_runner
+
+    catboost_runner = (
+        ROOT / "src" / "slurm" / "run_catboost_ablation.sh"
+    ).read_text(encoding="utf-8")
+    assert "CATBOOST_WINNERS_CSV" in catboost_runner
+    for variant in (
+        "regressor_shared",
+        "regressor_horizon",
+        "classifier_shared",
+        "classifier_horizon",
+    ):
+        assert f'catboost_${{candidate}}_{variant}' in catboost_runner
+
+    baseline_runner = (ROOT / "src" / "slurm" / "run_baselines.sh").read_text(
+        encoding="utf-8"
+    )
+    gate_runner = (ROOT / "src" / "slurm" / "run_gates.sh").read_text(
+        encoding="utf-8"
+    )
+    table_runner = (ROOT / "src" / "slurm" / "build_tables.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'test|screen) DEFAULT_BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"' in baseline_runner
+    assert 'test|screen) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"' in gate_runner
+    assert 'PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"' in table_runner
+    assert 'test|screen)' in table_runner
+
+    horizon_runner = (
+        ROOT / "src" / "slurm" / "run_horizon_baselines_ablation.sh"
+    ).read_text(encoding="utf-8")
+    for shared in (
+        "aggr_y_mix_shared",
+        "context_ridge_shared",
+        "aggr_y_ridge_shared",
+        "y_ridge_shared",
+        "cov_y_ridge_shared",
+        "cov_horizon_ridge_shared",
+        "residual_ridge_shared",
+        "full_ridge_shared",
+    ):
+        assert f"{shared})" in horizon_runner
+    assert "positive_window_pct" in common
+
+
+if __name__ == "__main__":
+    main()

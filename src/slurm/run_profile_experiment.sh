@@ -17,6 +17,7 @@ PROFILE_MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
 PROFILE_SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 PROFILE_K_CSV="$DEFAULT_NEIGHBORS_CSV"
 WINNERS_CSV="${WINNERS_CSV:-}"
+EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"
 
 run_screen() {
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
@@ -25,14 +26,15 @@ run_screen() {
   DISTANCE_SPACES_CSV="$DEFAULT_DISTANCE_SPACES_CSV"
   DISTANCE_METRICS_CSV="$DEFAULT_DISTANCE_METRICS_CSV"
   NEIGHBORS_CSV="$DEFAULT_NEIGHBORS_CSV"
-  BASELINE_METHODS_CSV=""
-  GATE_METHODS_CSV=""
-  SKIP_COMPLETE=true
+  BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"
+  GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"
+  SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
   source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
+  SKIP_COMPLETE=true
   source "$PROJECT_ROOT/src/slurm/run_baselines.sh"
   source "$PROJECT_ROOT/src/slurm/run_gates.sh"
   FAMILIES_CSV=baselines,gates
-  METHODS_CSV=""
+  METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"
   PIPELINES_CSV=""
   source "$PROJECT_ROOT/src/slurm/build_tables.sh"
 }
@@ -89,6 +91,13 @@ parse_winners() {
       PIPELINES+=("${space}_${metric}_15_${retrieval}/$method")
       CANDIDATE_RUN="${space}_${metric}_15_${retrieval}"
     else
+      case "$neighbors" in
+        1|3) ;;
+        *)
+          log_error "selected winner K=$neighbors is outside the primary K={1,3} policy entry=$entry"
+          return 2
+          ;;
+      esac
       group_neighbors="$neighbors"
       PIPELINES+=("$run/$method")
     fi
@@ -120,9 +129,12 @@ run_groups() {
     DISTANCE_METRICS_CSV="$metric"
     NEIGHBORS_CSV="$neighbors"
     RETRIEVAL_MODE="$retrieval"
-    SKIP_COMPLETE=true
+    SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
     source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
-    SKIP_COMPLETE=false
+    case "$EXPERIMENT_MODE" in
+      full|ultra) SKIP_COMPLETE=true ;;
+      *) SKIP_COMPLETE=false ;;
+    esac
     if [ "$family" = baselines ]; then
       BASELINE_METHODS_CSV="$methods"
       source "$PROJECT_ROOT/src/slurm/run_baselines.sh"

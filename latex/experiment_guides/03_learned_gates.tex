@@ -48,8 +48,9 @@ Both gate shapes receive
 \]
 They also receive the query mean and standard deviation; the mean and
 between-neighbor standard deviation of neighbor look-back means and
-look-back standard deviations; same-user ratio; mean neighbor age; weight
-standard deviation and maximum; and mean retrieval distance.
+look-back standard deviations; same-user ratio; mean and standard deviation of
+neighbor age; weight standard deviation and maximum; and mean retrieval
+distance.
 
 The candidate features differ by gate shape:
 \begin{itemize}
@@ -87,6 +88,27 @@ Name pattern & Meaning \\
 \normalsize
 Here \code{<A>} is \code{context} or \code{aggr\_y}.
 
+The primary screen retains only
+\code{catboost\_<A>\_regressor\_shared}. Its signed-advantage target matches
+the metric being optimized and one decision is made for the complete forecast
+window. The shared no-feature Bayes decision and shared oracle remain in that
+screen as lower-complexity and target-aware references.
+Its primary screen dataset set is Electricity, Traffic, Solar, and Exchange.
+The final full/ultra benchmark transfers only selected complete gate pipelines
+to those datasets plus the four quantity-separated ETT temperature/load
+panels, while retaining the three screen settings. Original ETTh1, ETTh2, ETTm1,
+ETTm2 and Weather are evaluated only by
+\code{mixed\_quantity\_ablation.slurm}, since their channels mix unlike
+physical quantities and can make cross-channel retrieval semantically
+ambiguous.
+
+The root front \code{catboost\_ablation.slurm} is a separate later study. It
+accepts selected shared-regressor screen winners, holds each winner's candidate
+and retrieval pipeline fixed, and evaluates all four CatBoost
+formulations---classifier/regressor crossed with shared/per-horizon decisions.
+It also reruns matching shared/per-horizon Bayes and oracle references, so the
+ablation is self-contained without reopening the full retrieval screen.
+
 \section{Validation protocol}
 Extraction provides pooled \Tone+\Ttwo and fixed \Tthree payloads. For these
 gates, the last 20\% of pooled query dates is \Ttwo by default:
@@ -120,7 +142,7 @@ the candidate afterward. Refitting the candidate on \Tone+\Ttwo would change
 the gate inputs and make its \Ttwo supervision in-sample. Avoiding that bias
 requires out-of-fold candidate predictions or an additional split.
 
-\textbf{Launcher:} \code{gates.slurm}\\
+\textbf{Launchers:} \code{gates.slurm}; \code{catboost\_ablation.slurm}\\
 \textbf{Module:} \code{src.adaptors.baselines.evaluate --family gates}
 
 \section{Interpretation}

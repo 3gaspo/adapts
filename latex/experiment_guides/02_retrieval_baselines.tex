@@ -73,6 +73,8 @@ Artifact name & Forecast at horizon $h$ & Coefficients \\
   & $V_h+a_hV_h+\sum_jb_{j,h}Y_{j,h}$ & $1+k$ per $h$\\
 \code{cov\_y\_ridge\_shared}
   & $V_h+aV_h+bC_h+\sum_jc_jY_{j,h}$ & $2+k$\\
+\code{cov\_y\_ridge\_horizon}
+  & $V_h+a_hV_h+b_hC_h+\sum_jc_{j,h}Y_{j,h}$ & $2+k$ per $h$\\
 \code{cov\_horizon\_ridge\_shared}
   & $V_h+aV_h+bC_h+c\widehat Y_h$ & 3\\
 \code{cov\_horizon\_ridge\_horizon}
@@ -123,20 +125,29 @@ an explicit flag for appendix diagnostics and are disabled by default.
 
 \textbf{Code:} \code{src/experiments/extraction.py};
 \code{src/adaptors/baselines/evaluate.py}.\\
-\textbf{Launchers:} \code{extraction.slurm}; \code{baselines.slurm}.
+\textbf{Launchers:} \code{extraction.slurm}; \code{baselines.slurm};
+\code{horizon\_baselines\_ablation.slurm}.
 
 \section{Screening and ablation sequence}
 The candidate screen uses Chronos-2 on
 \[
- \mathcal D=\{\text{ETTh1, Electricity, Traffic, Solar, Weather, Exchange}\},
+ \mathcal D=\{\text{Electricity, Traffic, Solar, Exchange}\},
  \qquad
  \mathcal S=\{168{:}24,336{:}48,504{:}168\},
 \]
-with $k\in\{1,10\}$ and both raw and instance-normalized Euclidean retrieval.
+with $k\in\{1,3\}$ and both raw and instance-normalized Euclidean retrieval.
+Fourier-amplitude retrieval is also implemented as an optional ablation space;
+it standardizes each look-back before taking the FFT magnitude and does not
+enter the primary screen.
+The selected-winner full/ultra benchmark retains these settings without
+reopening candidate selection.
+The primary screen contains the direct forecasts and every shared fitted
+baseline in the table above. It excludes every \code{*\_horizon} baseline;
+those models are not candidates for the main comparison.
 Here a setting is one dataset--$(L,H)$ pair, giving
-$|\mathcal D||\mathcal S|=18$ settings. A candidate model is the complete
+$|\mathcal D||\mathcal S|=12$ settings. A candidate model is the complete
 pipeline (formula, retrieval normalization, $k$). Each such pipeline is ranked
-by its unweighted mean of the 18 setting-level percentage improvements over
+by its unweighted mean of the 12 setting-level percentage improvements over
 $V$; there is no averaging over $k$ or normalization. Complete winner names
 are copied manually from the ranking for three separate studies:
 \[
@@ -149,6 +160,47 @@ are copied manually from the ranking for three separate studies:
  \text{ retaining formula/normalization/$k$}.
 \end{array}
 \]
+The companion positive-window table averages, with the same configuration
+weighting, the saved percentage of complete windows whose horizon-averaged MSE
+is strictly lower than vanilla; no per-window metric vector is stored.
+Per-horizon parameterization is a separate ablation. The root front
+\code{horizon\_baselines\_ablation.slurm} accepts complete shared winners in
+\code{SHARED\_BASELINE\_WINNERS\_CSV}; for every selected pipeline it evaluates
+both the shared model and its corresponding \code{*\_horizon} model under the
+same retrieval normalization and $k$. The current defaults retain the best
+shared convex mixture, aggregated-target ridge, and individual-$Y$ ridge from
+the completed screen. Its results are written under the distinct
+\code{horizon\_baselines\_ablation} profile and are reported only as an
+ablation.
+
+The four original ETT panels and Weather are excluded from $\mathcal D$ because their channels mix
+unlike physical quantities; nearest neighbors across those channels may be
+semantically irrelevant even after scale normalization. The separate root
+front \code{mixed\_quantity\_ablation.slurm} transfers only selected complete
+screen winners to
+\[
+ \mathcal D_{\rm mixed}=\{\text{ETTh1, ETTh2, ETTm1, ETTm2, Weather}\}
+\]
+and writes a distinct \code{mixed\_quantity\_ablation} result profile. These
+results are an ablation and never contribute to primary winner selection.
+All variates are retained for these original ETT panels and Weather, as well as
+for Exchange in the primary set; constant-window counts are reported but are
+not converted into dataset-level exclusions.
+
+Every ablation consumes selected complete screen winners. The $k$ ablation is
+the only in-project exception to the ordinary $k\in\{1,3\}$ policy; its wider
+grid is evaluated only for those selected pipelines. Cross-RAG separately
+retains the released method's prescribed $k=15$ comparison.
+
+The final \code{benchmark.slurm} comparison transfers only selected complete
+screen winners to $\mathcal D$ plus \code{ETT\_T\_1H}, \code{ETT\_L\_1H},
+\code{ETT\_T\_15T}, and \code{ETT\_L\_15T}, while retaining the same
+$\mathcal S$. The selected winner name fixes its formula, normalization,
+distance, $k$, and retrieval mode. Full uses Chronos-2; ultra adds backbones
+without changing datasets, settings, or candidate pipelines. These merged ETT
+panels retain only one physical quantity; 15-minute extraction uses a 96-step
+daily retrieval period.
+
 The Cross-RAG comparison is not crossed with $\mathcal S$: it separately uses
 Chronos-Bolt, $L=512$, $H=64$, $k=15$, and min--max/cosine X-space retrieval.
 Only the winning in-project candidate is fitted in that profile.

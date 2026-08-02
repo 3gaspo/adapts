@@ -172,7 +172,7 @@ candidates, and reports transformed performance only when that candidate is
 active; it also reports the ridge-rooted system and full neural TS-IFA.
 
 \section{Dimensions and exact parameter count}
-The reference comparison uses $L=512$, $H=64$, $K=15$, four attention heads,
+The reference comparison uses $L=512$, $H=64$, $K=3$, four attention heads,
 per-head dimension 32, hence $D=128$, and 128-unit MLP hidden layers.  $K$
 changes computation but not parameter count.
 
@@ -224,15 +224,15 @@ Method & Trainable params. & $\times$ TS-IFA & \% Chronos-2 & \% Bolt-base\\
 \textbf{TS-IFA, default} & \textbf{1,239,296} & \textbf{1.000} & \textbf{1.033} & \textbf{0.605}\\
 TS-RAG & 4,775,425 & 3.853 & 3.980 & 2.329\\
 Cross-RAG & 8,712,192 & 7.030 & 7.260 & 4.250\\
-Full horizon-wise ridge baseline & 2,048 & 0.00165 & 0.00171 & 0.00100\\
+Full horizon-wise ridge baseline & 512 & 0.000413 & 0.000428 & 0.000250\\
 Max.\ single CatBoost horizon gate & $\leq384,000$ & $\leq0.310$ & $\leq0.320$ & $\leq0.187$\\
 \textbf{TS-IFA branches + ridge rooter} & \textbf{768,320} & \textbf{0.620} & \textbf{0.640} & \textbf{0.375}\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-For $K=15$, the unrelated full retrieval-ridge baseline has
-$H(2+2K)=2,048$ coefficients.  The CatBoost value is an upper-bound scalar
+For $K=3$, the unrelated full retrieval-ridge baseline has
+$H(2+2K)=512$ coefficients.  The CatBoost value is an upper-bound scalar
 complexity for 64 depth-4, 300-tree horizon models:
 $64\cdot300\cdot(16\text{ leaves}+4\text{ splits})=384,000$; early stopping can
 reduce it and tree structure is not directly equivalent to dense neural

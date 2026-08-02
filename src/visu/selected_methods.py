@@ -330,7 +330,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset-settings", action="append", default=[], metavar="DATASET=L_H,L_H")
     parser.add_argument("--models", required=True)
     parser.add_argument("--spaces", default="raw,instance")
-    parser.add_argument("--neighbors", default="1,3,10")
+    parser.add_argument("--neighbors", default="1,3")
     parser.add_argument("--retrieval-mode", default="online")
     parser.add_argument("--metric", default="nmse")
     parser.add_argument("--split", default="eval")

@@ -37,6 +37,7 @@ BASELINE_HELDOUT_VARIANTS = (
     "y_ridge_shared",
     "y_ridge_horizon",
     "cov_y_ridge_shared",
+    "cov_y_ridge_horizon",
     "cov_horizon_ridge_shared",
     "cov_horizon_ridge_horizon",
     "residual_ridge_shared",
@@ -497,6 +498,92 @@ def build_average_matrix_table(
     return "\n".join(lines) + "\n"
 
 
+def build_average_positive_window_table(
+    results: Sequence[Result],
+    *,
+    variants: Sequence[str],
+    diagnostic_variants: Sequence[str],
+    runs: Sequence[str],
+    split: str = "eval",
+    datasets: Sequence[str] | None = None,
+    settings: Sequence[str] | None = None,
+    dataset_settings: Mapping[str, set[str]] | None = None,
+    decimals: int = 2,
+    allowed_methods: set[str] | None = None,
+) -> str:
+    """Build absolute win-rate averages from persisted per-run aggregates."""
+    dataset_settings = dataset_settings or {}
+    row_variants = [*variants, *diagnostic_variants]
+    values: dict[tuple[str, str], float] = {}
+    for variant in row_variants:
+        for run in runs:
+            method = f"{run}/{variant}"
+            values[(variant, run)] = (
+                math.nan
+                if allowed_methods is not None and method not in allowed_methods
+                else _average_metric(
+                    results,
+                    method=method,
+                    metric="positive_window_pct",
+                    split=split,
+                    datasets=datasets,
+                    settings=settings,
+                    dataset_settings=dataset_settings,
+                )
+            )
+    diagnostic_set = set(diagnostic_variants)
+    finite = [
+        value
+        for (variant, _), value in values.items()
+        if variant not in diagnostic_set
+        and not variant.startswith("oracle_")
+        and math.isfinite(value)
+    ]
+    best = max(finite) if finite else None
+    headers = [_latex(_short_run_name(run)) for run in runs]
+    lines = [
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\caption{Mean percentage of evaluation windows with lower horizon-averaged MSE than the vanilla forecast, averaged equally over the selected dataset and horizon configurations.}",
+        r"\resizebox{\textwidth}{!}{%",
+        rf"\begin{{tabular}}{{{'l' + 'c' * len(runs)}}}",
+        r"\toprule",
+        "Model & " + " & ".join(headers) + r" \\",
+        r"\midrule",
+    ]
+    inserted_diagnostic_rule = False
+    for variant in row_variants:
+        if variant in diagnostic_set and not inserted_diagnostic_rule:
+            lines.append(r"\midrule")
+            inserted_diagnostic_rule = True
+        cells: list[str] = []
+        for run in runs:
+            value = values[(variant, run)]
+            if not math.isfinite(value):
+                cells.append("--")
+                continue
+            cell = f"{value:.{decimals}f}" + r"\%"
+            if (
+                variant not in diagnostic_set
+                and not variant.startswith("oracle_")
+                and best is not None
+                and math.isclose(value, best, rel_tol=1e-12, abs_tol=1e-15)
+            ):
+                cell = rf"\textbf{{{cell}}}"
+            cells.append(cell)
+        lines.append(" & ".join([_latex(_matrix_row_label(variant)), *cells]) + r" \\")
+    lines.extend(
+        [
+            r"\bottomrule",
+            r"\end{tabular}%",
+            r"}",
+            r"\label{tab:positive-window-percentage-average}",
+            r"\end{table}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def _write_full_family_table(
     results: Sequence[Result],
     output_dir: Path,
@@ -572,6 +659,70 @@ def _write_average_family_table(
         allowed_methods=allowed_methods,
     )
     output = output_dir / family.output_name
+    output.write_text(table, encoding="utf-8")
+    return output
+
+
+def _write_average_positive_window_table(
+    results: Sequence[Result],
+    output_dir: Path,
+    *,
+    families: Sequence[Family],
+    runs: Sequence[str],
+    selected_variants: Sequence[str] | None,
+    split: str,
+    datasets: Sequence[str] | None,
+    settings: Sequence[str] | None,
+    dataset_settings: Mapping[str, set[str]],
+    decimals: int,
+    allowed_methods: set[str] | None,
+) -> Path | None:
+    available = {
+        result.method.rsplit("/", 1)[-1]
+        for result in results
+        if result.metric == "positive_window_pct"
+    }
+    variants = tuple(
+        dict.fromkeys(
+            variant
+            for family in families
+            for variant in _select_variants(
+                family,
+                family.average_variants,
+                selected_variants,
+            )
+            if variant in available
+        )
+    )
+    diagnostics = tuple(
+        dict.fromkeys(
+            variant
+            for family in families
+            for variant in _select_variants(
+                family,
+                family.diagnostic_variants,
+                selected_variants,
+            )
+            if variant in available
+        )
+    )
+    diagnostics_set = set(diagnostics)
+    variants = tuple(variant for variant in variants if variant not in diagnostics_set)
+    if not variants and not diagnostics:
+        return None
+    table = build_average_positive_window_table(
+        results,
+        variants=variants,
+        diagnostic_variants=diagnostics,
+        runs=runs,
+        split=split,
+        datasets=datasets,
+        settings=settings,
+        dataset_settings=dataset_settings,
+        decimals=decimals,
+        allowed_methods=allowed_methods,
+    )
+    output = output_dir / "positive_windows_results.tex"
     output.write_text(table, encoding="utf-8")
     return output
 
@@ -793,6 +944,21 @@ def generate_average_results_tables(
         lower_is_better=lower_is_better,
         allowed_methods=allowed_methods,
     )
+    positive_window_output = _write_average_positive_window_table(
+        records,
+        destination,
+        families=selected_families,
+        runs=runs,
+        selected_variants=variants,
+        split=split,
+        datasets=datasets,
+        settings=settings,
+        dataset_settings=dataset_settings or {},
+        decimals=decimals,
+        allowed_methods=allowed_methods,
+    )
+    if positive_window_output is not None:
+        outputs.append(positive_window_output)
     return outputs
 
 
@@ -816,7 +982,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--families", default=None, help="Comma/semicolon-separated table families")
     parser.add_argument("--spaces", default="raw,instance")
     parser.add_argument("--distance-metrics", default="euclidean")
-    parser.add_argument("--neighbors", default="1,3,10")
+    parser.add_argument("--neighbors", default="1,3")
     parser.add_argument("--variants", default=None, help="Only include these method variants")
     parser.add_argument(
         "--pipelines",

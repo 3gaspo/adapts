@@ -63,7 +63,7 @@ outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
   <retrieval>/gates/{gate_metrics.json,gate_artifacts.json,prediction_manifest.json,result_manifest.json,...}
   <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json}
   <retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,prediction_manifest.json,result_manifest.json,...}
-  tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,...}
+  tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,positive_windows_results.tex,...}
 ```
 
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed
@@ -83,6 +83,12 @@ Ridge fits accumulate float64 sufficient statistics in bounded chunks, so they
 use the complete selected fitting split without materializing the full design
 matrix. Predictions are written, scored in chunks, and released one method at a
 time. These changes bound memory without changing the fitted objective.
+Baseline and gate metric rows also store `positive_window_pct`, the percentage
+of complete evaluation windows whose horizon-averaged MSE is strictly below
+the matching vanilla forecast. No per-window metric vector is persisted.
+Baseline/gate results produced before this field and the neighbor-age-dispersion
+gate feature are obsolete and must be rerun; their extraction payloads remain
+reusable.
 
 Baseline and gate fitting may optionally use reproducible subsets of the
 already-extracted payloads through `MAX_T1_FIT_SAMPLES`,
@@ -98,6 +104,15 @@ For period-aligned retrieval, neighbor query dates `r_j` satisfy
 inside T0. In online mode, `r_j+H <= s`, so the complete retrieved future is
 already observable at query date `s`. A neighbor future may overlap the
 observed query lookback but can never overlap the query target.
+
+The extraction launcher resolves `P=96` for `ETTm1`, `ETTm2`, `ETT_T_15T`,
+and `ETT_L_15T`, and `P=24` otherwise. Unless `DATASTORE_STRIDE` is explicitly
+set, its profile default is rounded up to a multiple of the resolved period;
+explicit `PERIOD` and `DATASTORE_STRIDE` overrides remain available.
+Neighbor search accepts raw, instance-normalized, min--max, Fourier-amplitude,
+and encoder representation spaces. Fourier retrieval standardizes each
+lookback before taking the FFT magnitude; it is an override option and is not
+part of the primary raw/instance screen.
 
 ## Data and weight locations
 
@@ -127,9 +142,15 @@ override other settings, while `drop_users` is merged additively with both the
 top-level list and `--drop-users`. The loader logs the selected path and applied
 keys.
 
-ETTh1 uses every non-date variable in the source CSV in every profile. Ensure
-the cluster copy is the complete seven-variable ETTh1 file rather than an
-`OT`-only derivative.
+The mixed-quantity ablation uses every non-date variable in each original ETT
+CSV. Ensure the cluster copies of `ETTh1`, `ETTh2`, `ETTm1`, and `ETTm2` are
+the complete seven-variable released files rather than `OT`-only derivatives.
+The quantity-separated full-mode panels are named `ETT_T_1H`, `ETT_L_1H`,
+`ETT_T_15T`, and `ETT_L_15T`; each folder contains a same-named CSV and its
+`config.json`.
+All original and quantity-separated ETT panels, Weather, and Exchange Rate
+retain every non-date variate. Their configs keep `drop_users` empty; observed
+constant windows are diagnostic metadata rather than a channel exclusion rule.
 
 The repository tracks the curated Electricity `config.json` while leaving its
 CSV ignored, so the same exclusions—including source column 245—are carried to
@@ -140,14 +161,28 @@ cluster checkouts and shared with RevIN.
 The main study uses
 
 ```text
-D = {ETTh1, Electricity, Traffic, Solar, Weather, exchange_rate}
-S = {168:24, 336:48, 504:168}
+D = {Electricity, Traffic, Solar, exchange_rate}
+S_default = {168:24, 336:48, 504:168}
 ```
 
 with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
 
 - `screen`: every `(formula, retrieval normalization, K)` pipeline on `D x S`,
-  with raw and instance-normalized retrieval and `K in {1,10}`.
+  with raw and instance-normalized retrieval and `K in {1,3}`. Baselines use
+  direct or shared coefficients only. Learned gates use the shared CatBoost
+  signed-advantage regressor; shared no-feature and oracle gates remain as
+  diagnostics.
+- `mixed_quantity_ablation`: selected complete screen winners transferred to
+  `ETTh1`, `ETTh2`, `ETTm1`, `ETTm2`, and `Weather`. Their channels represent
+  unlike physical quantities, so cross-variable nearest neighbors are studied
+  separately and never enter the primary ranking.
+- `horizon_baselines_ablation`: selected shared baseline winners and their
+  per-horizon counterparts on the same dataset/setting grid and exact winner
+  retrieval configuration.
+- `catboost_ablation`: selected shared-regressor screen winners, each expanded
+  under the same retrieval pipeline to classifier/regressor and
+  shared/per-horizon CatBoost gates, with matching no-feature and oracle
+  references.
 - `k_ablation`: the manually named winning pipelines on `D x S`, varying only
   `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
 - `h_ablation`: manually named pipelines with `L=504` and
@@ -158,32 +193,214 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   `K=15`, per-window min-max X-space retrieval, and cosine distance. It is not
   crossed with `S`.
 
-`test`, `small`, `full`, and `ultra` remain for smoke testing and historical
-reproduction.
-The generic `extraction.slurm`, `baselines.slurm`, `gates.slurm`,
-`tables.slurm`, and `run_all.sh` launchers default to `test`; select a
-publication profile explicitly.
+The publication screen uses `K in {1,3}`; the smoke-only `test` profile fixes
+`K=3`. The only wider grids are the selected-winner `k_ablation` and
+Cross-RAG's prescribed `K=15` setup. The final benchmark and every ablation
+consume selected complete screen pipelines, so none reopens the complete
+method/retrieval sweep.
+
+The resolved grids are summarized below. `D_primary` is Electricity, Traffic,
+Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
+`D_mixed` is the four original ETT panels plus Weather.
+
+| Experiment mode | Datasets | `(L,H)` settings | Backbone | Retrieval / K | Adaptation methods |
+|---|---|---|---|---|---|
+| `test` | Electricity | `504:168` | Chronos-2 | Raw Euclidean / `3` | Primary baselines/gates or TS-IFA, according to front |
+| `screen` | `D_primary` | `168:24`, `336:48`, `504:168` | Chronos-2 | Raw + instance Euclidean / `1,3` | 11 direct/shared baselines and 8 shared gate/reference methods |
+| `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | `WINNERS_CSV` only |
+| `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same `WINNERS_CSV` as full |
+| `mixed_quantity_ablation` | `D_mixed` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
+| `horizon_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Selected shared baselines plus their per-horizon forms |
+| `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Selected shared CatBoost candidates expanded across objective/shape |
+| `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20` | `WINNERS_CSV` only |
+| `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
+| `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
+| `crossrag` | `D_primary` | `512:64` | Chronos-Bolt | Min-max cosine / `15` | One selected winner versus released Cross-RAG |
+
+For the primary methods, let `V` be the vanilla forecast, `C` the
+context-conditioned forecast, `Y_j` the observed future of neighbor `j`,
+`N_j` that neighbor's backbone forecast, and
+`Y_hat = sum_j w_j Y_j` the distance-weighted neighbor future. All formulas
+below are evaluated horizon-wise; `shared` means that fitted coefficients or
+the gate decision are shared across the complete horizon.
+
+The 11 primary baselines are:
+
+- direct: `context_forecast = C`, `aggr_y = Y_hat`, and
+  `y_mean = K^-1 sum_j Y_j`;
+- convex mixture: `aggr_y_mix_shared = (1-lambda)V + lambda Y_hat`;
+- anchored ridge: `V + aV` plus, respectively, `bC`
+  (`context_ridge_shared`), `bY_hat` (`aggr_y_ridge_shared`),
+  `sum_j b_jY_j` (`y_ridge_shared`), `bC + sum_j c_jY_j`
+  (`cov_y_ridge_shared`), `bC + cY_hat`
+  (`cov_horizon_ridge_shared`), `sum_j b_jY_j + sum_j c_jN_j`
+  (`residual_ridge_shared`), or
+  `bC + sum_j c_jY_j + sum_j d_jN_j` (`full_ridge_shared`).
+The horizon-baseline ablation fits the corresponding per-horizon coefficient
+form of every selected shared model, including `cov_y_ridge_horizon` for the
+`V,C,Y_j` design.
+
+The primary gates compare `V` with a candidate `A` in `{C, Y_hat}`. Define
+`Delta_h = (Y_h - V_h)^2 - (Y_h - A_h)^2` and
+`Delta_bar = H^-1 sum_h Delta_h`; the shared decision outputs `A` when its
+score is positive and `V` otherwise. For both candidates the screen includes
+the direct candidate, `bayes_<A>_shared` (constant decision from mean training
+advantage), `catboost_<A>_regressor_shared` (feature-based prediction of
+`Delta_bar`), and `oracle_<A>_shared` (target-aware T3 upper bound). This gives
+eight gate/reference artifacts in total.
+
+Default TS-IFA reports vanilla, context, residual, and memory candidates plus
+its ridge and neural rooters; transformed candidates remain opt-in.
+
+Modes provide default grids, including default backbone models; they are not
+model-free labels. `test`, `screen`, and `full` default to `chronos2`, `ultra`
+defaults to `chronos2,tabpfnts`, and `crossrag` fixes `chronos-bolt`.
+`MODELS_CSV` explicitly overrides a model list where the launcher enumerates
+backbones, for example `MODELS_CSV=chronos2,tabpfnts`. The primary screen is
+defined on Chronos-2 and should retain that reference backbone. Every
+extraction already writes the matching vanilla backbone forecast and metrics;
+there is no separate univariate submission.
+
+`test` is exactly one Electricity setting and one retrieval pipeline:
+`L=504`, `H=168`, raw-space Euclidean online retrieval, and `K=3`. `screen`
+is the only complete candidate sweep. `full` is the final selected-candidate
+benchmark on `D_full` and the same three default settings; the selected winner
+name already fixes formula, raw/instance normalization, metric, K, and online
+or fixed retrieval. `ultra`
+uses that identical final benchmark and adds the additional default backbones. Both modes write to
+`outputs/adaptation_results/full`, allowing ultra to reuse completed full
+results. The obsolete `small` profile has been removed.
+
+The intended submission interface is:
+
+| Slurm front | Accessible mode(s) | What it runs |
+|---|---|---|
+| `screen.slurm` | fixed `screen` | Primary extraction, 11 baselines, 8 gate/reference methods, and tables |
+| `benchmark.slurm` | `full` or `ultra` | Selected screen winners on `D_full`, followed by tables |
+| `extraction.slurm` | `test`, `full`, `ultra` | Standalone extraction, mainly for smoke or TS-IFA inputs |
+| `baselines.slurm` | `test` | Primary baseline smoke run; requires test extraction |
+| `gates.slurm` | `test` | Primary gate smoke run; requires test extraction |
+| `tables.slurm` | `test`, `full`, `ultra` | Standalone tables, including optional TS-IFA tables |
+| `ts_ifa.slurm` | `test`, `full`, `ultra` | TS-IFA; requires matching extraction |
+| `mixed_quantity_ablation.slurm` | fixed `mixed_quantity_ablation` | Selected winners on original ETT panels and Weather |
+| `horizon_baselines_ablation.slurm` | fixed `horizon_baselines_ablation` | Selected shared baselines versus per-horizon forms |
+| `catboost_ablation.slurm` | fixed `catboost_ablation` | Selected CatBoost gates across objective/decision shape |
+| `k_ablation.slurm` | fixed `k_ablation` | Selected winners over the K grid |
+| `h_ablation.slurm` | fixed `h_ablation` | Selected winners over the H grid |
+| `l_ablation.slurm` | fixed `l_ablation` | Selected winners over the L grid |
+| `crossrag.slurm` | fixed `crossrag` | One selected winner versus Cross-RAG |
+
+There is no aggregate smoke submitter. If needed, submit the `test` extraction,
+then the baseline and gate smoke jobs, then tables after both complete. Final
+baseline/gate comparisons use `benchmark.slurm`, which understands complete
+selected pipeline names.
 The `exchange_rate` key resolves the shared
 `datasets/exchange_rate/exchange_rate.csv` layout used by the other projects.
 
-Each experiment is one sequential Slurm job. Run the screen first:
+The paper experiment order is:
+
+1. Optionally validate the installation with the manual `test` stage sequence.
+2. Run the complete Chronos-2 candidate screen.
+3. Select complete winner names from
+   `outputs/adaptation_results/screen/tables/chronos2/average/pipeline_ranking.csv`.
+4. Run the final Chronos-2 benchmark with those winners.
+5. Optionally run `ultra` with the same winners to add backbones.
+6. Run selected-winner ablations; TS-IFA is an independent architecture track.
+
+The optional smoke sequence is:
+
+```bash
+EXPERIMENT_MODE=test sbatch extraction.slurm
+# After extraction succeeds, submit both:
+EXPERIMENT_MODE=test sbatch baselines.slurm
+EXPERIMENT_MODE=test sbatch gates.slurm
+# After both succeed:
+EXPERIMENT_MODE=test sbatch tables.slurm
+```
+
+Run the screen first:
 
 ```bash
 sbatch screen.slurm
 ```
 
+To deliberately regenerate every screen extraction after code changes, use:
+
+```bash
+EXTRACTION_SKIP_COMPLETE=false sbatch screen.slurm
+```
+
+The screen is the primary comparison. It intentionally excludes every
+per-horizon baseline and every CatBoost formulation except the shared
+regressor. The requested method list is part of the completion contract, so an
+older all-method screen bundle is replaced instead of being accepted as the
+current reduced sweep. Existing extraction payloads remain valid and are
+reused.
+
 For screening, a **setting** is one dataset plus one `L:H` pair, so there are
-`|D| x |S| = 18` settings. Each complete pipeline is scored by the unweighted
-mean of its 18 setting-level percentage improvements over vanilla Chronos-2.
+`|D| x |S| = 12` settings. Each complete pipeline is scored by the unweighted
+mean of its 12 setting-level percentage improvements over vanilla Chronos-2.
 There is no averaging over K or normalization: those identify different
 pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
 `winner_name` includes family, retrieval configuration, and formula.
+
+Copy the desired complete names into the final benchmark:
+
+```bash
+WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+sbatch benchmark.slurm
+```
+
+This defaults to `EXPERIMENT_MODE=full` and Chronos-2. To add the extra
+backbones afterward without recomputing completed Chronos-2 results:
+
+```bash
+EXPERIMENT_MODE=ultra \
+WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+sbatch benchmark.slurm
+```
+
+For an explicit custom backbone selection, pass `MODELS_CSV`, for example
+`MODELS_CSV=tabpfnts`. `full` and `ultra` otherwise differ only in their
+default model list.
+
+The dedicated per-horizon baseline study defaults to the current best shared
+convex mixture, aggregated-target ridge, and individual-neighbor ridge. Edit
+`SHARED_BASELINE_WINNERS_CSV` in `horizon_baselines_ablation.slurm` when a new
+primary screen changes those winners. Each entry must name a shared method;
+the launcher evaluates it beside the corresponding `_horizon` method:
+
+```bash
+sbatch horizon_baselines_ablation.slurm
+```
+
+The CatBoost objective/shape study is independent and can be submitted later:
+
+```bash
+CATBOOST_WINNERS_CSV=gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+sbatch catboost_ablation.slurm
+```
+
+Each selected shared-regressor winner fixes the candidate and retrieval
+pipeline; the runner expands only classifier/regressor and
+shared/per-horizon decision shape plus matching references.
+
+The mixed-quantity dataset study is also isolated and can be submitted later:
+
+```bash
+WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+sbatch mixed_quantity_ablation.slurm
+```
+
+All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
+ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
+quantity-separated ETT panels instead.
 
 Copy the selected complete names into `WINNERS_CSV` near the top of each later
 Slurm file (or pass the same variable as an environment override):
 
 ```bash
-WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/y_ridge_horizon,gates/raw_euclidean_1_online/catboost_aggr_y_regressor_shared}"
+WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared}"
 ```
 
 Then submit exactly one front per experiment:
@@ -207,7 +424,7 @@ environment, and submit it:
 CROSSRAG_ROOT=/cluster/code/Cross-RAG \
 CROSSRAG_BASE_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/base \
 CROSSRAG_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/.../best.pth \
-WINNERS_CSV=baselines/instance_euclidean_10_online/y_ridge_horizon \
+WINNERS_CSV=baselines/instance_euclidean_3_online/y_ridge_shared \
 sbatch crossrag.slurm
 ```
 
@@ -220,12 +437,15 @@ min-max/cosine retrieval. The comparison tables include accuracy, and
 Cross-RAG totals, including each pipeline's own retrieval pass.
 
 Extraction defaults to `SKIP_COMPLETE=true` and validates an atomic manifest
-with the exact signature and timing artifact. Selected-candidate profiles
-default downstream skipping to false because changing `*_METHODS_CSV` changes
-the fitted output. Normal logs are under `logs/`; if a sequential job reaches
-its time limit, resubmit the same mode and completed extractions will be reused.
+with the exact signature and timing artifact. The final benchmark also skips
+only when the exact requested method set is complete and newer than its input
+extraction; ultra can therefore reuse full. Ablations refit their selected
+methods by default. Normal logs are under `logs/`; if a sequential job reaches
+its time limit, resubmit the same mode and completed work will be reused where
+its completion contract matches.
 
-All sweep dimensions remain overridable through `DATASETS_CSV`, `MODELS_CSV`,
+Outside the fixed Chronos-2 screen, sweep dimensions remain overridable through
+`DATASETS_CSV`, `MODELS_CSV`,
 `SETTINGS_CSV`, `DISTANCE_SPACES_CSV`, `DISTANCE_METRICS_CSV`, and
 `NEIGHBORS_CSV`. Settings use `L:H`. `MAX_T1_FIT_SAMPLES`,
 `MAX_T2_VALID_SAMPLES`, and `MAX_ADAPT_REFIT_SAMPLES` affect fitting only;
@@ -247,6 +467,10 @@ matching vanilla backbone (plus its mean metric below). This is deliberately
 not the percentage computed from two pooled mean nMSE values. It prevents large
 datasets or large-error configurations from receiving implicit extra weight.
 Report it alongside, not instead of, per-dataset results and user-tail analyses.
+For baseline and gate families, `average/positive_windows_results.tex` also
+reports the unweighted mean of the saved per-configuration
+`positive_window_pct` values. This is an absolute win-rate table, not a
+relative improvement computed from pooled losses.
 
 Use `FAMILIES_CSV=baselines`, `FAMILIES_CSV=gates`, or include `ts_ifa` after
 those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;
@@ -306,8 +530,8 @@ EXPERIMENT_MODE=test TRANSFORMED_EXPERT=true sbatch ts_ifa.slurm
 ```
 
 Its input extraction must already have a valid completion manifest.
-TS-IFA follows the shared small/full/ultra dataset, setting, and backbone
-profiles, but remains outside the paper-critical baseline/gate path while its
+TS-IFA follows the test/full/ultra dataset, setting, and backbone profiles, but
+remains outside the paper-critical baseline/gate path while its
 architecture is being tuned.
 
 ## Executable files
@@ -317,22 +541,32 @@ scheduler resources and the `EXPERIMENT_MODE` switch, while `src/slurm/*.sh` con
 enumeration, input checks, and command invocation:
 
 - `extraction.slurm` -> `src/slurm/extract_adaptation.sh`.
+- `benchmark.slurm` and `screen.slurm` ->
+  `src/slurm/run_profile_experiment.sh`.
 - `baselines.slurm` -> `src/slurm/run_baselines.sh`.
 - `gates.slurm` -> `src/slurm/run_gates.sh`.
+- `mixed_quantity_ablation.slurm` -> `src/slurm/run_profile_experiment.sh`.
+- `horizon_baselines_ablation.slurm` ->
+  `src/slurm/run_horizon_baselines_ablation.sh`.
+- `catboost_ablation.slurm` -> `src/slurm/run_catboost_ablation.sh`.
 - `tables.slurm` -> `src/slurm/build_tables.sh`.
-- `ts_ifa.slurm` and `univariate.slurm` are optional model/reference jobs.
+- `ts_ifa.slurm` is the optional architecture job.
 
 Implementation shells:
 
 - `extract_adaptation.sh` builds vanilla and retrieval extraction tasks and
   calls `src.experiments.extraction`.
-- `run_baselines.sh` checks extraction manifests and evaluates direct, ridge,
-  horizon-ridge, and optimistic appendix references.
+- `run_baselines.sh` checks extraction manifests and evaluates the explicitly
+  selected direct/shared or ablation methods.
 - `run_gates.sh` uses the same evaluator with `--family gates` to fit and score
   the candidate gates.
+- `run_horizon_baselines_ablation.sh` maps selected shared winners to their
+  per-horizon counterparts and runs both in an isolated profile.
+- `run_catboost_ablation.sh` validates selected shared-regressor winners and
+  expands their fixed retrieval pipelines across the CatBoost objective/shape
+  matrix.
 - `run_ts_ifa.sh` trains T1 branches, fits T2 ridge and neural rooters, and
   writes complete per-candidate and T3 comparison metrics.
-- `run_univariate.sh` runs direct Chronos forecasts without retrieval.
 - `build_tables.sh` verifies the selected sweep is complete before producing
   full and equal-configuration-average tables.
 - `common.sh` provides resource lookup, setting parsing, manifest checks, and
@@ -342,7 +576,6 @@ The runnable Python modules are:
 
 - `src.experiments.extraction`: frozen-backbone inference, features, neighbors,
   prediction payloads, and the atomic completion manifest.
-- `src.experiments.experiment_univariate`: direct univariate backbone reference.
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
   with `--family baselines` or `--family gates`.

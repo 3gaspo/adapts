@@ -106,11 +106,24 @@ def main() -> None:
         horizon=horizon,
         distance_space="minmax",
     )
+    fourier_windows = build_window_batch(
+        dataset,
+        np.asarray([3, 4]),
+        lags=lags,
+        horizon=horizon,
+        distance_space="fourier",
+    )
     np.testing.assert_allclose(instance_windows.features.mean(axis=1), 0.0, atol=1e-6)
     np.testing.assert_allclose(instance_windows.features.std(axis=1), 1.0, atol=1e-6)
     assert not np.allclose(raw_windows.features, instance_windows.features)
     np.testing.assert_allclose(minmax_windows.features.min(axis=1), 0.0)
     np.testing.assert_allclose(minmax_windows.features.max(axis=1), 1.0)
+    assert fourier_windows.features.shape == raw_windows.features.shape
+    np.testing.assert_allclose(
+        fourier_windows.features[:, 0],
+        np.zeros(fourier_windows.features.shape[0]),
+        atol=1e-6,
+    )
 
     class EncoderStub(torch.nn.Module):
         def representation(self, values: torch.Tensor, *, pool: bool = False) -> torch.Tensor:

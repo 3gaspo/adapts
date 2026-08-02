@@ -51,30 +51,58 @@ def main() -> None:
                     0.66 + offset,
                 ),
             ]:
+                run_bonus = 10.0 if run.startswith("instance") else 0.0
+                dataset_bonus = 10.0 * offset
                 _write(
                     setting / run / "baselines" / "baseline_metrics.json",
                     [
-                        {"split": "eval", "baseline": "context_forecast", "nmse": 0.95 + offset, "mse": 0.009},
-                        {"split": "eval", "baseline": "y_ridge_shared", "nmse": ridge, "mse": 0.007},
+                        {
+                            "split": "eval",
+                            "baseline": "context_forecast",
+                            "nmse": 0.95 + offset,
+                            "mse": 0.009,
+                            "positive_window_pct": 55.0 + dataset_bonus,
+                        },
+                        {
+                            "split": "eval",
+                            "baseline": "y_ridge_shared",
+                            "nmse": ridge,
+                            "mse": 0.007,
+                            "positive_window_pct": 60.0 + run_bonus + dataset_bonus,
+                        },
                         {
                             "split": "eval",
                             "baseline": "residual_ridge_horizon_eval_fit",
                             "nmse": 0.1 + offset,
                             "mse": 0.001,
+                            "positive_window_pct": 90.0 + dataset_bonus,
                         },
                     ],
                 )
                 _write(
                     setting / run / "gates" / "gate_metrics.json",
                     [
-                        {"split": "eval", "baseline": "bayes_context_shared", "nmse": bayes, "mse": 0.006},
+                        {
+                            "split": "eval",
+                            "baseline": "bayes_context_shared",
+                            "nmse": bayes,
+                            "mse": 0.006,
+                            "positive_window_pct": 65.0 + run_bonus + dataset_bonus,
+                        },
                         {
                             "split": "eval",
                             "baseline": "catboost_context_classifier_shared",
                             "nmse": bayes + 0.05,
                             "mse": 0.0065,
+                            "positive_window_pct": 62.0 + run_bonus + dataset_bonus,
                         },
-                        {"split": "eval", "baseline": "oracle_context_horizon", "nmse": 0.4 + offset, "mse": 0.004},
+                        {
+                            "split": "eval",
+                            "baseline": "oracle_context_horizon",
+                            "nmse": 0.4 + offset,
+                            "mse": 0.004,
+                            "positive_window_pct": 95.0 + dataset_bonus,
+                        },
                     ],
                 )
                 _write(
@@ -125,16 +153,22 @@ def main() -> None:
             "baselines_results.tex",
             "gates_results.tex",
             "ts_ifa_results.tex",
+            "positive_windows_results.tex",
         }
 
         baselines = (root / "tables" / "average" / "baselines_results.tex").read_text(encoding="utf-8")
         assert baselines.count(r"\begin{table}") == 1
-        assert "Vanilla Chronos NMSE: 1.10" in baselines
+        assert "Vanilla Chronos-2 NMSE: 1.10" in baselines
         assert "9.10" not in baselines
         assert "25.67" in baselines
-        assert r"R-ridge-h-fit-T3" in baselines
+        assert r"residual-ridge-h-fit-T3" in baselines
         assert baselines.count(r"\midrule") >= 2
         assert " & Mean" not in baselines
+        positive_windows = (
+            root / "tables" / "average" / "positive_windows_results.tex"
+        ).read_text(encoding="utf-8")
+        assert "lower horizon-averaged MSE than the vanilla forecast" in positive_windows
+        assert r"71.00\%" in positive_windows
         ranking = json.loads(
             (root / "tables" / "average" / "pipeline_ranking.json").read_text(
                 encoding="utf-8"
