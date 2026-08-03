@@ -12,7 +12,7 @@
 
 # Shared winners from the primary screen. The implementation evaluates each
 # winner beside its per-horizon counterpart using the same retrieval pipeline.
-SHARED_BASELINE_WINNERS_CSV="${SHARED_BASELINE_WINNERS_CSV:-baselines/instance_euclidean_3_online/aggr_y_mix_shared,baselines/instance_euclidean_3_online/aggr_y_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared}"
+SHARED_BASELINE_WINNERS_CSV="${SHARED_BASELINE_WINNERS_CSV:-baselines/instance_euclidean_3_online/avgy_mix_shared,baselines/instance_euclidean_3_online/avgy_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared}"
 EXPERIMENT_MODE=horizon_baselines_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

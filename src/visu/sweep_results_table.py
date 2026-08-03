@@ -25,21 +25,21 @@ from .results_table import (
 REFERENCE_METHOD = "vanilla"
 
 BASELINE_HELDOUT_VARIANTS = (
-    "context_forecast",
-    "aggr_y",
+    "cov_forecast",
+    "avgy",
     "y_mean",
-    "aggr_y_mix_shared",
-    "aggr_y_mix_horizon",
-    "context_ridge_shared",
-    "context_ridge_horizon",
-    "aggr_y_ridge_shared",
-    "aggr_y_ridge_horizon",
+    "avgy_mix_shared",
+    "avgy_mix_horizon",
+    "cov_ridge_shared",
+    "cov_ridge_horizon",
+    "avgy_ridge_shared",
+    "avgy_ridge_horizon",
     "y_ridge_shared",
     "y_ridge_horizon",
     "cov_y_ridge_shared",
     "cov_y_ridge_horizon",
-    "cov_horizon_ridge_shared",
-    "cov_horizon_ridge_horizon",
+    "cov_avgy_ridge_shared",
+    "cov_avgy_ridge_horizon",
     "residual_ridge_shared",
     "residual_ridge_horizon",
     "full_ridge_shared",
@@ -49,37 +49,37 @@ BASELINE_HELDOUT_VARIANTS = (
 BASELINE_DIAGNOSTIC_VARIANTS = tuple(
     f"{name}_eval_fit"
     for name in BASELINE_HELDOUT_VARIANTS
-    if name not in {"context_forecast", "aggr_y", "y_mean"}
+    if name not in {"cov_forecast", "avgy", "y_mean"}
 )
 
 GATE_HELDOUT_VARIANTS = (
-    "context_forecast",
-    "aggr_y",
-    "bayes_context_shared",
-    "bayes_context_horizon",
-    "catboost_context_classifier_shared",
-    "catboost_context_classifier_horizon",
-    "catboost_context_regressor_shared",
-    "catboost_context_regressor_horizon",
-    "bayes_aggr_y_shared",
-    "bayes_aggr_y_horizon",
-    "catboost_aggr_y_classifier_shared",
-    "catboost_aggr_y_classifier_horizon",
-    "catboost_aggr_y_regressor_shared",
-    "catboost_aggr_y_regressor_horizon",
+    "cov_forecast",
+    "avgy",
+    "bayes_cov_shared",
+    "bayes_cov_horizon",
+    "catboost_cov_classifier_shared",
+    "catboost_cov_classifier_horizon",
+    "catboost_cov_regressor_shared",
+    "catboost_cov_regressor_horizon",
+    "bayes_avgy_shared",
+    "bayes_avgy_horizon",
+    "catboost_avgy_classifier_shared",
+    "catboost_avgy_classifier_horizon",
+    "catboost_avgy_regressor_shared",
+    "catboost_avgy_regressor_horizon",
 )
 
 GATE_DIAGNOSTIC_VARIANTS = (
-    "oracle_context_shared",
-    "oracle_context_horizon",
-    "oracle_aggr_y_shared",
-    "oracle_aggr_y_horizon",
+    "oracle_cov_shared",
+    "oracle_cov_horizon",
+    "oracle_avgy_shared",
+    "oracle_avgy_horizon",
 )
 
 TS_IFA_MAIN_VARIANTS = ("TS-IFA",)
 TS_IFA_BRANCH_VARIANTS = (
     "vanilla_branch",
-    "context_branch",
+    "cov_branch",
     "transformed_branch",
     "residual_branch",
     "memory_branch",
@@ -88,18 +88,18 @@ TS_IFA_BRANCH_VARIANTS = (
 
 FULL_VARIANTS = (
     *BASELINE_HELDOUT_VARIANTS,
-    "bayes_context_shared",
-    "bayes_context_horizon",
-    "catboost_context_classifier_shared",
-    "catboost_context_classifier_horizon",
-    "catboost_context_regressor_shared",
-    "catboost_context_regressor_horizon",
-    "bayes_aggr_y_shared",
-    "bayes_aggr_y_horizon",
-    "catboost_aggr_y_classifier_shared",
-    "catboost_aggr_y_classifier_horizon",
-    "catboost_aggr_y_regressor_shared",
-    "catboost_aggr_y_regressor_horizon",
+    "bayes_cov_shared",
+    "bayes_cov_horizon",
+    "catboost_cov_classifier_shared",
+    "catboost_cov_classifier_horizon",
+    "catboost_cov_regressor_shared",
+    "catboost_cov_regressor_horizon",
+    "bayes_avgy_shared",
+    "bayes_avgy_horizon",
+    "catboost_avgy_classifier_shared",
+    "catboost_avgy_classifier_horizon",
+    "catboost_avgy_regressor_shared",
+    "catboost_avgy_regressor_horizon",
     *TS_IFA_MAIN_VARIANTS,
 )
 CROSSRAG_VARIANTS = ("crossrag",)

@@ -1,0 +1,38 @@
+ADAPTATION SCREEN CANDIDATES
+
+Source profile: screen
+Selection date: 2026-08-03
+Backbone: chronos2
+
+SELECTED PIPELINES
+
+1. baselines/instance_euclidean_3_online/full_ridge_shared
+2. baselines/instance_euclidean_3_online/y_ridge_shared
+3. gates/instance_euclidean_3_online/catboost_avgy_regressor_shared
+4. baselines/instance_euclidean_3_online/cov_y_ridge_shared
+5. baselines/instance_euclidean_3_online/residual_ridge_shared
+6. baselines/raw_euclidean_3_online/cov_avgy_ridge_shared
+7. baselines/raw_euclidean_3_online/cov_ridge_shared
+8. gates/instance_euclidean_1_online/catboost_cov_regressor_shared
+9. gates/instance_euclidean_1_online/bayes_cov_shared
+
+WINNERS_CSV
+
+baselines/instance_euclidean_3_online/full_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared,gates/instance_euclidean_3_online/catboost_avgy_regressor_shared,baselines/instance_euclidean_3_online/cov_y_ridge_shared,baselines/instance_euclidean_3_online/residual_ridge_shared,baselines/raw_euclidean_3_online/cov_avgy_ridge_shared,baselines/raw_euclidean_3_online/cov_ridge_shared,gates/instance_euclidean_1_online/catboost_cov_regressor_shared,gates/instance_euclidean_1_online/bayes_cov_shared
+
+NOTES
+
+- Retrieval names encode distance space, Euclidean distance, K, and online retrieval.
+- bayes_cov_shared is the selected Bayes candidate. The bayes_avgy_shared screen gate selected vanilla and produced approximately zero improvement.
+
+NEXT STAGE: K ABLATION
+
+Status: ready to submit after synchronization
+Grid: K = 1, 3, 5, 10, 15, 20
+Profile: k_ablation
+Selection rule: choose one K per candidate by its equal-configuration mean held-out
+eval nMSE improvement over vanilla across the 12 primary dataset/settings.
+
+SUBMISSION COMMAND
+
+WINNERS_CSV="$(awk 'capture && NF {print; exit} /^WINNERS_CSV$/ {capture=1}' SWEEP_CANDIDATES.txt)" sbatch k_ablation.slurm

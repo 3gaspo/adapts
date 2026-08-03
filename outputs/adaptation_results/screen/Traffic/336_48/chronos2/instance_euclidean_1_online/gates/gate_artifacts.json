@@ -60,23 +60,23 @@
     ]
   },
   "models": {
-    "catboost_context_regressor_shared": [
+    "catboost_cov_regressor_shared": [
       {
         "selected_iterations": 262,
         "kind": "regressor",
-        "path": "models/catboost_context_regressor_shared/shared.cbm"
+        "path": "models/catboost_cov_regressor_shared/shared.cbm"
       }
     ],
-    "catboost_aggr_y_regressor_shared": [
+    "catboost_avgy_regressor_shared": [
       {
         "selected_iterations": 297,
         "kind": "regressor",
-        "path": "models/catboost_aggr_y_regressor_shared/shared.cbm"
+        "path": "models/catboost_avgy_regressor_shared/shared.cbm"
       }
     ]
   },
   "bayes": {
-    "context": {
+    "cov": {
       "shared_score": -2.3790489649400115e-05,
       "horizon_score": [
         -4.085245018359274e-05,
@@ -129,7 +129,7 @@
         -2.9652423108927906e-05
       ]
     },
-    "aggr_y": {
+    "avgy": {
       "shared_score": -0.0005198517465032637,
       "horizon_score": [
         -0.0013337857089936733,
@@ -184,9 +184,9 @@
     }
   },
   "feature_importance_files": [
-    "plots/feature_importance_context_regressor_shared.csv",
-    "plots/feature_importance_context_regressor_shared.png",
-    "plots/feature_importance_aggr_y_regressor_shared.csv",
-    "plots/feature_importance_aggr_y_regressor_shared.png"
+    "plots/feature_importance_cov_regressor_shared.csv",
+    "plots/feature_importance_cov_regressor_shared.png",
+    "plots/feature_importance_avgy_regressor_shared.csv",
+    "plots/feature_importance_avgy_regressor_shared.png"
   ]
 }

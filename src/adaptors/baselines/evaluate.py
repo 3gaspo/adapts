@@ -152,8 +152,8 @@ def distance_weights(arrays: dict[str, np.ndarray], eps: float = 1e-8) -> np.nda
 
 
 def weighted_neighbor_horizon(arrays: dict[str, np.ndarray]) -> np.ndarray:
-    if "aggr_y" in arrays:
-        return arrays["aggr_y"]
+    if "avgy" in arrays:
+        return arrays["avgy"]
     n_samples, _, horizon = arrays["y_c"].shape
     aggregate = np.empty((n_samples, horizon), dtype=np.float64)
     for start in range(0, n_samples, AGGREGATION_CHUNK_ROWS):
@@ -266,26 +266,26 @@ def _contiguous_fit_partition(
 
 
 RIDGE_DESIGNS: dict[str, tuple[str, ...]] = {
-    "context": ("V", "C"),
-    "aggr_y": ("V", "aggr_y"),
+    "cov": ("V", "C"),
+    "avgy": ("V", "avgy"),
     "y": ("V", "Y"),
     "cov_y": ("V", "C", "Y"),
-    "cov_horizon": ("V", "C", "aggr_y"),
+    "cov_avgy": ("V", "C", "avgy"),
     "residual": ("V", "Y", "N"),
     "full": ("V", "C", "Y", "N"),
 }
 
 RIDGE_MODELS: tuple[tuple[str, str, str], ...] = (
-    ("context_ridge_shared", "context", "shared"),
-    ("context_ridge_horizon", "context", "horizon"),
-    ("aggr_y_ridge_shared", "aggr_y", "shared"),
-    ("aggr_y_ridge_horizon", "aggr_y", "horizon"),
+    ("cov_ridge_shared", "cov", "shared"),
+    ("cov_ridge_horizon", "cov", "horizon"),
+    ("avgy_ridge_shared", "avgy", "shared"),
+    ("avgy_ridge_horizon", "avgy", "horizon"),
     ("y_ridge_shared", "y", "shared"),
     ("y_ridge_horizon", "y", "horizon"),
     ("cov_y_ridge_shared", "cov_y", "shared"),
     ("cov_y_ridge_horizon", "cov_y", "horizon"),
-    ("cov_horizon_ridge_shared", "cov_horizon", "shared"),
-    ("cov_horizon_ridge_horizon", "cov_horizon", "horizon"),
+    ("cov_avgy_ridge_shared", "cov_avgy", "shared"),
+    ("cov_avgy_ridge_horizon", "cov_avgy", "horizon"),
     ("residual_ridge_shared", "residual", "shared"),
     ("residual_ridge_horizon", "residual", "horizon"),
     ("full_ridge_shared", "full", "shared"),
@@ -293,11 +293,11 @@ RIDGE_MODELS: tuple[tuple[str, str, str], ...] = (
 )
 
 TRAINABLE_BASELINES = (
-    "aggr_y_mix_shared",
-    "aggr_y_mix_horizon",
+    "avgy_mix_shared",
+    "avgy_mix_horizon",
     *(name for name, _, _ in RIDGE_MODELS),
 )
-DIRECT_BASELINES = ("context_forecast", "aggr_y", "y_mean")
+DIRECT_BASELINES = ("cov_forecast", "avgy", "y_mean")
 BASELINE_METHODS = (*DIRECT_BASELINES, *TRAINABLE_BASELINES)
 
 
@@ -314,7 +314,7 @@ def _design_chunk(
             parts.append(pred[:, :, None])
         elif signal == "C":
             parts.append(arrays["pred_c"][start:stop, :, None])
-        elif signal == "aggr_y":
+        elif signal == "avgy":
             weights = distance_weights(
                 {name: value[start:stop] for name, value in arrays.items()}
             )
@@ -509,7 +509,7 @@ def fit_baseline_adapters(
     }
     selected = set(TRAINABLE_BASELINES if methods is None else methods)
     for mode in ("shared", "horizon"):
-        name = f"aggr_y_mix_{mode}"
+        name = f"avgy_mix_{mode}"
         if name not in selected:
             continue
         train_lambda = _fit_convex_lambda(train, mode=mode)
@@ -570,10 +570,10 @@ def iter_baseline_predictions(
     """Yield one complete prediction at a time so callers can release it."""
     selected = set(methods)
     yield "vanilla", arrays["pred"]
-    if "context_forecast" in selected:
-        yield "context_forecast", arrays["pred_c"]
-    if "aggr_y" in selected:
-        yield "aggr_y", weighted_neighbor_horizon(arrays)
+    if "cov_forecast" in selected:
+        yield "cov_forecast", arrays["pred_c"]
+    if "avgy" in selected:
+        yield "avgy", weighted_neighbor_horizon(arrays)
     if "y_mean" in selected:
         yield "y_mean", arrays["y_c"].mean(axis=1)
     for name, model in artifacts["models"].items():
@@ -724,8 +724,8 @@ HORIZON_GATE_FEATURE_NAMES = (
     "neighbor_y_minus_neighbor_pred_std_h",
     *STATIC_GATE_FEATURE_NAMES,
 )
-GATE_CANDIDATES = ("context", "aggr_y")
-GATE_DIRECT_METHODS = ("context_forecast", "aggr_y")
+GATE_CANDIDATES = ("cov", "avgy")
+GATE_DIRECT_METHODS = ("cov_forecast", "avgy")
 GATE_ADAPTIVE_METHODS = tuple(
     f"{prefix}_{candidate}_{suffix}"
     for candidate in GATE_CANDIDATES
@@ -770,9 +770,9 @@ def _candidate_prediction(
     arrays: dict[str, np.ndarray],
     candidate: str,
 ) -> np.ndarray:
-    if candidate == "context":
+    if candidate == "cov":
         return arrays["pred_c"]
-    if candidate == "aggr_y":
+    if candidate == "avgy":
         return weighted_neighbor_horizon(arrays)
     raise ValueError(f"unknown gate candidate {candidate!r}")
 
@@ -811,7 +811,7 @@ def _static_gate_features_dense(
         arrays["distance"].mean(axis=1),
     ]
     local = {
-        "aggr_y": np.sum(weights[:, :, None] * arrays["y_c"], axis=1),
+        "avgy": np.sum(weights[:, :, None] * arrays["y_c"], axis=1),
         "yv_mean": np.sum(weights[:, :, None] * y_minus_v, axis=1),
         "yv_std": np.sqrt(
             np.maximum(
@@ -860,7 +860,7 @@ def compact_gate_arrays(
         stop = min(start + int(chunk_rows), n_samples)
         chunk = {name: value[start:stop] for name, value in arrays.items()}
         values, horizon_values = _static_gate_features_dense(chunk)
-        aggregate[start:stop] = horizon_values["aggr_y"]
+        aggregate[start:stop] = horizon_values["avgy"]
         static[start:stop] = np.stack(values, axis=1).astype(
             np.float32,
             copy=False,
@@ -877,7 +877,7 @@ def compact_gate_arrays(
     return {
         "pred": arrays["pred"].astype(np.float32, copy=False),
         "pred_c": arrays["pred_c"].astype(np.float32, copy=False),
-        "aggr_y": aggregate,
+        "avgy": aggregate,
         "y": arrays["y"].astype(np.float32, copy=False),
         "scale": np.maximum(
             arrays["x"].std(axis=1, keepdims=True),
@@ -928,7 +928,7 @@ def _static_gate_features(
 
 def scalar_gate_features(
     arrays: dict[str, np.ndarray],
-    candidate: str = "context",
+    candidate: str = "cov",
 ) -> np.ndarray:
     candidate_delta = _candidate_prediction(arrays, candidate) - arrays["pred"]
     static, _ = _static_gate_features(arrays)
@@ -997,7 +997,7 @@ class HorizonGateFeatureView(Sequence[np.ndarray]):
 
 def horizon_gate_features(
     arrays: dict[str, np.ndarray],
-    candidate: str = "context",
+    candidate: str = "cov",
 ) -> Sequence[np.ndarray]:
     """Return lazy local features; no model sees another horizon's C_h-V_h."""
     return HorizonGateFeatureView(arrays, candidate)
@@ -1517,10 +1517,10 @@ def run_streamed_gates(
 
     for split, arrays in arrays_by_split.items():
         save_prediction(split, "vanilla", arrays["pred"])
-        if "context_forecast" in selected:
-            save_prediction(split, "context_forecast", arrays["pred_c"])
-        if "aggr_y" in selected:
-            save_prediction(split, "aggr_y", arrays["aggr_y"])
+        if "cov_forecast" in selected:
+            save_prediction(split, "cov_forecast", arrays["pred_c"])
+        if "avgy" in selected:
+            save_prediction(split, "avgy", arrays["avgy"])
 
     for candidate_index, candidate in enumerate(GATE_CANDIDATES):
         candidate_methods = {

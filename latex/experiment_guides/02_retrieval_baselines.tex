@@ -50,23 +50,23 @@ Artifact name & Forecast at horizon $h$ & Coefficients \\
 \midrule
 \endhead
 \code{vanilla} & $V_h$ & 0\\
-\code{context\_forecast} & $C_h$ & 0\\
-\code{aggr\_y} & $\widehat Y_h$ & 0\\
+\code{cov\_forecast} & $C_h$ & 0\\
+\code{avgy} & $\overline Y_h$ & 0\\
 \code{y\_mean} & $k^{-1}\sum_jY_{j,h}$ & 0\\
 \midrule
-\code{aggr\_y\_mix\_shared}
-  & $(1-\lambda)V_h+\lambda\widehat Y_h$ & 1\\
-\code{aggr\_y\_mix\_horizon}
-  & $(1-\lambda_h)V_h+\lambda_h\widehat Y_h$ & $1$ per $h$\\
+\code{avgy\_mix\_shared}
+  & $(1-\lambda)V_h+\lambda\overline Y_h$ & 1\\
+\code{avgy\_mix\_horizon}
+  & $(1-\lambda_h)V_h+\lambda_h\overline Y_h$ & $1$ per $h$\\
 \midrule
-\code{context\_ridge\_shared}
+\code{cov\_ridge\_shared}
   & $V_h+aV_h+bC_h$ & 2\\
-\code{context\_ridge\_horizon}
+\code{cov\_ridge\_horizon}
   & $V_h+a_hV_h+b_hC_h$ & 2 per $h$\\
-\code{aggr\_y\_ridge\_shared}
-  & $V_h+aV_h+b\widehat Y_h$ & 2\\
-\code{aggr\_y\_ridge\_horizon}
-  & $V_h+a_hV_h+b_h\widehat Y_h$ & 2 per $h$\\
+\code{avgy\_ridge\_shared}
+  & $V_h+aV_h+b\overline Y_h$ & 2\\
+\code{avgy\_ridge\_horizon}
+  & $V_h+a_hV_h+b_h\overline Y_h$ & 2 per $h$\\
 \code{y\_ridge\_shared}
   & $V_h+aV_h+\sum_jb_jY_{j,h}$ & $1+k$\\
 \code{y\_ridge\_horizon}
@@ -75,10 +75,10 @@ Artifact name & Forecast at horizon $h$ & Coefficients \\
   & $V_h+aV_h+bC_h+\sum_jc_jY_{j,h}$ & $2+k$\\
 \code{cov\_y\_ridge\_horizon}
   & $V_h+a_hV_h+b_hC_h+\sum_jc_{j,h}Y_{j,h}$ & $2+k$ per $h$\\
-\code{cov\_horizon\_ridge\_shared}
-  & $V_h+aV_h+bC_h+c\widehat Y_h$ & 3\\
-\code{cov\_horizon\_ridge\_horizon}
-  & $V_h+a_hV_h+b_hC_h+c_h\widehat Y_h$ & 3 per $h$\\
+\code{cov\_avgy\_ridge\_shared}
+  & $V_h+aV_h+bC_h+c\overline Y_h$ & 3\\
+\code{cov\_avgy\_ridge\_horizon}
+  & $V_h+a_hV_h+b_hC_h+c_h\overline Y_h$ & 3 per $h$\\
 \code{residual\_ridge\_shared}
   & $V_h+aV_h+\sum_jb_jY_{j,h}+\sum_jc_jN_{j,h}$ & $1+2k$\\
 \code{residual\_ridge\_horizon}
@@ -206,8 +206,8 @@ Chronos-Bolt, $L=512$, $H=64$, $k=15$, and min--max/cosine X-space retrieval.
 Only the winning in-project candidate is fitted in that profile.
 
 \section{Interpretation}
-\code{aggr\_y} tests analog forecasting directly; \code{context} tests whether
-the backbone can consume retrieved context. The individual-$Y$ models test
+\code{avgy} tests analog forecasting directly; \code{cov} tests whether
+the backbone can consume retrieved covariates. The individual-$Y$ models test
 whether learned neighbor-specific weights beat the fixed distance aggregation.
 \code{residual} tests whether neighbor forecasts add information about neighbor
 reliability, and \code{full} is the complete $V,C,Y_j,N_j$ model. All claims

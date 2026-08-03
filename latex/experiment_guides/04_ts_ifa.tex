@@ -167,7 +167,7 @@ Predictions are written batch by batch as separate NumPy arrays indexed by the
 sole current \code{prediction\_manifest.json}; no aggregate prediction
 checkpoint is retained.  \code{result\_manifest.json} is written last as the
 completion marker.
-The metric artifact always reports vanilla, context, residual, and memory
+The metric artifact always reports vanilla, cov, residual, and memory
 candidates, and reports transformed performance only when that candidate is
 active; it also reports the ridge-rooted system and full neural TS-IFA.
 

@@ -58,7 +58,7 @@ def main() -> None:
                     [
                         {
                             "split": "eval",
-                            "baseline": "context_forecast",
+                            "baseline": "cov_forecast",
                             "nmse": 0.95 + offset,
                             "mse": 0.009,
                             "positive_window_pct": 55.0 + dataset_bonus,
@@ -84,21 +84,21 @@ def main() -> None:
                     [
                         {
                             "split": "eval",
-                            "baseline": "bayes_context_shared",
+                            "baseline": "bayes_cov_shared",
                             "nmse": bayes,
                             "mse": 0.006,
                             "positive_window_pct": 65.0 + run_bonus + dataset_bonus,
                         },
                         {
                             "split": "eval",
-                            "baseline": "catboost_context_classifier_shared",
+                            "baseline": "catboost_cov_classifier_shared",
                             "nmse": bayes + 0.05,
                             "mse": 0.0065,
                             "positive_window_pct": 62.0 + run_bonus + dataset_bonus,
                         },
                         {
                             "split": "eval",
-                            "baseline": "oracle_context_horizon",
+                            "baseline": "oracle_cov_horizon",
                             "nmse": 0.4 + offset,
                             "mse": 0.004,
                             "positive_window_pct": 95.0 + dataset_bonus,
@@ -111,7 +111,7 @@ def main() -> None:
                         "adapted_nmse": ts_ifa,
                         "adapted_mse": 0.005,
                         "vanilla_branch_nmse": 1.0 + offset,
-                        "context_branch_nmse": 0.95 + offset,
+                        "cov_branch_nmse": 0.95 + offset,
                         "transformed_branch_nmse": 0.93 + offset,
                         "residual_branch_nmse": residual_branch,
                         "memory_branch_nmse": memory_branch,
@@ -188,7 +188,7 @@ def main() -> None:
         )
         _write(
             tabpfn_setting / "raw_euclidean_1_online" / "baselines" / "baseline_metrics.json",
-            [{"split": "eval", "baseline": "context_forecast", "nmse": 0.9}],
+            [{"split": "eval", "baseline": "cov_forecast", "nmse": 0.9}],
         )
         generate_average_results_tables(
             tabpfn_root,
@@ -202,8 +202,8 @@ def main() -> None:
         assert "Vanilla TabPFN-TS NMSE: 1.00" in tabpfn_table
 
         gates = (root / "tables" / "average" / "gates_results.tex").read_text(encoding="utf-8")
-        assert r"bayes-C-s & " in gates
-        assert r"oracle-C-h" in gates
+        assert r"bayes-cov-s & " in gates
+        assert r"oracle-cov-h" in gates
 
         ts_ifa = (root / "tables" / "average" / "ts_ifa_results.tex").read_text(encoding="utf-8")
         assert r"TS-IFA & " in ts_ifa

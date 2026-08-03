@@ -7,13 +7,13 @@
 \maketitle
 
 \section{Candidates and targets}
-Two gate families are evaluated. A context gate chooses between the vanilla
-forecast $V$ and the context-informed forecast $C$. An aggregated-neighbor
+Two gate families are evaluated. A cov gate chooses between the vanilla
+forecast $V$ and the covariate-informed forecast $C$. An avgy
 gate chooses between $V$ and
 \[
- \widehat Y_h=\sum_{j=1}^{k}w_jY_{j,h}.
+ \overline Y_h=\sum_{j=1}^{k}w_jY_{j,h}.
 \]
-Write either candidate as $A\in\{C,\widehat Y\}$. The horizon-level advantage
+Write either candidate as $A\in\{C,\overline Y\}$. The horizon-level advantage
 used for supervision is
 \[
  \Delta_h=(Y_h-V_h)^2-(Y_h-A_h)^2.
@@ -22,7 +22,7 @@ A positive value means the candidate is better. Shared gates make one decision
 for the complete forecast window using $\overline\Delta=H^{-1}\sum_h\Delta_h$;
 horizon gates make $H$ separate decisions.
 
-\goal{Learn when context or retrieved outcomes should replace the reliable
+\goal{Learn when cov or avgy should replace the reliable
 vanilla forecast, and compare conditional gates with no-feature and
 target-aware upper bounds.}
 
@@ -86,7 +86,7 @@ Name pattern & Meaning \\
 \bottomrule
 \end{tabularx}
 \normalsize
-Here \code{<A>} is \code{context} or \code{aggr\_y}.
+Here \code{<A>} is \code{cov} or \code{avgy}.
 
 The primary screen retains only
 \code{catboost\_<A>\_regressor\_shared}. Its signed-advantage target matches

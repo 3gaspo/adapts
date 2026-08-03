@@ -101,7 +101,7 @@ class PredictionPayloadDataset(Dataset):
             ),
             "y_c": flatten_time_user(y_c),
             "pred": flatten_time_user(pred),
-            "pred_context": flatten_time_user(
+            "pred_cov": flatten_time_user(
                 payload[f"{prefix}_preds_context"][date_slice].float().clone()
             ),
             "pred_transformed": flatten_time_user(pred_transformed),
@@ -212,7 +212,7 @@ def prepare_batch(
             "x": (raw["x"] - q_mean) / q_std,
             "y": (raw["y"] - q_mean) / q_std,
             "pred": (raw["pred"] - q_mean) / q_std,
-            "pred_context": (raw["pred_context"] - q_mean) / q_std,
+            "pred_cov": (raw["pred_cov"] - q_mean) / q_std,
             "pred_transformed": (raw["pred_transformed"] - q_mean) / q_std,
             "x_c": (raw["x_c"] - neighbor_mean) / neighbor_std,
             "y_c": (raw["y_c"] - neighbor_mean) / neighbor_std,

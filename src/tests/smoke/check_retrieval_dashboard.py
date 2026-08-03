@@ -91,16 +91,16 @@ def main() -> None:
             score = torch.linspace(-1.0, 1.0, len(target))
             baseline_predictions[split] = {
                 "vanilla": target + 1.0,
-                "context_forecast": target + 0.25,
-                "aggr_y": target + 0.5,
+                "cov_forecast": target + 0.25,
+                "avgy": target + 0.5,
             }
             gate_predictions[split] = {
-                "catboost_context_classifier_shared": target + 0.2,
-                "oracle_context_shared": target + 0.1,
+                "catboost_cov_classifier_shared": target + 0.2,
+                "oracle_cov_shared": target + 0.1,
             }
             diagnostics_by_split[split] = {
-                "catboost_context_classifier_shared_score": score,
-                "context_shared_target": score,
+                "catboost_cov_classifier_shared_score": score,
+                "cov_shared_target": score,
             }
         baseline_dir = result_root / "baselines"
         baseline_dir.mkdir(parents=True)
@@ -113,13 +113,13 @@ def main() -> None:
             {
                 "format": "adaptation_baseline_models",
                 "models": {
-                    "context_ridge_shared": {
+                    "cov_ridge_shared": {
                         "kind": "ridge",
                         "mode": "shared",
                         "signals": ("V", "C"),
                         "coef": np.asarray([0.75, 0.25]),
                     },
-                    "aggr_y_mix_horizon": {
+                    "avgy_mix_horizon": {
                         "kind": "lambda",
                         "mode": "horizon",
                         "lambda": np.asarray([0.2, 0.4, 0.6]),
@@ -157,7 +157,7 @@ def main() -> None:
         gate_store.finalize(metadata={"family": "gates"})
         gate_plot_dir = gate_dir / "plots"
         gate_plot_dir.mkdir()
-        importance_path = gate_plot_dir / "feature_importance_context_classifier_shared.csv"
+        importance_path = gate_plot_dir / "feature_importance_cov_classifier_shared.csv"
         importance_path.write_text(
             "feature,importance\nquery_mean,0.7\ndistance_mean,0.3\n",
             encoding="utf-8",
@@ -210,7 +210,7 @@ def main() -> None:
             neural_coefficients,
         )
         ts_ifa_store.finalize(
-            metadata={"family": "ts_ifa", "candidate_names": ["context", "memory"]}
+            metadata={"family": "ts_ifa", "candidate_names": ["cov", "memory"]}
         )
         torch.save(
             {
@@ -218,7 +218,7 @@ def main() -> None:
                     [[0.1, 0.2, 0.3], [-0.2, -0.1, 0.0]],
                     dtype=torch.float32,
                 ),
-                "candidate_names": ["context", "memory"],
+                "candidate_names": ["cov", "memory"],
             },
             ts_ifa_dir / "ridge_rooter.pt",
         )
@@ -238,14 +238,14 @@ def main() -> None:
         data = load_dashboard_data(extraction_root, result_root)
         arrays = split_arrays(data, "eval")
         assert arrays["x"].shape == (6, 4)
-        assert "aggr_y" in prediction_names(data, "eval")
-        assert "catboost_context_classifier_shared" in prediction_names(data, "eval")
+        assert "avgy" in prediction_names(data, "eval")
+        assert "catboost_cov_classifier_shared" in prediction_names(data, "eval")
         assert "ts_ifa_adapted" in prediction_names(data, "eval")
 
         values, _, _, window_average = horizon_values(
             data,
             "eval",
-            "context_forecast",
+            "cov_forecast",
             "vanilla",
             "mse",
             "relative",
@@ -257,7 +257,7 @@ def main() -> None:
         _, _, auc, accuracy, count = gate_roc(
             data,
             "eval",
-            "catboost_context_classifier_shared",
+            "catboost_cov_classifier_shared",
         )
         assert auc == 1.0
         assert accuracy == 1.0
@@ -265,7 +265,7 @@ def main() -> None:
         threshold_values = gate_threshold_sweep(
             data,
             "eval",
-            "catboost_context_classifier_shared",
+            "catboost_cov_classifier_shared",
             points=7,
         )
         assert set(threshold_values) == {
@@ -279,15 +279,15 @@ def main() -> None:
 
         feature_names, importance, _ = baseline_feature_importance(
             data,
-            "context_ridge_shared",
+            "cov_ridge_shared",
         )
         assert feature_names == ["V", "C"]
         np.testing.assert_allclose(importance, [0.75, 0.25])
         assert gate_importance_options(data) == [
-            "catboost_context_classifier_shared"
+            "catboost_cov_classifier_shared"
         ]
         ridge_values, candidates = ts_ifa_coefficients(data, "ridge_rooter")
-        assert candidates == ["context", "memory"]
+        assert candidates == ["cov", "memory"]
         assert ridge_values.shape == (2, 3)
         neural_values, _ = ts_ifa_coefficients(data, "neural_rooter_mean")
         assert neural_values.shape == (2, 3)
@@ -304,7 +304,7 @@ def main() -> None:
             plot_window_metric_scatter(
                 data,
                 "eval",
-                "context_forecast",
+                "cov_forecast",
                 "vanilla",
                 "mse",
                 "relative",
@@ -312,10 +312,10 @@ def main() -> None:
                 x_log_scale=True,
                 y_log_scale=True,
             ),
-            plot_baseline_feature_importance(data, "context_ridge_shared"),
+            plot_baseline_feature_importance(data, "cov_ridge_shared"),
             plot_gate_feature_importance(
                 data,
-                "catboost_context_classifier_shared",
+                "catboost_cov_classifier_shared",
             ),
             plot_ts_ifa_coefficients(data, "ridge_rooter"),
             plot_ts_ifa_coefficients(data, "neural_rooter_mean"),

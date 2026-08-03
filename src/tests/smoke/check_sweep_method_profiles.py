@@ -49,8 +49,8 @@ def main() -> None:
         method for method in primary_gates if method.startswith("catboost_")
     }
     assert primary_catboost == {
-        "catboost_context_regressor_shared",
-        "catboost_aggr_y_regressor_shared",
+        "catboost_cov_regressor_shared",
+        "catboost_avgy_regressor_shared",
     }
 
     assert set(neighbor_defaults) == {"", "3", "1,3", "1,3,5,10,15,20", "15"}
@@ -169,12 +169,12 @@ def main() -> None:
         ROOT / "src" / "slurm" / "run_horizon_baselines_ablation.sh"
     ).read_text(encoding="utf-8")
     for shared in (
-        "aggr_y_mix_shared",
-        "context_ridge_shared",
-        "aggr_y_ridge_shared",
+        "avgy_mix_shared",
+        "cov_ridge_shared",
+        "avgy_ridge_shared",
         "y_ridge_shared",
         "cov_y_ridge_shared",
-        "cov_horizon_ridge_shared",
+        "cov_avgy_ridge_shared",
         "residual_ridge_shared",
         "full_ridge_shared",
     ):

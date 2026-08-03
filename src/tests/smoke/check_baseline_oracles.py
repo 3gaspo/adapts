@@ -1,4 +1,4 @@
-"""Smoke-check target-aware context oracle baselines."""
+"""Smoke-check target-aware cov oracle baselines."""
 
 from __future__ import annotations
 
@@ -158,8 +158,8 @@ def main() -> None:
             },
             output_dir=root / "gates",
             selected_methods=(
-                "oracle_context_shared",
-                "oracle_context_horizon",
+                "oracle_cov_shared",
+                "oracle_cov_horizon",
             ),
             iterations=1,
             learning_rate=0.1,
@@ -175,21 +175,21 @@ def main() -> None:
         gate_predictions = gate_store["splits"]["eval"]["predictions"]
         assert set(gate_predictions) == {
             "vanilla",
-            "oracle_context_shared",
-            "oracle_context_horizon",
+            "oracle_cov_shared",
+            "oracle_cov_horizon",
         }
         np.testing.assert_array_equal(
-            gate_predictions["oracle_context_shared"],
+            gate_predictions["oracle_cov_shared"],
             gate_arrays["pred_c"],
         )
         np.testing.assert_array_equal(
-            gate_predictions["oracle_context_horizon"],
+            gate_predictions["oracle_cov_horizon"],
             gate_arrays["pred_c"],
         )
         assert gate_artifacts["format"] == "adaptation_gate_models"
         gate_metrics = {row["baseline"]: row for row in gate_rows}
         assert gate_metrics["vanilla"]["positive_window_pct"] == 0.0
-        assert gate_metrics["oracle_context_shared"]["positive_window_pct"] == 100.0
+        assert gate_metrics["oracle_cov_shared"]["positive_window_pct"] == 100.0
 
         baseline_arrays = compact_baseline_arrays(flattened)
         _, baseline_artifacts, _ = run_streamed_baselines(

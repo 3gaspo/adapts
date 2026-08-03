@@ -180,7 +180,7 @@ def split_arrays(data: dict[str, Any], split: str) -> dict[str, Any]:
     }
     predictions = {
         "vanilla": _flatten(payload[prefix + "preds"]),
-        "context_forecast": _flatten(payload[prefix + "preds_context"]),
+        "cov_forecast": _flatten(payload[prefix + "preds_context"]),
     }
     baseline_split = data["baseline"].get("splits", {}).get(split, {})
     for name, value in baseline_split.get("predictions", {}).items():
@@ -272,8 +272,8 @@ def prediction_names(data: dict[str, Any], split: str) -> list[str]:
 
 
 SCALAR_FEATURE_ORDER = (
-    "context_minus_vanilla_mean",
-    "context_minus_vanilla_std",
+    "cov_minus_vanilla_mean",
+    "cov_minus_vanilla_std",
     "weighted_neighbor_minus_vanilla_mean",
     "weighted_neighbor_residual_mean",
     "query_mean",
@@ -321,11 +321,11 @@ def scalar_feature_values(data: dict[str, Any], split: str) -> dict[str, np.ndar
     x = np.asarray(arrays["x"], dtype=np.float64)
     x_c = np.asarray(arrays["x_c"], dtype=np.float64)
     pred = np.asarray(predictions["vanilla"], dtype=np.float64)
-    pred_c = np.asarray(predictions["context_forecast"], dtype=np.float64)
-    context_delta = pred_c - pred
+    pred_c = np.asarray(predictions["cov_forecast"], dtype=np.float64)
+    cov_delta = pred_c - pred
     features: dict[str, np.ndarray] = {
-        "context_minus_vanilla_mean": np.nanmean(context_delta, axis=1),
-        "context_minus_vanilla_std": np.nanstd(context_delta, axis=1),
+        "cov_minus_vanilla_mean": np.nanmean(cov_delta, axis=1),
+        "cov_minus_vanilla_std": np.nanstd(cov_delta, axis=1),
         "query_mean": np.nanmean(x, axis=1),
         "query_std": np.nanstd(x, axis=1),
         "neighbor_lookback_means_mean_raw": np.nanmean(np.nanmean(x_c, axis=-1), axis=1),
@@ -600,12 +600,12 @@ def _relative_improvement_pct(reference: float, current: float) -> float:
 
 def _gate_candidate_prediction_name(gate_name: str) -> str:
     match = re.fullmatch(
-        r"(?:bayes|catboost|oracle)_(context|aggr_y)(?:_[a-z]+)?_(?:shared|horizon)",
+        r"(?:bayes|catboost|oracle)_(cov|avgy)(?:_[a-z]+)?_(?:shared|horizon)",
         gate_name,
     )
     if match is None:
         raise ValueError(f"Cannot identify the gated candidate from {gate_name!r}")
-    return "context_forecast" if match.group(1) == "context" else "aggr_y"
+    return "cov_forecast" if match.group(1) == "cov" else "avgy"
 
 
 def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
@@ -613,7 +613,7 @@ def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
     options: list[tuple[str, str]] = []
     for key in sorted(diagnostics):
         match = re.fullmatch(
-            r"(catboost_(context|aggr_y)_(classifier|regressor)_(shared|horizon))_score",
+            r"(catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon))_score",
             key,
         )
         if match is None:
@@ -631,7 +631,7 @@ def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
 def _gate_score_target(data: dict[str, Any], split: str, gate_name: str) -> tuple[np.ndarray, np.ndarray]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
     match = re.fullmatch(
-        r"catboost_(context|aggr_y)_(classifier|regressor)_(shared|horizon)",
+        r"catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon)",
         gate_name,
     )
     if match is None:
@@ -687,12 +687,12 @@ def plot_gate_roc(data: dict[str, Any], split: str, gate_name: str) -> tuple[plt
 def gate_prediction_names(data: dict[str, Any], split: str) -> list[str]:
     names = prediction_names(data, split)
     prefixes = (
-        "bayes_context_",
-        "catboost_context_",
-        "oracle_context_",
-        "bayes_aggr_y_",
-        "catboost_aggr_y_",
-        "oracle_aggr_y_",
+        "bayes_cov_",
+        "catboost_cov_",
+        "oracle_cov_",
+        "bayes_avgy_",
+        "catboost_avgy_",
+        "oracle_avgy_",
     )
     return [name for name in names if name.startswith(prefixes)]
 
@@ -705,23 +705,23 @@ def _gate_right_percent(arrays: dict[str, Any], prediction_name: str) -> float:
     predictions = arrays["predictions"]
     prediction = np.asarray(predictions[prediction_name], dtype=np.float64)
     vanilla = np.asarray(predictions["vanilla"], dtype=np.float64)
-    candidate_name = "aggr_y" if "_aggr_y_" in prediction_name else "context_forecast"
-    context = np.asarray(predictions[candidate_name], dtype=np.float64)
+    candidate_name = "avgy" if "_avgy_" in prediction_name else "cov_forecast"
+    candidate = np.asarray(predictions[candidate_name], dtype=np.float64)
     target = np.asarray(arrays["y"], dtype=np.float64)
     base_loss = (vanilla - target) ** 2
-    context_loss = (context - target) ** 2
-    distance_to_context = np.abs(prediction - context)
+    candidate_loss = (candidate - target) ** 2
+    distance_to_candidate = np.abs(prediction - candidate)
     distance_to_vanilla = np.abs(prediction - vanilla)
     if _gate_shape(prediction_name) == "shared":
-        decision = np.nanmean(distance_to_context, axis=1) <= np.nanmean(distance_to_vanilla, axis=1)
-        target_context = np.nanmean(context_loss, axis=1) < np.nanmean(base_loss, axis=1)
-        non_tie = np.abs(np.nanmean(base_loss - context_loss, axis=1)) > 1e-12
+        decision = np.nanmean(distance_to_candidate, axis=1) <= np.nanmean(distance_to_vanilla, axis=1)
+        target_candidate = np.nanmean(candidate_loss, axis=1) < np.nanmean(base_loss, axis=1)
+        non_tie = np.abs(np.nanmean(base_loss - candidate_loss, axis=1)) > 1e-12
     else:
-        decision = distance_to_context <= distance_to_vanilla
-        target_context = context_loss < base_loss
-        non_tie = np.abs(base_loss - context_loss) > 1e-12
-    finite = np.isfinite(decision) & np.isfinite(target_context) & non_tie
-    return float(100.0 * np.mean(decision[finite] == target_context[finite])) if np.any(finite) else float("nan")
+        decision = distance_to_candidate <= distance_to_vanilla
+        target_candidate = candidate_loss < base_loss
+        non_tie = np.abs(base_loss - candidate_loss) > 1e-12
+    finite = np.isfinite(decision) & np.isfinite(target_candidate) & non_tie
+    return float(100.0 * np.mean(decision[finite] == target_candidate[finite])) if np.any(finite) else float("nan")
 
 
 def _nmse_for_prediction(arrays: dict[str, Any], prediction_name: str) -> float:
@@ -735,7 +735,7 @@ def _nmse_for_prediction(arrays: dict[str, Any], prediction_name: str) -> float:
 def gate_summary_rows(data: dict[str, Any], split: str) -> list[dict[str, float | str]]:
     arrays = split_arrays(data, split)
     vanilla_nmse = _nmse_for_prediction(arrays, "vanilla")
-    context_nmse = _nmse_for_prediction(arrays, "context_forecast")
+    cov_nmse = _nmse_for_prediction(arrays, "cov_forecast")
     rows: list[dict[str, float | str]] = []
     for name in gate_prediction_names(data, split):
         nmse = _nmse_for_prediction(arrays, name)
@@ -751,7 +751,7 @@ def gate_summary_rows(data: dict[str, Any], split: str) -> list[dict[str, float 
                     else float("nan")
                 ),
                 "improvement_vanilla_pct": _relative_improvement_pct(vanilla_nmse, nmse),
-                "improvement_context_pct": _relative_improvement_pct(context_nmse, nmse),
+                "improvement_cov_pct": _relative_improvement_pct(cov_nmse, nmse),
             }
         )
     return rows
@@ -761,11 +761,11 @@ def gate_summary_html(
     rows: list[dict[str, float | str]],
     *,
     vanilla_nmse: float,
-    context_nmse: float,
+    cov_nmse: float,
 ) -> str:
     summary = (
         f"<p><b>References:</b> vanilla nMSE={_format_metric_value(vanilla_nmse)}; "
-        f"context-informed nMSE={_format_metric_value(context_nmse)}.</p>"
+        f"cov nMSE={_format_metric_value(cov_nmse)}.</p>"
     )
     if not rows:
         return summary + "<b>No gate or oracle predictions found.</b>"
@@ -773,7 +773,7 @@ def gate_summary_html(
         "<tr><th>gate/oracle</th><th>shape</th><th>% right</th>"
         "<th>nMSE to y</th><th>relative nMSE vs vanilla (%)</th>"
         "<th>improvement vs vanilla (%)</th>"
-        "<th>improvement vs context-informed (%)</th></tr>"
+        "<th>improvement vs cov (%)</th></tr>"
     )
     body = []
     for row in rows:
@@ -785,7 +785,7 @@ def gate_summary_html(
             f"<td>{_format_metric_value(float(row['nmse']))}</td>"
             f"<td>{_format_metric_value(float(row['relative_nmse_pct']))}</td>"
             f"<td>{_format_metric_value(float(row['improvement_vanilla_pct']))}</td>"
-            f"<td>{_format_metric_value(float(row['improvement_context_pct']))}</td>"
+            f"<td>{_format_metric_value(float(row['improvement_cov_pct']))}</td>"
             "</tr>"
         )
     return (
@@ -924,7 +924,7 @@ def baseline_feature_importance(
     elif model["kind"] == "lambda":
         coefficients = np.asarray(model["lambda"], dtype=np.float64)
         importance = np.asarray([float(np.nanmean(np.abs(coefficients)))])
-        names = ["aggr_y"]
+        names = ["avgy"]
         detail = (
             "absolute mixing coefficient"
             if coefficients.ndim == 0
@@ -1325,7 +1325,7 @@ def gates_section(data: dict[str, Any]) -> Any:
         gate_table.value = gate_summary_html(
             rows,
             vanilla_nmse=_nmse_for_prediction(arrays, "vanilla"),
-            context_nmse=_nmse_for_prediction(arrays, "context_forecast"),
+            cov_nmse=_nmse_for_prediction(arrays, "cov_forecast"),
         )
 
     def draw_gates(*_: Any) -> None:

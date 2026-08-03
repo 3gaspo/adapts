@@ -10,8 +10,8 @@ import torch.nn as nn
 from einops import pack, rearrange
 
 
-CANDIDATE_NAMES = ("vanilla", "context", "transformed", "residual", "memory")
-BASE_CANDIDATE_NAMES = ("vanilla", "context", "residual", "memory")
+CANDIDATE_NAMES = ("vanilla", "cov", "transformed", "residual", "memory")
+BASE_CANDIDATE_NAMES = ("vanilla", "cov", "residual", "memory")
 
 
 def mlp(input_dim: int, hidden_dim: int, output_dim: int, dropout: float = 0.0) -> nn.Sequential:
@@ -298,7 +298,7 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
         x_c = batch["x_c"]
         y_c = batch["y_c"]
         pred = batch["pred"]
-        pred_context = batch["pred_context"]
+        pred_cov = batch["pred_cov"]
         pred_transformed = batch["pred_transformed"]
         pred_neighbors = batch["pred_neighbors"]
         residual_c = batch["residual_c"]
@@ -330,7 +330,7 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             transformed_delta = self.transformed_head(transformed_input)
             transformed_prediction = pred_transformed + transformed_delta
 
-        candidate_values = [pred, pred_context]
+        candidate_values = [pred, pred_cov]
         if self.config.has_transformed_expert:
             candidate_values.append(transformed_prediction)
         candidate_values.extend([residual_prediction, memory_prediction])

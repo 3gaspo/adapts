@@ -61,13 +61,13 @@ def compute_split_features(
     """Return one row per ``(date, user)`` query window."""
     features = feature_payload or {}
     preds = prediction_payload[f"{prefix}_preds"].float()
-    preds_context = prediction_payload[f"{prefix}_preds_context"].float()
+    preds_cov = prediction_payload[f"{prefix}_preds_context"].float()
     target = prediction_payload[f"{prefix}_Y_values"].float()
 
     base_loss = mse_by_window(preds, target)
-    context_loss = mse_by_window(preds_context, target)
-    oracle_loss = torch.minimum(base_loss, context_loss)
-    improvement = 100.0 * (base_loss - context_loss) / base_loss.clamp_min(1e-8)
+    cov_loss = mse_by_window(preds_cov, target)
+    oracle_loss = torch.minimum(base_loss, cov_loss)
+    improvement = 100.0 * (base_loss - cov_loss) / base_loss.clamp_min(1e-8)
     oracle_improvement = 100.0 * (base_loss - oracle_loss) / base_loss.clamp_min(1e-8)
 
     n_eval, n_users = base_loss.shape
@@ -83,12 +83,12 @@ def compute_split_features(
             "datetime": repeat(np.asarray(datetimes, dtype=object), "date -> (date user)", user=n_users),
             "user_idx": repeat(np.arange(n_users), "user -> (date user)", date=n_eval),
             "base_loss": _flat(base_loss),
-            "context_loss": _flat(context_loss),
+            "cov_loss": _flat(cov_loss),
             "oracle_loss": _flat(oracle_loss),
-            "context_better": _flat(context_loss < base_loss).astype(bool),
+            "cov_better": _flat(cov_loss < base_loss).astype(bool),
             "improvement_pct": _flat(improvement),
             "oracle_improvement_pct": _flat(oracle_improvement),
-            "pred_context_mse": _flat((preds - preds_context).pow(2).mean(dim=-1)),
+            "pred_cov_mse": _flat((preds - preds_cov).pow(2).mean(dim=-1)),
         }
     )
 
@@ -132,7 +132,12 @@ def compute_split_features(
     ):
         full_key = f"{prefix}_{key}"
         if full_key in features:
-            frame[key] = _flat(features[full_key])
+            output_key = (
+                "loss_neighbor_cov_residual_mean"
+                if key == "loss_neighbor_context_residual_mean"
+                else key
+            )
+            frame[output_key] = _flat(features[full_key])
 
     if "mu_x" in frame and "mu_xc_mean" in frame:
         frame["mu_diff"] = frame["mu_x"] - frame["mu_xc_mean"]
@@ -174,7 +179,7 @@ def save_feature_outputs(frame: pd.DataFrame, output_dir: str | Path) -> dict[st
         ("loss_neighbor_residual_mean", "improvement_pct", "improvement_vs_neighbor_residual.png"),
         ("mu_diff", "improvement_pct", "improvement_vs_mu_diff.png"),
         ("sigma_diff", "improvement_pct", "improvement_vs_sigma_diff.png"),
-        ("base_loss", "context_loss", "context_vs_base_loss.png"),
+        ("base_loss", "cov_loss", "cov_vs_base_loss.png"),
     ]
     for x_col, y_col, filename in pairs:
         plot_feature_scatter(frame, x_col, y_col, plot_dir, filename)

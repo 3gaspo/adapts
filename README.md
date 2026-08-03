@@ -232,29 +232,29 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `crossrag` | `D_primary` | `512:64` | Chronos-Bolt | Min-max cosine / `15` | One selected winner versus released Cross-RAG |
 
 For the primary methods, let `V` be the vanilla forecast, `C` the
-context-conditioned forecast, `Y_j` the observed future of neighbor `j`,
+covariate-conditioned forecast, `Y_j` the observed future of neighbor `j`,
 `N_j` that neighbor's backbone forecast, and
-`Y_hat = sum_j w_j Y_j` the distance-weighted neighbor future. All formulas
+`avgy = bar(Y) = sum_j w_j Y_j` the distance-weighted neighbor future. All formulas
 below are evaluated horizon-wise; `shared` means that fitted coefficients or
 the gate decision are shared across the complete horizon.
 
 The 11 primary baselines are:
 
-- direct: `context_forecast = C`, `aggr_y = Y_hat`, and
+- direct: `cov_forecast = C`, `avgy = bar(Y)`, and
   `y_mean = K^-1 sum_j Y_j`;
-- convex mixture: `aggr_y_mix_shared = (1-lambda)V + lambda Y_hat`;
+- convex mixture: `avgy_mix_shared = (1-lambda)V + lambda bar(Y)`;
 - anchored ridge: `V + aV` plus, respectively, `bC`
-  (`context_ridge_shared`), `bY_hat` (`aggr_y_ridge_shared`),
+  (`cov_ridge_shared`), `b bar(Y)` (`avgy_ridge_shared`),
   `sum_j b_jY_j` (`y_ridge_shared`), `bC + sum_j c_jY_j`
-  (`cov_y_ridge_shared`), `bC + cY_hat`
-  (`cov_horizon_ridge_shared`), `sum_j b_jY_j + sum_j c_jN_j`
+  (`cov_y_ridge_shared`), `bC + c bar(Y)`
+  (`cov_avgy_ridge_shared`), `sum_j b_jY_j + sum_j c_jN_j`
   (`residual_ridge_shared`), or
   `bC + sum_j c_jY_j + sum_j d_jN_j` (`full_ridge_shared`).
 The horizon-baseline ablation fits the corresponding per-horizon coefficient
 form of every selected shared model, including `cov_y_ridge_horizon` for the
 `V,C,Y_j` design.
 
-The primary gates compare `V` with a candidate `A` in `{C, Y_hat}`. Define
+The primary gates compare `V` with a candidate `A` in `{C, bar(Y)}`. Define
 `Delta_h = (Y_h - V_h)^2 - (Y_h - A_h)^2` and
 `Delta_bar = H^-1 sum_h Delta_h`; the shared decision outputs `A` when its
 score is positive and `V` otherwise. For both candidates the screen includes
@@ -263,7 +263,7 @@ advantage), `catboost_<A>_regressor_shared` (feature-based prediction of
 `Delta_bar`), and `oracle_<A>_shared` (target-aware T3 upper bound). This gives
 eight gate/reference artifacts in total.
 
-Default TS-IFA reports vanilla, context, residual, and memory candidates plus
+Default TS-IFA reports vanilla, cov, residual, and memory candidates plus
 its ridge and neural rooters; transformed candidates remain opt-in.
 
 Modes provide default grids, including default backbone models; they are not
@@ -361,7 +361,7 @@ pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
 Copy the desired complete names into the final benchmark:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch benchmark.slurm
 ```
 
@@ -370,7 +370,7 @@ backbones afterward without recomputing completed Chronos-2 results:
 
 ```bash
 EXPERIMENT_MODE=ultra \
-WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch benchmark.slurm
 ```
 
@@ -391,7 +391,7 @@ sbatch horizon_baselines_ablation.slurm
 The CatBoost objective/shape study is independent and can be submitted later:
 
 ```bash
-CATBOOST_WINNERS_CSV=gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+CATBOOST_WINNERS_CSV=gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch catboost_ablation.slurm
 ```
 
@@ -402,7 +402,7 @@ shared/per-horizon decision shape plus matching references.
 The mixed-quantity dataset study is also isolated and can be submitted later:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch mixed_quantity_ablation.slurm
 ```
 
@@ -414,7 +414,7 @@ Copy the selected complete names into `WINNERS_CSV` near the top of each later
 Slurm file (or pass the same variable as an environment override):
 
 ```bash
-WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/aggr_y_mix_shared,gates/instance_euclidean_3_online/catboost_context_regressor_shared}"
+WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared}"
 ```
 
 Then submit exactly one front per experiment:
@@ -492,7 +492,7 @@ those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;
 
 ## TS-IFA staged architecture
 
-TS-IFA exposes four candidates by default: vanilla, context, a
+TS-IFA exposes four candidates by default: vanilla, cov, a
 residual-attention branch over analogue `[history, prediction]` states, and a
 direct memory-attention branch. The past-only `sign(x)`/`sqrt(abs(x))` frozen
 forecast is an optional fifth candidate and is disabled by default.

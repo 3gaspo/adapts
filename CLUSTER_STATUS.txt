@@ -1,0 +1,21 @@
+CLUSTER EXPERIMENT STATUS
+Updated: 2026-08-03
+
+LATEST COMPLETED JOB
+Run/profile: EXPERIMENT_MODE=screen workflow
+Job ID/dependency: 42058 / none recorded
+Artifacts synchronized locally: yes
+Analyzed locally: yes
+Analysis note: The complete screen was analyzed, its canonical cov/avgy artifact
+names were migrated without recomputation, and the selected pipelines are recorded
+in SWEEP_CANDIDATES.txt.
+
+CURRENT OR NEXT CLUSTER JOBS
+1. Submit k_ablation.slurm with the canonical WINNERS_CSV entries from
+   SWEEP_CANDIDATES.txt, then select one K per candidate from its equal-setting
+   held-out eval nMSE ranking.
+   State: ready to submit
+   Job ID/dependency: not assigned
+
+MAINTENANCE
+Update this file after submission, completion, artifact synchronization, and analysis.

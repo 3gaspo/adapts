@@ -27,12 +27,12 @@ for entry in "${shared_winners[@]}"; do
     return 2
   fi
   case "$method" in
-    aggr_y_mix_shared) horizon_method=aggr_y_mix_horizon ;;
-    context_ridge_shared) horizon_method=context_ridge_horizon ;;
-    aggr_y_ridge_shared) horizon_method=aggr_y_ridge_horizon ;;
+    avgy_mix_shared) horizon_method=avgy_mix_horizon ;;
+    cov_ridge_shared) horizon_method=cov_ridge_horizon ;;
+    avgy_ridge_shared) horizon_method=avgy_ridge_horizon ;;
     y_ridge_shared) horizon_method=y_ridge_horizon ;;
     cov_y_ridge_shared) horizon_method=cov_y_ridge_horizon ;;
-    cov_horizon_ridge_shared) horizon_method=cov_horizon_ridge_horizon ;;
+    cov_avgy_ridge_shared) horizon_method=cov_avgy_ridge_horizon ;;
     residual_ridge_shared) horizon_method=residual_ridge_horizon ;;
     full_ridge_shared) horizon_method=full_ridge_horizon ;;
     *)

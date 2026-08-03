@@ -132,7 +132,7 @@ def random_batch() -> dict[str, torch.Tensor]:
         "y": torch.randn(4, 2),
         "y_c": torch.randn(4, 2, 2),
         "pred": torch.randn(4, 2),
-        "pred_context": torch.randn(4, 2),
+        "pred_cov": torch.randn(4, 2),
         "pred_transformed": torch.randn(4, 2),
         "pred_neighbors": torch.randn(4, 2, 2),
         "residual_c": torch.randn(4, 2, 2),
@@ -144,7 +144,7 @@ def check_vanilla_anchoring_initialization() -> None:
     model = small_model()
     batch = random_batch()
     outputs = model(batch)
-    assert model.candidate_names == ("vanilla", "context", "residual", "memory")
+    assert model.candidate_names == ("vanilla", "cov", "residual", "memory")
     assert outputs["candidates"].shape == (4, len(model.candidate_names), 2)
     torch.testing.assert_close(outputs["coefficients"], torch.zeros_like(outputs["coefficients"]))
     torch.testing.assert_close(outputs["residual_delta"], torch.zeros_like(outputs["residual_delta"]))
@@ -358,7 +358,7 @@ def run() -> None:
         prediction_store = load_prediction_store(out)
         assert set(prediction_store["splits"]["eval"]["predictions"]) == {
             "ts_ifa_adapted",
-            "ts_ifa_context_branch",
+            "ts_ifa_cov_branch",
             "ts_ifa_memory_branch",
             "ts_ifa_residual_branch",
             "ts_ifa_ridge_rooter",
@@ -383,7 +383,7 @@ def run() -> None:
             "adapted_nmse",
             "ridge_rooter_nmse",
             "vanilla_branch_nmse",
-            "context_branch_nmse",
+            "cov_branch_nmse",
             "residual_branch_nmse",
             "memory_branch_nmse",
         ):

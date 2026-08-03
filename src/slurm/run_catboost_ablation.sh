@@ -27,13 +27,13 @@ for entry in "${selected_winners[@]}"; do
     return 2
   fi
   case "$method" in
-    catboost_context_regressor_shared)
-      candidate=context
-      direct=context_forecast
+    catboost_cov_regressor_shared)
+      candidate=cov
+      direct=cov_forecast
       ;;
-    catboost_aggr_y_regressor_shared)
-      candidate=aggr_y
-      direct=aggr_y
+    catboost_avgy_regressor_shared)
+      candidate=avgy
+      direct=avgy
       ;;
     *)
       log_error "CatBoost winner must be a primary shared regressor method=$method"

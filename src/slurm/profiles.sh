@@ -20,11 +20,11 @@ aligned_datastore_stride() {
 
 # The primary screen keeps direct and shared baseline fits. Per-horizon fits are
 # selected from these shared candidates and run only by their dedicated ablation.
-PRIMARY_BASELINE_METHODS_CSV="context_forecast,aggr_y,y_mean,aggr_y_mix_shared,context_ridge_shared,aggr_y_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_horizon_ridge_shared,residual_ridge_shared,full_ridge_shared"
+PRIMARY_BASELINE_METHODS_CSV="cov_forecast,avgy,y_mean,avgy_mix_shared,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared"
 
 # The primary learned-gate comparison is the signed-advantage shared regressor.
 # Cheap shared no-feature and oracle references remain beside it.
-PRIMARY_GATE_METHODS_CSV="context_forecast,aggr_y,bayes_context_shared,bayes_aggr_y_shared,catboost_context_regressor_shared,catboost_aggr_y_regressor_shared,oracle_context_shared,oracle_aggr_y_shared"
+PRIMARY_GATE_METHODS_CSV="cov_forecast,avgy,bayes_cov_shared,bayes_avgy_shared,catboost_cov_regressor_shared,catboost_avgy_regressor_shared,oracle_cov_shared,oracle_avgy_shared"
 
 adaptation_profile_defaults() {
   local mode="${EXPERIMENT_MODE:-test}"
