@@ -43,7 +43,7 @@ append_unique() {
   local -n array_ref="$1"
   local value="$2" existing
   for existing in "${array_ref[@]:-}"; do
-    [ "$existing" != "$value" ] || return
+    [ "$existing" != "$value" ] || return 0
   done
   array_ref+=("$value")
 }

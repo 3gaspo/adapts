@@ -125,6 +125,7 @@ def main() -> None:
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
     assert 'full|ultra) SKIP_COMPLETE=true' in profile_runner
+    assert '[ "$existing" != "$value" ] || return 0' in profile_runner
 
     catboost_runner = (
         ROOT / "src" / "slurm" / "run_catboost_ablation.sh"

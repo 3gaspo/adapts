@@ -11,11 +11,13 @@ names were migrated without recomputation, and the selected pipelines are record
 in SWEEP_CANDIDATES.txt.
 
 CURRENT OR NEXT CLUSTER JOBS
-1. Submit k_ablation.slurm with the canonical WINNERS_CSV entries from
+1. Resubmit k_ablation.slurm with the canonical WINNERS_CSV entries from
    SWEEP_CANDIDATES.txt, then select one K per candidate from its equal-setting
-   held-out eval nMSE ranking.
-   State: ready to submit
-   Job ID/dependency: not assigned
+   held-out eval nMSE ranking. Jobs 42144, 42146, and 42147 exited before work
+   because duplicate candidate dimensions returned a failing shell status; the
+   launcher now treats duplicates as successful no-ops.
+   State: ready to resubmit after pulling the launcher fix
+   Job ID/dependency: 42144, 42146, 42147 failed without computation
 
 MAINTENANCE
 Update this file after submission, completion, artifact synchronization, and analysis.
