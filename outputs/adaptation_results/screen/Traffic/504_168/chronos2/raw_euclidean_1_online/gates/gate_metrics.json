@@ -1,0 +1,83 @@
+[
+  {
+    "split": "eval",
+    "baseline": "vanilla",
+    "mse": 0.0007283693559598294,
+    "mae": 0.010217318277627743,
+    "nmse": 0.2734736473158723,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "context_forecast",
+    "mse": 0.0007642598447220982,
+    "mae": 0.010521440628819876,
+    "nmse": 0.28538643531087027,
+    "positive_window_pct": 43.57019810508183,
+    "relative_nmse_improvement_pct": -4.356100893786755
+  },
+  {
+    "split": "eval",
+    "baseline": "aggr_y",
+    "mse": 0.0013812625482276311,
+    "mae": 0.016952101998861876,
+    "nmse": 0.5117894941566193,
+    "positive_window_pct": 9.043927648578812,
+    "relative_nmse_improvement_pct": -87.14398962379117
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_context_shared",
+    "mse": 0.0007283693559598294,
+    "mae": 0.010217318277627743,
+    "nmse": 0.2734736473158723,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_context_shared",
+    "mse": 0.0006957977816572118,
+    "mae": 0.010034597808692473,
+    "nmse": 0.26337895310865744,
+    "positive_window_pct": 43.57019810508183,
+    "relative_nmse_improvement_pct": 3.6912859086400824
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_context_regressor_shared",
+    "mse": 0.0007284027517135472,
+    "mae": 0.01021757033609462,
+    "nmse": 0.27347506633144253,
+    "positive_window_pct": 0.004306632213608958,
+    "relative_nmse_improvement_pct": -0.0005188856711210905
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_aggr_y_shared",
+    "mse": 0.0007283693559598294,
+    "mae": 0.010217318277627743,
+    "nmse": 0.2734736473158723,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_aggr_y_shared",
+    "mse": 0.0007044436905494735,
+    "mae": 0.010263854110798745,
+    "nmse": 0.26484722049978543,
+    "positive_window_pct": 9.043927648578812,
+    "relative_nmse_improvement_pct": 3.1543905238236865
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_aggr_y_regressor_shared",
+    "mse": 0.0007286236900965816,
+    "mae": 0.010227624949673915,
+    "nmse": 0.2746098080610764,
+    "positive_window_pct": 0.047372954349698536,
+    "relative_nmse_improvement_pct": -0.41545529390323815
+  }
+]

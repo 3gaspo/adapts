@@ -1,0 +1,31 @@
+\begin{table}[htbp]
+\centering
+\caption{Mean percentage of evaluation windows with lower horizon-averaged MSE than the vanilla forecast, averaged equally over the selected dataset and horizon configurations.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+Model & raw\_L2\_1 & raw\_L2\_3 & IN\_L2\_1 & IN\_L2\_3 \\
+\midrule
+ctx & 45.81\% & 42.50\% & 44.81\% & 42.43\% \\
+aggr-Y & 17.96\% & 20.98\% & 19.29\% & 23.21\% \\
+mean-Y & 17.96\% & 23.22\% & 19.29\% & 25.61\% \\
+aggr-Y-lambda-s & 46.63\% & 46.88\% & 46.29\% & 47.66\% \\
+VC-ridge-s & 54.16\% & \textbf{54.46\%} & 52.46\% & 53.12\% \\
+aggr-Y-ridge-s & 53.44\% & 53.82\% & 53.27\% & 54.40\% \\
+Y-ridge-s & 53.44\% & 53.73\% & 53.27\% & 54.44\% \\
+VCY-ridge-s & 53.29\% & 53.83\% & 53.33\% & 54.17\% \\
+cov-h-ridge-s & 53.29\% & 53.72\% & 53.33\% & 53.84\% \\
+residual-ridge-s & 54.08\% & 54.30\% & 54.28\% & 54.27\% \\
+full-ridge-s & 53.96\% & 54.05\% & 54.05\% & 54.15\% \\
+bayes-C-s & 6.75\% & 3.30\% & 3.67\% & 3.38\% \\
+cb-C-reg-s & 5.13\% & 5.72\% & 11.29\% & 6.21\% \\
+bayes-Y-s & 0.00\% & 0.00\% & 0.00\% & 0.00\% \\
+cb-Y-reg-s & 0.02\% & 0.19\% & 0.81\% & 0.24\% \\
+\midrule
+oracle-C-s & 45.81\% & 42.50\% & 44.81\% & 42.43\% \\
+oracle-Y-s & 17.96\% & 20.98\% & 19.29\% & 23.21\% \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:positive-window-percentage-average}
+\end{table}

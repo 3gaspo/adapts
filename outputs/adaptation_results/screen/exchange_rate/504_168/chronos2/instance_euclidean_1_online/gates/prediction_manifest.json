@@ -1,0 +1,57 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "context_forecast": "predictions/adapt/predictions/context_forecast.npy",
+        "aggr_y": "predictions/adapt/predictions/aggr_y.npy",
+        "bayes_context_shared": "predictions/adapt/predictions/bayes_context_shared.npy",
+        "oracle_context_shared": "predictions/adapt/predictions/oracle_context_shared.npy",
+        "catboost_context_regressor_shared": "predictions/adapt/predictions/catboost_context_regressor_shared.npy",
+        "bayes_aggr_y_shared": "predictions/adapt/predictions/bayes_aggr_y_shared.npy",
+        "oracle_aggr_y_shared": "predictions/adapt/predictions/oracle_aggr_y_shared.npy",
+        "catboost_aggr_y_regressor_shared": "predictions/adapt/predictions/catboost_aggr_y_regressor_shared.npy"
+      },
+      "gate_diagnostics": {
+        "context_shared_target": "predictions/adapt/gate_diagnostics/context_shared_target.npy",
+        "context_horizon_target": "predictions/adapt/gate_diagnostics/context_horizon_target.npy",
+        "catboost_context_regressor_shared_score": "predictions/adapt/gate_diagnostics/catboost_context_regressor_shared_score.npy",
+        "aggr_y_shared_target": "predictions/adapt/gate_diagnostics/aggr_y_shared_target.npy",
+        "aggr_y_horizon_target": "predictions/adapt/gate_diagnostics/aggr_y_horizon_target.npy",
+        "catboost_aggr_y_regressor_shared_score": "predictions/adapt/gate_diagnostics/catboost_aggr_y_regressor_shared_score.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "context_forecast": "predictions/eval/predictions/context_forecast.npy",
+        "aggr_y": "predictions/eval/predictions/aggr_y.npy",
+        "bayes_context_shared": "predictions/eval/predictions/bayes_context_shared.npy",
+        "oracle_context_shared": "predictions/eval/predictions/oracle_context_shared.npy",
+        "catboost_context_regressor_shared": "predictions/eval/predictions/catboost_context_regressor_shared.npy",
+        "bayes_aggr_y_shared": "predictions/eval/predictions/bayes_aggr_y_shared.npy",
+        "oracle_aggr_y_shared": "predictions/eval/predictions/oracle_aggr_y_shared.npy",
+        "catboost_aggr_y_regressor_shared": "predictions/eval/predictions/catboost_aggr_y_regressor_shared.npy"
+      },
+      "gate_diagnostics": {
+        "context_shared_target": "predictions/eval/gate_diagnostics/context_shared_target.npy",
+        "context_horizon_target": "predictions/eval/gate_diagnostics/context_horizon_target.npy",
+        "catboost_context_regressor_shared_score": "predictions/eval/gate_diagnostics/catboost_context_regressor_shared_score.npy",
+        "aggr_y_shared_target": "predictions/eval/gate_diagnostics/aggr_y_shared_target.npy",
+        "aggr_y_horizon_target": "predictions/eval/gate_diagnostics/aggr_y_horizon_target.npy",
+        "catboost_aggr_y_regressor_shared_score": "predictions/eval/gate_diagnostics/catboost_aggr_y_regressor_shared_score.npy"
+      }
+    },
+    "fit": {
+      "gate_diagnostics": {
+        "bayes_context_shared_score": "predictions/fit/gate_diagnostics/bayes_context_shared_score.npy",
+        "bayes_aggr_y_shared_score": "predictions/fit/gate_diagnostics/bayes_aggr_y_shared_score.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_only"
+  }
+}

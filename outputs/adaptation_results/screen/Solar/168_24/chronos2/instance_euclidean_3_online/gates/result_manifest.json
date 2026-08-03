@@ -1,0 +1,60 @@
+{
+  "format": "adaptation_evaluation_result",
+  "family": "gates",
+  "methods": [
+    "context_forecast",
+    "aggr_y",
+    "bayes_context_shared",
+    "bayes_aggr_y_shared",
+    "catboost_context_regressor_shared",
+    "catboost_aggr_y_regressor_shared",
+    "oracle_context_shared",
+    "oracle_aggr_y_shared"
+  ],
+  "split_protocol": {
+    "validation_fraction": 0.2,
+    "available_dates": 182,
+    "t1_dates": 146,
+    "t2_dates": 36,
+    "t1_samples": 20002,
+    "t2_samples": 4932,
+    "t1_first_query_date": 2627,
+    "t1_last_query_date": 6107,
+    "t2_first_query_date": 6131,
+    "t2_last_query_date": 6971
+  },
+  "fit_sampling": {
+    "T1": {
+      "available_samples": 20002,
+      "used_samples": 20002
+    },
+    "T2": {
+      "available_samples": 4932,
+      "used_samples": 4932
+    },
+    "T1+T2": {
+      "available_samples": 24934,
+      "used_samples": 24934
+    },
+    "T3_oracle": {
+      "available_samples": 1918,
+      "used_samples": 1918
+    }
+  },
+  "metric_fields": [
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "files": {
+    "metrics_csv": "gate_metrics.csv",
+    "metrics_json": "gate_metrics.json",
+    "artifacts": "gate_artifacts.json",
+    "predictions": "prediction_manifest.json",
+    "timing": "gate_timing.json"
+  }
+}

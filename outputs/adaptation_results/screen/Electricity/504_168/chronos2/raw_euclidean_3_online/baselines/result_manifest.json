@@ -1,0 +1,63 @@
+{
+  "format": "adaptation_evaluation_result",
+  "family": "baselines",
+  "methods": [
+    "context_forecast",
+    "aggr_y",
+    "y_mean",
+    "aggr_y_mix_shared",
+    "context_ridge_shared",
+    "aggr_y_ridge_shared",
+    "y_ridge_shared",
+    "cov_y_ridge_shared",
+    "cov_horizon_ridge_shared",
+    "residual_ridge_shared",
+    "full_ridge_shared"
+  ],
+  "split_protocol": {
+    "validation_fraction": 0.2,
+    "available_dates": 542,
+    "t1_dates": 434,
+    "t2_dates": 108,
+    "t1_samples": 135408,
+    "t2_samples": 33696,
+    "t1_first_query_date": 7890,
+    "t1_last_query_date": 18282,
+    "t2_first_query_date": 18306,
+    "t2_last_query_date": 20874
+  },
+  "fit_sampling": {
+    "T1": {
+      "available_samples": 135408,
+      "used_samples": 135408
+    },
+    "T2": {
+      "available_samples": 33696,
+      "used_samples": 33696
+    },
+    "T1+T2": {
+      "available_samples": 169104,
+      "used_samples": 169104
+    },
+    "T3_oracle": {
+      "available_samples": 12480,
+      "used_samples": 12480
+    }
+  },
+  "metric_fields": [
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "files": {
+    "metrics_csv": "baseline_metrics.csv",
+    "metrics_json": "baseline_metrics.json",
+    "artifacts": "baseline_artifacts.pt",
+    "predictions": "prediction_manifest.json",
+    "timing": "baseline_timing.json"
+  }
+}

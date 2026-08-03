@@ -1,0 +1,41 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "context_forecast": "predictions/adapt/predictions/context_forecast.npy",
+        "aggr_y": "predictions/adapt/predictions/aggr_y.npy",
+        "y_mean": "predictions/adapt/predictions/y_mean.npy",
+        "aggr_y_mix_shared": "predictions/adapt/predictions/aggr_y_mix_shared.npy",
+        "context_ridge_shared": "predictions/adapt/predictions/context_ridge_shared.npy",
+        "aggr_y_ridge_shared": "predictions/adapt/predictions/aggr_y_ridge_shared.npy",
+        "y_ridge_shared": "predictions/adapt/predictions/y_ridge_shared.npy",
+        "cov_y_ridge_shared": "predictions/adapt/predictions/cov_y_ridge_shared.npy",
+        "cov_horizon_ridge_shared": "predictions/adapt/predictions/cov_horizon_ridge_shared.npy",
+        "residual_ridge_shared": "predictions/adapt/predictions/residual_ridge_shared.npy",
+        "full_ridge_shared": "predictions/adapt/predictions/full_ridge_shared.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "context_forecast": "predictions/eval/predictions/context_forecast.npy",
+        "aggr_y": "predictions/eval/predictions/aggr_y.npy",
+        "y_mean": "predictions/eval/predictions/y_mean.npy",
+        "aggr_y_mix_shared": "predictions/eval/predictions/aggr_y_mix_shared.npy",
+        "context_ridge_shared": "predictions/eval/predictions/context_ridge_shared.npy",
+        "aggr_y_ridge_shared": "predictions/eval/predictions/aggr_y_ridge_shared.npy",
+        "y_ridge_shared": "predictions/eval/predictions/y_ridge_shared.npy",
+        "cov_y_ridge_shared": "predictions/eval/predictions/cov_y_ridge_shared.npy",
+        "cov_horizon_ridge_shared": "predictions/eval/predictions/cov_horizon_ridge_shared.npy",
+        "residual_ridge_shared": "predictions/eval/predictions/residual_ridge_shared.npy",
+        "full_ridge_shared": "predictions/eval/predictions/full_ridge_shared.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "baselines",
+    "fit_on_eval": false
+  }
+}
