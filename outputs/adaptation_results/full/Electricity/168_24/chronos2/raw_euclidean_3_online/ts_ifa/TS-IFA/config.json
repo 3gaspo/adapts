@@ -1,0 +1,64 @@
+{
+  "name": "TS-IFA",
+  "model": {
+    "lags": 168,
+    "horizon": 24,
+    "neighbors": 3,
+    "residual_heads": 4,
+    "memory_heads": 4,
+    "rooter_heads": 4,
+    "residual_attn_dim": 32,
+    "memory_attn_dim": 32,
+    "rooter_attn_dim": 32,
+    "residual_hidden": 128,
+    "memory_hidden": 128,
+    "rooter_hidden": 128,
+    "transformed_hidden": 128,
+    "precomputed_transformed_expert": false,
+    "learnable_transformed_covariate": false,
+    "vanilla_anchoring_init": true,
+    "dropout": 0.0
+  },
+  "candidate_names": [
+    "vanilla",
+    "cov",
+    "residual",
+    "memory"
+  ],
+  "parameters": {
+    "total": 846912,
+    "trainable": 846912,
+    "branches": 523256,
+    "neural_rooter": 323656,
+    "ridge_rooter": 96,
+    "branches_plus_ridge_rooter": 523352
+  },
+  "training": {
+    "pipeline": [
+      "T1_branches",
+      "T2_rooters",
+      "T3_evaluation"
+    ],
+    "branch_optimizer": "AdamW",
+    "rooter_optimizer": "AdamW",
+    "branch_lr": 1e-05,
+    "rooter_lr": 1e-05,
+    "weight_decay": 0.0001,
+    "normalization": "instance",
+    "regularizers": {
+      "vanilla_anchor": 0.01,
+      "coefficient_l2": 0.01,
+      "first_order_horizon_smoothness": 0.01
+    },
+    "ridge_rooter_alpha": 0.01,
+    "branch_train_split": "T1",
+    "rooter_train_split": "T2",
+    "final_eval_split": "T3",
+    "branch_epochs": 10000,
+    "rooter_epochs": 10000,
+    "random_epoch_size": 256,
+    "valid_eval_freq": 1000,
+    "logging_eval_freq": 1000,
+    "seconds": 220.92087274044752
+  }
+}
