@@ -27,11 +27,13 @@ NOTES
 - No convex or delta-ridge baseline entered the selected nine. All six selected baseline pipelines are shared ridge models.
 - Both selected learned CatBoost pipelines are hard shared regressors; no classifier, soft-mixture, or horizon CatBoost variant entered this screen.
 
-NEXT STAGE: FORMULATION ABLATIONS, THEN FINAL K ABLATION
+NEXT STAGE: FORMULATION ABLATIONS, CANDIDATE RESELECTION, THEN K ABLATION
 
 Run the convex, delta-ridge, and CatBoost formulation fronts on the selected
-controls above. Run the horizon-baseline front as well if that family remains in
-scope. Filter those results into an expanded candidate list before rerunning K.
+controls above. These nine pipelines are provisional inputs to the formulation
+ablations, not the final K-ablation list. After all three result profiles are
+synchronized and analyzed, replace this list with the newly selected candidates
+before rerunning K or any further selected-candidate ablation.
 
 K grid: 1, 3, 5, 10, 15, 20
 K selection rule: choose one K per expanded candidate by its equal-configuration
