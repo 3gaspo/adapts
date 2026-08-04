@@ -81,10 +81,6 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
         "seed",
     )
     signature = {name: getattr(args, name) for name in fields}
-    # Keep the default signature byte-for-byte compatible with payloads produced
-    # before the optional transformed expert existed.
-    if args.compute_transformed_prediction:
-        signature["compute_transformed_prediction"] = True
     signature["dataset_name"] = dataset_name
     signature["window_anchor"] = "query_t"
     signature["csv"] = str(Path(args.csv).expanduser().resolve())
@@ -147,12 +143,6 @@ def _predict(
         past_covariates=past_covariates,
     ).detach().cpu()
     return rearrange(prediction, "user 1 horizon -> user horizon")
-
-
-def transformed_past_covariates(x: torch.Tensor) -> torch.Tensor:
-    """Past-only sign and square-root-magnitude covariates for the transformed expert."""
-    target = rearrange(x, "batch 1 lags -> batch lags")
-    return torch.stack([torch.sign(target), torch.sqrt(torch.abs(target))], dim=1)
 
 
 def context_on_query_scale(
@@ -285,9 +275,6 @@ def extract_period(
 
     preds = torch.empty((n_eval, n_users, horizon), dtype=torch.float32)
     preds_context = torch.empty_like(preds)
-    preds_transformed = (
-        torch.empty_like(preds) if args.compute_transformed_prediction else None
-    )
     e_values = torch.empty((n_eval, n_users, k, horizon), dtype=torch.float32)
     ec_values = (
         torch.empty((n_eval, n_users, k, horizon), dtype=torch.float32)
@@ -329,13 +316,6 @@ def extract_period(
             x,
             context=None,
         )
-        if preds_transformed is not None:
-            preds_transformed[i] = _predict(
-                model,
-                x,
-                context=None,
-                past_covariates=transformed_past_covariates(x),
-            )
 
         x_values[i] = rearrange(x.detach().cpu(), "user 1 lags -> user lags")
         y_values[i] = y
@@ -479,8 +459,6 @@ def extract_period(
             "store_end_date": args.store_end_date,
         },
     }
-    if preds_transformed is not None:
-        prediction_payload[f"{prefix}_preds_transformed"] = preds_transformed
     if ec_values is not None:
         prediction_payload[f"{prefix}_Ec_values"] = ec_values
     if k > 0:
@@ -503,10 +481,6 @@ def extract_period(
             ),
             f"{prefix}_loss_neighbor_residual_mean": e_values.pow(2).mean(dim=-1).mean(dim=-1),
         }
-        if preds_transformed is not None:
-            features_payload[f"{prefix}_loss_pred_pred_transformed"] = (
-                (preds - preds_transformed).pow(2).mean(dim=-1)
-            )
         if ec_values is not None:
             features_payload[f"{prefix}_loss_neighbor_context_residual_mean"] = (
                 ec_values.pow(2).mean(dim=-1).mean(dim=-1)
@@ -517,10 +491,6 @@ def extract_period(
             f"{prefix}_sigma_x": sigma_x,
             f"{prefix}_loss_pred_pred_c": (preds - preds_context).pow(2).mean(dim=-1),
         }
-        if preds_transformed is not None:
-            features_payload[f"{prefix}_loss_pred_pred_transformed"] = (
-                (preds - preds_transformed).pow(2).mean(dim=-1)
-            )
 
     torch.save(prediction_payload, output_dir / f"{prefix}_prediction_payload.pt")
     torch.save(features_payload, output_dir / f"{prefix}_features_payload.pt")
@@ -659,15 +629,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-align-period", action="store_true")
     parser.add_argument("--pool-representation", action="store_true")
     parser.add_argument("--compute-ec", action="store_true", help="Also save neighbor-context residuals Ec")
-    parser.add_argument(
-        "--compute-transformed-prediction",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help=(
-            "Save F(x, sign(x), sqrt(abs(x))) using past-only covariates. "
-            "Disabled by default so existing extraction payloads remain reusable."
-        ),
-    )
     parser.add_argument("--search-chunk-size", type=int, default=512)
     parser.add_argument("--output-dir", default="outputs/extractions")
     parser.add_argument("--save-name", default="neighbors")

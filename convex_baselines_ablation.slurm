@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=horizon_baselines
+#SBATCH --job-name=convex_baselines
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -11,9 +11,10 @@
 #SBATCH --mem=40000
 
 # Selected shared-ridge winners from the completed primary screen. The runner
-# compares each control with the same ridge model fitted per horizon.
+# compares each ridge control with the simplex-constrained convex family using
+# the same variables, shared coefficients, and retrieval pipeline.
 BASELINE_WINNERS_CSV="${BASELINE_WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared,baselines/instance_euclidean_3_online/cov_y_ridge_shared,baselines/instance_euclidean_3_online/residual_ridge_shared,baselines/raw_euclidean_3_online/cov_avgy_ridge_shared,baselines/raw_euclidean_3_online/cov_ridge_shared}"
-EXPERIMENT_MODE=horizon_baselines_ablation
+EXPERIMENT_MODE=convex_baselines_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 export PROJECT_ROOT EXPERIMENT_MODE BASELINE_WINNERS_CSV

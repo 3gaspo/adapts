@@ -14,7 +14,7 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
 adaptation_profile_defaults
 case "$EXPERIMENT_MODE" in
-  test|horizon_baselines_ablation|k_ablation|h_ablation|l_ablation|crossrag)
+  test|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|k_ablation|h_ablation|l_ablation|crossrag)
     DEFAULT_SKIP_COMPLETE=false
     ;;
   *)

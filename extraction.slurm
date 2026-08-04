@@ -12,7 +12,6 @@
 
 # Profiles: test, full, or ultra. Dedicated study fronts own screen, final
 # selected-candidate benchmarking, and ablation workflows.
-# COMPUTE_TRANSFORMED_PREDICTION=true optionally extracts the sign/root expert.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"

@@ -26,7 +26,7 @@ is_true() {
 
 require_experiment_mode() {
   case "${EXPERIMENT_MODE:-test}" in
-    test|screen|full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) ;;
+    test|screen|full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) ;;
     *)
       log_error "unknown EXPERIMENT_MODE=${EXPERIMENT_MODE:-}"
       return 2

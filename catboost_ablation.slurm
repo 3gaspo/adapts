@@ -10,9 +10,9 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Select shared-regressor winners from screen. The runner holds their retrieval
-# pipeline fixed and expands only CatBoost objective/decision shape.
-CATBOOST_WINNERS_CSV="${CATBOOST_WINNERS_CSV:-}"
+# Selected shared-regressor winners from screen. The runner holds retrieval
+# fixed and applies classifier, soft-mixture, and horizon changes separately.
+CATBOOST_WINNERS_CSV="${CATBOOST_WINNERS_CSV:-gates/instance_euclidean_3_online/catboost_avgy_regressor_shared,gates/instance_euclidean_1_online/catboost_cov_regressor_shared}"
 EXPERIMENT_MODE=catboost_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"

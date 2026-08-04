@@ -43,7 +43,11 @@ def main() -> None:
     assert set(full_datasets).isdisjoint(mixed_datasets)
 
     assert primary_baselines
+    assert len(primary_baselines) == 10
+    assert len(primary_gates) == 8
     assert all(not method.endswith("_horizon") for method in primary_baselines)
+    assert all("_convex_" not in method for method in primary_baselines)
+    assert all("_delta_ridge_" not in method for method in primary_baselines)
 
     primary_catboost = {
         method for method in primary_gates if method.startswith("catboost_")
@@ -103,7 +107,9 @@ def main() -> None:
 
     for front, implementation in (
         ("mixed_quantity_ablation.slurm", "run_profile_experiment.sh"),
-        ("horizon_baselines_ablation.slurm", "run_horizon_baselines_ablation.sh"),
+        ("horizon_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
+        ("convex_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
+        ("delta_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
         ("catboost_ablation.slurm", "run_catboost_ablation.sh"),
     ):
         front_text = (ROOT / front).read_text(encoding="utf-8")
@@ -113,7 +119,8 @@ def main() -> None:
     mixed_front = (ROOT / "mixed_quantity_ablation.slurm").read_text(encoding="utf-8")
     assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in mixed_front
     catboost_front = (ROOT / "catboost_ablation.slurm").read_text(encoding="utf-8")
-    assert 'CATBOOST_WINNERS_CSV="${CATBOOST_WINNERS_CSV:-}"' in catboost_front
+    assert "catboost_avgy_regressor_shared" in catboost_front
+    assert "catboost_cov_regressor_shared" in catboost_front
     for selected_front in (
         "k_ablation.slurm",
         "h_ablation.slurm",
@@ -123,11 +130,28 @@ def main() -> None:
         assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in (
             ROOT / selected_front
         ).read_text(encoding="utf-8")
-    horizon_front = (ROOT / "horizon_baselines_ablation.slurm").read_text(
-        encoding="utf-8"
-    )
-    assert "SHARED_BASELINE_WINNERS_CSV" in horizon_front
-    assert "euclidean_10" not in horizon_front
+    for family_front in (
+        "horizon_baselines_ablation.slurm",
+        "convex_baselines_ablation.slurm",
+        "delta_baselines_ablation.slurm",
+    ):
+        front_text = (ROOT / family_front).read_text(encoding="utf-8")
+        assert "BASELINE_WINNERS_CSV" in front_text
+        assert "full_ridge_shared" in front_text
+        assert "euclidean_10" not in front_text
+
+    family_defaults = {
+        re.search(
+            r'BASELINE_WINNERS_CSV="\$\{BASELINE_WINNERS_CSV:-([^}]*)\}"',
+            (ROOT / front).read_text(encoding="utf-8"),
+        ).group(1)
+        for front in (
+            "horizon_baselines_ablation.slurm",
+            "convex_baselines_ablation.slurm",
+            "delta_baselines_ablation.slurm",
+        )
+    }
+    assert len(family_defaults) == 1
 
     profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
         encoding="utf-8"
@@ -144,17 +168,31 @@ def main() -> None:
     assert "CATBOOST_WINNERS_CSV" in catboost_runner
     for variant in (
         "regressor_shared",
+        "regressor_shared_soft",
         "regressor_horizon",
         "classifier_shared",
-        "classifier_horizon",
     ):
         assert f'catboost_${{candidate}}_{variant}' in catboost_runner
+    for excluded_variant in (
+        "regressor_horizon_soft",
+        "classifier_shared_soft",
+        "classifier_horizon",
+        "classifier_horizon_soft",
+    ):
+        assert f'catboost_${{candidate}}_{excluded_variant}' not in catboost_runner
 
     baseline_runner = (ROOT / "src" / "slurm" / "run_baselines.sh").read_text(
         encoding="utf-8"
     )
     gate_runner = (ROOT / "src" / "slurm" / "run_gates.sh").read_text(
         encoding="utf-8"
+    )
+    assert gate_runner.count("DEFAULT_GATE_ITERATIONS=2") == 1
+    assert re.search(r"test\)\s+DEFAULT_GATE_ITERATIONS=2", gate_runner)
+    assert re.search(
+        r"k_ablation\|h_ablation\|l_ablation\|crossrag\)\s+"
+        r"DEFAULT_GATE_ITERATIONS=300",
+        gate_runner,
     )
     ts_ifa_runner = (ROOT / "src" / "slurm" / "run_ts_ifa.sh").read_text(
         encoding="utf-8"
@@ -177,11 +215,10 @@ def main() -> None:
     assert 'PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"' in table_runner
     assert 'test|screen)' in table_runner
 
-    horizon_runner = (
-        ROOT / "src" / "slurm" / "run_horizon_baselines_ablation.sh"
+    family_runner = (
+        ROOT / "src" / "slurm" / "run_baseline_family_ablation.sh"
     ).read_text(encoding="utf-8")
     for shared in (
-        "avgy_mix_shared",
         "cov_ridge_shared",
         "avgy_ridge_shared",
         "y_ridge_shared",
@@ -190,7 +227,10 @@ def main() -> None:
         "residual_ridge_shared",
         "full_ridge_shared",
     ):
-        assert f"{shared})" in horizon_runner
+        assert f"{shared})" in family_runner
+    assert 'variant="${design}_ridge_horizon"' in family_runner
+    assert 'variant="${design}_convex_shared"' in family_runner
+    assert 'variant="${design}_delta_ridge_shared"' in family_runner
     assert "positive_window_pct" in common
 
 

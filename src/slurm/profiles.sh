@@ -18,9 +18,9 @@ aligned_datastore_stride() {
   printf '%s\n' "$(( (requested + period - 1) / period * period ))"
 }
 
-# The primary screen keeps direct and shared baseline fits. Per-horizon fits are
-# selected from these shared candidates and run only by their dedicated ablation.
-PRIMARY_BASELINE_METHODS_CSV="cov_forecast,avgy,y_mean,avgy_mix_shared,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared"
+# The primary screen compares variable sets in the most flexible shared-ridge
+# family. Convex, delta-ridge, and per-horizon forms are candidate-only ablations.
+PRIMARY_BASELINE_METHODS_CSV="cov_forecast,avgy,y_mean,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared"
 
 # The primary learned-gate comparison is the signed-advantage shared regressor.
 # Cheap shared no-feature and oracle references remain beside it.
@@ -51,7 +51,7 @@ adaptation_profile_defaults() {
       DEFAULT_EVAL_QUERY_STRIDE=256
       DEFAULT_MAX_STORE_WINDOWS=2048
       ;;
-    screen|horizon_baselines_ablation|catboost_ablation)
+    screen|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation)
       DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"
@@ -153,7 +153,7 @@ require_profile_neighbors() {
 
 requires_selected_methods() {
   case "${EXPERIMENT_MODE:-test}" in
-    full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) return 0 ;;
+    full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) return 0 ;;
     *) return 1 ;;
   esac
 }

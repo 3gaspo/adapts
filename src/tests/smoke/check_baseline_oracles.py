@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
 from src.data.neighbors import neighbor_to_query_scale  # noqa: E402
 from src.adaptors.baselines.evaluate import (  # noqa: E402
     TRAINABLE_BASELINES,
+    _design_chunk,
     compact_baseline_arrays,
     compact_gate_arrays,
     fit_gate,
@@ -25,6 +26,7 @@ from src.adaptors.baselines.evaluate import (  # noqa: E402
     horizon_gate_feature_names,
     horizon_gate_features,
     predict_gate,
+    predict_gate_probability,
     ridge_no_intercept,
     run_streamed_baselines,
     run_streamed_gates,
@@ -145,6 +147,28 @@ def main() -> None:
     assert len(horizon_features) == 2
     assert horizon_features[0].shape[1] == len(horizon_gate_feature_names(2))
 
+    delta_arrays = compact_baseline_arrays(flattened)
+    np.testing.assert_allclose(
+        _design_chunk(delta_arrays, "cov_delta", 0, 1),
+        np.asarray([[[1.0], [1.0]]]),
+    )
+    np.testing.assert_allclose(
+        _design_chunk(delta_arrays, "avgy_delta", 0, 1),
+        np.asarray([[[2.0], [4.0]]]),
+    )
+    np.testing.assert_allclose(
+        _design_chunk(delta_arrays, "y_delta", 0, 1),
+        np.asarray([[[2.0], [4.0]]]),
+    )
+    np.testing.assert_allclose(
+        _design_chunk(delta_arrays, "residual_delta", 0, 1),
+        np.asarray([[[2.0, 0.0], [4.0, 0.0]]]),
+    )
+    np.testing.assert_allclose(
+        _design_chunk(delta_arrays, "full_delta", 0, 1),
+        np.asarray([[[1.0, 2.0, 0.0], [1.0, 4.0, 0.0]]]),
+    )
+
     with TemporaryDirectory() as temporary:
         root = Path(temporary)
         gate_arrays = compact_gate_arrays(flattened)
@@ -211,6 +235,12 @@ def main() -> None:
             f"{name}_eval_fit" for name in TRAINABLE_BASELINES
         } <= set(baseline_predictions)
         assert set(baseline_artifacts["models"]) == set(TRAINABLE_BASELINES)
+        for name, artifact in baseline_artifacts["models"].items():
+            if "_convex_" not in name:
+                continue
+            weights = np.asarray(artifact["weights"])
+            assert np.all(weights >= 0.0)
+            np.testing.assert_allclose(weights.sum(axis=-1), 1.0)
         del baseline_predictions, baseline_store, gate_predictions, gate_store
         gc.collect()
 
@@ -226,8 +256,11 @@ def main() -> None:
             seed=1,
         )
         differences = predict_gate(gate, gate_x)
+        probabilities = predict_gate_probability(gate, gate_x)
         assert differences.shape == (gate_y.shape[0],)
         assert differences[:2].mean() < 0.0 < differences[2:].mean()
+        assert np.all((0.0 <= probabilities) & (probabilities <= 1.0))
+        assert probabilities[:2].mean() < 0.5 < probabilities[2:].mean()
 
         classifier = fit_gate(
             gate_x,
@@ -239,8 +272,10 @@ def main() -> None:
             objective="classifier",
         )
         classifier_scores = predict_gate(classifier, gate_x)
+        classifier_probabilities = predict_gate_probability(classifier, gate_x)
         assert classifier_scores.shape == (gate_y.shape[0],)
         assert classifier_scores[:2].mean() < 0.0 < classifier_scores[2:].mean()
+        assert np.all((0.0 <= classifier_probabilities) & (classifier_probabilities <= 1.0))
 
     constant_classifier = fit_gate(
         gate_x,
@@ -253,6 +288,23 @@ def main() -> None:
     )
     np.testing.assert_array_equal(
         predict_gate(constant_classifier, gate_x),
+        np.full(gate_y.shape[0], 0.5, dtype=np.float32),
+    )
+    np.testing.assert_array_equal(
+        predict_gate_probability(constant_classifier, gate_x),
+        np.ones(gate_y.shape[0], dtype=np.float32),
+    )
+    constant_regressor = fit_gate(
+        gate_x,
+        np.zeros_like(gate_y),
+        iterations=1,
+        learning_rate=0.1,
+        depth=1,
+        seed=1,
+        objective="regressor",
+    )
+    np.testing.assert_array_equal(
+        predict_gate_probability(constant_regressor, gate_x),
         np.full(gate_y.shape[0], 0.5, dtype=np.float32),
     )
     print("baseline oracle checks passed")

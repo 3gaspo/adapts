@@ -265,7 +265,7 @@ def _contiguous_fit_partition(
     )
 
 
-RIDGE_DESIGNS: dict[str, tuple[str, ...]] = {
+BASELINE_VARIABLES: dict[str, tuple[str, ...]] = {
     "cov": ("V", "C"),
     "avgy": ("V", "avgy"),
     "y": ("V", "Y"),
@@ -275,27 +275,38 @@ RIDGE_DESIGNS: dict[str, tuple[str, ...]] = {
     "full": ("V", "C", "Y", "N"),
 }
 
-RIDGE_MODELS: tuple[tuple[str, str, str], ...] = (
-    ("cov_ridge_shared", "cov", "shared"),
-    ("cov_ridge_horizon", "cov", "horizon"),
-    ("avgy_ridge_shared", "avgy", "shared"),
-    ("avgy_ridge_horizon", "avgy", "horizon"),
-    ("y_ridge_shared", "y", "shared"),
-    ("y_ridge_horizon", "y", "horizon"),
-    ("cov_y_ridge_shared", "cov_y", "shared"),
-    ("cov_y_ridge_horizon", "cov_y", "horizon"),
-    ("cov_avgy_ridge_shared", "cov_avgy", "shared"),
-    ("cov_avgy_ridge_horizon", "cov_avgy", "horizon"),
-    ("residual_ridge_shared", "residual", "shared"),
-    ("residual_ridge_horizon", "residual", "horizon"),
-    ("full_ridge_shared", "full", "shared"),
-    ("full_ridge_horizon", "full", "horizon"),
+DELTA_SIGNAL = {
+    "C": "C-V",
+    "avgy": "avgy-V",
+    "Y": "Y-V",
+    "N": "N-V",
+}
+DELTA_DESIGNS = {
+    f"{design}_delta": tuple(DELTA_SIGNAL[signal] for signal in signals[1:])
+    for design, signals in BASELINE_VARIABLES.items()
+}
+RIDGE_DESIGNS = {**BASELINE_VARIABLES, **DELTA_DESIGNS}
+
+CONVEX_MODELS: tuple[tuple[str, str, str], ...] = tuple(
+    (f"{design}_convex_{mode}", design, mode)
+    for design in BASELINE_VARIABLES
+    for mode in ("shared", "horizon")
+)
+RIDGE_MODELS: tuple[tuple[str, str, str], ...] = tuple(
+    (f"{design}_ridge_{mode}", design, mode)
+    for design in BASELINE_VARIABLES
+    for mode in ("shared", "horizon")
+)
+DELTA_RIDGE_MODELS: tuple[tuple[str, str, str], ...] = tuple(
+    (f"{design}_delta_ridge_{mode}", f"{design}_delta", mode)
+    for design in BASELINE_VARIABLES
+    for mode in ("shared", "horizon")
 )
 
 TRAINABLE_BASELINES = (
-    "avgy_mix_shared",
-    "avgy_mix_horizon",
+    *(name for name, _, _ in CONVEX_MODELS),
     *(name for name, _, _ in RIDGE_MODELS),
+    *(name for name, _, _ in DELTA_RIDGE_MODELS),
 )
 DIRECT_BASELINES = ("cov_forecast", "avgy", "y_mean")
 BASELINE_METHODS = (*DIRECT_BASELINES, *TRAINABLE_BASELINES)
@@ -314,6 +325,10 @@ def _design_chunk(
             parts.append(pred[:, :, None])
         elif signal == "C":
             parts.append(arrays["pred_c"][start:stop, :, None])
+        elif signal == "C-V":
+            parts.append(
+                (arrays["pred_c"][start:stop] - pred)[:, :, None]
+            )
         elif signal == "avgy":
             weights = distance_weights(
                 {name: value[start:stop] for name, value in arrays.items()}
@@ -322,11 +337,29 @@ def _design_chunk(
                 weights[:, :, None] * arrays["y_c"][start:stop]
             ).sum(axis=1)
             parts.append(aggregate[:, :, None])
+        elif signal == "avgy-V":
+            weights = distance_weights(
+                {name: value[start:stop] for name, value in arrays.items()}
+            )
+            aggregate = (
+                weights[:, :, None] * arrays["y_c"][start:stop]
+            ).sum(axis=1)
+            parts.append((aggregate - pred)[:, :, None])
         elif signal == "Y":
             parts.append(np.moveaxis(arrays["y_c"][start:stop], 1, 2))
+        elif signal == "Y-V":
+            parts.append(
+                np.moveaxis(arrays["y_c"][start:stop], 1, 2)
+                - pred[:, :, None]
+            )
         elif signal == "N":
             parts.append(
                 np.moveaxis(arrays["pred_neighbors"][start:stop], 1, 2)
+            )
+        elif signal == "N-V":
+            parts.append(
+                np.moveaxis(arrays["pred_neighbors"][start:stop], 1, 2)
+                - pred[:, :, None]
             )
         else:  # pragma: no cover
             raise ValueError(f"unknown ridge signal {signal!r}")
@@ -343,7 +376,7 @@ def _ridge_statistics(
         raise ValueError("cannot fit ridge from an empty split")
     neighbors = arrays["y_c"].shape[1]
     feature_count = sum(
-        neighbors if signal in {"Y", "N"} else 1
+        neighbors if signal in {"Y", "N", "Y-V", "N-V"} else 1
         for signal in RIDGE_DESIGNS[design]
     )
     chunk_samples = max(1, RIDGE_CHUNK_ROWS // max(horizon, 1))
@@ -449,40 +482,126 @@ def _normalized_mse(arrays: dict[str, np.ndarray], prediction: np.ndarray) -> fl
     return float(np.mean(((prediction - arrays["y"]) / scale) ** 2))
 
 
-def _fit_convex_lambda(
+def _convex_statistics(
     arrays: dict[str, np.ndarray],
     *,
+    design: str,
     mode: str,
-) -> np.ndarray | float:
-    pred = arrays["pred"].astype(np.float64)
-    direction = weighted_neighbor_horizon(arrays).astype(np.float64) - pred
-    target = arrays["y"].astype(np.float64) - pred
-    if mode == "shared":
-        denominator = float(np.sum(direction**2))
-        unconstrained = (
-            float(np.sum(direction * target)) / denominator
-            if denominator > 1e-12
-            else 0.0
-        )
-        return float(np.clip(unconstrained, 0.0, 1.0))
-    denominator = np.sum(direction**2, axis=0)
-    numerator = np.sum(direction * target, axis=0)
-    unconstrained = np.divide(
-        numerator,
-        denominator,
-        out=np.zeros_like(numerator),
-        where=denominator > 1e-12,
+) -> tuple[np.ndarray, np.ndarray]:
+    n_samples, horizon = arrays["y"].shape
+    neighbors = arrays["y_c"].shape[1]
+    feature_count = sum(
+        neighbors if signal in {"Y", "N"} else 1
+        for signal in BASELINE_VARIABLES[design]
     )
-    return np.clip(unconstrained, 0.0, 1.0)
+    chunk_samples = max(1, RIDGE_CHUNK_ROWS // max(horizon, 1))
+    if mode == "shared":
+        xtx = np.zeros((feature_count, feature_count), dtype=np.float64)
+        xty = np.zeros(feature_count, dtype=np.float64)
+    elif mode == "horizon":
+        xtx = np.zeros((horizon, feature_count, feature_count), dtype=np.float64)
+        xty = np.zeros((horizon, feature_count), dtype=np.float64)
+    else:
+        raise ValueError(f"unknown convex mode {mode!r}")
+    for start in range(0, n_samples, chunk_samples):
+        stop = min(start + chunk_samples, n_samples)
+        x = _design_chunk(arrays, design, start, stop)
+        target = arrays["y"][start:stop].astype(np.float64)
+        if mode == "shared":
+            x_flat = x.reshape(-1, feature_count)
+            xtx += x_flat.T @ x_flat
+            xty += x_flat.T @ target.reshape(-1)
+        else:
+            xtx += np.einsum("shf,shg->hfg", x, x)
+            xty += np.einsum("shf,sh->hf", x, target)
+    observations = n_samples * horizon if mode == "shared" else n_samples
+    return xtx / observations, xty / observations
 
 
-def _predict_convex_lambda(
+def _solve_simplex_qp(xtx: np.ndarray, xty: np.ndarray) -> np.ndarray:
+    """Solve min 0.5*w'X'Xw - w'X'y with w on the probability simplex."""
+    feature_count = int(xty.shape[0])
+    weights = np.zeros(feature_count, dtype=np.float64)
+    weights[0] = 1.0
+    active = [0]
+    tolerance = 1e-10
+    for _ in range(max(20, 20 * feature_count)):
+        active_xtx = xtx[np.ix_(active, active)]
+        kkt = np.block(
+            [
+                [active_xtx, np.ones((len(active), 1))],
+                [np.ones((1, len(active))), np.zeros((1, 1))],
+            ]
+        )
+        rhs = np.concatenate((xty[active], np.ones(1)))
+        solution = np.linalg.lstsq(kkt, rhs, rcond=None)[0][:-1]
+        candidate = np.zeros_like(weights)
+        candidate[active] = solution
+        if np.min(solution) < -tolerance:
+            direction = candidate - weights
+            step = min(
+                weights[index] / (weights[index] - candidate[index])
+                for index in active
+                if candidate[index] < -tolerance
+            )
+            weights += step * direction
+            active = [index for index in active if weights[index] > tolerance]
+            weights[np.abs(weights) <= tolerance] = 0.0
+            continue
+        weights = candidate
+        gradient = xtx @ weights - xty
+        active_level = float(np.mean(gradient[active]))
+        inactive = [index for index in range(feature_count) if index not in active]
+        if not inactive:
+            break
+        violations = np.asarray(
+            [active_level - gradient[index] for index in inactive]
+        )
+        if float(violations.max()) <= tolerance:
+            break
+        active.append(inactive[int(np.argmax(violations))])
+    else:  # pragma: no cover - indicates a numerical active-set cycle
+        raise RuntimeError("simplex least-squares solver did not converge")
+    weights = np.maximum(weights, 0.0)
+    total = float(weights.sum())
+    if total <= 0.0:  # pragma: no cover
+        weights[0] = 1.0
+        return weights
+    return weights / total
+
+
+def _fit_convex(
     arrays: dict[str, np.ndarray],
-    value: np.ndarray | float,
+    *,
+    design: str,
+    mode: str,
 ) -> np.ndarray:
-    pred = arrays["pred"]
-    aggregate = weighted_neighbor_horizon(arrays)
-    return (1.0 - value) * pred + value * aggregate
+    xtx, xty = _convex_statistics(arrays, design=design, mode=mode)
+    if mode == "shared":
+        return _solve_simplex_qp(xtx, xty)
+    return np.stack(
+        [_solve_simplex_qp(xtx[h], xty[h]) for h in range(xty.shape[0])]
+    )
+
+
+def _predict_convex(
+    arrays: dict[str, np.ndarray],
+    *,
+    design: str,
+    mode: str,
+    weights: np.ndarray,
+) -> np.ndarray:
+    n_samples, horizon = arrays["pred"].shape
+    out = np.empty((n_samples, horizon), dtype=np.float64)
+    chunk_samples = max(1, RIDGE_CHUNK_ROWS // max(horizon, 1))
+    for start in range(0, n_samples, chunk_samples):
+        stop = min(start + chunk_samples, n_samples)
+        x = _design_chunk(arrays, design, start, stop)
+        if mode == "shared":
+            out[start:stop] = np.einsum("shf,f->sh", x, weights)
+        else:
+            out[start:stop] = np.einsum("shf,hf->sh", x, weights)
+    return out
 
 
 def fit_baseline_adapters(
@@ -492,7 +611,7 @@ def fit_baseline_adapters(
     l2_grid: Sequence[float] | float = DEFAULT_L2_GRID,
     methods: Sequence[str] | None = None,
 ) -> dict[str, Any]:
-    """Tune ridge alpha on T2, then refit selected models on pooled T1+T2."""
+    """Fit convex models directly and tune/refit ridge families via T2."""
     valid = train if valid is None else valid
     refit = train if refit is None else refit
     grid = (
@@ -503,27 +622,33 @@ def fit_baseline_adapters(
     if not grid or any(value < 0 for value in grid):
         raise ValueError("l2_grid must contain non-negative values")
     artifacts: dict[str, Any] = {
-        "protocol": "tune_on_T2_then_refit_on_T1_plus_T2",
+        "protocol": "convex_refit_on_T1_plus_T2;ridge_tune_on_T2_then_refit",
         "l2_grid": grid,
         "models": {},
     }
     selected = set(TRAINABLE_BASELINES if methods is None else methods)
-    for mode in ("shared", "horizon"):
-        name = f"avgy_mix_{mode}"
+    for name, design, mode in CONVEX_MODELS:
         if name not in selected:
             continue
-        train_lambda = _fit_convex_lambda(train, mode=mode)
-        valid_prediction = _predict_convex_lambda(valid, train_lambda)
-        final_lambda = _fit_convex_lambda(refit, mode=mode)
+        train_weights = _fit_convex(train, design=design, mode=mode)
+        valid_prediction = _predict_convex(
+            valid,
+            design=design,
+            mode=mode,
+            weights=train_weights,
+        )
+        final_weights = _fit_convex(refit, design=design, mode=mode)
         artifacts["models"][name] = {
-            "kind": "lambda",
+            "kind": "convex",
+            "design": design,
+            "signals": BASELINE_VARIABLES[design],
             "mode": mode,
-            "lambda": final_lambda,
-            "t1_lambda": train_lambda,
+            "weights": final_weights,
+            "t1_weights": train_weights,
             "t2_nmse": _normalized_mse(valid, valid_prediction),
-            "constraint": "[0,1] by clipping the closed-form least-squares estimate",
+            "constraint": "non-negative weights summing to one",
         }
-    for name, design, mode in RIDGE_MODELS:
+    for name, design, mode in (*RIDGE_MODELS, *DELTA_RIDGE_MODELS):
         if name not in selected:
             continue
         train_statistics = _ridge_statistics(train, design, mode)
@@ -579,8 +704,13 @@ def iter_baseline_predictions(
     for name, model in artifacts["models"].items():
         if name not in selected:
             continue
-        if model["kind"] == "lambda":
-            prediction = _predict_convex_lambda(arrays, model["lambda"])
+        if model["kind"] == "convex":
+            prediction = _predict_convex(
+                arrays,
+                design=model["design"],
+                mode=model["mode"],
+                weights=model["weights"],
+            )
         else:
             prediction = _predict_anchored_ridge(
                 arrays,
@@ -738,6 +868,10 @@ GATE_ADAPTIVE_METHODS = tuple(
                 "classifier_horizon",
                 "regressor_shared",
                 "regressor_horizon",
+                "classifier_shared_soft",
+                "classifier_horizon_soft",
+                "regressor_shared_soft",
+                "regressor_horizon_soft",
             ),
         ),
     )
@@ -1117,7 +1251,12 @@ def fit_loss_difference_regressor(
 ) -> dict[str, Any]:
     target = np.asarray(y_np, dtype=np.float32).reshape(-1)
     if np.ptp(target) <= 1e-12:
-        return {"constant": float(target.mean()), "selected_iterations": 0}
+        return {
+            "constant": float(target.mean()),
+            "objective": "regressor",
+            "probability_scale": 0.0,
+            "selected_iterations": 0,
+        }
     selected = int(iterations)
     if valid_x_np is not None and valid_y_np is not None:
         selector = _catboost_regressor(
@@ -1157,7 +1296,12 @@ def fit_loss_difference_regressor(
         thread_count=thread_count,
     )
     model.fit(final_x, final_y)
-    return {"regressor": model, "selected_iterations": selected}
+    return {
+        "regressor": model,
+        "objective": "regressor",
+        "probability_scale": float(np.std(final_y, dtype=np.float64)),
+        "selected_iterations": selected,
+    }
 
 
 def fit_improvement_classifier(
@@ -1194,6 +1338,7 @@ def fit_improvement_classifier(
     if np.unique(combined_target).size == 1:
         return {
             "constant": float(combined_target[0]) - 0.5,
+            "objective": "classifier",
             "selected_iterations": 0,
         }
     selected = int(iterations)
@@ -1239,7 +1384,11 @@ def fit_improvement_classifier(
         thread_count=thread_count,
     )
     model.fit(final_x, combined_target.astype(np.int8))
-    return {"classifier": model, "selected_iterations": selected}
+    return {
+        "classifier": model,
+        "objective": "classifier",
+        "selected_iterations": selected,
+    }
 
 
 def fit_gate(
@@ -1345,6 +1494,37 @@ def predict_gate(model: dict[str, Any], features: np.ndarray) -> np.ndarray:
     )
 
 
+def predict_gate_probability(
+    model: dict[str, Any],
+    features: np.ndarray,
+) -> np.ndarray:
+    """Return a candidate weight in [0, 1] from a fitted gate model."""
+    objective = model.get("objective")
+    if objective == "classifier":
+        if "constant" in model:
+            return np.full(
+                features.shape[0],
+                float(model["constant"]) + 0.5,
+                dtype=np.float32,
+            )
+        return np.asarray(
+            model["classifier"].predict_proba(features)[:, 1],
+            dtype=np.float32,
+        )
+    if objective != "regressor":
+        raise ValueError(f"unknown gate objective {objective!r}")
+    score = predict_gate(model, features).astype(np.float64, copy=False)
+    scale = float(model.get("probability_scale", 0.0))
+    if scale <= 1e-12:
+        return np.where(
+            score > 0.0,
+            1.0,
+            np.where(score < 0.0, 0.0, 0.5),
+        ).astype(np.float32)
+    logit = np.clip(score / scale, -60.0, 60.0)
+    return (1.0 / (1.0 + np.exp(-logit))).astype(np.float32)
+
+
 def _save_gate_model(
     model: dict[str, Any],
     *,
@@ -1353,8 +1533,14 @@ def _save_gate_model(
     stem: str,
 ) -> dict[str, Any]:
     entry: dict[str, Any] = {
+        "objective": str(model.get("objective", "unknown")),
         "selected_iterations": int(model.get("selected_iterations", 0)),
     }
+    if model.get("objective") == "regressor":
+        entry["probability_link"] = {
+            "kind": "sigmoid_standardized_advantage",
+            "scale": float(model.get("probability_scale", 0.0)),
+        }
     if "constant" in model:
         entry.update({"kind": "constant", "value": float(model["constant"])})
         return entry
@@ -1405,6 +1591,37 @@ def _write_gated_prediction(
             decision,
             candidate_prediction[start:stop],
             arrays["pred"][start:stop],
+        )
+    prediction.flush()
+    return prediction
+
+
+def _write_weighted_prediction(
+    store: PredictionStore,
+    *,
+    split: str,
+    method: str,
+    arrays: dict[str, np.ndarray],
+    candidate: str,
+    probability: np.ndarray,
+    shared: bool,
+) -> np.memmap:
+    prediction = store.open(
+        split,
+        "predictions",
+        method,
+        shape=arrays["pred"].shape,
+        dtype=np.float32,
+    )
+    candidate_prediction = _candidate_prediction(arrays, candidate)
+    for start in range(0, arrays["pred"].shape[0], METRIC_CHUNK_ROWS):
+        stop = min(start + METRIC_CHUNK_ROWS, arrays["pred"].shape[0])
+        weight = np.asarray(probability[start:stop], dtype=np.float32)
+        if shared:
+            weight = weight.reshape(-1, 1)
+        prediction[start:stop] = (
+            (1.0 - weight) * arrays["pred"][start:stop]
+            + weight * candidate_prediction[start:stop]
         )
     prediction.flush()
     return prediction
@@ -1739,7 +1956,10 @@ def run_streamed_gates(
         for objective_index, objective in enumerate(("classifier", "regressor")):
             for shape in ("shared", "horizon"):
                 method = f"catboost_{candidate}_{objective}_{shape}"
-                if method not in candidate_methods:
+                soft_method = f"{method}_soft"
+                hard_selected = method in candidate_methods
+                soft_selected = soft_method in candidate_methods
+                if not hard_selected and not soft_selected:
                     continue
                 names = (
                     SCALAR_GATE_FEATURE_NAMES
@@ -1779,45 +1999,95 @@ def run_streamed_gates(
                     if importance is not None:
                         importance_values.append(importance)
                     for split, arrays in arrays_by_split.items():
-                        score = predict_gate(model, scalar_features[split])
-                        store.write(
-                            split,
-                            "gate_diagnostics",
-                            f"{method}_score",
-                            score,
-                        )
-                        prediction = _write_gated_prediction(
-                            store,
-                            split=split,
-                            method=method,
-                            arrays=arrays,
-                            candidate=candidate,
-                            score=score,
-                            shared=True,
-                        )
-                        if split == "eval":
-                            metric_rows.append(
-                                evaluate_prediction(
-                                    "eval",
-                                    arrays,
-                                    method,
-                                    prediction,
-                                    vanilla_nmse=reference_nmse,
-                                )
+                        if hard_selected:
+                            score = predict_gate(model, scalar_features[split])
+                            store.write(
+                                split,
+                                "gate_diagnostics",
+                                f"{method}_score",
+                                score,
                             )
-                        del prediction, score
+                            prediction = _write_gated_prediction(
+                                store,
+                                split=split,
+                                method=method,
+                                arrays=arrays,
+                                candidate=candidate,
+                                score=score,
+                                shared=True,
+                            )
+                            if split == "eval":
+                                metric_rows.append(
+                                    evaluate_prediction(
+                                        "eval",
+                                        arrays,
+                                        method,
+                                        prediction,
+                                        vanilla_nmse=reference_nmse,
+                                    )
+                                )
+                            del prediction, score
+                        if soft_selected:
+                            probability = predict_gate_probability(
+                                model,
+                                scalar_features[split],
+                            )
+                            store.write(
+                                split,
+                                "gate_diagnostics",
+                                f"{soft_method}_probability",
+                                probability,
+                            )
+                            prediction = _write_weighted_prediction(
+                                store,
+                                split=split,
+                                method=soft_method,
+                                arrays=arrays,
+                                candidate=candidate,
+                                probability=probability,
+                                shared=True,
+                            )
+                            if split == "eval":
+                                metric_rows.append(
+                                    evaluate_prediction(
+                                        "eval",
+                                        arrays,
+                                        soft_method,
+                                        prediction,
+                                        vanilla_nmse=reference_nmse,
+                                    )
+                                )
+                            del prediction, probability
                     del model
                 else:
-                    score_arrays = {
-                        split: store.open(
-                            split,
-                            "gate_diagnostics",
-                            f"{method}_score",
-                            shape=arrays["pred"].shape,
-                            dtype=np.float32,
-                        )
-                        for split, arrays in arrays_by_split.items()
-                    }
+                    score_arrays = (
+                        {
+                            split: store.open(
+                                split,
+                                "gate_diagnostics",
+                                f"{method}_score",
+                                shape=arrays["pred"].shape,
+                                dtype=np.float32,
+                            )
+                            for split, arrays in arrays_by_split.items()
+                        }
+                        if hard_selected
+                        else {}
+                    )
+                    probability_arrays = (
+                        {
+                            split: store.open(
+                                split,
+                                "gate_diagnostics",
+                                f"{soft_method}_probability",
+                                shape=arrays["pred"].shape,
+                                dtype=np.float32,
+                            )
+                            for split, arrays in arrays_by_split.items()
+                        }
+                        if soft_selected
+                        else {}
+                    )
                     horizon = fit_arrays["T1"]["y"].shape[1]
                     for h in range(horizon):
                         refit_x = horizon_features["T1+T2"][h]
@@ -1862,40 +2132,79 @@ def run_streamed_gates(
                                 if split == "adapt" and refit_is_adapt
                                 else horizon_features[split][h]
                             )
-                            score_arrays[split][:, h] = predict_gate(
-                                model,
-                                scoring_x,
-                            )
+                            if hard_selected:
+                                score_arrays[split][:, h] = predict_gate(
+                                    model,
+                                    scoring_x,
+                                )
+                            if soft_selected:
+                                probability_arrays[split][:, h] = (
+                                    predict_gate_probability(model, scoring_x)
+                                )
                             del scoring_x
                         del model, train_x, valid_x, refit_x
                         if (h + 1) % 8 == 0:
                             gc.collect()
                     for score in score_arrays.values():
                         score.flush()
+                    for probability in probability_arrays.values():
+                        probability.flush()
                     for split, arrays in arrays_by_split.items():
-                        prediction = _write_gated_prediction(
-                            store,
-                            split=split,
-                            method=method,
-                            arrays=arrays,
-                            candidate=candidate,
-                            score=score_arrays[split],
-                            shared=False,
-                        )
-                        if split == "eval":
-                            metric_rows.append(
-                                evaluate_prediction(
-                                    "eval",
-                                    arrays,
-                                    method,
-                                    prediction,
-                                    vanilla_nmse=reference_nmse,
-                                )
+                        if hard_selected:
+                            prediction = _write_gated_prediction(
+                                store,
+                                split=split,
+                                method=method,
+                                arrays=arrays,
+                                candidate=candidate,
+                                score=score_arrays[split],
+                                shared=False,
                             )
-                        del prediction
-                    del score_arrays
-                model_manifest["models"][method] = entries
-                importances[method] = (names, importance_values)
+                            if split == "eval":
+                                metric_rows.append(
+                                    evaluate_prediction(
+                                        "eval",
+                                        arrays,
+                                        method,
+                                        prediction,
+                                        vanilla_nmse=reference_nmse,
+                                    )
+                                )
+                            del prediction
+                        if soft_selected:
+                            prediction = _write_weighted_prediction(
+                                store,
+                                split=split,
+                                method=soft_method,
+                                arrays=arrays,
+                                candidate=candidate,
+                                probability=probability_arrays[split],
+                                shared=False,
+                            )
+                            if split == "eval":
+                                metric_rows.append(
+                                    evaluate_prediction(
+                                        "eval",
+                                        arrays,
+                                        soft_method,
+                                        prediction,
+                                        vanilla_nmse=reference_nmse,
+                                    )
+                                )
+                            del prediction
+                    del score_arrays, probability_arrays
+                if hard_selected:
+                    model_manifest["models"][method] = [
+                        {**entry, "prediction": "hard_selection"}
+                        for entry in entries
+                    ]
+                if soft_selected:
+                    model_manifest["models"][soft_method] = [
+                        {**entry, "prediction": "probability_weighted_mixture"}
+                        for entry in entries
+                    ]
+                importance_method = method if hard_selected else soft_method
+                importances[importance_method] = (names, importance_values)
                 gc.collect()
 
         del scalar_features, horizon_features
@@ -1916,7 +2225,7 @@ def run_streamed_gates(
     prediction_manifest = store.finalize(
         metadata={
             "family": "gates",
-            "diagnostics": "scores_only",
+            "diagnostics": "scores_and_probabilities",
         }
     )
     return metric_rows, model_manifest, prediction_manifest

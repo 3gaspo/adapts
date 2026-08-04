@@ -14,8 +14,12 @@ EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
 adaptation_profile_defaults
 case "$EXPERIMENT_MODE" in
-  test|k_ablation|h_ablation|l_ablation|crossrag)
+  test)
     DEFAULT_GATE_ITERATIONS=2
+    DEFAULT_SKIP_COMPLETE=false
+    ;;
+  k_ablation|h_ablation|l_ablation|crossrag)
+    DEFAULT_GATE_ITERATIONS=300
     DEFAULT_SKIP_COMPLETE=false
     ;;
   *)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Expand selected shared CatBoost screen winners across objective/shape variants.
+# Apply one change at a time to selected shared CatBoost screen winners.
 # Submit ../../catboost_ablation.slurm.
 set -euo pipefail
 source src/slurm/common.sh
@@ -45,9 +45,9 @@ for entry in "${selected_winners[@]}"; do
     "bayes_${candidate}_shared"
     "bayes_${candidate}_horizon"
     "catboost_${candidate}_regressor_shared"
+    "catboost_${candidate}_regressor_shared_soft"
     "catboost_${candidate}_regressor_horizon"
     "catboost_${candidate}_classifier_shared"
-    "catboost_${candidate}_classifier_horizon"
     "oracle_${candidate}_shared"
     "oracle_${candidate}_horizon"
   )

@@ -24,15 +24,20 @@ NOTES
 
 - Retrieval names encode distance space, Euclidean distance, K, and online retrieval.
 - bayes_cov_shared is the selected Bayes candidate. The bayes_avgy_shared screen gate selected vanilla and produced approximately zero improvement.
+- No convex or delta-ridge baseline entered the selected nine. All six selected baseline pipelines are shared ridge models.
+- Both selected learned CatBoost pipelines are hard shared regressors; no classifier, soft-mixture, or horizon CatBoost variant entered this screen.
 
-NEXT STAGE: K ABLATION
+NEXT STAGE: FORMULATION ABLATIONS, THEN FINAL K ABLATION
 
-Status: ready to submit after synchronization
-Grid: K = 1, 3, 5, 10, 15, 20
-Profile: k_ablation
-Selection rule: choose one K per candidate by its equal-configuration mean held-out
-eval nMSE improvement over vanilla across the 12 primary dataset/settings.
+Run the convex, delta-ridge, and CatBoost formulation fronts on the selected
+controls above. Run the horizon-baseline front as well if that family remains in
+scope. Filter those results into an expanded candidate list before rerunning K.
 
-SUBMISSION COMMAND
+K grid: 1, 3, 5, 10, 15, 20
+K selection rule: choose one K per expanded candidate by its equal-configuration
+mean held-out eval nMSE improvement over vanilla across the 12 primary settings.
 
-WINNERS_CSV="$(awk 'capture && NF {print; exit} /^WINNERS_CSV$/ {capture=1}' SWEEP_CANDIDATES.txt)" sbatch k_ablation.slurm
+The incomplete job 42152 produced reusable extraction payloads but no baseline
+results or final tables. Its instance-space gate fits used the retired
+two-iteration publication default and must be overwritten by the corrected
+300-iteration K run.
