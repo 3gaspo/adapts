@@ -38,6 +38,8 @@ def _flatten_optional(payload: dict[str, Any], key: str) -> np.ndarray | None:
 def load_dashboard_data(
     extraction_dir: str | Path,
     result_dir: str | Path,
+    *,
+    ts_ifa_variant: str = "joint_ridge",
 ) -> dict[str, Any]:
     """Load current extraction and completed result artifacts."""
     root = Path(extraction_dir).expanduser()
@@ -56,7 +58,7 @@ def load_dashboard_data(
     result_specs = [
         (result_root / "baselines", "adaptation_evaluation_result", "baselines"),
         (result_root / "gates", "adaptation_evaluation_result", "gates"),
-        (result_root / "ts_ifa" / "TS-IFA", "adaptation_ts_ifa_result", None),
+        (result_root / "ts_ifa" / ts_ifa_variant, "adaptation_ts_ifa_result", None),
     ]
     baseline: dict[str, Any] = {"splits": {}}
     baseline_artifacts: dict[str, Any] = {"models": {}}
@@ -112,22 +114,23 @@ def load_dashboard_data(
                     ),
                 }
         elif expected_family is None:
-            ridge_path = current_dir / str(files.get("ridge_rooter", ""))
-            if not ridge_path.is_file():
-                raise FileNotFoundError(f"Missing TS-IFA ridge rooter: {ridge_path}")
-            ridge_payload = torch_load(ridge_path)
+            rooter_path = current_dir / str(files.get("rooter", ""))
+            if not rooter_path.is_file():
+                raise FileNotFoundError(f"Missing TS-IFA rooter: {rooter_path}")
+            rooter_payload = torch_load(rooter_path)
             ts_ifa_artifacts = {
                 "candidate_names": list(
-                    ridge_payload.get(
+                    rooter_payload.get(
                         "candidate_names",
                         payload.get("metadata", {}).get("candidate_names", []),
                     )
                 ),
-                "ridge_rooter_coefficients": np.asarray(
-                    ridge_payload["coefficients"].detach().cpu(),
-                    dtype=np.float64,
-                ),
+                "variant": completion.get("variant"),
             }
+            if "coefficients" in rooter_payload:
+                ts_ifa_artifacts["ridge_rooter_coefficients"] = np.asarray(
+                    rooter_payload["coefficients"].detach().cpu(), dtype=np.float64
+                )
 
     data = {
         "run_dir": root,
@@ -600,7 +603,7 @@ def _relative_improvement_pct(reference: float, current: float) -> float:
 
 def _gate_candidate_prediction_name(gate_name: str) -> str:
     match = re.fullmatch(
-        r"(?:bayes|catboost|oracle)_(cov|avgy)(?:_[a-z]+)?_(?:shared|horizon)",
+        r"(?:bayes|catboost|oracle)_(cov|avgy)(?:_[a-z]+)*_(?:shared|horizon)(?:_soft)?",
         gate_name,
     )
     if match is None:
@@ -613,12 +616,12 @@ def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
     options: list[tuple[str, str]] = []
     for key in sorted(diagnostics):
         match = re.fullmatch(
-            r"(catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon))_score",
+            r"(catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon)(?:_soft)?)_(score|probability)",
             key,
         )
         if match is None:
             continue
-        stem, candidate, _, shape = match.groups()
+        stem, candidate, _, shape, _ = match.groups()
         if f"{candidate}_{shape}_target" not in diagnostics:
             continue
         label = stem.replace("_", " ")
@@ -631,15 +634,21 @@ def gate_options(data: dict[str, Any], split: str) -> list[tuple[str, str]]:
 def _gate_score_target(data: dict[str, Any], split: str, gate_name: str) -> tuple[np.ndarray, np.ndarray]:
     diagnostics = split_arrays(data, split)["gate_diagnostics"]
     match = re.fullmatch(
-        r"catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon)",
+        r"catboost_(cov|avgy)_(classifier|regressor)_(shared|horizon)(?:(_soft))?",
         gate_name,
     )
     if match is None:
         raise ValueError(gate_name)
-    candidate, _, shape = match.groups()
-    score = diagnostics[f"{gate_name}_score"]
+    candidate, _, shape, soft = match.groups()
+    diagnostic_name = "probability" if soft else "score"
+    score = np.asarray(
+        diagnostics[f"{gate_name}_{diagnostic_name}"],
+        dtype=np.float64,
+    )
+    if soft:
+        score = score - 0.5
     target = diagnostics[f"{candidate}_{shape}_target"]
-    return np.asarray(score, dtype=np.float64), np.asarray(target, dtype=np.float64)
+    return score, np.asarray(target, dtype=np.float64)
 
 
 def gate_roc(
@@ -995,8 +1004,8 @@ def ts_ifa_coefficient_options(data: dict[str, Any]) -> list[tuple[str, str]]:
         .get("eval", {})
         .get("gate_diagnostics", {})
     )
-    if "neural_rooter_coefficients" in diagnostics:
-        options.append(("neural rooter (mean over T3 windows)", "neural_rooter_mean"))
+    if "rooter_coefficients" in diagnostics:
+        options.append(("active rooter (mean over T3 windows)", "rooter_mean"))
     return options
 
 
@@ -1005,10 +1014,10 @@ def ts_ifa_coefficients(data: dict[str, Any], coefficient_name: str) -> tuple[np
     names = [str(name) for name in artifacts.get("candidate_names", [])]
     if coefficient_name == "ridge_rooter":
         values = np.asarray(artifacts["ridge_rooter_coefficients"], dtype=np.float64)
-    elif coefficient_name == "neural_rooter_mean":
+    elif coefficient_name == "rooter_mean":
         diagnostics = data["baseline"]["splits"]["eval"]["gate_diagnostics"]
         values = np.nanmean(
-            np.asarray(diagnostics["neural_rooter_coefficients"], dtype=np.float64),
+            np.asarray(diagnostics["rooter_coefficients"], dtype=np.float64),
             axis=0,
         )
     else:

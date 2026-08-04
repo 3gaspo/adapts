@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import json
 import sys
 import tempfile
@@ -34,6 +35,17 @@ from src.visu.dashboard import (  # noqa: E402
 )
 from src.experiments.artifacts import write_extraction_manifest  # noqa: E402
 from src.experiments.prediction_store import PredictionStore  # noqa: E402
+
+
+def close_memmaps(value: object) -> None:
+    if isinstance(value, np.memmap):
+        value._mmap.close()
+    elif isinstance(value, dict):
+        for item in value.values():
+            close_memmaps(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            close_memmaps(item)
 
 
 def extraction_payload(prefix: str) -> dict[str, torch.Tensor]:
@@ -96,10 +108,14 @@ def main() -> None:
             }
             gate_predictions[split] = {
                 "catboost_cov_classifier_shared": target + 0.2,
+                "catboost_cov_classifier_shared_soft": target + 0.15,
                 "oracle_cov_shared": target + 0.1,
             }
             diagnostics_by_split[split] = {
                 "catboost_cov_classifier_shared_score": score,
+                "catboost_cov_classifier_shared_soft_probability": (
+                    score + 1.0
+                ) / 2.0,
                 "cov_shared_target": score,
             }
         baseline_dir = result_root / "baselines"
@@ -119,7 +135,7 @@ def main() -> None:
                         "signals": ("V", "C"),
                         "coef": np.asarray([0.75, 0.25]),
                     },
-                    "avgy_mix_horizon": {
+                    "avgy_convex_horizon": {
                         "kind": "lambda",
                         "mode": "horizon",
                         "lambda": np.asarray([0.2, 0.4, 0.6]),
@@ -187,7 +203,7 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        ts_ifa_dir = result_root / "ts_ifa" / "TS-IFA"
+        ts_ifa_dir = result_root / "ts_ifa" / "joint_ridge"
         ts_ifa_dir.mkdir(parents=True)
         target = payloads["eval"]["eval_Y_values"].reshape(-1, 3)
         ts_ifa_store = PredictionStore(ts_ifa_dir)
@@ -206,7 +222,7 @@ def main() -> None:
         ts_ifa_store.write(
             "eval",
             "gate_diagnostics",
-            "neural_rooter_coefficients",
+            "rooter_coefficients",
             neural_coefficients,
         )
         ts_ifa_store.finalize(
@@ -220,15 +236,16 @@ def main() -> None:
                 ),
                 "candidate_names": ["cov", "memory"],
             },
-            ts_ifa_dir / "ridge_rooter.pt",
+            ts_ifa_dir / "rooter.pt",
         )
         (ts_ifa_dir / "result_manifest.json").write_text(
             json.dumps(
                 {
                     "format": "adaptation_ts_ifa_result",
+                    "variant": "joint_ridge",
                     "files": {
                         "predictions": "prediction_manifest.json",
-                        "ridge_rooter": "ridge_rooter.pt",
+                        "rooter": "rooter.pt",
                     },
                 }
             ),
@@ -240,6 +257,7 @@ def main() -> None:
         assert arrays["x"].shape == (6, 4)
         assert "avgy" in prediction_names(data, "eval")
         assert "catboost_cov_classifier_shared" in prediction_names(data, "eval")
+        assert "catboost_cov_classifier_shared_soft" in prediction_names(data, "eval")
         assert "ts_ifa_adapted" in prediction_names(data, "eval")
 
         values, _, _, window_average = horizon_values(
@@ -262,6 +280,14 @@ def main() -> None:
         assert auc == 1.0
         assert accuracy == 1.0
         assert count == 6
+        _, _, soft_auc, soft_accuracy, soft_count = gate_roc(
+            data,
+            "eval",
+            "catboost_cov_classifier_shared_soft",
+        )
+        assert soft_auc == 1.0
+        assert soft_accuracy == 1.0
+        assert soft_count == 6
         threshold_values = gate_threshold_sweep(
             data,
             "eval",
@@ -289,8 +315,8 @@ def main() -> None:
         ridge_values, candidates = ts_ifa_coefficients(data, "ridge_rooter")
         assert candidates == ["cov", "memory"]
         assert ridge_values.shape == (2, 3)
-        neural_values, _ = ts_ifa_coefficients(data, "neural_rooter_mean")
-        assert neural_values.shape == (2, 3)
+        rooter_values, _ = ts_ifa_coefficients(data, "rooter_mean")
+        assert rooter_values.shape == (2, 3)
 
         figure = plot_query_example(
             data,
@@ -318,9 +344,12 @@ def main() -> None:
                 "catboost_cov_classifier_shared",
             ),
             plot_ts_ifa_coefficients(data, "ridge_rooter"),
-            plot_ts_ifa_coefficients(data, "neural_rooter_mean"),
+            plot_ts_ifa_coefficients(data, "rooter_mean"),
         ):
             plt.close(figure)
+        close_memmaps(data)
+        del data
+        gc.collect()
     print("retrieval dashboard smoke check passed")
 
 

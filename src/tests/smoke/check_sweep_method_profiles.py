@@ -60,18 +60,29 @@ def main() -> None:
     assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 5
     assert 'EXPERIMENT_MODE=test permits only K=3' in text
 
-    for scale_front in (
-        "extraction.slurm",
-        "tables.slurm",
-        "ts_ifa.slurm",
-    ):
+    ts_ifa_fronts = (
+        "ts_ifa_joint_ridge.slurm",
+        "ts_ifa_joint_neural.slurm",
+        "ts_ifa_meta_ridge.slurm",
+        "ts_ifa_meta_neural.slurm",
+    )
+    for scale_front in ("extraction.slurm", "tables.slurm", *ts_ifa_fronts):
         front_text = (ROOT / scale_front).read_text(encoding="utf-8")
         assert "require_scale_experiment_mode || exit $?" in front_text
+    for variant, front in zip(
+        ("joint_ridge", "joint_neural", "meta_ridge", "meta_neural"),
+        ts_ifa_fronts,
+        strict=True,
+    ):
+        front_text = (ROOT / front).read_text(encoding="utf-8")
+        assert f"TS_IFA_VARIANT={variant}" in front_text
+        assert 'source "$PROJECT_ROOT/src/slurm/run_ts_ifa.sh"' in front_text
     for test_front in ("baselines.slurm", "gates.slurm"):
         front_text = (ROOT / test_front).read_text(encoding="utf-8")
         assert "require_test_experiment_mode || exit $?" in front_text
     assert not (ROOT / "run_all.sh").exists()
     assert not (ROOT / "univariate.slurm").exists()
+    assert not (ROOT / "ts_ifa.slurm").exists()
     assert not (ROOT / "src" / "slurm" / "run_univariate.sh").exists()
 
     common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")

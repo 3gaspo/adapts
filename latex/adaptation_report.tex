@@ -1,0 +1,1244 @@
+\documentclass[10pt]{article}
+
+\usepackage[a4paper,margin=16mm,headheight=14pt]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsfonts,mathtools,bm}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[round,authoryear]{natbib}
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!45!black,
+  citecolor=blue!45!black,
+  urlcolor=blue!45!black
+]{hyperref}
+\usepackage[capitalise,nameinlink,noabbrev]{cleveref}
+\usepackage{fancyhdr}
+
+\definecolor{maincolor}{HTML}{17365D}
+\definecolor{accentcolor}{HTML}{2B6F9C}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55\baselineskip}
+\setlist{nosep,leftmargin=*}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\renewcommand{\arraystretch}{1.12}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Retrieval-based forecast adaptation}
+\fancyhead[R]{\small Gaspard Berthelier}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\Tzero}{T_0}
+\newcommand{\Tone}{T_1}
+\newcommand{\Ttwo}{T_2}
+\newcommand{\Tpool}{T_{12}}
+\newcommand{\Tthree}{T_3}
+\newcommand{\avgy}{\overline{Y}}
+\newcommand{\sd}{\operatorname{sd}}
+\newcommand{\MSE}{\operatorname{MSE}}
+\newcommand{\nMSE}{\operatorname{nMSE}}
+\newcommand{\TopK}{\operatorname{TopK}}
+
+\title{\vspace{-1.5em}\textbf{Retrieval-Based Adaptation of \\Time Series Foundation Models}\vspace{-0.4em}}
+\author{Gaspard Berthelier}
+\date{4 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report describes my current work on retrieval-based adaptation for pretrained time series forecasting models. We briefly introduce notations,
+the literature context, and the implemented baselines as well as the proposed TS-IFA architecture.
+\end{abstract}
+
+\tableofcontents
+
+\section{Time Series Forecasting}
+\label{sec:forecasting}
+
+Let $\mathcal U=\{0,\ldots,U-1\}$ be a set of $U$ users or channels and
+$t\in\{0,\ldots,T-1\}$ the time index for the $T$ measured dates. For channel
+$u\in\mathcal U$, the univariate series is
+$z^{(u)}_0,\ldots,z^{(u)}_{T-1}$. We consider the setting of a fixed lookback length $L\geq1$ and forecast
+horizon $H\geq1$. Given a valid \emph{query date} $s$, the lookback and future horizon are
+\begin{align}
+ X_{s,u}
+ &= z^{(u)}_{(s-L,s]}
+  = (z^{(u)}_{s-L+1},\ldots,z^{(u)}_s)\in\reals^L,\\
+ Y_{s,u}
+ &= z^{(u)}_{(s,s+H]}
+  = (z^{(u)}_{s+1},\ldots,z^{(u)}_{s+H})\in\reals^H.
+\end{align}
+Thus the lookback length $L$ represents the number of observed values at a given time and the horizon $H$ is the number of target values to predict.
+
+A forecasting model is a parameterized map
+\[
+ F_\theta:\reals^L\longrightarrow\reals^H,
+ \qquad X_{s,u}\longmapsto \widehat Y_{s,u}.
+\]
+Here $\theta$ denotes the model parameters.
+
+Certain families of models allow the use of optional covariates. Let $C_{s,u}$ denote a set of covariate windows of size $L+H$ (horizon included).
+Whe using covariates, the prediction becomes $\widehat Y^{\rm cov}_{s,u}=F_\theta(X_{s,u};C_{s,u})$.
+
+For any $x=(x_1,\ldots,x_n)\in\reals^n$, define
+\[
+ \mu_x=\frac1n\sum_{k=1}^n x_k,
+ \qquad
+ \sigma_x=\sd(x)=\left(\frac1n\sum_{k=1}^n(x_k-\mu_x)^2\right)^{1/2},
+ \qquad \varepsilon=10^{-8}.
+\]
+
+For one sample, consisting of windows $(X,Y,\widehat Y)$, the principal losses are
+\[
+ \MSE(\widehat Y,Y)=\frac1H\sum_{h=1}^H(\widehat Y_h-Y_h)^2,
+ \qquad
+ \nMSE(\widehat Y,Y\mid X)
+ =\frac1H\sum_{h=1}^H
+ \left(\frac{\widehat Y_h-Y_h}{\max(\sigma_X,\varepsilon)}\right)^2.
+\]
+
+\section{Foundation Models}
+\label{sec:foundation-models}
+
+A time series Foundation Model (FM) is pretrained over many tasks and datasets, and directly reused on
+unseen series without updating its parameters. Indeed, their extensive training allows them to perform In-Context Learning (ICL),
+which means the model has learned to detect patterns within the input, as if it were a dataset on which it was fine-tuned.
+A few examples of FMs are provided below.
+
+\textbf{Chronos-2.} Chronos-2 is a 120M-parameter encoder-only foundation model
+whose group attention supports univariate, multivariate, and covariate-aware
+zero-shot forecasting \citep{chronos2}. In this project, we notably use context mode
+\code{future_included}: each covariate contributes its lookback as well as its observed horizon. The active
+code name is \code{chronos2}.
+
+\textbf{TabPFN-TS.} TabPFN-TS casts forecasting as tabular regression with time,
+seasonal, frequency, and optional covariate features, then performs ICL with a
+pretrained TabPFN regressor \citep{tabpfnts}. The project wrapper uses the
+\code{tabpfn-v2.5-regressor-v2.5_default.ckpt} checkpoint, automatically adds
+periods 24 and 168 when $L$ permits, and exposes the code name \code{tabpfnts}.
+
+\textbf{TS-ICL.} TS-ICL is a 27M-parameter time-indexed encoder--regressor
+Transformer for forecasting and imputation on regular or irregular timestamps
+\citep{tsicl}. It is part of the literature scope, but \code{ts_icl} is
+deliberately rejected by the current launcher because no wrapper is registered.
+
+\textbf{Chronos-Bolt.} The \code{chronos-bolt} wrapper supplies the frozen
+205M-parameter Chronos-Bolt-base backbone for the Cross-RAG comparison. It is
+univariate and ignores retrieved covariates; neighbour targets and forecasts
+remain available to the external adapter \citep{chronos,chronoscode}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Model names present in the Python registry or publication launchers.
+Trainable means parameters updated by this project, not total pretrained size.}
+\label{tab:model-registry}
+\begin{tabularx}{\linewidth}{@{}lXrr@{}}
+\toprule
+Code name & Role and current status & Total parameters & Trainable here \\
+\midrule
+\code{chronos2} & Primary screen/full backbone; frozen & 120M & 0 \\
+\code{tabpfnts} & Ultra backbone; frozen TabPFN-v2.5 regressor & $\approx11$M & 0 \\
+\code{chronos-bolt} & Fixed Cross-RAG backbone; frozen & 205M & 0 \\
+\code{persistence} & Python-registry diagnostic & 0 & 0 \\
+\code{linear} & Python-registry diagnostic, univariate & $H(L+1)$ & $H(L+1)$ \\
+\code{patchtst} & Registry diagnostic; not launched for publication
+& 466,843 / 663,091 / 1,762,603 & same \\
+\code{ts_icl} & Reserved shell name; not registered & 27M in the paper & not run \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The three PatchTST numbers in \cref{tab:model-registry} use the code defaults
+at $168{:}24$, $336{:}48$, and $504{:}168$, respectively. Publication
+experiments accept only the three frozen backbones listed first.
+
+\section{From RAG to retrieval-augmented forecasting}
+\label{sec:history}
+
+Retrieval-augmented generation separates a parametric model from an explicit,
+replaceable non-parametric memory. Classical RAG retrieves documents from a
+dense index and conditions a pretrained generator on them
+\citep{lewis2020rag}. In $k$NN-MT, a frozen neural machine-translation model
+caches decoder representations $k_i$ with next-token values $v_i$; at decoding
+state $q_t$, it interpolates the model and neighbour distributions
+\citep{khandelwal2021knnmt}. Let $p_\theta(\cdot\mid q_t)$ be the neural
+next-token distribution for candidate token $y_t$, let $\mathcal N_K(q_t)$
+contain the $K\geq1$ cached keys
+nearest to $q_t$ under distance $d$, and choose interpolation weight
+$\lambda\in[0,1]$ and temperature $\tau>0$. Then
+\[
+ p(y_t\mid q_t)
+ =(1-\lambda)p_\theta(y_t\mid q_t)
+ +\lambda\frac{\sum_{i\in\mathcal N_K(q_t)}
+ \mathbf1[v_i=y_t]\exp(-d(q_t,k_i)/\tau)}
+ {\sum_{i\in\mathcal N_K(q_t)}\exp(-d(q_t,k_i)/\tau)}.
+\]
+This is the direct ancestor of our question: can a frozen pretrained model be
+adapted cheaply by retrieving domain examples and mixing their outcomes?
+
+Time-series work has followed several paths: retrieved sequences can become a
+text prompt (TimeRAG), an appended context (RAF), an input to a model trained on
+the target dataset (RAFT), or values fused by pretrained attention modules
+(TS-RAG and Cross-RAG). Our method is narrower: the datastore is target-panel
+history, the backbone is frozen, and simple validated forecasts or gates are
+tested before a neural adapter.
+
+\small
+\begin{longtable}{@{}p{.12\linewidth}p{.13\linewidth}p{.25\linewidth}p{.42\linewidth}@{}}
+\caption{Bibliography map for pretrained retrieval and time-series forecasting.
+This is a method map, not a cross-paper accuracy ranking.}
+\label{tab:bibliography-map}\\
+\toprule
+Method & Date / venue & Retrieval object & Adaptation mechanism \\
+\midrule
+\endfirsthead
+\toprule
+Method & Date / venue & Retrieval object & Adaptation mechanism \\
+\midrule
+\endhead
+RAG \citep{lewis2020rag}
+& 2020, NeurIPS
+& Dense-indexed passages
+& Fine-tuned seq2seq generator combines parametric and non-parametric memory. \\
+$k$NN-MT \citep{khandelwal2021knnmt}
+& 2021, ICLR
+& Decoder state / next-token pairs
+& No retraining; interpolates neural and neighbour token distributions. \\
+RAF \citep{tire2024raf}
+& 2024 preprint; v2 2026
+& Related time-series contexts and futures
+& Normalises, aligns, and prepends retrieved examples to frozen TSFMs. \\
+TimeRAG \citep{yang2024timerag}
+& 2024 preprint; ICASSP 2025
+& DTW-similar historical sequences
+& Renders references and query as an LLM forecasting prompt. \\
+TS-RAG \citep{ning2025tsrag}
+& 2025, NeurIPS
+& Encoder-space context--future pairs
+& Pretrains projectors and an Adaptive Retrieval Mixer; no target-task tuning. \\
+RAFT \citep{han2025raft}
+& 2025, ICML
+& Correlated training inputs and following patches
+& Trains a shallow multiresolution forecasting MLP per target dataset. \\
+Cross-RAG \citep{lee2026crossrag}
+& 2026, KDD MILETS
+& Min--max lookback/future pairs, cosine search
+& Pretrained query--retrieval cross-attention with query-dependent and
+query-independent paths. \\
+This project
+& 2026
+& Raw or transformed historical lookback/future pairs
+& Closed-form baselines, CatBoost gates, and TS-IFA around a frozen backbone. \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Neighbour retrieval}
+\label{sec:retrieval}
+
+\subsection{Datastore and exact search}
+
+Fix a named retrieval transform $\rho$ and distance metric $\delta$. Their
+maps are
+\[
+ \phi=\phi_\rho:\reals^L\to\reals^{d_\rho},
+ \qquad
+ d=d_\delta:\reals^{d_\rho}\times\reals^{d_\rho}\to\reals_{\geq0},
+\]
+with every implemented $\phi_\rho$ and $d_\delta$ defined explicitly in
+\cref{tab:retrieval-spaces}. Here $d_\rho=L$ except for the encoder space;
+$g_\theta:\reals^L\to\reals^{d_{\rm enc}}$ denotes the frozen backbone
+representation after the configured flattening or pooling.
+
+For query $(s,u)$, let
+$\mathcal R_s=\{r_{s,0}<\cdots<r_{s,n_s^{\rm store}-1}\}$ be the ordered finite
+set of $n_s^{\rm store}=|\mathcal R_s|$ store dates in
+$\{L-1,\ldots,T-H-1\}$ that pass the fixed/online, period, stride, and cap
+rules in \cref{sec:practical}. The eligible store keys and the resulting
+labelled datastore are
+\[
+ \mathcal I_s=\mathcal R_s\times\mathcal U,
+ \qquad
+ \mathcal D_s
+ =\{(\phi(X_{r,v}),X_{r,v},Y_{r,v},r,v):(r,v)\in\mathcal I_s\}.
+\]
+For $K\in\{1,\ldots,|\mathcal I_s|\}$, let $\TopK^{\min}$ return the ordered
+$K$ minimizers. Exact search returns the following store keys:
+\[
+ \mathcal N_K(s,u)
+ =\TopK_{(r,v)\in\mathcal I_s}^{\min}
+ d\!\left(\phi(X_{s,u}),\phi(X_{r,v})\right).
+\]
+The datastore is flattened in \emph{user-major, date-minor} order. For
+$i\in\{0,\ldots,Un_s^{\rm store}-1\}$, a flat index decodes as
+\[
+ v=\left\lfloor\frac{i}{n_s^{\rm store}}\right\rfloor,
+ \qquad m=i\bmod n_s^{\rm store},
+ \qquad r=r_{s,m}.
+\]
+Downstream query payloads use the opposite, date-major ordering
+$(s_0,u_0),\ldots,(s_0,u_{U-1}),(s_1,u_0),\ldots$ so that whole dates form
+contiguous blocks for chronological splitting; $s_0<s_1<\cdots$ are the saved
+query dates and $u_k=k$ is the internal channel index.
+
+In \cref{tab:retrieval-spaces}, $X\in\reals^L$ is a generic lookback; in its
+distance rows, $a,b\in\reals^{d_\rho}$ are two transformed lookbacks and
+$x_{\min}=\min_{1\leq k\leq L}X_k$,
+$x_{\max}=\max_{1\leq k\leq L}X_k$,
+$a^\circ=a-\mu_a\mathbf1_{d_\rho}$,
+$b^\circ=b-\mu_b\mathbf1_{d_\rho}$ are their centred forms.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Implemented retrieval spaces and distances.}
+\label{tab:retrieval-spaces}
+\begin{tabularx}{\linewidth}{@{}llX@{}}
+\toprule
+Space & $\phi(X)$ & Status \\
+\midrule
+Raw & $X$ & Primary screen \\
+Instance & $(X-\mu_X\mathbf1_L)/(\sigma_X+\varepsilon)$ & Primary screen \\
+Min--max & $(X-x_{\min}\mathbf1_L)/\max(x_{\max}-x_{\min},\varepsilon)$ & Cross-RAG profile \\
+Fourier & $|\operatorname{FFT}((X-\mu_X\mathbf1_L)/(\sigma_X+\varepsilon))|$ & Optional ablation \\
+Encoder & flattened or pooled frozen representation $g_\theta(X)$ & Implemented override \\
+\midrule
+Euclidean & $\|a-b\|_2$ & Primary metric \\
+Cosine & $1-a^\top b/[\max(\|a\|_2,\varepsilon)\max(\|b\|_2,\varepsilon)]$ & Cross-RAG metric \\
+Pearson & $1-(a^\circ)^\top b^\circ/[\max(\|a^\circ\|_2,\varepsilon)\max(\|b^\circ\|_2,\varepsilon)]$ & Implemented override \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Saved information and query-scale transfer}
+
+For neighbour rank $j\in\{1,\ldots,K\}$ with
+$(r_j,v_j)\in\mathcal N_K(s,u)$, abbreviate
+$X_j=X_{r_j,v_j}$ and $Y_j=Y_{r_j,v_j}$, and let $d_j$ be its retrieval
+distance and $N_j=F_\theta(X_j)$ its frozen forecast. Also abbreviate the query
+as $X=X_{s,u}$ and $Y=Y_{s,u}$. Extraction saves the quantities in
+\cref{tab:retrieval-payload}; it stores $E_j=Y_j-N_j$ rather than duplicating
+$N_j$, which is reconstructed downstream.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Current extraction payload. Optional fields are generated only when
+their switches are enabled.}
+\label{tab:retrieval-payload}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Object & Saved content \\
+\midrule
+Query & $X,Y,V=F_\theta(X),C=F_\theta(X;\{X_j,Y_j\}_{j=1}^K)$ \\
+Neighbours & $X_j,Y_j,E_j=Y_j-N_j,d_j,r_j,v_j$ for $j=1,\ldots,K$ \\
+Indices & query date/user, neighbour date/user, eligible store-date/window counts \\
+Summaries & query and neighbour level/scale; forecast--context and residual losses \\
+Optional & context-conditioned neighbour residuals \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Retrieved values are expressed on the query scale before fitting. Write
+$q=(s,u)$ for the current query and let
+$(\mu_q,\sigma_q)=(\mu_X,\sigma_X)$ and
+$(\mu_j,\sigma_j)=(\mu_{X_j},\sigma_{X_j})$. For a neighbour-scale horizon
+vector $Z\in\reals^H$ or residual vector $E\in\reals^H$, define
+\begin{align}
+ \mathcal T_{j\to q}(Z)
+ &=\frac{Z-\mu_j\mathbf1_H}{\max(\sigma_j,\varepsilon)}\sigma_q
+   +\mu_q\mathbf1_H,\\
+ \mathcal T^{\rm res}_{j\to q}(E)
+ &=\frac{E}{\max(\sigma_j,\varepsilon)}\sigma_q.
+\end{align}
+All later symbols $Y_j,N_j,E_j$ denote these query-scale values.
+
+Distances are converted to weights independently for every query. Let
+$\bm d=(d_1,\ldots,d_K)$ be the ordered retrieved-distance vector and let
+$j,\ell\in\{1,\ldots,K\}$:
+\[
+ \widetilde d_j
+ =\frac{d_j-\min_\ell d_\ell}{\max(\sigma_{\bm d},\varepsilon)},
+ \qquad
+ w_j=\frac{e^{-\widetilde d_j}}{\sum_{\ell=1}^K e^{-\widetilde d_\ell}},
+ \qquad
+ \avgy_h=\sum_{j=1}^K w_jY_{j,h}.
+\]
+Thus $w_j\geq0$, $\sum_{j=1}^K w_j=1$, and $\avgy\in\reals^H$; for $K=1$,
+$w_1=1$.
+
+\section{Retrieval baselines}
+\label{sec:baselines}
+
+For extracted window $i$ with query $(s_i,u_i)$, define the target
+$G_i=Y_{s_i,u_i}\in\reals^H$, vanilla forecast $V_i\in\reals^H$,
+conditioned forecast $C_i\in\reals^H$, query-scale neighbour future and
+forecast $(Y_{i,j},N_{i,j})\in\reals^H\times\reals^H$ for
+$j\in\{1,\ldots,K\}$, and
+\[
+ V_i=F_\theta(X_{s_i,u_i}),\qquad
+ C_i=F_\theta(X_{s_i,u_i};\{X_{i,j},Y_{i,j}\}_{j=1}^K),\qquad
+ \avgy_i=\sum_{j=1}^K w_{i,j}Y_{i,j}.
+\]
+Each design is $(V_i,Z_{i,1},\ldots,Z_{i,p})$.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Baseline designs; $Z_i=(Z_{i,1},\ldots,Z_{i,p})$.}
+\label{tab:baseline-designs}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Stem & $Z_i$ & $p$ \\
+\midrule
+\code{cov} & $(C_i)$ & 1 \\
+\code{avgy} & $(\avgy_i)$ & 1 \\
+\code{y} & $(Y_{i,1},\ldots,Y_{i,K})$ & $K$ \\
+\code{cov_y} & $(C_i,Y_{i,1},\ldots,Y_{i,K})$ & $1+K$ \\
+\code{cov_avgy} & $(C_i,\avgy_i)$ & 2 \\
+\code{residual} & $(Y_{i,1},\ldots,Y_{i,K},N_{i,1},\ldots,N_{i,K})$ & $2K$ \\
+\code{full} & $(C_i,Y_{i,1},\ldots,Y_{i,K},N_{i,1},\ldots,N_{i,K})$ & $1+2K$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Let $\tau\in\{S,H\}$ denote shared or horizon-wise coefficients. For any
+coefficient vector $c$, set $c_h^S=c$ for every $h$, whereas
+$c_1^H,\ldots,c_H^H$ are fitted independently. Define the simplex
+$\mathcal S_p=\{\lambda\in\reals^{p+1}:\lambda_m\geq0,
+\sum_{m=0}^{p}\lambda_m=1\}$. The three families are
+\begin{align}
+ \widehat G^{R,\tau}_{i,h}
+ &=V_{i,h}+a_h^\tau V_{i,h}
+   +\sum_{m=1}^{p}b_{h,m}^\tau Z_{i,h,m},
+ &&(a_h^\tau,b_{h,1}^\tau,\ldots,b_{h,p}^\tau)\in\reals^{p+1},
+ \label{eq:ridge-family}\\
+ \widehat G^{C,\tau}_{i,h}
+ &=\lambda_{h,0}^\tau V_{i,h}
+   +\sum_{m=1}^{p}\lambda_{h,m}^\tau Z_{i,h,m},
+ &&\lambda_h^\tau\in\mathcal S_p,
+ \label{eq:convex-family}\\
+ \widehat G^{D,\tau}_{i,h}
+ &=V_{i,h}+\sum_{m=1}^{p}b_{h,m}^\tau
+   (Z_{i,h,m}-V_{i,h}),
+ &&b_h^\tau\in\reals^p.
+ \label{eq:delta-family}
+\end{align}
+Vanilla is recovered by $(a,b)=0$, $\lambda=(1,0,\ldots,0)$, or $b=0$.
+Ridge contains every convex forecast through
+$a=\lambda_0-1$ and $b_m=\lambda_m$. For \code{cov}, the formulas are
+$V+aV+bC$, $\lambda V+(1-\lambda)C$, and $V+b(C-V)$.
+
+Let $\mathcal Q_A$ be the windows in split $A\in\{\Tone,\Ttwo,\Tpool\}$,
+where $\Tpool=\Tone\cup\Ttwo$. For $\tau=S$, set
+$\mathcal O_A^S=\mathcal Q_A\times\{1,\ldots,H\}$; for the $h$th
+horizon fit, set $\mathcal O_A^{H,h}=\mathcal Q_A\times\{h\}$. Ridge and
+delta-ridge use correction target $t_{i,h}=G_{i,h}-V_{i,h}$ and design
+\[
+ d^R_{i,h}=(V_{i,h},Z_{i,h,1},\ldots,Z_{i,h,p})\in\reals^{p+1},
+ \qquad
+ d^D_{i,h}=(Z_{i,h,1}-V_{i,h},\ldots,Z_{i,h,p}-V_{i,h})\in\reals^p.
+\]
+For either $d\in\reals^q$ and an observation set $\mathcal O$, define
+\[
+ r_k=\max\!\left(
+  \sqrt{\frac1{|\mathcal O|}\sum_{(i,h)\in\mathcal O}d_{i,h,k}^2},10^{-12}
+ \right),
+ \qquad \widetilde d_{i,h,k}=d_{i,h,k}/r_k,
+\]
+and, for $\alpha\geq0$,
+\[
+ \widehat\gamma_{\alpha,\mathcal O}
+ =\arg\min_{\gamma\in\reals^{q}}
+ \frac1{|\mathcal O|}\sum_{(i,h)\in\mathcal O}
+ (t_{i,h}-\widetilde d_{i,h}^{\top}\gamma)^2
+ +\alpha\|\gamma\|_2^2,
+ \qquad
+ \widehat\beta_{\alpha,\mathcal O,k}
+ =\widehat\gamma_{\alpha,\mathcal O,k}/r_k.
+\]
+The grid is
+\[
+ \mathcal A=\{0,10^{-6},10^{-5},10^{-4},10^{-3},10^{-2},10^{-1},1,10\}.
+\]
+For each $\alpha\in\mathcal A$, coefficients fitted on $\Tone$ are scored by
+nMSE on $\Ttwo$; the minimizer (smallest $\alpha$ on ties) is refitted on
+$\Tpool$. Convex coefficients are fitted directly on $\Tpool$:
+\[
+ \widehat\lambda_{\mathcal O}
+ =\arg\min_{\lambda\in\mathcal S_p}
+ \frac1{|\mathcal O|}\sum_{(i,h)\in\mathcal O}
+ \left(G_{i,h}-\lambda_0V_{i,h}
+ -\sum_{m=1}^p\lambda_mZ_{i,h,m}\right)^2.
+\]
+Use $\mathcal O=\mathcal O_A^S$ for a shared fit and
+$\mathcal O=\mathcal O_A^{H,h}$ independently for each $h$; no intercept or
+centring is added. Chunked sufficient statistics give the exact objectives.
+
+\small
+\begin{longtable}{@{}p{.30\linewidth}p{.46\linewidth}p{.16\linewidth}@{}}
+\caption{Baseline names; substitute a stem from \cref{tab:baseline-designs}.}
+\label{tab:baselines}\\
+\toprule
+Artifact & Definition & Fitted scalars \\
+\midrule
+\endfirsthead
+\toprule
+Artifact & Definition & Fitted scalars \\
+\midrule
+\endhead
+\code{vanilla} & $V_{i,h}$ & 0 \\
+\code{cov_forecast} & $C_{i,h}$ & 0 \\
+\code{avgy} & $\avgy_{i,h}$ & 0 \\
+\code{y_mean} & $K^{-1}\sum_jY_{i,j,h}$ & 0 \\
+\midrule
+\code{<stem>_ridge_*} & \cref{eq:ridge-family}, $*=\code{shared}/\code{horizon}$ & $(p+1)$ / $H(p+1)$ \\
+\code{<stem>_convex_*} & \cref{eq:convex-family}, $*=\code{shared}/\code{horizon}$ & $(p+1)$ / $H(p+1)$ \\
+\code{<stem>_delta_ridge_*} & \cref{eq:delta-family}, $*=\code{shared}/\code{horizon}$ & $p$ / $Hp$ \\
+\bottomrule
+\end{longtable}
+\normalsize
+
+\section{Gates and features}
+\label{sec:gates}
+
+A gate compares $V_i$ with $A_i=C_i$ (\code{cov}) or
+$A_i=\avgy_i$ (\code{avgy}). Define the pointwise and shared candidate
+advantages
+\[
+ \Delta_{i,h}=(G_{i,h}-V_{i,h})^2-(G_{i,h}-A_{i,h})^2,
+ \qquad \overline\Delta_i=H^{-1}\sum_{h=1}^H\Delta_{i,h}.
+\]
+
+For $q=(q_1,\ldots,q_K)\in\reals^K$, define neighbour-weighted moments
+\[
+ \mu_{w_i}(q)=\sum_{j=1}^K w_{i,j}q_j,\qquad
+ \sigma_{w_i}(q)=
+ \left[\sum_{j=1}^K w_{i,j}(q_j-\mu_{w_i}(q))^2\right]^{1/2}.
+\]
+Let $\mu_h$ and $\sigma_h$ denote population moments over
+$h\in\{1,\ldots,H\}$. For neighbour $j$, set
+\begin{align*}
+ r^V_{i,j}&=\mu_h(Y_{i,j,h}-V_{i,h}),
+ &s^V_{i,j}&=\sigma_h(Y_{i,j,h}-V_{i,h}),\\
+ r^N_{i,j}&=\mu_h(Y_{i,j,h}-N_{i,j,h}),
+ &s^N_{i,j}&=\sigma_h(Y_{i,j,h}-N_{i,j,h}).
+\end{align*}
+Let $(r_{i,j},v_{i,j})$ be neighbour $j$'s date and channel, and define
+\[
+ \bm\ell_i=(\mu_{X_{i,1}},\ldots,\mu_{X_{i,K}}),\quad
+ \bm\rho_i=(\sigma_{X_{i,1}},\ldots,\sigma_{X_{i,K}}),\quad
+ \bm a_i=(s_i-r_{i,1},\ldots,s_i-r_{i,K}),
+\]
+\[
+ \bm w_i=(w_{i,1},\ldots,w_{i,K}),\qquad
+ \bm d_i=(d_{i,1},\ldots,d_{i,K}).
+\]
+The exact static vector $f_i^0\in\reals^{18}$ is
+\begin{align*}
+f_i^0=(&
+ \mu_{w_i}(\bm r_i^V),\sigma_{w_i}(\bm r_i^V),\mu_{w_i}(\bm s_i^V),
+ \mu_{w_i}(\bm r_i^N),\sigma_{w_i}(\bm r_i^N),\mu_{w_i}(\bm s_i^N),\\
+&\mu_{X_{s_i,u_i}},\sigma_{X_{s_i,u_i}},
+ \mu_{\bm\ell_i},\sigma_{\bm\ell_i},\mu_{\bm\rho_i},\sigma_{\bm\rho_i},
+ K^{-1}\textstyle\sum_{j=1}^K\mathbf1[v_{i,j}=u_i],\\
+&\mu_{\bm a_i},\sigma_{\bm a_i},\sigma_{\bm w_i},
+ \max_j w_{i,j},\mu_{\bm d_i}),
+\end{align*}
+where $\bm r_i^V=(r^V_{i,j})_{j=1}^K$ and analogously for
+$\bm s_i^V,\bm r_i^N,\bm s_i^N$. The shared and horizon feature vectors are
+\begin{align}
+ f_i^S={}&(\mu_h(A_{i,h}-V_{i,h}),\sigma_h(A_{i,h}-V_{i,h}),f_i^0)
+ \in\reals^{20},\label{eq:shared-gate-features}\\
+ f_{i,h}^H={}&(A_{i,h}-V_{i,h},
+ \mu_{w_i}((Y_{i,j,h}-V_{i,h})_j),
+ \sigma_{w_i}((Y_{i,j,h}-V_{i,h})_j),\notag\\
+ &\mu_{w_i}((Y_{i,j,h}-N_{i,j,h})_j),
+ \sigma_{w_i}((Y_{i,j,h}-N_{i,j,h})_j),f_i^0)
+ \in\reals^{23}.\label{eq:horizon-gate-features}
+\end{align}
+
+For shape $\tau\in\{S,H\}$, write
+$z_i^S=\overline\Delta_i$, $z_{i,h}^H=\Delta_{i,h}$,
+$f_i^S$ as in \cref{eq:shared-gate-features}, and $f_{i,h}^H$ as in
+\cref{eq:horizon-gate-features}. A shared model is fitted once; a horizon
+model is fitted independently for each $h$. CatBoost scores are
+\[
+ g^{\mathrm{reg},\tau}=\operatorname{CBReg}(f^\tau),\qquad
+ g^{\mathrm{cls},\tau}
+ =\Pr_{\operatorname{CBCls}}(z^\tau>0\mid f^\tau)-\tfrac12.
+\]
+The tree count is selected on $\Ttwo$ after fitting on $\Tone$, then the model
+is refitted on $\Tpool$ with that count. Define
+\[
+ q^{\mathrm{hard},\tau}=\mathbf1[g^\tau>0],\qquad
+ \widehat G^{\mathrm{hard},\tau}_{i,h}
+ =(1-q_{i,h}^{\mathrm{hard},\tau})V_{i,h}
+ +q_{i,h}^{\mathrm{hard},\tau}A_{i,h},
+\]
+with $q_{i,h}^{\cdot,S}=q_i^{\cdot,S}$. For soft output, let
+$\operatorname{sigmoid}(x)=(1+e^{-x})^{-1}$ and
+\[
+ s^S=\sd((z_i^S)_{i\in\mathcal Q_{\Tpool}}),\qquad
+ s_h^H=\sd((z_{i,h}^H)_{i\in\mathcal Q_{\Tpool}}).
+\]
+Writing $s^\tau$ for the matching shared or $h$th-horizon scale,
+\[
+ p^{\mathrm{cls},\tau}=g^{\mathrm{cls},\tau}+\tfrac12,\qquad
+ p^{\mathrm{reg},\tau}=
+ \begin{cases}
+ \operatorname{sigmoid}(g^{\mathrm{reg},\tau}/s^\tau),&s^\tau>10^{-12},\\
+ 0,&s^\tau\leq10^{-12},\ g^{\mathrm{reg},\tau}<0,\\
+ \tfrac12,&s^\tau\leq10^{-12},\ g^{\mathrm{reg},\tau}=0,\\
+ 1,&s^\tau\leq10^{-12},\ g^{\mathrm{reg},\tau}>0,
+ \end{cases}
+\]
+\[
+ \widehat G^{\mathrm{soft},\tau}_{i,h}
+ =(1-p_{i,h}^\tau)V_{i,h}+p_{i,h}^\tau A_{i,h}.
+\]
+For shared output, $p_{i,h}^{\cdot,S}=p_i^{\cdot,S}$ for every $h$.
+The no-feature Bayes scores and scored-split oracle scores are
+\[
+ g^{B,S}=|\mathcal Q_{\Tpool}|^{-1}\sum_{i\in\mathcal Q_{\Tpool}}
+ \overline\Delta_i,\quad
+ g_h^{B,H}=|\mathcal Q_{\Tpool}|^{-1}\sum_{i\in\mathcal Q_{\Tpool}}
+ \Delta_{i,h},\quad
+ g_i^{O,S}=\overline\Delta_i,\quad g_{i,h}^{O,H}=\Delta_{i,h},
+\]
+and use the hard rule above.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Gate names for $A\in\{\code{cov},\code{avgy}\}$; $\tau=S/H$.}
+\label{tab:gate-models}
+\begin{tabularx}{\linewidth}{@{}lXr@{}}
+\toprule
+Name pattern & Definition & Fitted scalars / proxy \\
+\midrule
+\code{bayes_<A>_shared/horizon} & $g^{B,\tau}$, hard & $1$ / $H$ \\
+\code{catboost_<A>_regressor_shared/horizon} & $g^{\mathrm{reg},\tau}$, hard & $\leq6000$ / $\leq6000H$ \\
+\code{catboost_<A>_classifier_shared/horizon} & $g^{\mathrm{cls},\tau}$, hard & $\leq6000$ / $\leq6000H$ \\
+\code{catboost_<A>_*_shared/horizon_soft} & same fit, soft output & 0 additional \\
+\code{oracle_<A>_shared/horizon} & $g^{O,\tau}$, hard & 0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+CatBoost uses at most 300 depth-4 trees, learning rate 0.03, 50-round early
+stopping, and balanced classifier classes \citep{prokhorenkova2018catboost}.
+The proxy is $300(16\text{ leaf}+4\text{ split})=6000$. Screen uses only hard
+shared regressors; classifier, soft-regressor, and horizon-regressor forms are
+one-axis ablations.
+
+\section{Practical protocol}
+\label{sec:practical}
+
+\subsection{Chronological regions and window eligibility}
+
+For the $T$ dates introduced in \cref{sec:forecasting}, extraction computes
+exclusive boundaries, where $\operatorname{round}$ means nearest-integer
+rounding and $[a,b)=\{a,a+1,\ldots,b-1\}$ for integer dates:
+\[
+ b_0=\operatorname{round}(0.30T),\qquad
+ b_{12}=\operatorname{round}(0.80T),\qquad b_3=T.
+\]
+The extraction regions are the fixed datastore region $\Tzero=[0,b_0)$,
+pooled adaptation region $\Tpool=[b_0,b_{12})$, and held-out evaluation
+region $\Tthree=[b_{12},T)$. For a target period
+$[b,e)$, eligible query dates are
+\[
+ s\in
+ \left[\max(L-1,b-1),\ \min(T-H-1,e-H-1)\right]
+\]
+at the configured query stride. Hence the first target may start at $b$ with
+query index $b-1$; its lookback may cross the boundary, but its complete target
+must be inside $[b,e)$. Changing $L$ therefore preserves $\Tthree$ target dates
+whenever both runs remain eligible.
+
+Each downstream learner re-splits $\Tpool$ by unique query date. If
+$n_{12}\geq2$ dates are present and the validation fraction is $\rho=0.2$,
+\[
+ n_2=\min(n_{12}-1,\max(1,\operatorname{round}(\rho n_{12}))),
+ \qquad n_1=n_{12}-n_2.
+\]
+The first $n_1$ and last $n_2$ whole dates form $\Tone$ and $\Ttwo$,
+respectively, so $\Tpool=\Tone\cup\Ttwo$ and the two sets are disjoint; users
+on the same date are never split.
+
+\subsection{Dynamically aligned datastores}
+
+Let $P$ be the retrieval period and $D_{\rm stride}$ the datastore stride,
+with $P\mid D_{\rm stride}$. Before optional explicit history bounds, define
+the admissible endpoint pair
+\[
+ (a_s,b_s)=
+ \begin{cases}
+  (L-1,b_0-H-1),&\text{fixed mode},\\
+  (L-1,s-H),&\text{online mode}.
+ \end{cases}
+\]
+The first phase-aligned candidate is
+$r_s^{\rm align}=a_s+((s-a_s)\bmod P)$, and the uncapped date grid is
+\[
+ \mathcal G_s=\{r_s^{\rm align}+\ell D_{\rm stride}:\ell\in\mathbb N_0,\
+ r_s^{\rm align}+\ell D_{\rm stride}\leq b_s\}.
+\]
+Let $\operatorname{Tail}_M(\mathcal G)$ denote the $M$ most recent ordered
+elements of $\mathcal G$, with
+$\operatorname{Tail}_{+\infty}(\mathcal G)=\mathcal G$. Let $M_s$ be the
+minimum of the active date cap, the
+window-derived cap $\lfloor W_{\max}/U\rfloor$, and, in default online mode,
+the number of dates in the fixed-mode grid for the same $s$; an absent cap is
+$+\infty$, and \code{full_online_history} omits the last term. The code returns
+\[
+ \mathcal R_s=\operatorname{Tail}_{M_s}(\mathcal G_s).
+\]
+Thus every $r\in\mathcal R_s$ satisfies
+\[
+ (s-r)\bmod P=0.
+\]
+In fixed mode, both $(r-L,r]$ and $(r,r+H]$ lie in $\Tzero$. In online mode,
+\[
+ r\geq L-1,\qquad r+H\leq s,
+\]
+so the neighbour future is already observed. It may overlap the query
+lookback, but never the query target.
+
+Without an explicit override, the code first counts the phase-aligned dates
+that a fixed $\Tzero$ store would provide for the current query. The online
+store then keeps that many \emph{most recent} eligible dates, subject to the
+30,000-window cap. Thus the store slides forward without growing merely
+because the query is later. \code{full_online_history} removes this implicit
+date-count cap; explicit date and window caps still apply. Defaults are
+$P=96$ samples for ETTm1, ETTm2, ETT\_T\_15T, and ETT\_L\_15T, and $P=24$
+otherwise. An implicit datastore stride is rounded upward to a multiple of
+$P$.
+
+\subsection{Fitting and leakage controls}
+
+\begin{table}[H]
+\centering
+\small
+\caption{What each chronological region may influence.}
+\label{tab:fit-protocols}
+\begin{tabularx}{\linewidth}{@{}lXXX@{}}
+\toprule
+Family & $\Tone$ & $\Ttwo$ & $\Tthree$ \\
+\midrule
+Convex mixtures & diagnostic fit & final fit on pooled $\Tpool$ & score once \\
+Ridge baselines & fit all $\alpha$ & select $\alpha$; refit pooled & score once \\
+Fixed-candidate CatBoost & fit up to 300 trees & select tree count; fresh pooled refit & score once \\
+TS-IFA joint & optimize branches and one rooter & select and restore checkpoint & score once \\
+TS-IFA meta & chronological support/query outer updates & fit active frozen-branch rooter & score once \\
+Oracle diagnostics & -- & -- & target-aware appendix bound only \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Ridge sufficient statistics are accumulated exactly in float64 chunks. Optional
+sample caps affect fitting only; final $\Tthree$ scoring always uses every saved
+sample. A future gate over a trainable candidate must train that candidate on
+$\Tone$ and the gate on $\Ttwo$ without pooled refitting, unless out-of-fold
+candidate predictions are introduced.
+
+Dataset loaders discover \code{config.json} beside the selected CSV. Portable
+fields live at the JSON top level and adaptation-only overrides under
+\code{adaptation}. Project-scoped values override shared values, explicit run
+arguments override both, and \code{drop_users} is additive. The resolved path,
+content hash, and applied keys are recorded in the extraction manifest.
+
+\section{TS-IFA}
+\label{sec:tsifa}
+
+TS-IFA is a lightweight neural adapter around the frozen backbone
+$F:=F_\theta$. We again suppress $(s,u)$, so $X=X_{s,u}$ and $Y=Y_{s,u}$;
+all following values are on the query scale:
+\[
+ p=F(X),\qquad p^c=F(X;\{X_j,Y_j\}_{j=1}^K),\qquad
+ n_j=F(X_j),\qquad e_j=Y_j-n_j.
+\]
+
+\subsection{Candidate branches}
+
+Define the learned maps
+\begin{align*}
+ A_r&:\reals^{L+H}\times(\reals^{L+H})^K\times(\reals^H)^K\to\reals^H,
+ &M_r&:\reals^{2H}\to\reals^H,\\
+ A_m&:\reals^L\times(\reals^L)^K\times(\reals^H)^K\to\reals^H,
+ &M_m&:\reals^{2H}\to\reals^H.
+\end{align*}
+$A_r,A_m$ are multi-head cross-attention maps and $M_r,M_m$ are correction
+MLPs. Residual attention compares query and neighbour \emph{states}:
+\begin{align}
+ q_r&=[X,p],& k_j^r&=[X_j,n_j],& v_j^r&=e_j,\\
+ z_r&=A_r(q_r,\{k_j^r\},\{v_j^r\}),&
+ c_r&=p+M_r([p,z_r]).
+\end{align}
+Memory attention reads realised neighbour horizons directly:
+\[
+ z_m=A_m(X,\{X_j\},\{Y_j\}),
+ \qquad c_m=p+M_m([p,z_m]).
+\]
+The default candidate bank is
+$\mathcal C=(c_0,c_1,c_2,c_3)=(p,p^c,c_r,c_m)$.
+The rooters exclude $c_0$ and operate on the three non-vanilla deltas
+$d_j=c_j-p$, $j\in\{1,2,3\}$. Fixed and learned transformed covariates are a
+separate experiment rather than TS-IFA candidates.
+
+\subsection{Neural and ridge rooters}
+
+The neural rooter receives no handcrafted distances or dispersion features.
+Its learned attention map is
+$A_g:\reals^L\times(\reals^L)^K\times(\reals^L)^K\to\reals^{d_g}$,
+where $d_g$ is the configured representation width:
+\[
+ z_g=A_g(X,\{X_j\},\{X_j\})\in\reals^{d_g}.
+\]
+For the learned type embedding $\tau_j\in\reals^{d_g}$ of delta $d_j$,
+with $j\in\{1,2,3\}$,
+let $\operatorname{LN}$ denote dimension-preserving layer normalization and
+let $S_\omega:\reals^{2d_g+2H}\to\reals^H$ be the shared MLP scorer. It returns
+the unconstrained horizon vector
+\begin{align}
+ a_j&=S_\omega\!\left([
+ \operatorname{LN}(z_g),\operatorname{LN}(p),
+ \operatorname{LN}(d_j),\operatorname{LN}(\tau_j)
+ ]\right)\in\reals^H,\\
+ \widehat Y_{\rm neural}&=p+\sum_{j=1}^{3}a_j\odot d_j,
+ \qquad a_j\in\reals^H.
+\end{align}
+Here $\omega$ denotes all neural-rooter parameters: $A_g$, its layer
+normalizations, the type embeddings, and the shared scorer.
+There is no sigmoid, softmax, or convexity constraint. The vanilla fallback is
+$a_j=0$ for every candidate.
+
+The ridge rooter is horizon-wise on the same candidate deltas. In the joint
+variant its free coefficient matrix is $\nu\in\reals^{3\times H}$ and is updated
+by gradient descent with the branches. Only the meta variant uses the following
+closed-form solve.
+For any non-empty fit set $\mathcal A$, let
+$d_{i,j,h}$ be the horizon-$h$ delta of candidate $j$ on window $i$. Let
+$n_{\mathcal A}=|\mathcal A|\geq1$. The differentiable meta-solve uses
+$\epsilon_{\rm meta}=10^{-8}$ and the final fit uses
+$\epsilon_{\rm fit}=10^{-12}$:
+\[
+ s_{j,h}^{(d,\mathcal A)}=
+ \begin{cases}
+  \sqrt{n_{\mathcal A}^{-1}\sum_{i\in\mathcal A}d_{i,j,h}^2
+   +\epsilon_{\rm meta}^2},&\text{differentiable meta-solve},\\
+  \max\!\left(\sqrt{n_{\mathcal A}^{-1}\sum_{i\in\mathcal A}d_{i,j,h}^2},
+   \epsilon_{\rm fit}\right),&\text{final fit},
+ \end{cases}
+ \qquad \widetilde d_{i,j,h}=d_{i,j,h}/s_{j,h}^{(d,\mathcal A)}.
+\]
+For ridge penalty $\alpha>0$, the standardized coefficient matrix is
+\[
+ \Gamma^*_{\mathcal A}(\theta_b)=\arg\min_{\Gamma\in\reals^{3\times H}}
+ \sum_{i\in\mathcal A}\sum_{h=1}^H
+ \left(Y_{i,h}-p_{i,h}
+  -\sum_{j=1}^{3}\Gamma_{j,h}\widetilde d_{i,j,h}\right)^2
+ +\alpha\|\Gamma\|_F^2,
+ \qquad \nu^*_{\mathcal A,j,h}(\theta_b)
+ =\Gamma^*_{\mathcal A,j,h}(\theta_b)/s_{j,h}^{(d,\mathcal A)},
+\]
+where $\|\cdot\|_F$ is the Frobenius norm. The ridge prediction is
+$p_{i,h}+\sum_{j=1}^{3}\nu_{j,h}d_{i,j,h}$. Both ridge variants have exactly
+$3H$ coefficients; $\alpha=10^{-2}$ applies to meta-ridge solves only.
+
+\subsection{Training and initialization}
+
+Let $\theta_b$ collect the parameters of $c_r$ and $c_m$, and let
+$\mathcal B=\{c_r,c_m\}$. For minibatch index set $\mathcal A$, active-rooter
+parameters $\psi\in\{\nu,\omega\}$, and coefficients $a_{i,j,h}$, define
+\begin{align}
+ \mathcal L_B^{\mathcal A}(\theta_b)
+ &=\sum_{c\in\mathcal B}\nMSE_{\mathcal A}(c,Y)
+ +\lambda_V\sum_{c\in\mathcal B}\nMSE_{\mathcal A}(c,p),\\
+ \mathcal L_R^{\mathcal A}(\theta_b,\psi)
+ &=\nMSE_{\mathcal A}(\widehat Y,Y)+\lambda_V\nMSE_{\mathcal A}(\widehat Y,p)
+ +\frac{\lambda_2}{3|\mathcal A|H}\sum_{i,j,h}a_{i,j,h}^2
+ +\frac{\lambda_S}{3|\mathcal A|(H-1)}\sum_{i,j,h<H}
+ (a_{i,j,h+1}-a_{i,j,h})^2.
+\end{align}
+The last term is zero for $H=1$. Active values are
+$\lambda_V=\lambda_2=\lambda_S=10^{-2}$ and $\lambda_B=0.1$.
+
+The two joint variants use all of $\Tone$:
+\begin{align}
+ (\theta_b^*,\nu^*)&=\arg\min_{\theta_b,\nu}
+ \mathcal L_R^{\Tone}(\theta_b,\nu)+\lambda_B\mathcal L_B^{\Tone}(\theta_b),
+ &&\text{joint ridge},\\
+ (\theta_b^*,\omega^*)&=\arg\min_{\theta_b,\omega}
+ \mathcal L_R^{\Tone}(\theta_b,\omega)+\lambda_B\mathcal L_B^{\Tone}(\theta_b),
+ &&\text{joint neural}.
+\end{align}
+AdamW updates both parameter blocks. Joint ridge never uses a closed-form solve.
+The minimum-$\nMSE$ complete checkpoint on $\Ttwo$ is restored, then scored once
+on $\Tthree$; no joint rooter is refitted on $\Ttwo$.
+
+For meta learning, split $\Tone$ by whole query dates into earlier support
+$\mathcal S_1$ and later query $\mathcal Q_1$. Meta ridge computes
+\begin{align}
+ \nu_e^*(\theta_b)&=\nu^*_{\mathcal S_1^{(e)}}(\theta_b),\\
+ \theta_b^*&=\arg\min_{\theta_b}
+ \mathcal L_R^{\mathcal Q_1^{(e)}}(\theta_b,\nu_e^*(\theta_b))
+ +\lambda_B\mathcal L_B^{\mathcal Q_1^{(e)}}(\theta_b),
+\end{align}
+differentiating through each exact standardized $3\times3$ solve. It freezes
+$\theta_b^*$ and fits $\nu^*_{\Ttwo}(\theta_b^*)$ in closed form.
+Meta neural starts from learned $\omega^{(0)}=\omega$ and takes
+\[
+ \omega^{(k+1)}=\omega^{(k)}-\eta_{\rm in}
+ \nabla_{\omega^{(k)}}\mathcal L_R^{\mathcal S_1^{(e)}}
+ (\theta_b,\omega^{(k)}).
+\]
+Its query loss updates $\theta_b$ and the initialization $\omega$; first-order
+MAML is the default. It then freezes $\theta_b$ and fits only $\omega$ on all
+$\Ttwo$. Both meta variants score $\Tthree$ once. The default query fraction is
+0.2, $K_{\rm in}=1$, and $\eta_{\rm in}=10^{-3}$.
+
+Output-zero initialization of $M_r$, $M_m$, the neural scorer, and the free
+joint-ridge matrix gives $c_r=c_m=p$, $a_j=0$, and $\widehat Y=p$ at step zero.
+All AdamW stages use learning rate $10^{-5}$, weight decay $10^{-4}$, batch size
+256, and 10,000 one-random-batch epochs outside smoke mode. The exact variant,
+split, optimizer, regularizers, widths, caps, and seed enter the completion
+signature.
+
+\iffalse
+Let $\theta_b$ collect the parameters of $c_r$ and $c_m$, and let
+$\mathcal B=\{c_r,c_m\}$. Split $\Tone$ by whole query dates into an earlier
+support set $\mathcal S_1$ and a later query set $\mathcal Q_1$; the active
+query fraction is 0.2. Episode $e$ samples minibatches
+$\mathcal S_1^{(e)}\subseteq\mathcal S_1$ and
+$\mathcal Q_1^{(e)}\subseteq\mathcal Q_1$. Solve
+$\nu^*_{\mathcal S_1^{(e)}}(\theta_b)$ exactly by the preceding $3\times3$
+horizon-wise systems. Starting from the learned neural initialization
+$\omega^{(0)}=\omega$, take $K_{\rm in}$ support steps
+\[
+ \omega^{(k+1)}=\omega^{(k)}-\eta_{\rm in}
+ \nabla_{\omega^{(k)}}\mathcal L_R^{\mathcal S_1^{(e)}}
+ (\theta_b,\omega^{(k)}),\qquad k=0,\ldots,K_{\rm in}-1.
+\]
+The outer objective is evaluated only on the later query minibatch:
+\begin{align}
+ \mathcal L_{\rm meta}
+ &=\lambda_{\rm ridge}\,
+ \mathcal L_{\rm ridge}^{\mathcal Q_1^{(e)}}
+ (\theta_b,\nu^*_{\mathcal S_1^{(e)}}(\theta_b))
+ +\lambda_{\rm neural}\,
+ \mathcal L_R^{\mathcal Q_1^{(e)}}(\theta_b,\omega^{(K_{\rm in})})
+ +\lambda_B\mathcal L_B^{\mathcal Q_1^{(e)}}.
+\end{align}
+AdamW updates $\theta_b$ and the initialization $\omega$ from this objective.
+The ridge term is differentiated through the exact solve. Neural adaptation uses
+first-order MAML by default; full higher-order differentiation is configurable.
+
+After meta-training, $\theta_b$ is frozen. Let $\mathcal Q_2$ denote the index
+set of all $\Ttwo$ windows. The final ridge coefficients are
+$\nu^*_{\mathcal Q_2}(\theta_b)$, while the neural rooter starts
+from the learned $\omega$ and is fine-tuned on all $\Ttwo$. $\Tthree$ is scored
+once with no selection or refit:
+\[
+ \Tone:(\mathcal S_1\rightarrow\mathcal Q_1)_{\rm bilevel}
+ \longrightarrow \Ttwo:\{\nu^*,\omega_{\rm fit}\}
+ \longrightarrow \Tthree:\text{evaluation}.
+\]
+
+Let $\widehat Y=\widehat Y_{\rm neural}$ and set
+$\lambda_V=\lambda_2=\lambda_S=10^{-2}$. Every nMSE below suppresses the
+conditioning ``$\mid X$'' from \cref{sec:forecasting} and averages that
+per-window expression over the minibatch. Let $\mathcal S_{\rm mb}$ be the
+minibatch index set, $B_{\rm mb}=|\mathcal S_{\rm mb}|$, and
+$a_{i,j,h}$ the neural-rooter coefficient for its window $i$. The branch and
+rooter losses are
+\begin{align}
+ \mathcal L_B
+ &=\sum_{c\in\mathcal B}\nMSE(c,Y)
+ +\lambda_V\sum_{c\in\mathcal B}\nMSE(c,p),\\
+ \mathcal L_R
+ &=\nMSE(\widehat Y,Y)+\lambda_V\nMSE(\widehat Y,p)
+ +\frac{\lambda_2}{3B_{\rm mb}H}
+ \sum_{i\in\mathcal S_{\rm mb}}\sum_{j=1}^{3}\sum_{h=1}^H a_{i,j,h}^2
+ +\frac{\lambda_S}{3B_{\rm mb}(H-1)}
+ \sum_{i\in\mathcal S_{\rm mb}}\sum_{j=1}^{3}\sum_{h=1}^{H-1}
+ (a_{i,j,h+1}-a_{i,j,h})^2.
+\end{align}
+The last term applies when $H>1$ and is defined as zero when $H=1$.
+The ridge query loss has the first two terms of $\mathcal L_R$, with ridge
+regularization applied in its support solve. Active meta weights are
+$\lambda_{\rm ridge}=\lambda_{\rm neural}=1$ and $\lambda_B=0.1$;
+$K_{\rm in}=1$ and $\eta_{\rm in}=10^{-3}$. Outer and final-rooter AdamW use
+learning rate $10^{-5}$, weight decay $10^{-4}$, batch size 256, and 10,000
+one-random-batch epochs outside smoke mode.
+Output-zero initialization of $M_r$, $M_m$, and the shared rooter scorer gives
+$c_r=c_m=p$, $a_j=0$, and $\widehat Y=p$ at step zero.
+The result manifest stores the exact launcher training signature; a changed
+split, optimizer, regularizer, model width, sample cap, or seed is incomplete
+under the old signature and must be rerun.
+\fi
+
+\subsection{Parameter counts}
+
+The active configuration uses four attention heads, per-head dimension 32,
+128-unit hidden layers, and three rooter deltas. $K$ affects compute and memory,
+not parameter count.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Exact current TS-IFA parameter counts, reproduced by the implementation
+and synchronized \code{config.json} artifacts.}
+\label{tab:tsifa-counts}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$L$ & $H$ & Branches & Neural rooter & Full neural & Branches + ridge \\
+\midrule
+168 & 24  & 522,080 & 323,576 & 845,656 & 522,152 \\
+336 & 48  & 645,056 & 397,424 & 1,042,480 & 645,200 \\
+504 & 168 & 915,872 & 508,616 & 1,424,488 & 916,376 \\
+512 & 64  & 759,808 & 471,232 & 1,231,040 & 760,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $512{:}64$, the default ridge rooter has $3H=192$ coefficients.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Adaptation-parameter comparison at the released Cross-RAG
+$512{:}64$ setting. Frozen backbone parameters are excluded from the first
+numeric column. External counts follow the released implementations
+\citep{tsragcode,crossragcode}.}
+\label{tab:parameter-comparison}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Method & Trainable adaptation params. & $\times$ TS-IFA & Share of backbone \\
+\midrule
+TS-IFA neural & 1,231,040 & 1.00 & 1.03\% of Chronos-2 \\
+TS-IFA branches + ridge & 760,000 & 0.62 & 0.63\% of Chronos-2 \\
+TS-RAG added modules & 4,775,425 & 3.88 & 2.33\% of Bolt-base \\
+Cross-RAG added modules & 8,712,192 & 7.08 & 4.25\% of Bolt-base \\
+Full horizon ridge baseline, $K=3$ & 512 & 0.00042 & 0.00025\% of Bolt-base \\
+One shared CatBoost gate & $\leq6,000$ proxy & $\leq0.0049$ & $\leq0.005$\% of Chronos-2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experimental design}
+\label{sec:experiments}
+
+\subsection{Datasets and model profiles}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Dataset panels and their roles. All non-date variates are retained
+for ETT, Weather, and Exchange.}
+\label{tab:datasets}
+\begin{tabularx}{\linewidth}{@{}p{.19\linewidth}p{.21\linewidth}X@{}}
+\toprule
+Role & Datasets & Preparation \\
+\midrule
+Primary screen
+& Electricity, Traffic, Solar, exchange\_rate
+& Hourly Electricity/Traffic; Solar is summed from 10-minute to hourly;
+Exchange is daily. Electricity drops the nine configured channels. \\
+Full homogeneous panels
+& ETT\_T\_1H, ETT\_L\_1H, ETT\_T\_15T, ETT\_L\_15T
+& Temperature and load are separated. Hourly panels use $P=24$; 15-minute
+panels use $P=96$. \\
+Mixed-quantity ablation
+& ETTh1, ETTh2, ETTm1, ETTm2, Weather
+& Original seven-variable ETT panels; Weather is hourly mean aggregation.
+Cross-variable retrieval is reported only as an ablation. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Resolved experiment profiles. A selected winner name fixes family,
+formula, retrieval space, metric, $K$, and online mode.}
+\label{tab:profiles}
+\begin{tabularx}{\linewidth}{@{}p{.105\linewidth}p{.20\linewidth}p{.18\linewidth}p{.15\linewidth}X@{}}
+\toprule
+Profile & Datasets & $(L,H)$ & Backbone & Retrieval / methods \\
+\midrule
+\code{test} & Electricity & $504{:}168$ & Chronos-2 & raw Euclidean, $K=3$; smoke-only \\
+\code{screen} & four primary & $168{:}24,336{:}48,504{:}168$ & Chronos-2
+& raw/instance Euclidean, $K\in\{1,3\}$; 10 baselines and 8 gate/reference artifacts \\
+\code{full} & primary + four separated ETT & default three & Chronos-2
+& selected complete screen pipelines only \\
+\code{ultra} & same as full & default three & Chronos-2, TabPFN-TS
+& same winners and output root as full \\
+\code{crossrag} & four primary & $512{:}64$ & Chronos-Bolt
+& min--max cosine, $K=15$; one winner vs. released Cross-RAG \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Let
+\[
+ \mathcal D_P=\{\text{Electricity, Traffic, Solar, exchange\_rate}\},\quad
+ \mathcal S=\{168{:}24,336{:}48,504{:}168\},
+\]
+\[
+ \mathcal R=\{\text{raw, instance}\}\times\{\text{Euclidean}\}
+ \times\{K=1,3\}\times\{\text{online}\},
+\]
+and let $\mathcal D_B$ be the seven stems in
+\cref{tab:baseline-designs}. The $12=|\mathcal D_P||\mathcal S|$ screen
+settings test, for every $r\in\mathcal R$,
+\[
+ \mathcal B_{\rm screen}
+ =\{\code{cov_forecast},\code{avgy},\code{y_mean}\}
+ \cup\{\code{<d>_ridge_shared}:d\in\mathcal D_B\},
+\]
+\[
+ \mathcal G_{\rm screen}
+ =\bigcup_{A\in\{\code{cov},\code{avgy}\}}
+ \{\code{direct_<A>},\code{bayes_<A>_shared},
+ \code{catboost_<A>_regressor_shared},\code{oracle_<A>_shared}\},
+\]
+where \code{direct_cov}=\code{cov_forecast} and
+\code{direct_avgy}=\code{avgy}. Thus the baseline and gate screens contain
+10 and 8 artifacts per retrieval pipeline; convex, delta, horizon, classifier,
+and mixture forms are excluded.
+
+Default publication strides are 24 pooled-adaptation query dates and 128
+evaluation query dates; the datastore stride is 24 before period rounding and
+the cap is 30,000 windows. The test profile uses adaptation/evaluation stride
+256, datastore stride 168, and 2,048 store windows. Seed 1 is used throughout.
+
+\subsection{Benchmarks and ablations}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Selected baseline controls and one-family transformations. Retrieval
+metric is Euclidean and mode is online in every row.}
+\label{tab:selected-baselines}
+\begin{tabularx}{\linewidth}{@{}p{.14\linewidth}p{.13\linewidth}p{.21\linewidth}p{.21\linewidth}X@{}}
+\toprule
+Stem & Space, $K$ & Horizon front & Convex front & Delta front \\
+\midrule
+\code{full} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{y} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{cov_y} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{residual} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{cov_avgy} & raw, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{cov} & raw, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Each row retains \code{<stem>_ridge_shared} as its control. The three fronts
+replace only the suffix by \code{ridge_horizon}, \code{convex_shared}, or
+\code{delta_ridge_shared}, respectively.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Selected CatBoost controls and one-axis transformations.}
+\label{tab:selected-catboost}
+\begin{tabularx}{\linewidth}{@{}p{.12\linewidth}p{.17\linewidth}p{.23\linewidth}X@{}}
+\toprule
+$A$ & Space, $K$ & Control & Separate one-axis variants \\
+\midrule
+\code{avgy} & instance, 3 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
+\code{cov} & instance, 1 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+For each $A$, the CatBoost front also includes matching direct, Bayes, and
+oracle references. No transformation is crossed with another.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Root submission fronts and tested model sets.}
+\label{tab:slurm-workflow}
+\begin{tabularx}{\linewidth}{@{}p{.31\linewidth}X@{}}
+\toprule
+Front & Model set / controlled axis \\
+\midrule
+\code{screen.slurm} & $\mathcal B_{\rm screen}$ and $\mathcal G_{\rm screen}$ on $\mathcal D_P\times\mathcal S\times\mathcal R$ \\
+\code{benchmark.slurm} & complete selected screen pipelines; \code{full} uses Chronos-2, \code{ultra} adds TabPFN-TS \\
+\code{k_ablation.slurm} & nine selected pipelines, $K\in\{1,3,5,10,15,20\}$ only \\
+\code{h_ablation.slurm} & selected pipelines, $L=504$, $H\in\{24,168,504\}$ only \\
+\code{l_ablation.slurm} & selected pipelines, $H=24$, $L\in\{24,168,504\}$ only \\
+\code{horizon_baselines_ablation.slurm} & six controls in \cref{tab:selected-baselines}; shared versus horizon ridge \\
+\code{convex_baselines_ablation.slurm} & same six; shared ridge versus shared convex \\
+\code{delta_baselines_ablation.slurm} & same six; shared ridge versus shared delta-ridge \\
+\code{catboost_ablation.slurm} & two controls in \cref{tab:selected-catboost}; three separate one-axis variants \\
+\code{mixed_quantity_ablation.slurm} & selected pipelines transferred to the five mixed-quantity panels \\
+\code{crossrag.slurm} & one selected pipeline versus Cross-RAG at $(L,H,K)=(512,64,15)$ \\
+\code{ts_ifa\_joint\_ridge.slurm} & joint-gradient ridge TS-IFA; current focus \\
+\code{ts_ifa\_joint\_neural.slurm} & joint-gradient neural TS-IFA \\
+\code{ts_ifa\_meta\_ridge.slurm} & exact support-solve ridge meta-TS-IFA \\
+\code{ts_ifa\_meta\_neural.slurm} & gradient-inner-loop neural meta-TS-IFA \\
+\code{extraction.slurm} & standalone extraction smoke or TS-IFA-input front \\
+\code{baselines.slurm} & standalone primary-baseline smoke front \\
+\code{gates.slurm} & standalone primary-gate smoke front \\
+\code{tables.slurm} & standalone result-table front \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The completed screen selected six shared-ridge baselines, two hard shared
+CatBoost regressors, and one shared Bayes gate; no convex or delta baseline was
+eligible for that screen. Its extraction payloads and controls remain valid.
+Run the formulation fronts, filter their outputs into an expanded candidate
+set, then run the $K$ study; \code{screen.slurm} is not rerun. Publication
+CatBoost fits allow 300 trees; only the smoke profile uses two.
+
+For setting $c$, method $m$, method score $\nMSE_{m,c}$, and matching vanilla
+nMSE $v_c$, the reported percentage improvement is
+\[
+ I_{m,c}=100\frac{v_c-\nMSE_{m,c}}{v_c}.
+\]
+The average table reports the unweighted mean of $I_{m,c}$ over complete
+settings, not a percentage computed after pooling losses. If $n_c$ is the
+number of held-out windows in setting $c$, window-level win rate is
+\[
+ W_{m,c}=100\frac1{n_c}\sum_{i=1}^{n_c}
+ \mathbf1\!\left[
+ \frac1H\sum_{h=1}^H(G_{i,h}-\widehat G_{m,i,h})^2
+ <\frac1H\sum_{h=1}^H(G_{i,h}-V_{i,h})^2
+ \right].
+\]
+Final claims use complete held-out $\Tthree$ scoring. Optimistic
+\code{*_eval_fit} baselines and target-aware oracle gates are appendix
+diagnostics only.
+
+\section{Summary}
+
+The project tests a hierarchy of increasing adaptation capacity around frozen
+forecasting foundation models: direct analogue forecasts, ridge/convex/delta
+linear families, conditional CatBoost gates, and TS-IFA. Every method
+shares the same query dates, leakage-free online datastore, query-scale
+neighbour signals, and held-out $\Tthree$ evaluation. This makes capacity,
+retrieval choice, and validation protocol explicit rather than conflating them
+with backbone quality.
+
+\bibliographystyle{plainnat}
+\bibliography{adaptation_references}
+
+\end{document}

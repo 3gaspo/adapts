@@ -27,6 +27,8 @@ def main() -> None:
         _write(setting / run / "baselines" / "baseline_metrics.json",
                [{"split": "eval", "baseline": "vanilla", "mse": 0.0012, "mae": 0.03, "nmse": 0.4},
                 {"split": "eval", "baseline": "avgy_ridge_shared", "mse": 0.0009, "mae": 0.02, "nmse": 0.3},
+                {"split": "eval", "baseline": "cov_delta_ridge_shared", "mse": 0.00085,
+                 "mae": 0.019, "nmse": 0.28},
                 {"split": "eval", "baseline": "avgy_ridge_shared_eval_fit", "mse": 0.0005,
                  "mae": 0.015, "nmse": 0.18}])
         _write(setting / run / "gates" / "gate_metrics.json",
@@ -34,13 +36,15 @@ def main() -> None:
                  "mae": 0.019, "nmse": 0.24},
                 {"split": "eval", "baseline": "catboost_cov_classifier_shared", "mse": 0.0007,
                  "mae": 0.018, "nmse": 0.22},
+                {"split": "eval", "baseline": "catboost_cov_classifier_shared_soft", "mse": 0.00065,
+                 "mae": 0.017, "nmse": 0.21},
                 {"split": "eval", "baseline": "catboost_cov_regressor_horizon", "mse": 0.0006,
                  "mae": 0.016, "nmse": 0.2},
                 {"split": "eval", "baseline": "oracle_cov_shared", "mse": 0.0002, "mae": 0.01, "nmse": 0.1},
                 {"split": "eval", "baseline": "oracle_cov_horizon", "mse": 0.0001, "mae": 0.005, "nmse": 0.05}])
-        _write(setting / run / "ts_ifa" / "eval_metrics.json",
+        _write(setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json",
                {"adapted_mse": 0.0008, "adapted_mae": 0.018, "adapted_nmse": 0.25,
-                "vanilla_mse": 0.0012, "vanilla_nmse": 0.4,
+                "vanilla_branch_nmse": 0.4,
                 "residual_branch_nmse": 0.28, "memory_branch_nmse": 0.32})
 
         records = discover_results(root)
@@ -49,17 +53,19 @@ def main() -> None:
             "chronos2",
             f"{run}/vanilla",
             f"{run}/avgy_ridge_shared",
+            f"{run}/cov_delta_ridge_shared",
             f"{run}/avgy_ridge_shared_eval_fit",
             f"{run}/bayes_cov_shared",
             f"{run}/catboost_cov_classifier_shared",
+            f"{run}/catboost_cov_classifier_shared_soft",
             f"{run}/catboost_cov_regressor_horizon",
             f"{run}/oracle_cov_shared",
             f"{run}/oracle_cov_horizon",
-            f"{run}/TS-IFA",
-        }
+            f"{run}/joint_ridge",
+        }, methods
         output = generate_results_table(
             root,
-            methods=["chronos2", f"{run}/avgy_ridge_shared", f"{run}/TS-IFA",
+            methods=["chronos2", f"{run}/avgy_ridge_shared", f"{run}/joint_ridge",
                      f"{run}/oracle_cov_shared", f"{run}/oracle_cov_horizon"],
             reference="chronos2",
         )
@@ -67,7 +73,7 @@ def main() -> None:
         assert r"$\times 10^{-3}$" in latex
         assert r"\textbf{0.80}" in latex
         assert "33.33\\%" in latex
-        assert r"IN\_L2\_3/TS-IFA" in latex
+        assert r"IN\_L2\_3/TS-IFA joint ridge" in latex
         assert "online" not in latex
         assert r"\begin{tabular}{llcrrr|rr}" in latex
         assert r"\textbf{0.10}" not in latex
@@ -78,6 +84,8 @@ def main() -> None:
         assert r"IN\_L2\_3/oracle-cov-s" in default_latex
         assert r"IN\_L2\_3/bayes-cov-s" in default_latex
         assert r"IN\_L2\_3/cb-cov-cls-s" in default_latex
+        assert r"IN\_L2\_3/cb-cov-cls-s-soft" in default_latex
+        assert r"IN\_L2\_3/cov-delta-ridge-s" in default_latex
         assert r"IN\_L2\_3/cb-cov-reg-h" in default_latex
 
         baseline_output = generate_results_table(
@@ -95,19 +103,19 @@ def main() -> None:
             root,
             output=root / "ts_ifa.tex",
             metric="nmse",
-            methods=["chronos2", f"{run}/TS-IFA", f"{run}/residual_branch", f"{run}/memory_branch"],
+            methods=["chronos2", f"{run}/joint_ridge", f"{run}/joint_ridge_residual_branch", f"{run}/joint_ridge_memory_branch"],
             reference="chronos2",
         )
         ts_ifa_latex = ts_ifa_output.read_text(encoding="utf-8")
-        assert r"IN\_L2\_3/TS-IFA" in ts_ifa_latex
-        assert r"IN\_L2\_3/TS-IFA-R" in ts_ifa_latex
-        assert r"IN\_L2\_3/TS-IFA-M" in ts_ifa_latex
+        assert r"IN\_L2\_3/TS-IFA joint ridge" in ts_ifa_latex
+        assert r"IN\_L2\_3/TS-IFA JR-R" in ts_ifa_latex
+        assert r"IN\_L2\_3/TS-IFA JR-M" in ts_ifa_latex
 
         fixed_run = "raw_euclidean_3_fixed"
         _write(setting / fixed_run / "baselines" / "baseline_metrics.json",
-               [{"split": "eval", "baseline": "avgy_mix_shared", "mse": 0.001, "mae": 0.02, "nmse": 0.35}])
+               [{"split": "eval", "baseline": "avgy_convex_shared", "mse": 0.001, "mae": 0.02, "nmse": 0.35}])
         fixed_output = generate_results_table(root, output=root / "fixed.tex", datasets=["electricity"])
-        assert r"raw\_L2\_3\_fixed/avgy-lambda-s" in fixed_output.read_text(encoding="utf-8")
+        assert r"raw\_L2\_3\_fixed/avgy-convex-s" in fixed_output.read_text(encoding="utf-8")
 
         _write(root / "toy" / "1_1" / "direct" / "reference" / "univariate_summary.json",
                {"eval": {"mse": {"mean": 1.0}}})

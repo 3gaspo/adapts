@@ -10,8 +10,9 @@ import torch.nn as nn
 from einops import pack, rearrange
 
 
-CANDIDATE_NAMES = ("vanilla", "cov", "transformed", "residual", "memory")
-BASE_CANDIDATE_NAMES = ("vanilla", "cov", "residual", "memory")
+CANDIDATE_NAMES = ("vanilla", "cov", "residual", "memory")
+TSIFA_VARIANTS = ("joint_ridge", "joint_neural", "meta_ridge", "meta_neural")
+TSIFA_ARCHITECTURE = "shared_delta_branches_four_rooters_v3"
 
 
 def mlp(input_dim: int, hidden_dim: int, output_dim: int, dropout: float = 0.0) -> nn.Sequential:
@@ -29,16 +30,6 @@ def zero_initialize_output(module: nn.Sequential) -> None:
         raise TypeError("expected the last module to be a Linear layer")
     nn.init.zeros_(output.weight)
     nn.init.zeros_(output.bias)
-
-
-def initialize_vanilla_skip(module: nn.Linear, horizon: int) -> None:
-    """Initialize ``module([p, z])`` to exactly return ``p``."""
-    if module.in_features != 2 * horizon or module.out_features != horizon:
-        raise ValueError("vanilla skip must map 2H inputs to H outputs")
-    nn.init.zeros_(module.weight)
-    nn.init.zeros_(module.bias)
-    with torch.no_grad():
-        module.weight[:, :horizon].copy_(torch.eye(horizon))
 
 
 class CrossAttentionBlock(nn.Module):
@@ -113,6 +104,7 @@ class TSIFAConfig:
     lags: int
     horizon: int
     neighbors: int
+    rooter_form: str = "ridge"
     residual_heads: int = 4
     memory_heads: int = 4
     rooter_heads: int = 4
@@ -122,9 +114,6 @@ class TSIFAConfig:
     residual_hidden: int = 128
     memory_hidden: int = 128
     rooter_hidden: int = 128
-    transformed_hidden: int = 128
-    precomputed_transformed_expert: bool = False
-    learnable_transformed_covariate: bool = False
     vanilla_anchoring_init: bool = True
     dropout: float = 0.0
 
@@ -132,28 +121,21 @@ class TSIFAConfig:
     def rooter_dim(self) -> int:
         return int(self.rooter_heads) * int(self.rooter_attn_dim)
 
-    @property
-    def has_transformed_expert(self) -> bool:
-        return bool(
-            self.precomputed_transformed_expert
-            or self.learnable_transformed_covariate
-        )
-
-
 class TimeSeriesInformedForecastingAdapter(nn.Module):
-    """Four-expert TS-IFA with one optional transformed candidate."""
+    """Four-candidate TS-IFA with delta-form memory and rooter predictions."""
 
     def __init__(self, config: TSIFAConfig):
         super().__init__()
         if config.neighbors <= 0:
             raise ValueError("TimeSeriesInformedForecastingAdapter requires neighbors > 0")
         self.config = config
+        if config.rooter_form not in {"ridge", "neural"}:
+            raise ValueError(f"unknown TS-IFA rooter form {config.rooter_form!r}")
         lags = int(config.lags)
         horizon = int(config.horizon)
         rooter_dim = int(config.rooter_dim)
-        self.candidate_names = (
-            CANDIDATE_NAMES if config.has_transformed_expert else BASE_CANDIDATE_NAMES
-        )
+        self.candidate_names = CANDIDATE_NAMES
+        self.rooter_candidate_names = self.candidate_names[1:]
 
         # The residual branch retrieves errors from analogous states [history, prediction].
         self.residual_attention = CrossAttentionBlock(
@@ -172,8 +154,7 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             dropout=config.dropout,
         )
 
-        # The memory branch maps [vanilla forecast, retrieved-horizon state] directly
-        # to a forecast. Its explicit skip permits an exact vanilla initialization.
+        # The memory branch predicts a correction to the vanilla forecast.
         self.memory_attention = CrossAttentionBlock(
             query_dim=lags,
             key_dim=lags,
@@ -183,7 +164,6 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             attn_dim=config.memory_attn_dim,
             dropout=config.dropout,
         )
-        self.memory_skip = nn.Linear(2 * horizon, horizon)
         self.memory_head = mlp(
             2 * horizon,
             config.memory_hidden,
@@ -191,71 +171,57 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             dropout=config.dropout,
         )
 
-        if config.learnable_transformed_covariate:
-            self.transformed_covariate = mlp(
-                lags,
-                config.transformed_hidden,
-                horizon,
-                dropout=config.dropout,
-            )
-            self.transformed_head = mlp(
-                2 * horizon,
-                config.transformed_hidden,
-                horizon,
-                dropout=config.dropout,
+        if config.rooter_form == "ridge":
+            self.ridge_coefficients = nn.Parameter(
+                torch.zeros(len(self.rooter_candidate_names), horizon)
             )
         else:
-            self.transformed_covariate = None
-            self.transformed_head = None
-
-        # The rooter learns its own retrieval representation from x and Xc; it does
-        # not receive precomputed distances or retrieval-dispersion features.
-        self.rooter_attention = CrossAttentionBlock(
-            query_dim=lags,
-            key_dim=lags,
-            value_dim=lags,
-            output_dim=rooter_dim,
-            heads=config.rooter_heads,
-            attn_dim=config.rooter_attn_dim,
-            dropout=config.dropout,
-        )
-        self.rooter_global_norm = nn.LayerNorm(rooter_dim)
-        self.rooter_forecast_norm = nn.LayerNorm(horizon)
-        self.candidate_tokens = nn.Embedding(len(self.candidate_names), rooter_dim)
-        self.candidate_token_norm = nn.LayerNorm(rooter_dim)
-        self.rooter_scorer = mlp(
-            2 * rooter_dim + 2 * horizon,
-            config.rooter_hidden,
-            horizon,
-            dropout=config.dropout,
-        )
-        nn.init.normal_(self.candidate_tokens.weight, mean=0.0, std=0.02)
+            # The neural rooter learns its own retrieval representation from x and Xc.
+            self.rooter_attention = CrossAttentionBlock(
+                query_dim=lags,
+                key_dim=lags,
+                value_dim=lags,
+                output_dim=rooter_dim,
+                heads=config.rooter_heads,
+                attn_dim=config.rooter_attn_dim,
+                dropout=config.dropout,
+            )
+            self.rooter_global_norm = nn.LayerNorm(rooter_dim)
+            self.rooter_forecast_norm = nn.LayerNorm(horizon)
+            self.rooter_delta_norm = nn.LayerNorm(horizon)
+            self.candidate_tokens = nn.Embedding(len(self.rooter_candidate_names), rooter_dim)
+            self.candidate_token_norm = nn.LayerNorm(rooter_dim)
+            self.rooter_scorer = mlp(
+                2 * rooter_dim + 2 * horizon,
+                config.rooter_hidden,
+                horizon,
+                dropout=config.dropout,
+            )
+            nn.init.normal_(self.candidate_tokens.weight, mean=0.0, std=0.02)
 
         if config.vanilla_anchoring_init:
             zero_initialize_output(self.residual_head)
-            initialize_vanilla_skip(self.memory_skip, horizon)
             zero_initialize_output(self.memory_head)
-            if self.transformed_head is not None:
-                zero_initialize_output(self.transformed_head)
-            zero_initialize_output(self.rooter_scorer)
+            if config.rooter_form == "neural":
+                zero_initialize_output(self.rooter_scorer)
 
     def branch_modules(self) -> tuple[nn.Module, ...]:
         modules: list[nn.Module] = [
             self.residual_attention,
             self.residual_head,
             self.memory_attention,
-            self.memory_skip,
             self.memory_head,
         ]
-        if self.transformed_covariate is not None and self.transformed_head is not None:
-            modules.extend([self.transformed_covariate, self.transformed_head])
         return tuple(modules)
 
     def rooter_modules(self) -> tuple[nn.Module, ...]:
+        if self.config.rooter_form == "ridge":
+            return ()
         return (
             self.rooter_attention,
             self.rooter_global_norm,
             self.rooter_forecast_norm,
+            self.rooter_delta_norm,
             self.candidate_tokens,
             self.candidate_token_norm,
             self.rooter_scorer,
@@ -276,6 +242,8 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
         return self._module_parameters(self.branch_modules())
 
     def rooter_parameters(self) -> list[nn.Parameter]:
+        if self.config.rooter_form == "ridge":
+            return [self.ridge_coefficients]
         return self._module_parameters(self.rooter_modules())
 
     def set_trainable_stage(self, stage: str) -> None:
@@ -299,7 +267,6 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
         y_c = batch["y_c"]
         pred = batch["pred"]
         pred_cov = batch["pred_cov"]
-        pred_transformed = batch["pred_transformed"]
         pred_neighbors = batch["pred_neighbors"]
         residual_c = batch["residual_c"]
 
@@ -316,38 +283,20 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
 
         z_m, memory_weights = self.memory_attention(x, x_c, y_c)
         memory_input, _ = pack([pred, z_m], "batch *")
-        memory_prediction = self.memory_skip(memory_input) + self.memory_head(memory_input)
+        memory_delta = self.memory_head(memory_input)
+        memory_prediction = pred + memory_delta
 
-        transformed_prediction = pred_transformed
-        transformed_delta = None
-        learned_covariate = None
-        if self.transformed_covariate is not None and self.transformed_head is not None:
-            learned_covariate = self.transformed_covariate(x)
-            transformed_input, _ = pack(
-                [pred_transformed, learned_covariate],
-                "batch *",
-            )
-            transformed_delta = self.transformed_head(transformed_input)
-            transformed_prediction = pred_transformed + transformed_delta
-
-        candidate_values = [pred, pred_cov]
-        if self.config.has_transformed_expert:
-            candidate_values.append(transformed_prediction)
-        candidate_values.extend([residual_prediction, memory_prediction])
+        candidate_values = [pred, pred_cov, residual_prediction, memory_prediction]
         candidates = torch.stack(candidate_values, dim=1)
         outputs = {
             "candidates": candidates,
             "residual_prediction": residual_prediction,
             "memory_prediction": memory_prediction,
             "residual_delta": residual_delta,
+            "memory_delta": memory_delta,
             "residual_weights": residual_weights,
             "memory_weights": memory_weights,
         }
-        if self.config.has_transformed_expert:
-            outputs["transformed_prediction"] = transformed_prediction
-        if transformed_delta is not None:
-            outputs["transformed_delta"] = transformed_delta
-            outputs["transformed_covariate"] = learned_covariate
         return outputs
 
     def forward(self, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -356,24 +305,36 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
         pred = batch["pred"]
         branch_outputs = self.forward_branches(batch)
         candidates = branch_outputs["candidates"]
+        rooter_candidates = candidates[:, 1:]
+        candidate_deltas = rooter_candidates - pred.unsqueeze(1)
+        batch_size, rooter_candidate_count, _ = candidate_deltas.shape
+        if self.config.rooter_form == "ridge":
+            coefficients = self.ridge_coefficients.unsqueeze(0).expand(batch_size, -1, -1)
+            prediction = pred + (coefficients * candidate_deltas).sum(dim=1)
+            return {
+                **branch_outputs,
+                "prediction": prediction,
+                "coefficients": coefficients,
+                "candidate_deltas": candidate_deltas,
+            }
+
         z_g, rooter_retrieval_weights = self.rooter_attention(x, x_c, x_c)
-        batch_size, candidate_count, _ = candidates.shape
         global_state = self.rooter_global_norm(z_g).unsqueeze(1).expand(
             batch_size,
-            candidate_count,
+            rooter_candidate_count,
             -1,
         )
         vanilla_state = self.rooter_forecast_norm(pred).unsqueeze(1).expand(
             batch_size,
-            candidate_count,
+            rooter_candidate_count,
             -1,
         )
-        candidate_state = self.rooter_forecast_norm(candidates)
-        token_ids = torch.arange(candidate_count, device=x.device)
+        delta_state = self.rooter_delta_norm(candidate_deltas)
+        token_ids = torch.arange(rooter_candidate_count, device=x.device)
         type_state = self.candidate_token_norm(self.candidate_tokens(token_ids))
         type_state = type_state.unsqueeze(0).expand(batch_size, -1, -1)
         scorer_input = torch.cat(
-            [global_state, vanilla_state, candidate_state, type_state],
+            [global_state, vanilla_state, delta_state, type_state],
             dim=-1,
         )
         coefficients = self.rooter_scorer(
@@ -383,14 +344,15 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             coefficients,
             "(batch candidate) horizon -> batch candidate horizon",
             batch=batch_size,
-            candidate=candidate_count,
+            candidate=rooter_candidate_count,
         )
-        prediction = pred + (coefficients * candidates).sum(dim=1)
+        prediction = pred + (coefficients * candidate_deltas).sum(dim=1)
 
         return {
             **branch_outputs,
             "prediction": prediction,
             "coefficients": coefficients,
+            "candidate_deltas": candidate_deltas,
             "rooter_state": z_g,
             "rooter_retrieval_weights": rooter_retrieval_weights,
         }

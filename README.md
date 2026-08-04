@@ -30,14 +30,18 @@ Each downstream model chronologically re-splits `adapt` by whole query dates;
 the default assigns its last 20% of dates to T2. Users from the same date are
 never separated. The model-specific protocols are:
 
-- lambda mixtures fit on all T1+T2; their T1 fit is also scored on T2 as a
+- convex models fit on all T1+T2; their T1 fit is also scored on T2 as a
   diagnostic;
 - ridge models fit all candidate alphas on T1, select alpha by T2 nMSE, and
   refit the selected model on T1+T2;
 - fixed-candidate CatBoost gates fit on T1, use T2 early stopping to select the
   number of trees, then instantiate a fresh model and refit on T1+T2;
-- TS-IFA trains on T1, selects/restores a checkpoint on T2, and does not refit
-  after selection;
+- every publication profile allows at most 300 CatBoost trees; only the
+  `EXPERIMENT_MODE=test` smoke profile uses two iterations;
+- joint TS-IFA variants optimize branches and one active rooter together on
+  T1, select the checkpoint on T2, and evaluate it once on T3; meta variants
+  use chronological T1 support/query episodes, then freeze the branches and
+  fit only their active rooter on T2 before the single T3 evaluation;
 - a future gate over a trainable candidate must train that candidate on T1 and
   the gate on T2 without later changing the candidate, unless out-of-fold
   candidate predictions are introduced.
@@ -74,7 +78,7 @@ outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
   <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,prediction_manifest.json,result_manifest.json,...}
   <retrieval>/gates/{gate_metrics.json,gate_artifacts.json,prediction_manifest.json,result_manifest.json,...}
   <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json}
-  <retrieval>/ts_ifa/TS-IFA/{eval_metrics.json,config.json,ts_ifa.pt,prediction_manifest.json,result_manifest.json,...}
+  <retrieval>/ts_ifa/<joint_ridge|joint_neural|meta_ridge|meta_neural>/{eval_metrics.json,config.json,ts_ifa.pt,rooter.pt,prediction_manifest.json,result_manifest.json,...}
   tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,positive_windows_results.tex,...}
 ```
 
@@ -84,9 +88,9 @@ Baseline, gate, and TS-IFA predictions use the sole current disk-backed
 is written last and is the completion marker. Obsolete or partial result
 folders are not accepted and are replaced when the run is launched again.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
-from `gate_artifacts.json`. TS-IFA stores T3 neural-rooter coefficients under
-the prediction store's `gate_diagnostics` kind and its fixed coefficient matrix
-in `ridge_rooter.pt`. Downstream launchers publish the shared vanilla metrics
+from `gate_artifacts.json`. Every TS-IFA variant stores its T3 active-rooter
+coefficients under the prediction store's `gate_diagnostics` kind and its
+rooter state in `rooter.pt`. Downstream launchers publish the shared vanilla metrics
 and extraction timing only when the destination is absent or stale; this
 publication is atomic, so baseline, gate, and TS-IFA jobs may start in parallel.
 
@@ -193,10 +197,14 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
 - `horizon_baselines_ablation`: selected shared baseline winners and their
   per-horizon counterparts on the same dataset/setting grid and exact winner
   retrieval configuration.
+- `convex_baselines_ablation`: selected shared-ridge winners and the shared
+  simplex-constrained convex models using the same variables and retrieval.
+- `delta_baselines_ablation`: selected shared-ridge winners and the shared
+  delta-ridge models using the same variables and retrieval.
 - `catboost_ablation`: selected shared-regressor screen winners, each expanded
-  under the same retrieval pipeline to classifier/regressor and
-  shared/per-horizon CatBoost gates, with matching no-feature and oracle
-  references.
+  under the same retrieval pipeline by changing one axis at a time: classifier
+  objective, soft mixture output, or per-horizon regression. Matching
+  no-feature and oracle references are included.
 - `k_ablation`: the manually named winning pipelines on `D x S`, varying only
   `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
 - `h_ablation`: manually named pipelines with `L=504` and
@@ -220,12 +228,14 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | Experiment mode | Datasets | `(L,H)` settings | Backbone | Retrieval / K | Adaptation methods |
 |---|---|---|---|---|---|
 | `test` | Electricity | `504:168` | Chronos-2 | Raw Euclidean / `3` | Primary baselines/gates or TS-IFA, according to front |
-| `screen` | `D_primary` | `168:24`, `336:48`, `504:168` | Chronos-2 | Raw + instance Euclidean / `1,3` | 11 direct/shared baselines and 8 shared gate/reference methods |
+| `screen` | `D_primary` | `168:24`, `336:48`, `504:168` | Chronos-2 | Raw + instance Euclidean / `1,3` | 3 direct + 7 shared-ridge baselines; 8 shared gate/reference methods |
 | `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | `WINNERS_CSV` only |
 | `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same `WINNERS_CSV` as full |
 | `mixed_quantity_ablation` | `D_mixed` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
-| `horizon_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Selected shared baselines plus their per-horizon forms |
-| `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Selected shared CatBoost candidates expanded across objective/shape |
+| `horizon_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus horizon-wise ridge |
+| `convex_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared convex |
+| `delta_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared delta-ridge |
+| `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared regressor versus classifier, soft mixture, and horizon regressor |
 | `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
@@ -238,11 +248,37 @@ covariate-conditioned forecast, `Y_j` the observed future of neighbor `j`,
 below are evaluated horizon-wise; `shared` means that fitted coefficients or
 the gate decision are shared across the complete horizon.
 
-The 11 primary baselines are:
+Each fitted baseline is identified by a variable design and a family. The
+seven designs are:
+
+| Design | Forecast variables |
+|---|---|
+| `cov` | `V, C` |
+| `avgy` | `V, bar(Y)` |
+| `y` | `V, Y_1, ..., Y_K` |
+| `cov_y` | `V, C, Y_1, ..., Y_K` |
+| `cov_avgy` | `V, C, bar(Y)` |
+| `residual` | `V, Y_1, ..., Y_K, N_1, ..., N_K` |
+| `full` | `V, C, Y_1, ..., Y_K, N_1, ..., N_K` |
+
+For alternatives `Z_1, ..., Z_p` beside `V`, the three shared families are:
+
+- ridge: `V + aV + sum_m b_m Z_m`, with all correction coefficients
+  regularized toward zero;
+- convex: `lambda_0 V + sum_m lambda_m Z_m`, with non-negative weights that
+  sum to one;
+- delta-ridge: `V + sum_m b_m (Z_m - V)`, with the delta coefficients
+  regularized toward zero.
+
+The same three definitions admit horizon-wise coefficients. The main screen
+uses only the most flexible shared-ridge family; the three baseline ablation
+fronts change respectively coefficient shape, family to convex, or family to
+delta-ridge for selected variable designs.
+
+The ten primary baseline artifacts are:
 
 - direct: `cov_forecast = C`, `avgy = bar(Y)`, and
   `y_mean = K^-1 sum_j Y_j`;
-- convex mixture: `avgy_mix_shared = (1-lambda)V + lambda bar(Y)`;
 - anchored ridge: `V + aV` plus, respectively, `bC`
   (`cov_ridge_shared`), `b bar(Y)` (`avgy_ridge_shared`),
   `sum_j b_jY_j` (`y_ridge_shared`), `bC + sum_j c_jY_j`
@@ -250,9 +286,10 @@ The 11 primary baselines are:
   (`cov_avgy_ridge_shared`), `sum_j b_jY_j + sum_j c_jN_j`
   (`residual_ridge_shared`), or
   `bC + sum_j c_jY_j + sum_j d_jN_j` (`full_ridge_shared`).
-The horizon-baseline ablation fits the corresponding per-horizon coefficient
-form of every selected shared model, including `cov_y_ridge_horizon` for the
-`V,C,Y_j` design.
+
+Variant names replace `_ridge_shared` with `_ridge_horizon`, `_convex_shared`,
+or `_delta_ridge_shared`. For example, the `cov` variants are
+`cov_ridge_horizon`, `cov_convex_shared`, and `cov_delta_ridge_shared`.
 
 The primary gates compare `V` with a candidate `A` in `{C, bar(Y)}`. Define
 `Delta_h = (Y_h - V_h)^2 - (Y_h - A_h)^2` and
@@ -261,10 +298,14 @@ score is positive and `V` otherwise. For both candidates the screen includes
 the direct candidate, `bayes_<A>_shared` (constant decision from mean training
 advantage), `catboost_<A>_regressor_shared` (feature-based prediction of
 `Delta_bar`), and `oracle_<A>_shared` (target-aware T3 upper bound). This gives
-eight gate/reference artifacts in total.
+eight gate/reference artifacts in total. The CatBoost ablation adds the shared
+classifier, shared soft regressor mixture, and horizon-wise regressor one at a
+time. The soft regressor maps predicted advantage to `[0,1]` with a sigmoid
+scaled by the refit-target standard deviation, then writes `(1-p)V + pA`.
 
-Default TS-IFA reports vanilla, cov, residual, and memory candidates plus
-its ridge and neural rooters; transformed candidates remain opt-in.
+Every TS-IFA variant reports vanilla, cov, residual, and memory candidates plus
+one active rooter. The four models share the same branch architecture; only the
+rooter form and optimization contract differ.
 
 Modes provide default grids, including default backbone models; they are not
 model-free labels. `test`, `screen`, and `full` default to `chronos2`, `ultra`
@@ -289,16 +330,21 @@ The intended submission interface is:
 
 | Slurm front | Accessible mode(s) | What it runs |
 |---|---|---|
-| `screen.slurm` | fixed `screen` | Primary extraction, 11 baselines, 8 gate/reference methods, and tables |
+| `screen.slurm` | fixed `screen` | Primary extraction, 10 baselines, 8 gate/reference methods, and tables |
 | `benchmark.slurm` | `full` or `ultra` | Selected screen winners on `D_full`, followed by tables |
 | `extraction.slurm` | `test`, `full`, `ultra` | Standalone extraction, mainly for smoke or TS-IFA inputs |
 | `baselines.slurm` | `test` | Primary baseline smoke run; requires test extraction |
 | `gates.slurm` | `test` | Primary gate smoke run; requires test extraction |
 | `tables.slurm` | `test`, `full`, `ultra` | Standalone tables, including optional TS-IFA tables |
-| `ts_ifa.slurm` | `test`, `full`, `ultra` | TS-IFA; requires matching extraction |
+| `ts_ifa_joint_ridge.slurm` | `test`, `full`, `ultra` | Joint-gradient ridge TS-IFA; requires matching extraction |
+| `ts_ifa_joint_neural.slurm` | `test`, `full`, `ultra` | Joint-gradient neural TS-IFA; requires matching extraction |
+| `ts_ifa_meta_ridge.slurm` | `test`, `full`, `ultra` | Closed-form-adapted ridge meta-TS-IFA; requires matching extraction |
+| `ts_ifa_meta_neural.slurm` | `test`, `full`, `ultra` | Gradient-adapted neural meta-TS-IFA; requires matching extraction |
 | `mixed_quantity_ablation.slurm` | fixed `mixed_quantity_ablation` | Selected winners on original ETT panels and Weather |
-| `horizon_baselines_ablation.slurm` | fixed `horizon_baselines_ablation` | Selected shared baselines versus per-horizon forms |
-| `catboost_ablation.slurm` | fixed `catboost_ablation` | Selected CatBoost gates across objective/decision shape |
+| `horizon_baselines_ablation.slurm` | fixed `horizon_baselines_ablation` | Selected shared ridge versus horizon ridge |
+| `convex_baselines_ablation.slurm` | fixed `convex_baselines_ablation` | Selected shared ridge versus shared convex |
+| `delta_baselines_ablation.slurm` | fixed `delta_baselines_ablation` | Selected shared ridge versus shared delta-ridge |
+| `catboost_ablation.slurm` | fixed `catboost_ablation` | Selected shared-regressor gates versus three one-axis variants |
 | `k_ablation.slurm` | fixed `k_ablation` | Selected winners over the K grid |
 | `h_ablation.slurm` | fixed `h_ablation` | Selected winners over the H grid |
 | `l_ablation.slurm` | fixed `l_ablation` | Selected winners over the L grid |
@@ -344,12 +390,11 @@ To deliberately regenerate every screen extraction after code changes, use:
 EXTRACTION_SKIP_COMPLETE=false sbatch screen.slurm
 ```
 
-The screen is the primary comparison. It intentionally excludes every
-per-horizon baseline and every CatBoost formulation except the shared
-regressor. The requested method list is part of the completion contract, so an
-older all-method screen bundle is replaced instead of being accepted as the
-current reduced sweep. Existing extraction payloads remain valid and are
-reused.
+The screen is the primary comparison. It intentionally excludes every convex,
+delta-ridge, and per-horizon baseline, and every CatBoost formulation except
+the hard shared regressor. Existing screen results may contain superseded extra
+methods, but selected shared-ridge/shared-regressor pipelines remain valid;
+new family comparisons belong only to their dedicated ablation profiles.
 
 For screening, a **setting** is one dataset plus one `L:H` pair, so there are
 `|D| x |S| = 12` settings. Each complete pipeline is scored by the unweighted
@@ -361,7 +406,7 @@ pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
 Copy the desired complete names into the final benchmark:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch benchmark.slurm
 ```
 
@@ -370,7 +415,7 @@ backbones afterward without recomputing completed Chronos-2 results:
 
 ```bash
 EXPERIMENT_MODE=ultra \
-WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch benchmark.slurm
 ```
 
@@ -378,31 +423,46 @@ For an explicit custom backbone selection, pass `MODELS_CSV`, for example
 `MODELS_CSV=tabpfnts`. `full` and `ultra` otherwise differ only in their
 default model list.
 
-The dedicated per-horizon baseline study defaults to the current best shared
-convex mixture, aggregated-target ridge, and individual-neighbor ridge. Edit
-`SHARED_BASELINE_WINNERS_CSV` in `horizon_baselines_ablation.slurm` when a new
-primary screen changes those winners. Each entry must name a shared method;
-the launcher evaluates it beside the corresponding `_horizon` method:
+The three baseline family studies default to the six baseline pipelines in
+`SWEEP_CANDIDATES.txt`. Override `BASELINE_WINNERS_CSV` when a later screen
+changes those selections. Every entry must name a primary shared-ridge method;
+each launcher evaluates it beside exactly one transformed variant:
+
+| Selected design / retrieval | Ridge control | Horizon variant | Convex variant | Delta-ridge variant |
+|---|---|---|---|---|
+| `full`, instance L2, `K=3` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
+| `y`, instance L2, `K=3` | `y_ridge_shared` | `y_ridge_horizon` | `y_convex_shared` | `y_delta_ridge_shared` |
+| `cov_y`, instance L2, `K=3` | `cov_y_ridge_shared` | `cov_y_ridge_horizon` | `cov_y_convex_shared` | `cov_y_delta_ridge_shared` |
+| `residual`, instance L2, `K=3` | `residual_ridge_shared` | `residual_ridge_horizon` | `residual_convex_shared` | `residual_delta_ridge_shared` |
+| `cov_avgy`, raw L2, `K=3` | `cov_avgy_ridge_shared` | `cov_avgy_ridge_horizon` | `cov_avgy_convex_shared` | `cov_avgy_delta_ridge_shared` |
+| `cov`, raw L2, `K=3` | `cov_ridge_shared` | `cov_ridge_horizon` | `cov_convex_shared` | `cov_delta_ridge_shared` |
 
 ```bash
 sbatch horizon_baselines_ablation.slurm
+sbatch convex_baselines_ablation.slurm
+sbatch delta_baselines_ablation.slurm
 ```
 
-The CatBoost objective/shape study is independent and can be submitted later:
+The CatBoost formulation study is independent and can be submitted later:
 
 ```bash
-CATBOOST_WINNERS_CSV=gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch catboost_ablation.slurm
 ```
 
-Each selected shared-regressor winner fixes the candidate and retrieval
-pipeline; the runner expands only classifier/regressor and
-shared/per-horizon decision shape plus matching references.
+Its defaults are the two selected CatBoost pipelines in `SWEEP_CANDIDATES.txt`.
+Each fixes the candidate and retrieval pipeline; the runner evaluates the hard
+shared regressor beside the shared classifier, shared soft-regressor mixture,
+and horizon-wise regressor, plus matching references.
+
+| Candidate / retrieval | Screen control | Classification | Mixture | Horizon |
+|---|---|---|---|---|
+| `avgy`, instance L2, `K=3` | `catboost_avgy_regressor_shared` | `catboost_avgy_classifier_shared` | `catboost_avgy_regressor_shared_soft` | `catboost_avgy_regressor_horizon` |
+| `cov`, instance L2, `K=1` | `catboost_cov_regressor_shared` | `catboost_cov_classifier_shared` | `catboost_cov_regressor_shared_soft` | `catboost_cov_regressor_horizon` |
 
 The mixed-quantity dataset study is also isolated and can be submitted later:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
+WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch mixed_quantity_ablation.slurm
 ```
 
@@ -414,7 +474,7 @@ Copy the selected complete names into `WINNERS_CSV` near the top of each later
 Slurm file (or pass the same variable as an environment override):
 
 ```bash
-WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/avgy_mix_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared}"
+WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared}"
 ```
 
 Then submit exactly one front per experiment:
@@ -426,9 +486,14 @@ sbatch l_ablation.slurm
 ```
 
 The K experiment expands each winner across the K grid while retaining its
-formula and normalization. The H and L experiments retain each full winning
-pipeline, including its K and normalization, while changing only the requested
-lookback/horizon axis. Dataset–`L:H` pairs remain evaluation settings.
+formula and normalization. Run the formulation ablations first, filter their
+outputs into the expanded candidate list, and pass that list to `k_ablation`.
+Complete extraction payloads from an earlier K attempt remain reusable because
+they are method-independent; fitted baseline/gate results are reused only when
+their current method and training signatures match. The H and L experiments
+retain each full winning pipeline, including its K and normalization, while
+changing only the requested lookback/horizon axis. Dataset–`L:H` pairs remain
+evaluation settings.
 
 The Cross-RAG comparison is also one job. Enter one complete winning pipeline in
 `crossrag.slurm`, configure the three released-code/checkpoint paths in the
@@ -490,63 +555,83 @@ Use `FAMILIES_CSV=baselines`, `FAMILIES_CSV=gates`, or include `ts_ifa` after
 those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;
 `nmse` is the default.
 
-## TS-IFA staged architecture
+## TS-IFA variants and optimization
 
-TS-IFA exposes four candidates by default: vanilla, cov, a
-residual-attention branch over analogue `[history, prediction]` states, and a
-direct memory-attention branch. The past-only `sign(x)`/`sqrt(abs(x))` frozen
-forecast is an optional fifth candidate and is disabled by default.
-The final rooter computes unconstrained horizon-wise coefficients with one
-candidate-conditioned scorer shared across the active type tokens. It does
-not consume handcrafted retrieval distances or dispersion features.
+All four TS-IFA models use the same candidates. For vanilla prediction
+`p in R^H`, the fixed covariate candidate is `c_c`; the trainable branches are
 
-`LEARNABLE_TRANSFORMED_COVARIATE=true` adds
-`u=MLP(x)` and a T1-trained transformed forecast head. It automatically enables
-the fifth candidate and works with old payloads by anchoring it to vanilla.
-It can be combined with `TRANSFORMED_EXPERT=true`, in which case it is anchored
-to the precomputed sign/root forecast instead. Producing that frozen forecast
-requires `COMPUTE_TRANSFORMED_PREDICTION=true` during extraction.
-
-Training is deliberately staged:
-
-- the residual, memory, and optional learned transformed branches optimize
-  their own losses on T1;
-- the branches are frozen before both a 256-coefficient horizon-wise ridge
-  rooter and the neural rooter are trained independently on T2;
-- T3 is evaluated once, with no checkpoint selection or refit.
-
-Vanilla-anchoring initialization makes both learned branches and the complete
-neural model exactly equal to vanilla at step zero. Optional regularizers cover
-branch/final vanilla anchoring, coefficient L2, and first-order horizon
-smoothness. Set `VANILLA_ANCHOR`, `COEFFICIENT_L2`, or `HORIZON_SMOOTHNESS` to
-zero to disable each term; set `VANILLA_ANCHORING_INIT=false` to disable the
-initialization.
-
-Each run saves `branches.pt`, `ridge_rooter.pt`, `ts_ifa.pt`, and T3 metrics and
-disk-backed predictions for every candidate, the ridge rooter, and the neural
-rooter. Evaluation writes and scores predictions batch by batch, while copied
-T1/T2/T3 tensors let the original extraction payloads be released before
-training. The extraction contract itself is unchanged, so completed extractions
-whose manifest matches the current signature remain valid.
-
-TS-IFA smoke submission:
-
-```bash
-EXPERIMENT_MODE=test sbatch ts_ifa.slurm
-EXPERIMENT_MODE=test FAMILIES_CSV=ts_ifa sbatch tables.slurm
-
-# Optional learned candidate; no re-extraction needed:
-EXPERIMENT_MODE=test LEARNABLE_TRANSFORMED_COVARIATE=true sbatch ts_ifa.slurm
-
-# Optional frozen sign/root candidate:
-EXPERIMENT_MODE=test COMPUTE_TRANSFORMED_PREDICTION=true sbatch extraction.slurm
-EXPERIMENT_MODE=test TRANSFORMED_EXPERT=true sbatch ts_ifa.slurm
+```text
+c_r = p + delta_r(theta_r; x, p, Xc, Nc, Ec),
+c_m = p + delta_m(theta_m; p, z_m),
+theta_b = theta_r union theta_m.
 ```
 
-Its input extraction must already have a valid completion manifest.
-TS-IFA follows the test/full/ultra dataset, setting, and backbone profiles, but
-remains outside the paper-critical baseline/gate path while its
-architecture is being tuned.
+Both correction heads are output-zero initialized. With
+`I={c,r,m}` and `d_i=c_i-p`, every rooter has the delta form
+
+```text
+y_hat_h = p_h + sum_(i in I) a_(i,h) d_(i,h).
+```
+
+The ridge form has free `nu=(a_i) in R^(3 x H)`. The neural form has
+`a_i=f_omega(z_g,p,d_i,tau_i)`, where `omega` includes the attention encoder,
+candidate tokens `tau_i`, normalizers, and shared scorer. Ridge coefficients
+and the neural scorer output are initialized to zero, so all four complete
+models initially reproduce `p`. Neither rooter consumes handcrafted retrieval
+features. Fixed and learned transformed-covariate gates are a separate project
+documented in `../transformed_covariates/README.md`.
+
+Let `L_R` be normalized rooter forecast loss plus vanilla anchoring,
+coefficient L2, and first-order horizon smoothness, and let `L_B` be the sum of
+residual- and memory-candidate forecast losses plus their vanilla anchors. The
+joint variants optimize on all T1 by AdamW,
+
+```text
+min_(theta_b,nu)   L_R(theta_b,nu;T1)   + lambda_B L_B(theta_b;T1)  [joint_ridge]
+min_(theta_b,omega)L_R(theta_b,omega;T1)+ lambda_B L_B(theta_b;T1)  [joint_neural].
+```
+
+For joint ridge, `nu` is an ordinary learned parameter updated by gradients;
+the closed-form solver is never used. T2 selects the best joint checkpoint,
+which is restored before the one-shot T3 evaluation. T2 is not used for a
+second rooter fit in either joint variant.
+
+The meta variants split T1 by whole query dates into earlier support `S1` and
+later query `Q1`. Meta ridge solves independently at each horizon,
+
+```text
+nu*_S(theta_b)=argmin_nu ||r_S-D_S(theta_b)nu||^2+alpha||nu||^2,
+r=y-p,
+min_theta_b L_R(theta_b,nu*_S(theta_b);Q1)+lambda_B L_B(theta_b;Q1).
+```
+
+Gradients pass through the exact standardized `3 x 3` support solves. After
+outer training, branches freeze and a final closed-form ridge is fit on all T2.
+Meta neural instead takes `K_in` differentiable support updates from the
+learned `omega` initialization, then updates `theta_b` and `omega` from the Q1
+loss. First-order MAML is the default; `NEURAL_FIRST_ORDER=false` retains the
+full higher-order graph. Its branches then freeze and only `omega` is fit on
+T2. Both meta variants evaluate T3 exactly once.
+
+`VANILLA_ANCHOR`, `COEFFICIENT_L2`, `HORIZON_SMOOTHNESS`, and
+`BRANCH_AUX_WEIGHT` control the common regularizers; `RIDGE_ROOTER_ALPHA`
+applies only to the meta-ridge closed-form solves. `META_QUERY_FRACTION`
+controls the chronological meta split. Each run writes an isolated
+`ts_ifa/<variant>/` folder with `branches.pt`, `rooter.pt`, `ts_ifa.pt`, exact
+configuration/signature manifests, and disk-backed candidate, active-rooter,
+and coefficient predictions.
+
+The four smoke submissions are:
+
+```bash
+EXPERIMENT_MODE=test sbatch ts_ifa_joint_ridge.slurm
+EXPERIMENT_MODE=test sbatch ts_ifa_joint_neural.slurm
+EXPERIMENT_MODE=test sbatch ts_ifa_meta_ridge.slurm
+EXPERIMENT_MODE=test sbatch ts_ifa_meta_neural.slurm
+```
+
+Each requires an already complete matching extraction. The launcher only
+validates and reads extraction artifacts; it never reruns extraction.
 
 ## Executable files
 
@@ -560,11 +645,12 @@ enumeration, input checks, and command invocation:
 - `baselines.slurm` -> `src/slurm/run_baselines.sh`.
 - `gates.slurm` -> `src/slurm/run_gates.sh`.
 - `mixed_quantity_ablation.slurm` -> `src/slurm/run_profile_experiment.sh`.
-- `horizon_baselines_ablation.slurm` ->
-  `src/slurm/run_horizon_baselines_ablation.sh`.
+- `horizon_baselines_ablation.slurm`, `convex_baselines_ablation.slurm`, and
+  `delta_baselines_ablation.slurm` ->
+  `src/slurm/run_baseline_family_ablation.sh`.
 - `catboost_ablation.slurm` -> `src/slurm/run_catboost_ablation.sh`.
 - `tables.slurm` -> `src/slurm/build_tables.sh`.
-- `ts_ifa.slurm` is the optional architecture job.
+- `ts_ifa_{joint,meta}_{ridge,neural}.slurm` are the four optional TS-IFA jobs.
 
 Implementation shells:
 
@@ -574,13 +660,14 @@ Implementation shells:
   selected direct/shared or ablation methods.
 - `run_gates.sh` uses the same evaluator with `--family gates` to fit and score
   the candidate gates.
-- `run_horizon_baselines_ablation.sh` maps selected shared winners to their
-  per-horizon counterparts and runs both in an isolated profile.
+- `run_baseline_family_ablation.sh` maps selected shared-ridge winners to one
+  horizon, convex, or delta-ridge counterpart and runs both in an isolated
+  profile.
 - `run_catboost_ablation.sh` validates selected shared-regressor winners and
-  expands their fixed retrieval pipelines across the CatBoost objective/shape
-  matrix.
-- `run_ts_ifa.sh` trains T1 branches, fits T2 ridge and neural rooters, and
-  writes complete per-candidate and T3 comparison metrics.
+  applies the classifier, soft-mixture, and horizon-regressor changes one at a
+  time under their fixed retrieval pipelines.
+- `run_ts_ifa.sh` dispatches the selected joint or chronological meta contract,
+  reusing the matching extraction and writing one isolated active-rooter result.
 - `build_tables.sh` verifies the selected sweep is complete before producing
   full and equal-configuration-average tables.
 - `common.sh` provides resource lookup, setting parsing, manifest checks, and
@@ -593,8 +680,8 @@ The runnable Python modules are:
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
   with `--family baselines` or `--family gates`.
-- `src.adaptors.ts_ifa.train`: staged T1 branch training, T2 rooter fitting, and
-  T3 evaluation.
+- `src.adaptors.ts_ifa.train`: joint T1 training with T2 checkpoint selection or
+  chronological T1 support/query meta-training with a frozen-branch T2 rooter fit.
 - `src.visu.sweep_results_table`: full and averaged publication tables.
 - `src.visu.results_table` and `src.visu.selected_methods`: focused table
   utilities for individual result folders and selected method subsets.
@@ -611,12 +698,14 @@ current prediction store. Configure `CLUSTER_EXPERIMENT_MODE`, dataset,
 single configuration. Its interactive sections cover retrieved examples,
 window and horizon errors, gate summaries and threshold curves, CatBoost gate
 importance, fitted baseline coefficient importance, and TS-IFA ridge/neural
-rooter coefficient heatmaps.
+active-rooter coefficient heatmaps.
 
 Every TS-IFA output must use the current result and prediction-store contracts
-and include the neural-rooter coefficient diagnostics. Older outputs are
-incomplete and unsupported; rerun `ts_ifa.slurm` for every affected
-configuration.
+and include the active-rooter coefficient diagnostics. Its result manifest also
+records the exact launcher training signature, so changing a bilevel split,
+optimizer, regularizer, architecture, or sample cap invalidates completion.
+Older outputs are incomplete and unsupported; rerun the required variant front
+for every affected configuration.
 
 ## Local checks
 
@@ -633,11 +722,10 @@ python src/tests/smoke/check_sweep_results_table.py
 python src/tests/smoke/check_retrieval_dashboard.py
 ```
 
-The experiment guides and their compiled PDFs are under
-`latex/experiment_guides/`: `01_univariate_control`, `02_retrieval_baselines`,
-`03_learned_gates`, `04_ts_ifa`, and `05_related_methods`. The second and third
-give the exact artifact names, formulas, feature definitions, and validation
-protocols; the fifth records the dated retrieval/adaptation literature
-comparison and source provenance. Source code, notebooks, tests, and Slurm
-helpers remain under `src/`; generated artifacts stay under `outputs/`, and
-runtime logs under `logs/`.
+The consolidated technical report and bibliography are
+`latex/adaptation_report.tex` and `latex/adaptation_references.bib`. It records
+the current notation, formulas, retrieval contract, split semantics, parameter
+counts, related work, and complete experiment grid; it is the sole LaTeX model
+and workflow specification. Source code, notebooks, tests, and Slurm helpers
+remain under `src/`; generated artifacts stay under `outputs/`, and runtime
+logs under `logs/`.

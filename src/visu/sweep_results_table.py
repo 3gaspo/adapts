@@ -24,26 +24,26 @@ from .results_table import (
 
 REFERENCE_METHOD = "vanilla"
 
+BASELINE_DESIGNS = (
+    "cov",
+    "avgy",
+    "y",
+    "cov_y",
+    "cov_avgy",
+    "residual",
+    "full",
+)
+
 BASELINE_HELDOUT_VARIANTS = (
     "cov_forecast",
     "avgy",
     "y_mean",
-    "avgy_mix_shared",
-    "avgy_mix_horizon",
-    "cov_ridge_shared",
-    "cov_ridge_horizon",
-    "avgy_ridge_shared",
-    "avgy_ridge_horizon",
-    "y_ridge_shared",
-    "y_ridge_horizon",
-    "cov_y_ridge_shared",
-    "cov_y_ridge_horizon",
-    "cov_avgy_ridge_shared",
-    "cov_avgy_ridge_horizon",
-    "residual_ridge_shared",
-    "residual_ridge_horizon",
-    "full_ridge_shared",
-    "full_ridge_horizon",
+    *(
+        f"{design}_{family}_{mode}"
+        for design in BASELINE_DESIGNS
+        for family in ("ridge", "convex", "delta_ridge")
+        for mode in ("shared", "horizon")
+    ),
 )
 
 BASELINE_DIAGNOSTIC_VARIANTS = tuple(
@@ -61,12 +61,20 @@ GATE_HELDOUT_VARIANTS = (
     "catboost_cov_classifier_horizon",
     "catboost_cov_regressor_shared",
     "catboost_cov_regressor_horizon",
+    "catboost_cov_classifier_shared_soft",
+    "catboost_cov_classifier_horizon_soft",
+    "catboost_cov_regressor_shared_soft",
+    "catboost_cov_regressor_horizon_soft",
     "bayes_avgy_shared",
     "bayes_avgy_horizon",
     "catboost_avgy_classifier_shared",
     "catboost_avgy_classifier_horizon",
     "catboost_avgy_regressor_shared",
     "catboost_avgy_regressor_horizon",
+    "catboost_avgy_classifier_shared_soft",
+    "catboost_avgy_classifier_horizon_soft",
+    "catboost_avgy_regressor_shared_soft",
+    "catboost_avgy_regressor_horizon_soft",
 )
 
 GATE_DIAGNOSTIC_VARIANTS = (
@@ -76,14 +84,16 @@ GATE_DIAGNOSTIC_VARIANTS = (
     "oracle_avgy_horizon",
 )
 
-TS_IFA_MAIN_VARIANTS = ("TS-IFA",)
-TS_IFA_BRANCH_VARIANTS = (
-    "vanilla_branch",
-    "cov_branch",
-    "transformed_branch",
-    "residual_branch",
-    "memory_branch",
-    "ridge_rooter",
+TS_IFA_MAIN_VARIANTS = (
+    "joint_ridge",
+    "joint_neural",
+    "meta_ridge",
+    "meta_neural",
+)
+TS_IFA_BRANCH_VARIANTS = tuple(
+    f"{variant}_{branch}_branch"
+    for variant in TS_IFA_MAIN_VARIANTS
+    for branch in ("vanilla", "cov", "residual", "memory")
 )
 
 FULL_VARIANTS = (
@@ -94,12 +104,20 @@ FULL_VARIANTS = (
     "catboost_cov_classifier_horizon",
     "catboost_cov_regressor_shared",
     "catboost_cov_regressor_horizon",
+    "catboost_cov_classifier_shared_soft",
+    "catboost_cov_classifier_horizon_soft",
+    "catboost_cov_regressor_shared_soft",
+    "catboost_cov_regressor_horizon_soft",
     "bayes_avgy_shared",
     "bayes_avgy_horizon",
     "catboost_avgy_classifier_shared",
     "catboost_avgy_classifier_horizon",
     "catboost_avgy_regressor_shared",
     "catboost_avgy_regressor_horizon",
+    "catboost_avgy_classifier_shared_soft",
+    "catboost_avgy_classifier_horizon_soft",
+    "catboost_avgy_regressor_shared_soft",
+    "catboost_avgy_regressor_horizon_soft",
     *TS_IFA_MAIN_VARIANTS,
 )
 CROSSRAG_VARIANTS = ("crossrag",)

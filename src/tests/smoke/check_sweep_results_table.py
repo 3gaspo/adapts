@@ -106,16 +106,14 @@ def main() -> None:
                     ],
                 )
                 _write(
-                    setting / run / "ts_ifa" / "TS-IFA" / "eval_metrics.json",
+                    setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json",
                     {
                         "adapted_nmse": ts_ifa,
                         "adapted_mse": 0.005,
                         "vanilla_branch_nmse": 1.0 + offset,
                         "cov_branch_nmse": 0.95 + offset,
-                        "transformed_branch_nmse": 0.93 + offset,
                         "residual_branch_nmse": residual_branch,
                         "memory_branch_nmse": memory_branch,
-                        "ridge_rooter_nmse": ts_ifa + 0.01,
                     },
                 )
 
@@ -137,7 +135,7 @@ def main() -> None:
         assert full.count(r"\begin{table}") == 1
         assert "vanilla" in full
         assert r"raw\_L2\_1/Y-ridge-s" in full
-        assert r"IN\_L2\_3/TS-IFA" in full
+        assert r"IN\_L2\_3/TS-IFA joint ridge" in full
         assert "Overall improvement" not in full
 
         average_outputs = generate_average_results_tables(
@@ -206,11 +204,9 @@ def main() -> None:
         assert r"oracle-cov-h" in gates
 
         ts_ifa = (root / "tables" / "average" / "ts_ifa_results.tex").read_text(encoding="utf-8")
-        assert r"TS-IFA & " in ts_ifa
-        assert r"TS-IFA-phi & " in ts_ifa
-        assert r"TS-IFA-R & " in ts_ifa
-        assert r"TS-IFA-M & " in ts_ifa
-        assert r"TS-IFA-ridge & " in ts_ifa
+        assert r"TS-IFA joint ridge & " in ts_ifa
+        assert r"TS-IFA JR-R & " in ts_ifa
+        assert r"TS-IFA JR-M & " in ts_ifa
 
     print("adaptation table checks passed")
 

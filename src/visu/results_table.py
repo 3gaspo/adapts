@@ -156,6 +156,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         dataset, setting = identity
         model = _path_model(path, root, setting)
         run = _relative_run(path, root, setting)
+        variant_name = path.parent.name
         payload = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(payload, Mapping):
             continue
@@ -164,7 +165,11 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             if match is None:
                 continue
             variant, metric = match.groups()
-            method = f"{run}/TS-IFA" if variant == "adapted" else f"{run}/{variant}"
+            method = (
+                f"{run}/{variant_name}"
+                if variant == "adapted"
+                else f"{run}/{variant_name}_{variant}"
+            )
             results.append(Result(dataset, setting, method, "eval", metric, float(value), path, model))
     return results
 
@@ -216,8 +221,6 @@ _METHOD_LABELS = {
     "cov_forecast": "cov",
     "avgy": "avgy",
     "y_mean": "mean-Y",
-    "avgy_mix_shared": "avgy-lambda-s",
-    "avgy_mix_horizon": "avgy-lambda-h",
     "cov_ridge_shared": "cov-ridge-s",
     "cov_ridge_horizon": "cov-ridge-h",
     "avgy_ridge_shared": "avgy-ridge-s",
@@ -232,8 +235,6 @@ _METHOD_LABELS = {
     "residual_ridge_horizon": "residual-ridge-h",
     "full_ridge_shared": "full-ridge-s",
     "full_ridge_horizon": "full-ridge-h",
-    "avgy_mix_shared_eval_fit": "avgy-lambda-s-fit-T3",
-    "avgy_mix_horizon_eval_fit": "avgy-lambda-h-fit-T3",
     "cov_ridge_shared_eval_fit": "cov-ridge-s-fit-T3",
     "cov_ridge_horizon_eval_fit": "cov-ridge-h-fit-T3",
     "avgy_ridge_shared_eval_fit": "avgy-ridge-s-fit-T3",
@@ -254,24 +255,66 @@ _METHOD_LABELS = {
     "catboost_cov_classifier_horizon": "cb-cov-cls-h",
     "catboost_cov_regressor_shared": "cb-cov-reg-s",
     "catboost_cov_regressor_horizon": "cb-cov-reg-h",
+    "catboost_cov_classifier_shared_soft": "cb-cov-cls-s-soft",
+    "catboost_cov_classifier_horizon_soft": "cb-cov-cls-h-soft",
+    "catboost_cov_regressor_shared_soft": "cb-cov-reg-s-soft",
+    "catboost_cov_regressor_horizon_soft": "cb-cov-reg-h-soft",
     "bayes_avgy_shared": "bayes-avgy-s",
     "bayes_avgy_horizon": "bayes-avgy-h",
     "catboost_avgy_classifier_shared": "cb-avgy-cls-s",
     "catboost_avgy_classifier_horizon": "cb-avgy-cls-h",
     "catboost_avgy_regressor_shared": "cb-avgy-reg-s",
     "catboost_avgy_regressor_horizon": "cb-avgy-reg-h",
+    "catboost_avgy_classifier_shared_soft": "cb-avgy-cls-s-soft",
+    "catboost_avgy_classifier_horizon_soft": "cb-avgy-cls-h-soft",
+    "catboost_avgy_regressor_shared_soft": "cb-avgy-reg-s-soft",
+    "catboost_avgy_regressor_horizon_soft": "cb-avgy-reg-h-soft",
     "oracle_cov_shared": "oracle-cov-s",
     "oracle_cov_horizon": "oracle-cov-h",
     "oracle_avgy_shared": "oracle-avgy-s",
     "oracle_avgy_horizon": "oracle-avgy-h",
-    "vanilla_branch": "TS-IFA-V",
-    "cov_branch": "TS-IFA-C",
-    "transformed_branch": "TS-IFA-phi",
-    "residual_branch": "TS-IFA-R",
-    "memory_branch": "TS-IFA-M",
-    "ridge_rooter": "TS-IFA-ridge",
+    "joint_ridge": "TS-IFA joint ridge",
+    "joint_neural": "TS-IFA joint neural",
+    "meta_ridge": "TS-IFA meta ridge",
+    "meta_neural": "TS-IFA meta neural",
     "crossrag": "Cross-RAG",
 }
+
+_BASELINE_DESIGN_LABELS = {
+    "cov": "cov",
+    "avgy": "avgy",
+    "y": "Y",
+    "cov_y": "cov-Y",
+    "cov_avgy": "cov-avgy",
+    "residual": "residual",
+    "full": "full",
+}
+for _variant, _variant_label in (
+    ("joint_ridge", "JR"),
+    ("joint_neural", "JN"),
+    ("meta_ridge", "MR"),
+    ("meta_neural", "MN"),
+):
+    for _branch, _branch_label in (
+        ("vanilla", "V"),
+        ("cov", "C"),
+        ("residual", "R"),
+        ("memory", "M"),
+    ):
+        _METHOD_LABELS[f"{_variant}_{_branch}_branch"] = (
+            f"TS-IFA {_variant_label}-{_branch_label}"
+        )
+for _design, _label in _BASELINE_DESIGN_LABELS.items():
+    for _mode, _mode_label in (("shared", "s"), ("horizon", "h")):
+        for _family, _family_label in (
+            ("convex", "convex"),
+            ("delta_ridge", "delta-ridge"),
+        ):
+            _method = f"{_design}_{_family}_{_mode}"
+            _METHOD_LABELS[_method] = f"{_label}-{_family_label}-{_mode_label}"
+            _METHOD_LABELS[f"{_method}_eval_fit"] = (
+                f"{_label}-{_family_label}-{_mode_label}-fit-T3"
+            )
 
 
 def _short_run_name(run: str) -> str:

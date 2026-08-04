@@ -1,4 +1,4 @@
-"""Train TS-IFA branches on T1, then train and compare rooters on T2."""
+"""Train one joint or meta-learned TS-IFA router and score it once on T3."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from einops import rearrange
+from torch.func import functional_call
 from torch.utils.data import DataLoader, Dataset
 
 from src.data.load_dataset import set_seed
@@ -25,7 +26,12 @@ from src.experiments.runtime import log_experiment_separator, setup_logging
 from src.experiments.splits import chronological_date_slices
 from src.models.models import resolve_device
 
-from .model import TSIFAConfig, TimeSeriesInformedForecastingAdapter
+from .model import (
+    TSIFA_ARCHITECTURE,
+    TSIFA_VARIANTS,
+    TSIFAConfig,
+    TimeSeriesInformedForecastingAdapter,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,7 +68,6 @@ class PredictionPayloadDataset(Dataset):
         prefix: str,
         date_slice: slice | None = None,
         max_samples: int | None = None,
-        use_transformed_prediction: bool = False,
     ):
         self.prefix = prefix
         missing = [f"{prefix}_{name}" for name in self.required if f"{prefix}_{name}" not in payload]
@@ -70,8 +75,6 @@ class PredictionPayloadDataset(Dataset):
             raise KeyError(f"payload is missing required TS-IFA keys {missing}")
 
         date_slice = slice(None) if date_slice is None else date_slice
-        transformed_key = f"{prefix}_preds_transformed"
-        self.has_transformed_prediction = transformed_key in payload
         x = payload[f"{prefix}_X_values"][date_slice].float().clone()
         self.n_dates = int(x.shape[0])
         self.n_users = int(x.shape[1])
@@ -88,11 +91,6 @@ class PredictionPayloadDataset(Dataset):
         pred_neighbors = neighbor_to_query_scale(x, x_c_raw, pred_neighbors_raw)
 
         pred = payload[f"{prefix}_preds"][date_slice].float().clone()
-        pred_transformed = (
-            payload[transformed_key][date_slice].float().clone()
-            if self.has_transformed_prediction and use_transformed_prediction
-            else pred
-        )
         self.tensors = {
             "x": flatten_time_user(x),
             "x_c": flatten_time_user(x_c),
@@ -104,7 +102,6 @@ class PredictionPayloadDataset(Dataset):
             "pred_cov": flatten_time_user(
                 payload[f"{prefix}_preds_context"][date_slice].float().clone()
             ),
-            "pred_transformed": flatten_time_user(pred_transformed),
             "pred_neighbors": flatten_time_user(pred_neighbors),
             "residual_c": flatten_time_user(residual_c),
         }
@@ -213,7 +210,6 @@ def prepare_batch(
             "y": (raw["y"] - q_mean) / q_std,
             "pred": (raw["pred"] - q_mean) / q_std,
             "pred_cov": (raw["pred_cov"] - q_mean) / q_std,
-            "pred_transformed": (raw["pred_transformed"] - q_mean) / q_std,
             "x_c": (raw["x_c"] - neighbor_mean) / neighbor_std,
             "y_c": (raw["y_c"] - neighbor_mean) / neighbor_std,
             "pred_neighbors": (raw["pred_neighbors"] - neighbor_mean) / neighbor_std,
@@ -263,18 +259,6 @@ def branch_loss_components(
         "memory": memory,
         "vanilla_anchoring": anchoring,
     }
-    if "transformed_delta" in outputs:
-        transformed = normalized_square(
-            outputs["transformed_prediction"] - batch["y"],
-            scale,
-        )
-        transformed_anchoring = normalized_square(
-            outputs["transformed_prediction"] - batch["pred"],
-            scale,
-        )
-        total = total + transformed
-        anchoring = anchoring + transformed_anchoring
-        result["transformed"] = transformed
     result["vanilla_anchoring"] = anchoring
     result["loss"] = total + float(vanilla_anchor) * anchoring
     return result
@@ -332,9 +316,72 @@ def ridge_prediction(
     vanilla: torch.Tensor,
     coefficients: torch.Tensor,
 ) -> torch.Tensor:
+    candidate_deltas = outputs["candidates"][:, 1:] - vanilla.unsqueeze(1)
     return vanilla + (
-        outputs["candidates"] * coefficients.to(outputs["candidates"]).unsqueeze(0)
+        candidate_deltas * coefficients.to(candidate_deltas).unsqueeze(0)
     ).sum(dim=1)
+
+
+def differentiable_horizon_ridge(
+    design: torch.Tensor,
+    target: torch.Tensor,
+    *,
+    alpha: float,
+    eps: float,
+) -> torch.Tensor:
+    """Solve standardized no-intercept ridge while retaining its autograd graph."""
+    if alpha <= 0:
+        raise ValueError("ridge rooter alpha must be positive")
+    if design.ndim != 3 or target.ndim != 2:
+        raise ValueError("ridge design and target must have shapes (B,C,H) and (B,H)")
+    if design.shape[0] != target.shape[0] or design.shape[-1] != target.shape[-1]:
+        raise ValueError("ridge design and target shapes are incompatible")
+
+    solve_design = design.double()
+    solve_target = target.double()
+    scale = (solve_design.pow(2).mean(dim=0) + float(eps) ** 2).sqrt()
+    standardized = solve_design / scale.unsqueeze(0)
+    xtx = torch.einsum("bjh,bkh->hjk", standardized, standardized)
+    xty = torch.einsum("bjh,bh->hj", standardized, solve_target)
+    candidates = int(design.shape[1])
+    regularized = xtx + float(alpha) * torch.eye(
+        candidates,
+        dtype=xtx.dtype,
+        device=xtx.device,
+    ).unsqueeze(0)
+    standardized_coefficients = torch.linalg.solve(
+        regularized,
+        xty.unsqueeze(-1),
+    ).squeeze(-1)
+    coefficients = standardized_coefficients / rearrange(
+        scale,
+        "candidate horizon -> horizon candidate",
+    )
+    return rearrange(
+        coefficients,
+        "horizon candidate -> candidate horizon",
+    ).to(design)
+
+
+def ridge_query_loss_components(
+    outputs: dict[str, torch.Tensor],
+    batch: dict[str, torch.Tensor],
+    state: dict[str, torch.Tensor],
+    coefficients: torch.Tensor,
+    *,
+    vanilla_anchor: float,
+) -> dict[str, torch.Tensor]:
+    prediction_value = ridge_prediction(outputs, batch["pred"], coefficients)
+    prediction = normalized_square(prediction_value - batch["y"], state["loss_scale"])
+    anchoring = normalized_square(
+        prediction_value - batch["pred"],
+        state["loss_scale"],
+    )
+    return {
+        "loss": prediction + float(vanilla_anchor) * anchoring,
+        "prediction": prediction,
+        "vanilla_anchoring": anchoring,
+    }
 
 
 def fit_horizon_ridge_rooter(
@@ -346,12 +393,12 @@ def fit_horizon_ridge_rooter(
     eps: float,
     alpha: float,
 ) -> torch.Tensor:
-    """Fit a no-intercept, horizon-wise ridge rooter from exact T2 statistics."""
-    if alpha < 0:
-        raise ValueError("ridge rooter alpha cannot be negative")
+    """Fit a no-intercept, horizon-wise ridge rooter from exact split statistics."""
+    if alpha <= 0:
+        raise ValueError("ridge rooter alpha must be positive")
     model.eval()
     horizon = model.config.horizon
-    candidates = len(model.candidate_names)
+    candidates = len(model.rooter_candidate_names)
     xtx = torch.zeros(horizon, candidates, candidates, dtype=torch.float64)
     xty = torch.zeros(horizon, candidates, dtype=torch.float64)
     n_samples = 0
@@ -360,7 +407,9 @@ def fit_horizon_ridge_rooter(
             raw = move_batch(raw_cpu, device)
             batch, _ = prepare_batch(raw, normalization=normalization, eps=eps)
             outputs = model.forward_branches(batch)
-            design = outputs["candidates"].detach().cpu().double()
+            design = (
+                outputs["candidates"][:, 1:] - batch["pred"].unsqueeze(1)
+            ).detach().cpu().double()
             target = (batch["y"] - batch["pred"]).detach().cpu().double()
             xtx += torch.einsum("bjh,bkh->hjk", design, design)
             xty += torch.einsum("bjh,bh->hj", design, target)
@@ -396,7 +445,6 @@ def evaluate(
     device: torch.device,
     normalization: str,
     eps: float,
-    ridge_coefficients: torch.Tensor | None = None,
     prediction_store: PredictionStore | None = None,
 ) -> dict[str, float]:
     model.eval()
@@ -404,8 +452,6 @@ def evaluate(
         "adapted",
         *(f"{name}_branch" for name in model.candidate_names),
     )
-    if ridge_coefficients is not None:
-        variants = (*variants, "ridge_rooter")
     sums = {
         f"{variant}_{metric}": 0.0
         for variant in variants
@@ -429,10 +475,10 @@ def evaluate(
         prediction_store.open(
             "eval",
             "gate_diagnostics",
-            "neural_rooter_coefficients",
+            "rooter_coefficients",
             shape=(
                 len(loader.dataset),
-                len(model.candidate_names),
+                len(model.rooter_candidate_names),
                 model.config.horizon,
             ),
             dtype=np.float32,
@@ -453,12 +499,6 @@ def evaluate(
                     for index, name in enumerate(model.candidate_names)
                 },
             }
-            if ridge_coefficients is not None:
-                normalized_predictions["ridge_rooter"] = ridge_prediction(
-                    outputs,
-                    batch["pred"],
-                    ridge_coefficients,
-                )
             predictions = {
                 name: denormalize(value, state, normalization)
                 for name, value in normalized_predictions.items()
@@ -507,9 +547,370 @@ def resolve_step_frequency(value: int | None, *, default: int, name: str) -> int
 
 def _set_stage_mode(model: TimeSeriesInformedForecastingAdapter, stage: str) -> None:
     model.train()
-    inactive = model.rooter_modules() if stage == "branches" else model.branch_modules()
+    if stage == "branches":
+        inactive = model.rooter_modules()
+    elif stage == "rooter":
+        inactive = model.branch_modules()
+    elif stage == "all":
+        inactive = ()
+    else:
+        raise ValueError(f"unknown training stage {stage!r}")
     for module in inactive:
         module.eval()
+
+
+def named_rooter_parameters(
+    model: TimeSeriesInformedForecastingAdapter,
+) -> dict[str, torch.Tensor]:
+    selected = {id(parameter) for parameter in model.rooter_parameters()}
+    return {
+        name: parameter
+        for name, parameter in model.named_parameters()
+        if id(parameter) in selected
+    }
+
+
+def adapt_neural_rooter(
+    model: TimeSeriesInformedForecastingAdapter,
+    support_batch: dict[str, torch.Tensor],
+    support_state: dict[str, torch.Tensor],
+    *,
+    steps: int,
+    learning_rate: float,
+    first_order: bool,
+    vanilla_anchor: float,
+    coefficient_l2: float,
+    horizon_smoothness: float,
+) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+    """Take differentiable support updates from the learned neural-rooter initialization."""
+    fast_parameters = named_rooter_parameters(model)
+    support_losses: dict[str, torch.Tensor] = {}
+    for _ in range(int(steps)):
+        outputs = functional_call(model, fast_parameters, (support_batch,), strict=False)
+        support_losses = rooter_loss_components(
+            outputs,
+            support_batch,
+            support_state,
+            vanilla_anchor=vanilla_anchor,
+            coefficient_l2=coefficient_l2,
+            horizon_smoothness=horizon_smoothness,
+        )
+        gradients = torch.autograd.grad(
+            support_losses["loss"],
+            tuple(fast_parameters.values()),
+            create_graph=not first_order,
+        )
+        fast_parameters = {
+            name: parameter - float(learning_rate) * gradient
+            for (name, parameter), gradient in zip(fast_parameters.items(), gradients)
+        }
+    return fast_parameters, support_losses
+
+
+def train_bilevel_stage(
+    model: TimeSeriesInformedForecastingAdapter,
+    *,
+    support_loader: DataLoader,
+    query_loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    epochs: int,
+    device: torch.device,
+    normalization: str,
+    eps: float,
+    grad_clip: float,
+    valid_eval_freq: int,
+    logging_eval_freq: int,
+    variant: str,
+    neural_inner_steps: int,
+    neural_inner_lr: float,
+    neural_first_order: bool,
+    ridge_alpha: float,
+    branch_aux_weight: float,
+    vanilla_anchor: float,
+    coefficient_l2: float,
+    horizon_smoothness: float,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Optimize branches for adaptation after a support-set rooter update."""
+    if variant not in {"meta_ridge", "meta_neural"}:
+        raise ValueError(f"bilevel training requires a meta variant, found {variant!r}")
+    history: list[dict[str, Any]] = []
+    train_steps: list[dict[str, Any]] = []
+    recent_totals: dict[str, float] = {}
+    recent_seen = 0
+    step = 0
+    steps_per_epoch = min(len(support_loader), len(query_loader))
+    total_steps = int(epochs) * max(1, steps_per_epoch)
+    LOGGER.info(
+        "stage start stage=bilevel_meta epochs=%s total_steps=%s "
+        "neural_inner_steps=%s neural_first_order=%s",
+        epochs,
+        total_steps,
+        neural_inner_steps,
+        neural_first_order,
+    )
+    for epoch in range(1, int(epochs) + 1):
+        _set_stage_mode(model, "all")
+        for support_cpu, query_cpu in zip(support_loader, query_loader):
+            step += 1
+            support_raw = move_batch(support_cpu, device)
+            query_raw = move_batch(query_cpu, device)
+            support_batch, support_state = prepare_batch(
+                support_raw,
+                normalization=normalization,
+                eps=eps,
+            )
+            query_batch, query_state = prepare_batch(
+                query_raw,
+                normalization=normalization,
+                eps=eps,
+            )
+
+            optimizer.zero_grad(set_to_none=True)
+            if variant == "meta_ridge":
+                support_outputs = model.forward_branches(support_batch)
+                support_design = (
+                    support_outputs["candidates"][:, 1:]
+                    - support_batch["pred"].unsqueeze(1)
+                )
+                ridge_coefficients = differentiable_horizon_ridge(
+                    support_design,
+                    support_batch["y"] - support_batch["pred"],
+                    alpha=ridge_alpha,
+                    eps=eps,
+                )
+                query_outputs = model.forward_branches(query_batch)
+                rooter_query = ridge_query_loss_components(
+                    query_outputs,
+                    query_batch,
+                    query_state,
+                    ridge_coefficients,
+                    vanilla_anchor=vanilla_anchor,
+                )
+                support_prediction = normalized_square(
+                    ridge_prediction(support_outputs, support_batch["pred"], ridge_coefficients)
+                    - support_batch["y"],
+                    support_state["loss_scale"],
+                )
+            else:
+                fast_rooter, neural_support = adapt_neural_rooter(
+                    model,
+                    support_batch,
+                    support_state,
+                    steps=neural_inner_steps,
+                    learning_rate=neural_inner_lr,
+                    first_order=neural_first_order,
+                    vanilla_anchor=vanilla_anchor,
+                    coefficient_l2=coefficient_l2,
+                    horizon_smoothness=horizon_smoothness,
+                )
+                query_outputs = functional_call(
+                    model,
+                    fast_rooter,
+                    (query_batch,),
+                    strict=False,
+                )
+                rooter_query = rooter_loss_components(
+                    query_outputs,
+                    query_batch,
+                    query_state,
+                    vanilla_anchor=vanilla_anchor,
+                    coefficient_l2=coefficient_l2,
+                    horizon_smoothness=horizon_smoothness,
+                )
+                support_prediction = neural_support["prediction"]
+            branch_aux = branch_loss_components(
+                query_outputs,
+                query_batch,
+                query_state,
+                vanilla_anchor=vanilla_anchor,
+            )
+            outer_loss = (
+                rooter_query["loss"] + float(branch_aux_weight) * branch_aux["loss"]
+            )
+            outer_loss.backward()
+            if grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+
+            losses = {
+                "loss": outer_loss,
+                "rooter_query": rooter_query["prediction"],
+                "rooter_support": support_prediction,
+                "branch_aux": branch_aux["loss"],
+                "residual_aux": branch_aux["residual"],
+                "memory_aux": branch_aux["memory"],
+            }
+            batch_size = int(query_raw["x"].shape[0])
+            loss_values = {key: float(value.detach().item()) for key, value in losses.items()}
+            train_steps.append(
+                {
+                    "stage": "bilevel_meta",
+                    "epoch": epoch,
+                    "step": step,
+                    **{f"train_{key}": value for key, value in loss_values.items()},
+                }
+            )
+            if not recent_totals:
+                recent_totals = {key: 0.0 for key in loss_values}
+            recent_seen += batch_size
+            for key, value in loss_values.items():
+                recent_totals[key] += value * batch_size
+
+            final_step = step == total_steps
+            should_record = step % valid_eval_freq == 0 or final_step
+            should_log = step % logging_eval_freq == 0 or final_step
+            if not should_record:
+                continue
+            row = {
+                "stage": "bilevel_meta",
+                "epoch": epoch,
+                "step": step,
+                **{
+                    f"t1_query_{key}": value / max(recent_seen, 1)
+                    for key, value in recent_totals.items()
+                },
+            }
+            history.append(row)
+            if should_log:
+                LOGGER.info(
+                    "stage progress stage=bilevel_meta step=%s/%s "
+                    "variant=%s query_rooter_nmse=%.6f branch_aux=%.6f",
+                    step,
+                    total_steps,
+                    variant,
+                    row["t1_query_rooter_query"],
+                    row["t1_query_branch_aux"],
+                )
+            recent_totals = {key: 0.0 for key in recent_totals}
+            recent_seen = 0
+    return history, train_steps
+
+
+def joint_loss_components(
+    outputs: dict[str, torch.Tensor],
+    batch: dict[str, torch.Tensor],
+    state: dict[str, torch.Tensor],
+    *,
+    branch_aux_weight: float,
+    vanilla_anchor: float,
+    coefficient_l2: float,
+    horizon_smoothness: float,
+) -> dict[str, torch.Tensor]:
+    rooter = rooter_loss_components(
+        outputs,
+        batch,
+        state,
+        vanilla_anchor=vanilla_anchor,
+        coefficient_l2=coefficient_l2,
+        horizon_smoothness=horizon_smoothness,
+    )
+    branches = branch_loss_components(
+        outputs,
+        batch,
+        state,
+        vanilla_anchor=vanilla_anchor,
+    )
+    return {
+        "loss": rooter["loss"] + float(branch_aux_weight) * branches["loss"],
+        "prediction": rooter["prediction"],
+        "rooter_regularization": rooter["loss"] - rooter["prediction"],
+        "branch_aux": branches["loss"],
+    }
+
+
+def train_joint_stage(
+    model: TimeSeriesInformedForecastingAdapter,
+    *,
+    loader: DataLoader,
+    validation_loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    epochs: int,
+    device: torch.device,
+    normalization: str,
+    eps: float,
+    grad_clip: float,
+    valid_eval_freq: int,
+    logging_eval_freq: int,
+    branch_aux_weight: float,
+    vanilla_anchor: float,
+    coefficient_l2: float,
+    horizon_smoothness: float,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Jointly update branches and the active rooter on T1; select on T2."""
+    history: list[dict[str, Any]] = []
+    steps: list[dict[str, Any]] = []
+    recent: dict[str, float] = {}
+    recent_seen = 0
+    step = 0
+    total_steps = int(epochs) * max(1, len(loader))
+    best_nmse = float("inf")
+    best_state: dict[str, torch.Tensor] | None = None
+    for epoch in range(1, int(epochs) + 1):
+        _set_stage_mode(model, "all")
+        for raw_cpu in loader:
+            step += 1
+            raw = move_batch(raw_cpu, device)
+            batch, state = prepare_batch(raw, normalization=normalization, eps=eps)
+            optimizer.zero_grad(set_to_none=True)
+            outputs = model(batch)
+            losses = joint_loss_components(
+                outputs,
+                batch,
+                state,
+                branch_aux_weight=branch_aux_weight,
+                vanilla_anchor=vanilla_anchor,
+                coefficient_l2=coefficient_l2,
+                horizon_smoothness=horizon_smoothness,
+            )
+            losses["loss"].backward()
+            if grad_clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+            values = {key: float(value.detach()) for key, value in losses.items()}
+            batch_size = int(raw["x"].shape[0])
+            steps.append({"stage": "joint", "epoch": epoch, "step": step, **values})
+            if not recent:
+                recent = {key: 0.0 for key in values}
+            recent_seen += batch_size
+            for key, value in values.items():
+                recent[key] += value * batch_size
+
+            final_step = step == total_steps
+            if step % valid_eval_freq != 0 and not final_step:
+                continue
+            diagnostic = evaluate(
+                model,
+                validation_loader,
+                device=device,
+                normalization=normalization,
+                eps=eps,
+            )
+            row = {
+                "stage": "joint",
+                "epoch": epoch,
+                "step": step,
+                **{f"train_{key}": value / max(recent_seen, 1) for key, value in recent.items()},
+                **{f"t2_{key}": value for key, value in diagnostic.items()},
+            }
+            history.append(row)
+            if diagnostic["adapted_nmse"] < best_nmse:
+                best_nmse = diagnostic["adapted_nmse"]
+                best_state = _state_dict_cpu(model)
+                row["selected"] = True
+            if step % logging_eval_freq == 0 or final_step:
+                LOGGER.info(
+                    "stage progress stage=joint step=%s/%s train_nmse=%.6f t2_nmse=%.6f",
+                    step,
+                    total_steps,
+                    row["train_prediction"],
+                    diagnostic["adapted_nmse"],
+                )
+            recent = {key: 0.0 for key in recent}
+            recent_seen = 0
+    if best_state is None:
+        raise RuntimeError("joint training produced no T2 checkpoint")
+    model.load_state_dict(best_state)
+    return history, steps
 
 
 def train_stage(
@@ -530,7 +931,6 @@ def train_stage(
     grad_clip: float,
     valid_eval_freq: int,
     logging_eval_freq: int,
-    ridge_coefficients: torch.Tensor | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     history: list[dict[str, Any]] = []
     train_steps: list[dict[str, Any]] = []
@@ -599,7 +999,6 @@ def train_stage(
                 device=device,
                 normalization=normalization,
                 eps=eps,
-                ridge_coefficients=ridge_coefficients,
             )
             row.update({f"t2_{key}": value for key, value in diagnostic.items()})
             history.append(row)
@@ -609,20 +1008,12 @@ def train_stage(
                     if stage == "rooter"
                     else sum(
                         diagnostic[key]
-                        for key in (
-                            "residual_branch_nmse",
-                            "memory_branch_nmse",
-                            "transformed_branch_nmse",
-                        )
+                        for key in ("residual_branch_nmse", "memory_branch_nmse")
                         if key in diagnostic
                     )
                     / sum(
                         key in diagnostic
-                        for key in (
-                            "residual_branch_nmse",
-                            "memory_branch_nmse",
-                            "transformed_branch_nmse",
-                        )
+                        for key in ("residual_branch_nmse", "memory_branch_nmse")
                     )
                 )
                 LOGGER.info(
@@ -640,7 +1031,7 @@ def train_stage(
 
 
 def plot_training(
-    branch_history: list[dict[str, Any]],
+    train_history: list[dict[str, Any]],
     rooter_history: list[dict[str, Any]],
     output_path: Path,
 ) -> None:
@@ -650,40 +1041,23 @@ def plot_training(
     import matplotlib.pyplot as plt
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    if branch_history:
-        steps = [row["step"] for row in branch_history]
-        axes[0].plot(
-            steps,
-            [row["train_batch_residual"] for row in branch_history],
-            label="T1 residual train",
-        )
-        axes[0].plot(
-            steps,
-            [row["train_batch_memory"] for row in branch_history],
-            label="T1 memory train",
-        )
-        axes[0].plot(
-            steps,
-            [row["t2_residual_branch_nmse"] for row in branch_history],
-            label="T2 residual",
-        )
-        axes[0].plot(
-            steps,
-            [row["t2_memory_branch_nmse"] for row in branch_history],
-            label="T2 memory",
-        )
-        if "train_batch_transformed" in branch_history[0]:
+    if train_history:
+        steps = [row["step"] for row in train_history]
+        if train_history[0]["stage"] == "joint":
+            axes[0].plot(steps, [row["train_prediction"] for row in train_history], label="T1")
+            axes[0].plot(steps, [row["t2_adapted_nmse"] for row in train_history], label="T2")
+        else:
             axes[0].plot(
                 steps,
-                [row["train_batch_transformed"] for row in branch_history],
-                label="T1 transformed train",
+                [row["t1_query_rooter_query"] for row in train_history],
+                label="T1 query rooter",
             )
             axes[0].plot(
                 steps,
-                [row["t2_transformed_branch_nmse"] for row in branch_history],
-                label="T2 transformed",
+                [row["t1_query_branch_aux"] for row in train_history],
+                label="T1 branch auxiliary",
             )
-    axes[0].set_title("T1 branch training")
+    axes[0].set_title("T1 optimization")
     axes[0].set_xlabel("Step")
     axes[0].set_ylabel("nMSE")
     axes[0].grid(True, alpha=0.3)
@@ -701,17 +1075,12 @@ def plot_training(
             [row["t2_adapted_nmse"] for row in rooter_history],
             label="T2 neural rooter",
         )
-        if "t2_ridge_rooter_nmse" in rooter_history[0]:
-            axes[1].plot(
-                steps,
-                [row["t2_ridge_rooter_nmse"] for row in rooter_history],
-                label="T2 ridge rooter",
-            )
-    axes[1].set_title("T2 rooter training")
+    axes[1].set_title("T2 neural fit (meta only)")
     axes[1].set_xlabel("Step")
     axes[1].set_ylabel("nMSE")
     axes[1].grid(True, alpha=0.3)
-    axes[1].legend()
+    if rooter_history:
+        axes[1].legend()
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -723,7 +1092,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--adapt-payload", default=None)
     parser.add_argument("--eval-payload", default=None)
     parser.add_argument("--output-dir", default=None)
-    parser.add_argument("--branch-epochs", type=int, default=10000)
+    parser.add_argument(
+        "--run-signature",
+        default="direct_cli",
+        help="Exact launcher configuration signature recorded for completion checks.",
+    )
+    parser.add_argument("--variant", choices=TSIFA_VARIANTS, default="joint_ridge")
+    parser.add_argument("--train-epochs", type=int, default=10000)
     parser.add_argument("--rooter-epochs", type=int, default=10000)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--eval-batch-size", type=int, default=None)
@@ -731,16 +1106,24 @@ def parse_args() -> argparse.Namespace:
         "--valid-eval-freq",
         type=int,
         default=None,
-        help="Run deterministic T2 diagnostics every N optimizer steps in each stage.",
+        help="Record T1-query or T2 diagnostics every N optimizer steps.",
     )
     parser.add_argument(
         "--logging-eval-freq",
         type=int,
         default=None,
-        help="Log interval-average train and T2 metrics every N optimizer steps.",
+        help="Log interval-average meta-query and T2 metrics every N optimizer steps.",
     )
     parser.add_argument("--branch-lr", type=float, default=1e-5)
     parser.add_argument("--rooter-lr", type=float, default=1e-5)
+    parser.add_argument("--neural-inner-lr", type=float, default=1e-3)
+    parser.add_argument("--neural-inner-steps", type=int, default=1)
+    parser.add_argument(
+        "--neural-first-order",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use the first-order MAML approximation for neural inner updates.",
+    )
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument(
         "--vanilla-anchor",
@@ -761,6 +1144,7 @@ def parse_args() -> argparse.Namespace:
         help="First-order horizon penalty on rooter coefficients; 0 disables it.",
     )
     parser.add_argument("--ridge-rooter-alpha", type=float, default=1e-2)
+    parser.add_argument("--branch-aux-weight", type=float, default=0.1)
     parser.add_argument("--normalization", default="instance", choices=["instance", "none"])
     parser.add_argument("--device", default="auto")
     parser.add_argument("--seed", type=int, default=None)
@@ -771,6 +1155,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.2,
         help="Chronological fraction of pooled T1+T2 query dates assigned to T2/rooter fitting",
+    )
+    parser.add_argument(
+        "--meta-query-fraction",
+        type=float,
+        default=0.2,
+        help="Chronological fraction of T1 query dates assigned to the outer meta-query subset.",
     )
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--grad-clip", type=float, default=1.0)
@@ -783,22 +1173,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--residual-hidden", type=int, default=128)
     parser.add_argument("--memory-hidden", type=int, default=128)
     parser.add_argument("--rooter-hidden", type=int, default=None)
-    parser.add_argument("--transformed-hidden", type=int, default=128)
-    parser.add_argument(
-        "--precomputed-transformed-expert",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Include the extracted sign/sqrt frozen expert; disabled by default.",
-    )
-    parser.add_argument(
-        "--learnable-transformed-covariate",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help=(
-            "Add u=MLP(x) to the transformed expert and train its forecast head on T1. "
-            "This also enables the transformed candidate."
-        ),
-    )
     parser.add_argument(
         "--vanilla-anchoring-init",
         action=argparse.BooleanOptionalAction,
@@ -831,11 +1205,19 @@ def resolve_paths(args: argparse.Namespace) -> tuple[Path, Path | None, Path]:
 
 
 def _resolved_epochs(args: argparse.Namespace) -> tuple[int, int]:
-    branch_epochs = int(args.branch_epochs)
+    train_epochs = int(args.train_epochs)
     rooter_epochs = int(args.rooter_epochs)
-    if branch_epochs <= 0 or rooter_epochs <= 0:
-        raise ValueError("branch and rooter epochs must be positive")
-    return branch_epochs, rooter_epochs
+    if train_epochs <= 0 or rooter_epochs <= 0:
+        raise ValueError("train and rooter epochs must be positive")
+    if args.variant == "meta_neural" and int(args.neural_inner_steps) <= 0:
+        raise ValueError("neural inner steps must be positive")
+    if args.variant == "meta_neural" and float(args.neural_inner_lr) <= 0:
+        raise ValueError("neural inner learning rate must be positive")
+    if args.variant == "meta_ridge" and float(args.ridge_rooter_alpha) <= 0:
+        raise ValueError("ridge rooter alpha must be positive for closed-form solves")
+    if float(args.branch_aux_weight) < 0:
+        raise ValueError("branch_aux_weight cannot be negative")
+    return train_epochs, rooter_epochs
 
 
 def _state_dict_cpu(model: TimeSeriesInformedForecastingAdapter) -> dict[str, torch.Tensor]:
@@ -849,16 +1231,41 @@ def _branch_state_dict_cpu(
         "residual_attention.",
         "residual_head.",
         "memory_attention.",
-        "memory_skip.",
         "memory_head.",
-        "transformed_covariate.",
-        "transformed_head.",
     )
     return {
         name: value.detach().cpu()
         for name, value in model.state_dict().items()
         if name.startswith(prefixes)
     }
+
+
+def _rooter_state_dict_cpu(
+    model: TimeSeriesInformedForecastingAdapter,
+) -> dict[str, torch.Tensor]:
+    return {
+        name: parameter.detach().cpu()
+        for name, parameter in named_rooter_parameters(model).items()
+    }
+
+
+def nested_date_slice(parent: slice, child: slice) -> slice:
+    start = int(parent.start or 0)
+    return slice(start + int(child.start or 0), start + int(child.stop))
+
+
+def split_sample_limit(
+    maximum: int | None,
+    *,
+    query_fraction: float,
+) -> tuple[int | None, int | None]:
+    if maximum is None:
+        return None, None
+    maximum = int(maximum)
+    if maximum < 2:
+        raise ValueError("max train samples must be at least two for support/query meta-training")
+    query = min(maximum - 1, max(1, int(round(maximum * float(query_fraction)))))
+    return maximum - query, query
 
 
 def main() -> dict[str, Path]:
@@ -872,290 +1279,265 @@ def main() -> dict[str, Path]:
         raise FileNotFoundError(adapt_payload_path)
     if eval_payload_path is not None and not eval_payload_path.is_file():
         raise FileNotFoundError(eval_payload_path)
-    input_directories = {adapt_payload_path.resolve().parent}
-    if eval_payload_path is not None:
-        input_directories.add(eval_payload_path.resolve().parent)
-    if output_dir.resolve() in input_directories:
-        raise ValueError("output directory must differ from extraction directories")
     if output_dir.exists():
         shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    branch_epochs, rooter_epochs = _resolved_epochs(args)
+    output_dir.mkdir(parents=True)
+    train_epochs, rooter_epochs = _resolved_epochs(args)
+    variant = str(args.variant)
+    optimization, rooter_form = variant.split("_", maxsplit=1)
     LOGGER.info(
-        "experiment start kind=ts_ifa_train input=%s branch_epochs=%s rooter_epochs=%s "
-        "batch_size=%s",
-        adapt_payload_path.parent,
-        branch_epochs,
+        "experiment start kind=ts_ifa variant=%s train_epochs=%s rooter_epochs=%s",
+        variant,
+        train_epochs,
         rooter_epochs,
-        args.batch_size,
     )
 
     adapt_payload = torch_load(adapt_payload_path)
-    n_adapt_dates = int(adapt_payload["adapt_X_values"].shape[0])
-    train_dates, rooter_dates = chronological_date_slices(
-        n_adapt_dates,
-        args.validation_fraction,
+    train_dates, t2_dates = chronological_date_slices(
+        int(adapt_payload["adapt_X_values"].shape[0]), args.validation_fraction
     )
-    train_dataset = PredictionPayloadDataset(
-        adapt_payload,
-        prefix="adapt",
-        date_slice=train_dates,
-        max_samples=args.max_train_samples,
-        use_transformed_prediction=args.precomputed_transformed_expert,
+    t2_dataset = PredictionPayloadDataset(
+        adapt_payload, prefix="adapt", date_slice=t2_dates, max_samples=args.max_valid_samples
     )
-    rooter_dataset = PredictionPayloadDataset(
-        adapt_payload,
-        prefix="adapt",
-        date_slice=rooter_dates,
-        max_samples=args.max_valid_samples,
-        use_transformed_prediction=args.precomputed_transformed_expert,
-    )
+    train_dataset: PredictionPayloadDataset | None = None
+    support_dataset: PredictionPayloadDataset | None = None
+    query_dataset: PredictionPayloadDataset | None = None
+    if optimization == "joint":
+        train_dataset = PredictionPayloadDataset(
+            adapt_payload, prefix="adapt", date_slice=train_dates, max_samples=args.max_train_samples
+        )
+        reference_dataset = train_dataset
+    else:
+        n_train_dates = int(train_dates.stop) - int(train_dates.start or 0)
+        support_local, query_local = chronological_date_slices(n_train_dates, args.meta_query_fraction)
+        support_max, query_max = split_sample_limit(
+            args.max_train_samples, query_fraction=args.meta_query_fraction
+        )
+        support_dataset = PredictionPayloadDataset(
+            adapt_payload,
+            prefix="adapt",
+            date_slice=nested_date_slice(train_dates, support_local),
+            max_samples=support_max,
+        )
+        query_dataset = PredictionPayloadDataset(
+            adapt_payload,
+            prefix="adapt",
+            date_slice=nested_date_slice(train_dates, query_local),
+            max_samples=query_max,
+        )
+        reference_dataset = support_dataset
+        ensure_compatible(reference_dataset, query_dataset, name="meta query")
     del adapt_payload
     gc.collect()
+
     eval_dataset = None
-    if eval_payload_path is not None and eval_payload_path.exists():
+    if eval_payload_path is not None:
         eval_payload = torch_load(eval_payload_path)
-        eval_dataset = PredictionPayloadDataset(
-            eval_payload,
-            prefix="eval",
-            use_transformed_prediction=args.precomputed_transformed_expert,
-        )
+        eval_dataset = PredictionPayloadDataset(eval_payload, prefix="eval")
         del eval_payload
         gc.collect()
-    ensure_compatible(train_dataset, rooter_dataset, name="rooter")
-    ensure_compatible(train_dataset, eval_dataset, name="evaluation")
-    if args.precomputed_transformed_expert:
-        missing_transformed = [
-            name
-            for name, dataset in (
-                ("T1", train_dataset),
-                ("T2", rooter_dataset),
-                ("T3", eval_dataset),
-            )
-            if dataset is not None and not dataset.has_transformed_prediction
-        ]
-        if missing_transformed:
-            raise ValueError(
-                "the precomputed transformed expert was requested but is absent "
-                f"from {missing_transformed}; rerun extraction with "
-                "--compute-transformed-prediction or disable the expert"
-            )
-    LOGGER.info(
-        "payload load done t1_samples=%s t2_samples=%s t3_samples=%s",
-        len(train_dataset),
-        len(rooter_dataset),
-        len(eval_dataset) if eval_dataset is not None else 0,
-    )
+    ensure_compatible(reference_dataset, t2_dataset, name="T2")
+    ensure_compatible(reference_dataset, eval_dataset, name="T3")
     log_scale_diagnostics("T1", train_dataset)
-    log_scale_diagnostics("T2", rooter_dataset)
+    log_scale_diagnostics("T1 support", support_dataset)
+    log_scale_diagnostics("T1 query", query_dataset)
+    log_scale_diagnostics("T2", t2_dataset)
     log_scale_diagnostics("T3", eval_dataset)
 
     eval_batch_size = args.eval_batch_size or args.batch_size
-    branch_loader = DataLoader(
-        RandomPredictionPayloadDataset(train_dataset, virtual_size=args.batch_size),
+    random_loader = lambda dataset: DataLoader(
+        RandomPredictionPayloadDataset(dataset, virtual_size=args.batch_size),
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
     )
-    rooter_train_loader = DataLoader(
-        RandomPredictionPayloadDataset(rooter_dataset, virtual_size=args.batch_size),
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers,
-    )
-    rooter_full_loader = DataLoader(
-        rooter_dataset,
+    full_loader = lambda dataset: DataLoader(
+        dataset,
         batch_size=eval_batch_size,
         shuffle=False,
         num_workers=args.num_workers,
     )
-    eval_loader = (
-        DataLoader(
-            eval_dataset,
-            batch_size=eval_batch_size,
-            shuffle=False,
-            num_workers=args.num_workers,
-        )
-        if eval_dataset is not None
-        else None
-    )
+    t2_full_loader = full_loader(t2_dataset)
+    eval_loader = full_loader(eval_dataset) if eval_dataset is not None else None
 
-    rooter_heads = args.rooter_heads or 4
-    rooter_attn_dim = args.rooter_attn_dim or 32
-    rooter_hidden = args.rooter_hidden or 128
     config = TSIFAConfig(
-        lags=train_dataset.lags,
-        horizon=train_dataset.horizon,
-        neighbors=train_dataset.neighbors,
+        lags=reference_dataset.lags,
+        horizon=reference_dataset.horizon,
+        neighbors=reference_dataset.neighbors,
+        rooter_form=rooter_form,
         residual_heads=args.residual_heads,
         memory_heads=args.memory_heads,
-        rooter_heads=rooter_heads,
+        rooter_heads=args.rooter_heads or 4,
         residual_attn_dim=args.residual_attn_dim,
         memory_attn_dim=args.memory_attn_dim,
-        rooter_attn_dim=rooter_attn_dim,
+        rooter_attn_dim=args.rooter_attn_dim or 32,
         residual_hidden=args.residual_hidden,
         memory_hidden=args.memory_hidden,
-        rooter_hidden=rooter_hidden,
-        transformed_hidden=args.transformed_hidden,
-        precomputed_transformed_expert=bool(args.precomputed_transformed_expert),
-        learnable_transformed_covariate=bool(args.learnable_transformed_covariate),
+        rooter_hidden=args.rooter_hidden or 128,
         vanilla_anchoring_init=bool(args.vanilla_anchoring_init),
         dropout=args.dropout,
     )
     device = resolve_device(args.device)
     model = TimeSeriesInformedForecastingAdapter(config).to(device)
     total_parameters = sum(parameter.numel() for parameter in model.parameters())
-    branch_parameters = sum(parameter.numel() for parameter in model.branch_parameters())
-    neural_rooter_parameters = sum(parameter.numel() for parameter in model.rooter_parameters())
-    ridge_rooter_parameters = len(model.candidate_names) * config.horizon
-    LOGGER.info(
-        "model ready name=TS-IFA device=%s parameters_total=%s branches=%s "
-        "neural_rooter=%s ridge_rooter=%s",
-        device,
-        f"{total_parameters:,}",
-        f"{branch_parameters:,}",
-        f"{neural_rooter_parameters:,}",
-        f"{ridge_rooter_parameters:,}",
-    )
-
-    eps = 1e-8
-    valid_eval_freq = resolve_step_frequency(
-        args.valid_eval_freq,
-        default=1,
-        name="valid_eval_freq",
-    )
+    branch_parameter_count = sum(parameter.numel() for parameter in model.branch_parameters())
+    rooter_parameter_count = sum(parameter.numel() for parameter in model.rooter_parameters())
+    valid_eval_freq = resolve_step_frequency(args.valid_eval_freq, default=1, name="valid_eval_freq")
     logging_eval_freq = resolve_step_frequency(
-        args.logging_eval_freq,
-        default=valid_eval_freq,
-        name="logging_eval_freq",
+        args.logging_eval_freq, default=valid_eval_freq, name="logging_eval_freq"
     )
-    if logging_eval_freq % valid_eval_freq != 0:
+    if logging_eval_freq % valid_eval_freq:
         raise ValueError("logging_eval_freq must be a multiple of valid_eval_freq")
 
+    eps = 1e-8
     training_start = perf_counter()
-    model.set_trainable_stage("branches")
-    branch_optimizer = torch.optim.AdamW(
-        model.branch_parameters(),
-        lr=args.branch_lr,
-        weight_decay=args.weight_decay,
-    )
-    branch_history, branch_steps = train_stage(
-        model,
-        stage="branches",
-        loader=branch_loader,
-        diagnostic_loader=rooter_full_loader,
-        optimizer=branch_optimizer,
-        loss_function=lambda outputs, batch, state: branch_loss_components(
-            outputs,
-            batch,
-            state,
-            vanilla_anchor=args.vanilla_anchor,
-        ),
-        epochs=branch_epochs,
-        device=device,
-        normalization=args.normalization,
-        eps=eps,
-        grad_clip=args.grad_clip,
-        valid_eval_freq=valid_eval_freq,
-        logging_eval_freq=logging_eval_freq,
-    )
-
-    branches_path = output_dir / "branches.pt"
-    torch.save(
-        {
-            "branch_state_dict": _branch_state_dict_cpu(model),
-            "config": asdict(config),
-            "stage": "T1_branches",
-            "candidate_names": model.candidate_names,
-            "parameter_counts": {"branches": branch_parameters},
-        },
-        branches_path,
-    )
-
-    LOGGER.info("ridge rooter fit start split=T2 alpha=%s", args.ridge_rooter_alpha)
-    ridge_coefficients = fit_horizon_ridge_rooter(
-        model,
-        rooter_full_loader,
-        device=device,
-        normalization=args.normalization,
-        eps=eps,
-        alpha=args.ridge_rooter_alpha,
-    )
-    ridge_path = output_dir / "ridge_rooter.pt"
-    torch.save(
-        {
-            "coefficients": ridge_coefficients,
-            "candidate_names": model.candidate_names,
-            "alpha": args.ridge_rooter_alpha,
-            "fit_split": "T2",
-            "parameter_count": ridge_rooter_parameters,
-        },
-        ridge_path,
-    )
-
-    model.set_trainable_stage("rooter")
-    rooter_optimizer = torch.optim.AdamW(
-        model.rooter_parameters(),
-        lr=args.rooter_lr,
-        weight_decay=args.weight_decay,
-    )
-    rooter_history, rooter_steps = train_stage(
-        model,
-        stage="rooter",
-        loader=rooter_train_loader,
-        diagnostic_loader=rooter_full_loader,
-        optimizer=rooter_optimizer,
-        loss_function=lambda outputs, batch, state: rooter_loss_components(
-            outputs,
-            batch,
-            state,
+    rooter_history: list[dict[str, Any]] = []
+    rooter_steps: list[dict[str, Any]] = []
+    if optimization == "joint":
+        model.set_trainable_stage("all")
+        optimizer = torch.optim.AdamW(
+            [
+                {"params": model.branch_parameters(), "lr": args.branch_lr},
+                {"params": model.rooter_parameters(), "lr": args.rooter_lr},
+            ],
+            weight_decay=args.weight_decay,
+        )
+        train_history, train_steps = train_joint_stage(
+            model,
+            loader=random_loader(train_dataset),
+            validation_loader=t2_full_loader,
+            optimizer=optimizer,
+            epochs=train_epochs,
+            device=device,
+            normalization=args.normalization,
+            eps=eps,
+            grad_clip=args.grad_clip,
+            valid_eval_freq=valid_eval_freq,
+            logging_eval_freq=logging_eval_freq,
+            branch_aux_weight=args.branch_aux_weight,
             vanilla_anchor=args.vanilla_anchor,
             coefficient_l2=args.coefficient_l2,
             horizon_smoothness=args.horizon_smoothness,
-        ),
-        epochs=rooter_epochs,
-        device=device,
-        normalization=args.normalization,
-        eps=eps,
-        grad_clip=args.grad_clip,
-        valid_eval_freq=valid_eval_freq,
-        logging_eval_freq=logging_eval_freq,
-        ridge_coefficients=ridge_coefficients,
+        )
+        t1_description = "T1_joint_gradient_updates_with_T2_checkpoint_selection"
+        t1_dates_count, t1_samples_count = train_dataset.n_dates, len(train_dataset)
+    else:
+        model.set_trainable_stage("all")
+        parameter_groups = [{"params": model.branch_parameters(), "lr": args.branch_lr}]
+        if rooter_form == "neural":
+            parameter_groups.append({"params": model.rooter_parameters(), "lr": args.rooter_lr})
+        optimizer = torch.optim.AdamW(parameter_groups, weight_decay=args.weight_decay)
+        train_history, train_steps = train_bilevel_stage(
+            model,
+            support_loader=random_loader(support_dataset),
+            query_loader=random_loader(query_dataset),
+            optimizer=optimizer,
+            epochs=train_epochs,
+            device=device,
+            normalization=args.normalization,
+            eps=eps,
+            grad_clip=args.grad_clip,
+            valid_eval_freq=valid_eval_freq,
+            logging_eval_freq=logging_eval_freq,
+            variant=variant,
+            neural_inner_steps=args.neural_inner_steps,
+            neural_inner_lr=args.neural_inner_lr,
+            neural_first_order=bool(args.neural_first_order),
+            ridge_alpha=args.ridge_rooter_alpha,
+            branch_aux_weight=args.branch_aux_weight,
+            vanilla_anchor=args.vanilla_anchor,
+            coefficient_l2=args.coefficient_l2,
+            horizon_smoothness=args.horizon_smoothness,
+        )
+        if rooter_form == "ridge":
+            coefficients = fit_horizon_ridge_rooter(
+                model,
+                t2_full_loader,
+                device=device,
+                normalization=args.normalization,
+                eps=eps,
+                alpha=args.ridge_rooter_alpha,
+            )
+            with torch.no_grad():
+                model.ridge_coefficients.copy_(coefficients.to(model.ridge_coefficients))
+        else:
+            model.set_trainable_stage("rooter")
+            rooter_optimizer = torch.optim.AdamW(
+                model.rooter_parameters(), lr=args.rooter_lr, weight_decay=args.weight_decay
+            )
+            rooter_history, rooter_steps = train_stage(
+                model,
+                stage="rooter",
+                loader=random_loader(t2_dataset),
+                diagnostic_loader=t2_full_loader,
+                optimizer=rooter_optimizer,
+                loss_function=lambda outputs, batch, state: rooter_loss_components(
+                    outputs,
+                    batch,
+                    state,
+                    vanilla_anchor=args.vanilla_anchor,
+                    coefficient_l2=args.coefficient_l2,
+                    horizon_smoothness=args.horizon_smoothness,
+                ),
+                epochs=rooter_epochs,
+                device=device,
+                normalization=args.normalization,
+                eps=eps,
+                grad_clip=args.grad_clip,
+                valid_eval_freq=valid_eval_freq,
+                logging_eval_freq=logging_eval_freq,
+            )
+        model.set_trainable_stage("all")
+        t1_description = "T1_chronological_support_query_meta_updates_then_T2_rooter_fit"
+        t1_dates_count = support_dataset.n_dates + query_dataset.n_dates
+        t1_samples_count = len(support_dataset) + len(query_dataset)
+
+    branches_path = output_dir / "branches.pt"
+    rooter_path = output_dir / "rooter.pt"
+    torch.save(
+        {
+            "branch_state_dict": _branch_state_dict_cpu(model),
+            "variant": variant,
+            "architecture": TSIFA_ARCHITECTURE,
+            "run_signature": args.run_signature,
+            "config": asdict(config),
+        },
+        branches_path,
     )
-    model.set_trainable_stage("all")
-    LOGGER.info("training done seconds=%.2f", perf_counter() - training_start)
+    rooter_payload: dict[str, Any] = {
+        "rooter_state_dict": _rooter_state_dict_cpu(model),
+        "variant": variant,
+        "rooter_form": rooter_form,
+        "optimization": optimization,
+        "architecture": TSIFA_ARCHITECTURE,
+        "run_signature": args.run_signature,
+        "candidate_names": model.rooter_candidate_names,
+        "parameter_count": rooter_parameter_count,
+    }
+    if rooter_form == "ridge":
+        rooter_payload["coefficients"] = model.ridge_coefficients.detach().cpu()
+        rooter_payload["fit"] = "gradient_updates_on_T1" if optimization == "joint" else "closed_form_on_T2"
+        rooter_payload["alpha"] = args.ridge_rooter_alpha
+    torch.save(rooter_payload, rooter_path)
 
     final_eval: dict[str, float] = {}
     prediction_store = PredictionStore(output_dir)
     if eval_loader is not None:
-        LOGGER.info("evaluation start split=T3")
         final_eval = evaluate(
             model,
             eval_loader,
             device=device,
             normalization=args.normalization,
             eps=eps,
-            ridge_coefficients=ridge_coefficients,
             prediction_store=prediction_store,
-        )
-        LOGGER.info(
-            "evaluation done neural_nmse=%.6f ridge_nmse=%.6f residual_nmse=%.6f "
-            "memory_nmse=%.6f transformed_nmse=%s",
-            final_eval["adapted_nmse"],
-            final_eval["ridge_rooter_nmse"],
-            final_eval["residual_branch_nmse"],
-            final_eval["memory_branch_nmse"],
-            (
-                f"{final_eval['transformed_branch_nmse']:.6f}"
-                if "transformed_branch_nmse" in final_eval
-                else "disabled"
-            ),
         )
     prediction_manifest = prediction_store.finalize(
         metadata={
             "family": "ts_ifa",
+            "variant": variant,
             "candidate_names": list(model.candidate_names),
-            "gate_diagnostics": ["neural_rooter_coefficients"],
+            "rooter_candidate_names": list(model.rooter_candidate_names),
+            "gate_diagnostics": ["rooter_coefficients"],
         }
     )
 
@@ -1164,88 +1546,83 @@ def main() -> dict[str, Path]:
     metrics_path = output_dir / "eval_metrics.json"
     config_path = output_dir / "config.json"
     plot_path = output_dir / "training_nmse.pdf"
+    common = {
+        "name": "TS-IFA",
+        "variant": variant,
+        "rooter_form": rooter_form,
+        "optimization": optimization,
+        "architecture": TSIFA_ARCHITECTURE,
+        "run_signature": args.run_signature,
+        "model": asdict(config),
+        "candidate_names": model.candidate_names,
+        "rooter_candidate_names": model.rooter_candidate_names,
+        "parameters": {
+            "total": total_parameters,
+            "branches": branch_parameter_count,
+            "rooter": rooter_parameter_count,
+        },
+    }
     torch.save(
         {
+            **common,
             "model_state_dict": _state_dict_cpu(model),
-            "config": asdict(config),
-            "model_name": "TS-IFA",
-            "candidate_names": model.candidate_names,
-            "parameter_counts": {
-                "total": total_parameters,
-                "trainable": total_parameters,
-                "branches": branch_parameters,
-                "neural_rooter": neural_rooter_parameters,
-                "ridge_rooter": ridge_rooter_parameters,
-                "branches_plus_ridge_rooter": branch_parameters + ridge_rooter_parameters,
-            },
-            "normalization": args.normalization,
             "adapt_payload": str(adapt_payload_path),
             "eval_payload": str(eval_payload_path) if eval_payload_path else None,
-            "branch_epochs": branch_epochs,
-            "rooter_epochs": rooter_epochs,
         },
         checkpoint_path,
     )
     save_json(
         history_path,
         {
-            "history": [*branch_history, *rooter_history],
-            "branch_history": branch_history,
+            "history": [*train_history, *rooter_history],
+            "train_history": train_history,
             "rooter_history": rooter_history,
-            "train_steps": [*branch_steps, *rooter_steps],
+            "train_steps": [*train_steps, *rooter_steps],
         },
     )
     save_json(metrics_path, final_eval)
-    plot_training(branch_history, rooter_history, plot_path)
-    save_json(
-        config_path,
-        {
-            "name": "TS-IFA",
-            "model": asdict(config),
-            "candidate_names": model.candidate_names,
-            "parameters": {
-                "total": total_parameters,
-                "trainable": total_parameters,
-                "branches": branch_parameters,
-                "neural_rooter": neural_rooter_parameters,
-                "ridge_rooter": ridge_rooter_parameters,
-                "branches_plus_ridge_rooter": branch_parameters + ridge_rooter_parameters,
-            },
-            "training": {
-                "pipeline": ["T1_branches", "T2_rooters", "T3_evaluation"],
-                "branch_optimizer": "AdamW",
-                "rooter_optimizer": "AdamW",
-                "branch_lr": args.branch_lr,
-                "rooter_lr": args.rooter_lr,
-                "weight_decay": args.weight_decay,
-                "normalization": args.normalization,
-                "regularizers": {
-                    "vanilla_anchor": args.vanilla_anchor,
-                    "coefficient_l2": args.coefficient_l2,
-                    "first_order_horizon_smoothness": args.horizon_smoothness,
-                },
-                "ridge_rooter_alpha": args.ridge_rooter_alpha,
-                "branch_train_split": "T1",
-                "rooter_train_split": "T2",
-                "final_eval_split": "T3",
-                "branch_epochs": branch_epochs,
-                "rooter_epochs": rooter_epochs,
-                "random_epoch_size": args.batch_size,
-                "valid_eval_freq": valid_eval_freq,
-                "logging_eval_freq": logging_eval_freq,
-                "seconds": perf_counter() - training_start,
-            },
+    plot_training(train_history, rooter_history, plot_path)
+    training = {
+        "pipeline": t1_description,
+        "train_split": "T1",
+        "validation_or_fit_split": "T2",
+        "final_eval_split": "T3",
+        "train_epochs": train_epochs,
+        "rooter_epochs": rooter_epochs if variant == "meta_neural" else 0,
+        "t1_dates": t1_dates_count,
+        "t1_samples": t1_samples_count,
+        "t2_dates": t2_dataset.n_dates,
+        "t2_samples": len(t2_dataset),
+        "meta_query_fraction": args.meta_query_fraction if optimization == "meta" else None,
+        "branch_lr": args.branch_lr,
+        "rooter_lr": args.rooter_lr,
+        "neural_inner_lr": args.neural_inner_lr if variant == "meta_neural" else None,
+        "neural_inner_steps": args.neural_inner_steps if variant == "meta_neural" else None,
+        "neural_first_order": bool(args.neural_first_order) if variant == "meta_neural" else None,
+        "regularizers": {
+            "vanilla_anchor": args.vanilla_anchor,
+            "coefficient_l2": args.coefficient_l2,
+            "horizon_smoothness": args.horizon_smoothness,
+            "closed_form_ridge_alpha": args.ridge_rooter_alpha if variant == "meta_ridge" else None,
+            "branch_auxiliary_weight": args.branch_aux_weight,
         },
-    )
+        "seconds": perf_counter() - training_start,
+    }
+    save_json(config_path, {**common, "training": training})
     result_manifest = output_dir / "result_manifest.json"
     save_json(
         result_manifest,
         {
             "format": "adaptation_ts_ifa_result",
+            "variant": variant,
+            "rooter_form": rooter_form,
+            "optimization": optimization,
+            "architecture": TSIFA_ARCHITECTURE,
+            "run_signature": args.run_signature,
             "files": {
                 "checkpoint": checkpoint_path.name,
                 "branches": branches_path.name,
-                "ridge_rooter": ridge_path.name,
+                "rooter": rooter_path.name,
                 "history": history_path.name,
                 "metrics": metrics_path.name,
                 "predictions": prediction_manifest.name,
@@ -1254,13 +1631,13 @@ def main() -> dict[str, Path]:
             },
         },
     )
-    LOGGER.info("outputs saved dir=%s", output_dir)
+    LOGGER.info("outputs saved variant=%s dir=%s", variant, output_dir)
     LOGGER.info("experiment done seconds=%.2f", perf_counter() - experiment_start)
     log_experiment_separator(LOGGER)
     return {
         "checkpoint": checkpoint_path,
         "branches": branches_path,
-        "ridge_rooter": ridge_path,
+        "rooter": rooter_path,
         "history": history_path,
         "metrics": metrics_path,
         "predictions": prediction_manifest,
