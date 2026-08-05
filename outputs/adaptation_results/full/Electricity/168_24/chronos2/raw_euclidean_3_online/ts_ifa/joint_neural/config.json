@@ -1,0 +1,67 @@
+{
+  "name": "TS-IFA",
+  "variant": "joint_neural",
+  "rooter_form": "neural",
+  "optimization": "joint",
+  "architecture": "shared_delta_branches_four_rooters_v3",
+  "run_signature": "architecture=shared_delta_branches_four_rooters_v3;variant=joint_neural;train_epochs=10000;rooter_epochs=10000;batch_size=256;validation_fraction=0.2;meta_query_fraction=0.2;valid_eval_freq=1000;logging_eval_freq=1000;max_train_samples=;max_valid_samples=;branch_lr=0.00001;rooter_lr=0.00001;neural_inner_lr=0.001;neural_inner_steps=1;neural_first_order=true;weight_decay=0.0001;vanilla_anchor=0.01;coefficient_l2=0.01;horizon_smoothness=0.01;ridge_alpha=0.01;branch_aux_weight=0.1;dropout=0.0;heads=4;attention_dim=32;hidden_dim=128;vanilla_anchoring_init=true;normalization=instance;seed=1",
+  "model": {
+    "lags": 168,
+    "horizon": 24,
+    "neighbors": 3,
+    "rooter_form": "neural",
+    "residual_heads": 4,
+    "memory_heads": 4,
+    "rooter_heads": 4,
+    "residual_attn_dim": 32,
+    "memory_attn_dim": 32,
+    "rooter_attn_dim": 32,
+    "residual_hidden": 128,
+    "memory_hidden": 128,
+    "rooter_hidden": 128,
+    "vanilla_anchoring_init": true,
+    "dropout": 0.0
+  },
+  "candidate_names": [
+    "vanilla",
+    "cov",
+    "residual",
+    "memory"
+  ],
+  "rooter_candidate_names": [
+    "cov",
+    "residual",
+    "memory"
+  ],
+  "parameters": {
+    "total": 845656,
+    "branches": 522080,
+    "rooter": 323576
+  },
+  "training": {
+    "pipeline": "T1_joint_gradient_updates_with_T2_checkpoint_selection",
+    "train_split": "T1",
+    "validation_or_fit_split": "T2",
+    "final_eval_split": "T3",
+    "train_epochs": 10000,
+    "rooter_epochs": 0,
+    "t1_dates": 438,
+    "t1_samples": 136656,
+    "t2_dates": 110,
+    "t2_samples": 34320,
+    "meta_query_fraction": null,
+    "branch_lr": 1e-05,
+    "rooter_lr": 1e-05,
+    "neural_inner_lr": null,
+    "neural_inner_steps": null,
+    "neural_first_order": null,
+    "regularizers": {
+      "vanilla_anchor": 0.01,
+      "coefficient_l2": 0.01,
+      "horizon_smoothness": 0.01,
+      "closed_form_ridge_alpha": null,
+      "branch_auxiliary_weight": 0.1
+    },
+    "seconds": 134.26123711839318
+  }
+}
