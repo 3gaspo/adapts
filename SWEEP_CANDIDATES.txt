@@ -1,7 +1,7 @@
 ADAPTATION SCREEN CANDIDATES
 
-Source profile: screen
-Selection date: 2026-08-03
+Source profiles: screen plus convex, delta-ridge, and CatBoost formulation ablations
+Selection date: 2026-08-05
 Backbone: chronos2
 
 SELECTED PIPELINES
@@ -26,14 +26,14 @@ NOTES
 - bayes_cov_shared is the selected Bayes candidate. The bayes_avgy_shared screen gate selected vanilla and produced approximately zero improvement.
 - No convex or delta-ridge baseline entered the selected nine. All six selected baseline pipelines are shared ridge models.
 - Both selected learned CatBoost pipelines are hard shared regressors; no classifier, soft-mixture, or horizon CatBoost variant entered this screen.
+- The completed formulation ablations retained all six shared-ridge controls and both hard shared CatBoost regressors. No convex, delta-ridge, classifier, soft-mixture, or horizon variant earned promotion.
+- The shared Bayes cov gate remains as an inexpensive constant-decision control.
 
-NEXT STAGE: FORMULATION ABLATIONS, CANDIDATE RESELECTION, THEN K ABLATION
+NEXT STAGE: K ABLATION, THEN FURTHER SELECTED-CANDIDATE ABLATIONS
 
-Run the convex, delta-ridge, and CatBoost formulation fronts on the selected
-controls above. These nine pipelines are provisional inputs to the formulation
-ablations, not the final K-ablation list. After all three result profiles are
-synchronized and analyzed, replace this list with the newly selected candidates
-before rerunning K or any further selected-candidate ablation.
+The formulation ablations are complete and the final K-ablation input remains
+the nine pipelines above. Pass the WINNERS_CSV value explicitly to
+k_ablation.slurm; the front does not read this file automatically.
 
 K grid: 1, 3, 5, 10, 15, 20
 K selection rule: choose one K per expanded candidate by its equal-configuration

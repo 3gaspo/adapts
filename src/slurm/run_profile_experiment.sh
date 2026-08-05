@@ -109,9 +109,9 @@ parse_winners() {
     append_unique METHODS "$method"
     if [ "$EXPERIMENT_MODE" = k_ablation ]; then
       csv_to_array "$PROFILE_K_CSV" k_values
-      for k in "${k_values[@]}"; do append_unique NEIGHBORS "$k"; done
+      for k in "${k_values[@]}"; do append_unique SELECTED_NEIGHBORS "$k"; done
     else
-      append_unique NEIGHBORS "$group_neighbors"
+      append_unique SELECTED_NEIGHBORS "$group_neighbors"
     fi
     RETRIEVAL_MODE_SELECTED="$retrieval"
   done
@@ -153,7 +153,10 @@ fi
 declare -A GROUP_METHODS=()
 SPACES=()
 METRICS=()
-NEIGHBORS=()
+# Sourced extraction/evaluation scripts own a NEIGHBORS array. Keep the
+# orchestrator's complete grid separate so the last executed group cannot
+# narrow the final tables to one K value.
+SELECTED_NEIGHBORS=()
 FAMILIES=()
 METHODS=()
 PIPELINES=()
@@ -181,7 +184,7 @@ if [ "$EXPERIMENT_MODE" = crossrag ]; then
   source "$PROJECT_ROOT/src/slurm/run_crossrag.sh"
   append_unique SPACES minmax
   append_unique METRICS cosine
-  append_unique NEIGHBORS 15
+  append_unique SELECTED_NEIGHBORS 15
   PIPELINES+=("minmax_cosine_15_online/crossrag")
   FAMILIES=(comparison)
   METHODS+=(crossrag)
@@ -199,7 +202,7 @@ MODELS_CSV="$PROFILE_MODELS_CSV"
 SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
 DISTANCE_SPACES_CSV="$(join_csv_values "${SPACES[@]}")"
 DISTANCE_METRICS_CSV="$(join_csv_values "${METRICS[@]}")"
-NEIGHBORS_CSV="$(join_csv_values "${NEIGHBORS[@]}")"
+NEIGHBORS_CSV="$(join_csv_values "${SELECTED_NEIGHBORS[@]}")"
 FAMILIES_CSV="$(join_csv_values "${FAMILIES[@]}")"
 METHODS_CSV="$(join_csv_values "${METHODS[@]}")"
 PIPELINES_CSV="$(join_csv_values "${PIPELINES[@]}")"

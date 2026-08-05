@@ -89,6 +89,14 @@ def main() -> None:
     assert not (ROOT / "ts_ifa.slurm").exists()
     assert not (ROOT / "src" / "slurm" / "run_univariate.sh").exists()
 
+    profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "SELECTED_NEIGHBORS=()" in profile_runner
+    assert 'append_unique SELECTED_NEIGHBORS "$group_neighbors"' in profile_runner
+    assert 'append_unique SELECTED_NEIGHBORS "$k"' in profile_runner
+    assert 'NEIGHBORS_CSV="$(join_csv_values "${SELECTED_NEIGHBORS[@]}")"' in profile_runner
+
     common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")
     assert "copy_if_needed()" in common
     assert 'mktemp "$destination_dir/.${destination##*/}.XXXXXX"' in common
