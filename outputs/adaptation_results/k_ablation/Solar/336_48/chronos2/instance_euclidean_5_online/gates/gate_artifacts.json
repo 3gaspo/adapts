@@ -1,0 +1,139 @@
+{
+  "format": "adaptation_gate_models",
+  "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+  "config": {
+    "iterations": 2,
+    "learning_rate": 0.03,
+    "depth": 4,
+    "early_stopping_rounds": 50,
+    "seed": 1,
+    "task_type": "CPU",
+    "devices": null,
+    "thread_count": 2,
+    "horizon_fits": "serial",
+    "scalar_feature_names": [
+      "candidate_minus_vanilla_mean",
+      "candidate_minus_vanilla_std",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ],
+    "horizon_feature_names": [
+      "candidate_minus_vanilla_h",
+      "neighbor_y_minus_vanilla_mean_h",
+      "neighbor_y_minus_vanilla_std_h",
+      "neighbor_y_minus_neighbor_pred_mean_h",
+      "neighbor_y_minus_neighbor_pred_std_h",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ]
+  },
+  "models": {
+    "catboost_cov_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_cov_regressor_shared/shared.cbm"
+      }
+    ],
+    "catboost_avgy_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_shared/shared.cbm"
+      }
+    ]
+  },
+  "bayes": {
+    "cov": {
+      "shared_score": -8.00219440460205,
+      "horizon_score": [
+        -7.462843418121338,
+        3.4788784980773926,
+        17.339038848876953,
+        16.70578956604004,
+        7.111776828765869,
+        1.6400339603424072,
+        0.30064085125923157,
+        0.12731175124645233,
+        0.3449258804321289,
+        0.5044921040534973,
+        0.3865237236022949,
+        0.37382304668426514,
+        0.23513127863407135,
+        0.1323869526386261,
+        0.11440033465623856,
+        0.2146512269973755,
+        0.49629005789756775,
+        1.3875914812088013,
+        1.482509970664978,
+        -1.7901508808135986,
+        -18.59908676147461,
+        -29.12554359436035,
+        -39.51679992675781,
+        -43.225868225097656,
+        -47.42417907714844,
+        -35.63039016723633,
+        -11.410916328430176,
+        -2.961064100265503,
+        8.660666465759277,
+        1.9204167127609253,
+        0.6331630945205688,
+        0.5940573811531067,
+        0.06167513132095337,
+        0.08071333914995193,
+        0.17029927670955658,
+        0.25127384066581726,
+        0.23530903458595276,
+        0.4632651209831238,
+        0.43026041984558105,
+        0.2402297705411911,
+        -0.018553754314780235,
+        0.06358041614294052,
+        -1.2882055044174194,
+        -4.282598972320557,
+        -20.127639770507812,
+        -56.21744155883789,
+        -62.666969299316406,
+        -68.5372085571289
+      ]
+    }
+  },
+  "feature_importance_files": [
+    "plots/feature_importance_cov_regressor_shared.csv",
+    "plots/feature_importance_cov_regressor_shared.png",
+    "plots/feature_importance_avgy_regressor_shared.csv",
+    "plots/feature_importance_avgy_regressor_shared.png"
+  ]
+}

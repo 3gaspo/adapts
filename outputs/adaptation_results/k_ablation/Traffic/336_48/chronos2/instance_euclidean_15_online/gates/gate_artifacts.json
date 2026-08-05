@@ -1,0 +1,139 @@
+{
+  "format": "adaptation_gate_models",
+  "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+  "config": {
+    "iterations": 2,
+    "learning_rate": 0.03,
+    "depth": 4,
+    "early_stopping_rounds": 50,
+    "seed": 1,
+    "task_type": "CPU",
+    "devices": null,
+    "thread_count": 2,
+    "horizon_fits": "serial",
+    "scalar_feature_names": [
+      "candidate_minus_vanilla_mean",
+      "candidate_minus_vanilla_std",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ],
+    "horizon_feature_names": [
+      "candidate_minus_vanilla_h",
+      "neighbor_y_minus_vanilla_mean_h",
+      "neighbor_y_minus_vanilla_std_h",
+      "neighbor_y_minus_neighbor_pred_mean_h",
+      "neighbor_y_minus_neighbor_pred_std_h",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ]
+  },
+  "models": {
+    "catboost_cov_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_cov_regressor_shared/shared.cbm"
+      }
+    ],
+    "catboost_avgy_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_shared/shared.cbm"
+      }
+    ]
+  },
+  "bayes": {
+    "cov": {
+      "shared_score": -2.153473178623244e-05,
+      "horizon_score": [
+        -5.420498564490117e-05,
+        -6.11558643868193e-05,
+        -1.717867053230293e-05,
+        -5.320862328517251e-06,
+        -1.4905662055753055e-06,
+        -2.589817995612975e-06,
+        2.1214577827777248e-06,
+        -1.3677320566785056e-05,
+        -3.10156392515637e-05,
+        -2.8169368306407705e-05,
+        -5.240597602096386e-05,
+        -5.789843271486461e-05,
+        -1.8239770724903792e-05,
+        -1.908444801301812e-06,
+        -2.1439846022985876e-06,
+        -1.226899826178851e-06,
+        -9.253671464648505e-07,
+        -3.742223597669181e-08,
+        -6.022540333106008e-08,
+        -4.421632411322207e-07,
+        -1.792374973774713e-06,
+        -1.111443907575449e-05,
+        -2.6296975192963146e-05,
+        -6.629507697653025e-05,
+        -0.00011706700752256438,
+        -0.00011779145279433578,
+        -4.021936547360383e-05,
+        -1.6588355720159598e-05,
+        -7.80900245445082e-06,
+        -7.496673333662329e-06,
+        8.434834057879925e-07,
+        -1.3049839253653772e-06,
+        -2.8524802473839372e-05,
+        -2.6128069293918088e-05,
+        -5.329148916644044e-05,
+        -6.210112769622356e-05,
+        -1.6174231859622523e-05,
+        -1.659700842537859e-06,
+        -3.324689032524475e-06,
+        -3.1830954867473338e-06,
+        -2.9594737043225905e-06,
+        -2.109994056809228e-06,
+        -2.715846221690299e-06,
+        -3.432868879826856e-06,
+        -4.628529950423399e-06,
+        -1.2021829206787515e-05,
+        -2.5060669941012748e-05,
+        -2.545125244068913e-05
+      ]
+    }
+  },
+  "feature_importance_files": [
+    "plots/feature_importance_cov_regressor_shared.csv",
+    "plots/feature_importance_cov_regressor_shared.png",
+    "plots/feature_importance_avgy_regressor_shared.csv",
+    "plots/feature_importance_avgy_regressor_shared.png"
+  ]
+}

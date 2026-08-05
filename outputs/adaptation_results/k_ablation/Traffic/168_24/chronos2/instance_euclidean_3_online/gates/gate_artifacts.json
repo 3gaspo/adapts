@@ -1,0 +1,115 @@
+{
+  "format": "adaptation_gate_models",
+  "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+  "config": {
+    "iterations": 2,
+    "learning_rate": 0.03,
+    "depth": 4,
+    "early_stopping_rounds": 50,
+    "seed": 1,
+    "task_type": "CPU",
+    "devices": null,
+    "thread_count": 2,
+    "horizon_fits": "serial",
+    "scalar_feature_names": [
+      "candidate_minus_vanilla_mean",
+      "candidate_minus_vanilla_std",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ],
+    "horizon_feature_names": [
+      "candidate_minus_vanilla_h",
+      "neighbor_y_minus_vanilla_mean_h",
+      "neighbor_y_minus_vanilla_std_h",
+      "neighbor_y_minus_neighbor_pred_mean_h",
+      "neighbor_y_minus_neighbor_pred_std_h",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ]
+  },
+  "models": {
+    "catboost_cov_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_cov_regressor_shared/shared.cbm"
+      }
+    ],
+    "catboost_avgy_regressor_shared": [
+      {
+        "selected_iterations": 2,
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_shared/shared.cbm"
+      }
+    ]
+  },
+  "bayes": {
+    "cov": {
+      "shared_score": -2.9817929316777736e-05,
+      "horizon_score": [
+        -5.292537753120996e-05,
+        -4.807368168258108e-05,
+        -1.3304653293744195e-05,
+        -1.4697670849272981e-05,
+        -1.3631113688461483e-05,
+        -1.1616330084507354e-05,
+        -7.047401595627889e-06,
+        -3.431579898460768e-05,
+        -6.810271588619798e-05,
+        -8.186428749468178e-05,
+        -0.00010281606955686584,
+        -7.329202344408259e-05,
+        -2.9830353014403954e-05,
+        -8.99462065717671e-06,
+        -9.612379471946042e-06,
+        -8.655725650896784e-06,
+        -5.784127097285818e-06,
+        -2.04344746634888e-06,
+        -2.792566419884679e-06,
+        -3.203675760232727e-06,
+        -5.7599463616497815e-06,
+        -1.5444540622411296e-05,
+        -2.4372988264076412e-05,
+        -7.744925824226812e-05
+      ]
+    }
+  },
+  "feature_importance_files": [
+    "plots/feature_importance_cov_regressor_shared.csv",
+    "plots/feature_importance_cov_regressor_shared.png",
+    "plots/feature_importance_avgy_regressor_shared.csv",
+    "plots/feature_importance_avgy_regressor_shared.png"
+  ]
+}

@@ -1,0 +1,25 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.46.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcc}
+\toprule
+Model & IN\_L2\_3 & raw\_L2\_3 \\
+\midrule
+cov-ridge-s & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{2.14\%}\\{\scriptsize 0.46}\end{tabular} \\
+cov-delta-ridge-s & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{0.65\%}\\{\scriptsize 0.46}\end{tabular} \\
+Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{2.29\%}\\{\scriptsize 0.45}\end{tabular} & -- \\
+Y-delta-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.35\%}\\{\scriptsize 0.46}\end{tabular} & -- \\
+cov-Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{2.55\%}\\{\scriptsize 0.45}\end{tabular} & -- \\
+cov-Y-delta-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.47\%}\\{\scriptsize 0.46}\end{tabular} & -- \\
+cov-avgy-ridge-s & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{2.31\%}\\{\scriptsize 0.45}\end{tabular} \\
+cov-avgy-delta-ridge-s & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.18\%}\\{\scriptsize 0.46}\end{tabular} \\
+residual-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{2.54\%}\\{\scriptsize 0.45}\end{tabular} & -- \\
+residual-delta-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.34\%}\\{\scriptsize 0.46}\end{tabular} & -- \\
+full-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{2.73\%}}\\{\scriptsize 0.45}\end{tabular} & -- \\
+full-delta-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.52\%}\\{\scriptsize 0.46}\end{tabular} & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}

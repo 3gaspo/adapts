@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & IN\_L2\_3/Y-ridge-s & IN\_L2\_3/Y-convex-s & IN\_L2\_3/cov-Y-ridge-s & IN\_L2\_3/cov-Y-convex-s & IN\_L2\_3/residual-ridge-s & IN\_L2\_3/residual-convex-s & IN\_L2\_3/full-ridge-s & IN\_L2\_3/full-convex-s & raw\_L2\_3/cov-ridge-s & raw\_L2\_3/cov-convex-s & raw\_L2\_3/cov-avgy-ridge-s & raw\_L2\_3/cov-avgy-convex-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 168--24 & $\times 10^{-1}$ & 2.09 & 2.00 & 1.99 & \textbf{1.96} & 1.96 & 2.01 & 2.01 & 1.97 & 1.96 & 1.98 & 1.98 & 1.98 & 1.98 \\
+ & 336--48 & $\times 10^{-1}$ & 1.94 & 1.94 & 1.93 & 1.95 & 1.93 & 1.95 & \textbf{1.93} & 1.95 & \textbf{1.93} & 1.94 & 1.94 & 1.94 & 1.94 \\
+ & 504--168 & $\times 10^{-1}$ & 2.45 & 2.41 & 2.42 & 2.41 & 2.42 & \textbf{2.41} & 2.41 & 2.41 & 2.41 & 2.43 & 2.43 & 2.43 & 2.43 \\
+\midrule
+\multirow{3}{*}{Traffic} & 168--24 & $\times 10^{-1}$ & 2.96 & 2.88 & 2.87 & 2.87 & 2.86 & 2.87 & 2.86 & 2.87 & \textbf{2.86} & 2.91 & 2.90 & 2.87 & 2.86 \\
+ & 336--48 & $\times 10^{-1}$ & 2.70 & 2.67 & 2.67 & 2.67 & 2.67 & 2.66 & 2.66 & \textbf{2.65} & 2.65 & 2.69 & 2.69 & 2.68 & 2.68 \\
+ & 504--168 & $\times 10^{-1}$ & 2.73 & 2.70 & 2.70 & 2.70 & 2.70 & 2.70 & 2.69 & 2.70 & \textbf{2.69} & 2.73 & 2.72 & 2.71 & 2.71 \\
+\midrule
+\multirow{3}{*}{Solar} & 168--24 & $\times 10^{-1}$ & 2.04 & 2.01 & 2.03 & 2.01 & 2.03 & \textbf{2.00} & 2.06 & 2.00 & 2.06 & 2.00 & 2.16 & 2.00 & 2.09 \\
+ & 336--48 & $\times 10^{-1}$ & 2.31 & 2.17 & 2.27 & 2.16 & 2.27 & 2.16 & 2.27 & 2.16 & 2.27 & \textbf{2.16} & 2.31 & 2.16 & 2.25 \\
+ & 504--168 & $\times 10^{-1}$ & 2.77 & 2.58 & 2.70 & 2.56 & 2.70 & \textbf{2.54} & 2.68 & 2.55 & 2.68 & 2.56 & 2.76 & 2.56 & 2.72 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 168--24 & $\times 10^{-1}$ & 6.19 & 6.19 & 6.19 & 6.19 & 6.46 & 6.20 & 6.82 & 6.19 & 6.82 & \textbf{6.19} & 6.22 & 6.19 & 6.22 \\
+ & 336--48 & $\times 10^{-1}$ & 6.03 & 6.00 & 6.16 & 6.00 & 6.16 & 6.00 & 6.21 & 5.99 & 6.20 & 6.01 & \textbf{5.99} & 6.01 & 6.03 \\
+ & 504--168 & $\times 10^{0}$ & 2.13 & 2.10 & 2.13 & 2.09 & 2.10 & 2.08 & 2.13 & \textbf{2.08} & 2.10 & 2.11 & 2.13 & 2.10 & 2.13 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results}
+\end{table}

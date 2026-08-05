@@ -1,0 +1,38 @@
+[
+  {
+    "split": "eval",
+    "baseline": "vanilla",
+    "mse": 5569495.078654078,
+    "mae": 213.75184153766008,
+    "nmse": 0.24478885385533303,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_cov_shared",
+    "mse": 5569495.078654078,
+    "mae": 213.75184153766008,
+    "nmse": 0.24478885385533303,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_cov_regressor_shared",
+    "mse": 6277866.159224542,
+    "mae": 219.22852153266473,
+    "nmse": 0.24486525637998238,
+    "positive_window_pct": 0.08012820512820513,
+    "relative_nmse_improvement_pct": -0.031211602753166128
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_avgy_regressor_shared",
+    "mse": 6010465.210051583,
+    "mae": 217.06254664574374,
+    "nmse": 0.24482022538835496,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": -0.012815752240285649
+  }
+]

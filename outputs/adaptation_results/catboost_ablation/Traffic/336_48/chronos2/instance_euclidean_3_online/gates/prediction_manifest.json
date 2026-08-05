@@ -1,0 +1,59 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "avgy": "predictions/adapt/predictions/avgy.npy",
+        "bayes_avgy_shared": "predictions/adapt/predictions/bayes_avgy_shared.npy",
+        "bayes_avgy_horizon": "predictions/adapt/predictions/bayes_avgy_horizon.npy",
+        "oracle_avgy_shared": "predictions/adapt/predictions/oracle_avgy_shared.npy",
+        "oracle_avgy_horizon": "predictions/adapt/predictions/oracle_avgy_horizon.npy",
+        "catboost_avgy_classifier_shared": "predictions/adapt/predictions/catboost_avgy_classifier_shared.npy",
+        "catboost_avgy_regressor_shared": "predictions/adapt/predictions/catboost_avgy_regressor_shared.npy",
+        "catboost_avgy_regressor_shared_soft": "predictions/adapt/predictions/catboost_avgy_regressor_shared_soft.npy",
+        "catboost_avgy_regressor_horizon": "predictions/adapt/predictions/catboost_avgy_regressor_horizon.npy"
+      },
+      "gate_diagnostics": {
+        "avgy_shared_target": "predictions/adapt/gate_diagnostics/avgy_shared_target.npy",
+        "avgy_horizon_target": "predictions/adapt/gate_diagnostics/avgy_horizon_target.npy",
+        "catboost_avgy_classifier_shared_score": "predictions/adapt/gate_diagnostics/catboost_avgy_classifier_shared_score.npy",
+        "catboost_avgy_regressor_shared_score": "predictions/adapt/gate_diagnostics/catboost_avgy_regressor_shared_score.npy",
+        "catboost_avgy_regressor_shared_soft_probability": "predictions/adapt/gate_diagnostics/catboost_avgy_regressor_shared_soft_probability.npy",
+        "catboost_avgy_regressor_horizon_score": "predictions/adapt/gate_diagnostics/catboost_avgy_regressor_horizon_score.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "avgy": "predictions/eval/predictions/avgy.npy",
+        "bayes_avgy_shared": "predictions/eval/predictions/bayes_avgy_shared.npy",
+        "bayes_avgy_horizon": "predictions/eval/predictions/bayes_avgy_horizon.npy",
+        "oracle_avgy_shared": "predictions/eval/predictions/oracle_avgy_shared.npy",
+        "oracle_avgy_horizon": "predictions/eval/predictions/oracle_avgy_horizon.npy",
+        "catboost_avgy_classifier_shared": "predictions/eval/predictions/catboost_avgy_classifier_shared.npy",
+        "catboost_avgy_regressor_shared": "predictions/eval/predictions/catboost_avgy_regressor_shared.npy",
+        "catboost_avgy_regressor_shared_soft": "predictions/eval/predictions/catboost_avgy_regressor_shared_soft.npy",
+        "catboost_avgy_regressor_horizon": "predictions/eval/predictions/catboost_avgy_regressor_horizon.npy"
+      },
+      "gate_diagnostics": {
+        "avgy_shared_target": "predictions/eval/gate_diagnostics/avgy_shared_target.npy",
+        "avgy_horizon_target": "predictions/eval/gate_diagnostics/avgy_horizon_target.npy",
+        "catboost_avgy_classifier_shared_score": "predictions/eval/gate_diagnostics/catboost_avgy_classifier_shared_score.npy",
+        "catboost_avgy_regressor_shared_score": "predictions/eval/gate_diagnostics/catboost_avgy_regressor_shared_score.npy",
+        "catboost_avgy_regressor_shared_soft_probability": "predictions/eval/gate_diagnostics/catboost_avgy_regressor_shared_soft_probability.npy",
+        "catboost_avgy_regressor_horizon_score": "predictions/eval/gate_diagnostics/catboost_avgy_regressor_horizon_score.npy"
+      }
+    },
+    "fit": {
+      "gate_diagnostics": {
+        "bayes_avgy_shared_score": "predictions/fit/gate_diagnostics/bayes_avgy_shared_score.npy",
+        "bayes_avgy_horizon_score": "predictions/fit/gate_diagnostics/bayes_avgy_horizon_score.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

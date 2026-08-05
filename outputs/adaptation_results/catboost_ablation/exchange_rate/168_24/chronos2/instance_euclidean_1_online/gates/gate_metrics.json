@@ -1,0 +1,92 @@
+[
+  {
+    "split": "eval",
+    "baseline": "vanilla",
+    "mse": 0.00017382548908419758,
+    "mae": 0.008448919493578918,
+    "nmse": 0.618614749805639,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "cov_forecast",
+    "mse": 0.00031773871537329996,
+    "mae": 0.010785378143029649,
+    "nmse": 1.0338505930682063,
+    "positive_window_pct": 27.083333333333332,
+    "relative_nmse_improvement_pct": -67.12349542150896
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_cov_shared",
+    "mse": 0.00017382548908419758,
+    "mae": 0.008448919493578918,
+    "nmse": 0.618614749805639,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "bayes_cov_horizon",
+    "mse": 0.00017382548908419758,
+    "mae": 0.008448919493578918,
+    "nmse": 0.618614749805639,
+    "positive_window_pct": 0.0,
+    "relative_nmse_improvement_pct": 0.0
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_cov_shared",
+    "mse": 0.0001613853102139066,
+    "mae": 0.008066701049958484,
+    "nmse": 0.5713695859901601,
+    "positive_window_pct": 27.083333333333332,
+    "relative_nmse_improvement_pct": 7.63725142834418
+  },
+  {
+    "split": "eval",
+    "baseline": "oracle_cov_horizon",
+    "mse": 0.00015829670322092102,
+    "mae": 0.007799809413780976,
+    "nmse": 0.5530300906199255,
+    "positive_window_pct": 87.5,
+    "relative_nmse_improvement_pct": 10.601858298128102
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_cov_classifier_shared",
+    "mse": 0.0002043168845307361,
+    "mae": 0.009369954145869188,
+    "nmse": 0.8334423587909803,
+    "positive_window_pct": 12.5,
+    "relative_nmse_improvement_pct": -34.72720446010015
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_cov_regressor_shared",
+    "mse": 0.00017400236828639626,
+    "mae": 0.008501030898009453,
+    "nmse": 0.6465426518462598,
+    "positive_window_pct": 8.333333333333334,
+    "relative_nmse_improvement_pct": -4.514587156125098
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_cov_regressor_shared_soft",
+    "mse": 0.0001990242346326183,
+    "mae": 0.009224362663695097,
+    "nmse": 0.7127861744515684,
+    "positive_window_pct": 30.208333333333332,
+    "relative_nmse_improvement_pct": -15.222951711952698
+  },
+  {
+    "split": "eval",
+    "baseline": "catboost_cov_regressor_horizon",
+    "mse": 0.0001759760225858203,
+    "mae": 0.008501076339598512,
+    "nmse": 0.6294632523593098,
+    "positive_window_pct": 11.458333333333334,
+    "relative_nmse_improvement_pct": -1.7536766714791752
+  }
+]
