@@ -2,7 +2,7 @@
   "format": "adaptation_gate_models",
   "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
   "config": {
-    "iterations": 2,
+    "iterations": 300,
     "learning_rate": 0.03,
     "depth": 4,
     "early_stopping_rounds": 50,
@@ -62,16 +62,28 @@
   "models": {
     "catboost_cov_regressor_shared": [
       {
-        "selected_iterations": 2,
+        "objective": "regressor",
+        "selected_iterations": 18,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 0.0033067581274442872
+        },
         "kind": "regressor",
-        "path": "models/catboost_cov_regressor_shared/shared.cbm"
+        "path": "models/catboost_cov_regressor_shared/shared.cbm",
+        "prediction": "hard_selection"
       }
     ],
     "catboost_avgy_regressor_shared": [
       {
-        "selected_iterations": 2,
+        "objective": "regressor",
+        "selected_iterations": 300,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 0.024765649956761667
+        },
         "kind": "regressor",
-        "path": "models/catboost_avgy_regressor_shared/shared.cbm"
+        "path": "models/catboost_avgy_regressor_shared/shared.cbm",
+        "prediction": "hard_selection"
       }
     ]
   },
