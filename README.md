@@ -77,9 +77,10 @@ shared under `outputs/extractions/`. Their contracts are:
 outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
   <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,prediction_manifest.json,result_manifest.json,...}
   <retrieval>/gates/{gate_metrics.json,gate_artifacts.json,prediction_manifest.json,result_manifest.json,...}
-  <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json}
+  <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json,result_manifest.json}
   <retrieval>/ts_ifa/<joint_ridge|joint_neural|meta_ridge|meta_neural>/{eval_metrics.json,config.json,ts_ifa.pt,rooter.pt,prediction_manifest.json,result_manifest.json,...}
   tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,positive_windows_results.tex,...}
+  tables/<model>/coefficients/<dataset>/<L>_<H>/<retrieval>/<baseline>.{csv,png}
 ```
 
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed
@@ -93,6 +94,8 @@ coefficients under the prediction store's `gate_diagnostics` kind and its
 rooter state in `rooter.pt`. Downstream launchers publish the shared vanilla metrics
 and extraction timing only when the destination is absent or stale; this
 publication is atomic, so baseline, gate, and TS-IFA jobs may start in parallel.
+Cross-RAG likewise writes `result_manifest.json` last; outputs without that
+current completion marker must be rerun.
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
@@ -206,7 +209,7 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   objective, soft mixture output, or per-horizon regression. Matching
   no-feature and oracle references are included.
 - `k_ablation`: the manually named winning pipelines on `D x S`, varying only
-  `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
+  `K in {1,3,5,10,15,20,100}` while retaining each formula and normalization.
 - `h_ablation`: manually named pipelines with `L=504` and
   `H in {24,168,504}`.
 - `l_ablation`: manually named pipelines with `H=24` and
@@ -236,7 +239,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `convex_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared convex |
 | `delta_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared delta-ridge |
 | `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared regressor versus classifier, soft mixture, and horizon regressor |
-| `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20` | `WINNERS_CSV` only |
+| `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20,100` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `crossrag` | `D_primary` | `512:64` | Chronos-Bolt | Min-max cosine / `15` | One selected winner versus released Cross-RAG |
@@ -537,9 +540,14 @@ and predictions and diagnostic scores are disk-backed.
 ## Tables and averages
 
 The only table front end is `tables.slurm`; it delegates to
-`src/slurm/build_tables.sh`. It
-checks every selected input rather than silently constructing a sparse table,
-then writes separate Chronos and TabPFN-TS tables.  `full/` reports each
+`src/slurm/build_tables.sh`. It checks every selected input rather than silently constructing a sparse table,
+loads baseline, gate, TS-IFA, and Cross-RAG metrics only through their current
+result manifests, rejects obsolete TS-IFA directories, and validates complete
+dataset/setting/model coverage before creating a table directory. Internally,
+selected pipelines retain their family-qualified
+`<family>/<retrieval>/<method>` names so identically named baseline and gate
+rows cannot be confused. It then writes separate Chronos and TabPFN-TS tables.
+`full/` reports each
 dataset/setting/retrieval result. `average/` reports, for each method, the
 unweighted mean of its per-configuration percentage improvements from the
 matching vanilla backbone (plus its mean metric below). This is deliberately
@@ -554,6 +562,37 @@ relative improvement computed from pooled losses.
 Use `FAMILIES_CSV=baselines`, `FAMILIES_CSV=gates`, or include `ts_ifa` after
 those outputs exist.  `METRIC=mse` produces the corresponding MSE tables;
 `nmse` is the default.
+
+Every table-stage run also reads each selected current
+`baseline_artifacts.pt` and writes the exact signed fitted coefficients as CSV
+and an `imshow` heatmap under `tables/<model>/coefficients/`. Shared baselines
+produce a one-row heatmap; horizon baselines produce one row per forecast
+horizon. Repeated neighbor signals are expanded as `Y_1,...,Y_K` and
+`N_1,...,N_K`. Convex baselines show their simplex weights. Direct baselines
+have no fitted parameters and are omitted. `coefficient_index.csv` indexes all
+generated coefficient files.
+
+The K-ablation table stage additionally writes
+`k_ablation_average_<metric>_improvement.{csv,png,pdf}` under the model's
+`average/` table directory. The figure places every selected baseline/gate
+candidate on the same logarithmic K axis, reports average held-out improvement
+over vanilla, and marks the globally best candidate/K point. It requires the
+complete configured K grid before writing the plot.
+
+Completed extraction, baseline, and gate configurations are reused by default
+for every profile and ablation front. Resubmitting `screen.slurm`, a baseline
+family ablation, or K/H/L ablation therefore skips current signature-matching
+computations and reruns its table stage, including coefficient plots. Set
+`SKIP_COMPLETE=false` only to force fitted results to be regenerated.
+
+For a TS-IFA-only table, name the completed current variants explicitly, for
+example:
+
+```bash
+EXPERIMENT_MODE=full FAMILIES_CSV=ts_ifa METHODS_CSV=joint_ridge \
+  DATASETS_CSV=Electricity DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
+  sbatch tables.slurm
+```
 
 ## TS-IFA variants and optimization
 
@@ -719,6 +758,8 @@ python src/tests/smoke/check_baseline_oracles.py
 python src/tests/smoke/check_ts_ifa_training.py
 python src/tests/smoke/check_results_table.py
 python src/tests/smoke/check_sweep_results_table.py
+python src/tests/smoke/check_baseline_coefficients.py
+python src/tests/smoke/check_k_ablation_plot.py
 python src/tests/smoke/check_retrieval_dashboard.py
 ```
 

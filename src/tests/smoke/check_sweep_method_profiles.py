@@ -57,7 +57,13 @@ def main() -> None:
         "catboost_avgy_regressor_shared",
     }
 
-    assert set(neighbor_defaults) == {"", "3", "1,3", "1,3,5,10,15,20", "15"}
+    assert set(neighbor_defaults) == {
+        "",
+        "3",
+        "1,3",
+        "1,3,5,10,15,20,100",
+        "15",
+    }
     assert neighbor_defaults.count("1,3") == 6
     assert neighbor_defaults.count("3") == 1
     assert 'DEFAULT_SETTINGS_CSV="504:168"' in text
@@ -96,6 +102,8 @@ def main() -> None:
     assert 'append_unique SELECTED_NEIGHBORS "$group_neighbors"' in profile_runner
     assert 'append_unique SELECTED_NEIGHBORS "$k"' in profile_runner
     assert 'NEIGHBORS_CSV="$(join_csv_values "${SELECTED_NEIGHBORS[@]}")"' in profile_runner
+    assert 'PIPELINES+=("$family/$run/$method")' in profile_runner
+    assert 'PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")' in profile_runner
 
     common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")
     assert "copy_if_needed()" in common
@@ -167,7 +175,9 @@ def main() -> None:
     assert 'if [ "$EXPERIMENT_MODE" = screen ]; then' in profile_runner
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
-    assert 'full|ultra) SKIP_COMPLETE=true' in profile_runner
+    assert 'RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"' in profile_runner
+    assert 'SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"' in profile_runner
+    assert "SKIP_COMPLETE=false" not in profile_runner
     assert '[ "$existing" != "$value" ] || return 0' in profile_runner
 
     catboost_runner = (
@@ -222,6 +232,18 @@ def main() -> None:
     assert 'test|screen) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"' in gate_runner
     assert 'PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"' in table_runner
     assert 'test|screen)' in table_runner
+    assert "src.visu.baseline_coefficients" in table_runner
+    assert "coefficient_index.csv" in table_runner
+    assert 'if [ "$EXPERIMENT_MODE" = k_ablation ]; then' in table_runner
+    assert "src.visu.k_ablation_plot" in table_runner
+    assert "k_ablation_average_${METRIC}_improvement" in table_runner
+    assert "ts_ifa/TS-IFA" not in table_runner
+    assert "validates every selected dataset/setting/model/" in table_runner
+    crossrag_evaluator = (
+        ROOT / "src" / "adaptors" / "cross_rag" / "evaluate.py"
+    ).read_text(encoding="utf-8")
+    assert '"format": "adaptation_crossrag_result"' in crossrag_evaluator
+    assert '"positive_window_pct"' in crossrag_evaluator
 
     family_runner = (
         ROOT / "src" / "slurm" / "run_baseline_family_ablation.sh"

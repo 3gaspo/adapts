@@ -1181,7 +1181,7 @@ Front & Model set / controlled axis \\
 \midrule
 \code{screen.slurm} & $\mathcal B_{\rm screen}$ and $\mathcal G_{\rm screen}$ on $\mathcal D_P\times\mathcal S\times\mathcal R$ \\
 \code{benchmark.slurm} & complete selected screen pipelines; \code{full} uses Chronos-2, \code{ultra} adds TabPFN-TS \\
-\code{k_ablation.slurm} & nine selected pipelines, $K\in\{1,3,5,10,15,20\}$ only \\
+\code{k_ablation.slurm} & nine selected pipelines, $K\in\{1,3,5,10,15,20,100\}$ only \\
 \code{h_ablation.slurm} & selected pipelines, $L=504$, $H\in\{24,168,504\}$ only \\
 \code{l_ablation.slurm} & selected pipelines, $H=24$, $L\in\{24,168,504\}$ only \\
 \code{horizon_baselines_ablation.slurm} & six controls in \cref{tab:selected-baselines}; shared versus horizon ridge \\
@@ -1205,9 +1205,24 @@ Front & Model set / controlled axis \\
 The completed screen selected six shared-ridge baselines, two hard shared
 CatBoost regressors, and one shared Bayes gate; no convex or delta baseline was
 eligible for that screen. Its extraction payloads and controls remain valid.
-Run the formulation fronts, filter their outputs into an expanded candidate
-set, then run the $K$ study; \code{screen.slurm} is not rerun. Publication
-CatBoost fits allow 300 trees; only the smoke profile uses two.
+The convex, delta-ridge, and CatBoost formulation fronts are also complete and
+did not replace those controls. The next study expands the retained candidates
+over $K$; the screen fits need not be recomputed. Publication CatBoost fits
+allow 300 trees; only the smoke profile uses two.
+
+Table construction accepts only current result manifests, keeps selected
+pipelines family-qualified, and requires complete dataset--setting--model
+coverage before writing any table. It also reads every selected current
+\code{baseline_artifacts.pt}, expands the neighbour coefficients by rank, and
+writes exact signed coefficient CSV files and imshow heatmaps; shared models
+have one row and horizon models have one row per horizon. Direct baselines have
+no fitted coefficients and are omitted. Complete extraction, baseline, and gate
+configurations are reused by default, so resubmitting a profile or ablation
+front rebuilds these tables and plots without refitting. For the $K$ ablation,
+the same stage also overlays every candidate's average held-out nMSE improvement
+against $K$ and marks the global optimum. The obsolete combined
+\code{TS-IFA} directory is not a valid input; each current TS-IFA variant owns
+its isolated manifest and result folder.
 
 For setting $c$, method $m$, method score $\nMSE_{m,c}$, and matching vanilla
 nMSE $v_c$, the reported percentage improvement is

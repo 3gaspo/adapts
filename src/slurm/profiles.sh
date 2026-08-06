@@ -70,7 +70,7 @@ adaptation_profile_defaults() {
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
-      DEFAULT_NEIGHBORS_CSV="1,3,5,10,15,20"
+      DEFAULT_NEIGHBORS_CSV="1,3,5,10,15,20,100"
       ;;
     h_ablation)
       DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"

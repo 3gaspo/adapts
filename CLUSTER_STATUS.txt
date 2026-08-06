@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-05
+Updated: 2026-08-06
 
 PREVIOUS TS-IFA PILOT (HISTORICAL)
 Run/profile: EXPERIMENT_MODE=full TS-IFA training with DATASETS_CSV=Electricity,
@@ -37,13 +37,17 @@ improves nMSE by +3.26% at 168:24 and +0.58% at 336:48, but loses -3.72% at
 in every run; the long-horizon T2 gain still reverses on T3. Joint training uses
 3H free ridge coefficients with adjacent-horizon smoothness 0.01.
 
-OPTIONAL NEXT TS-IFA PILOT
-Run the matching joint-neural variant on the same narrowed full profile. It
-reuses the complete raw/K=3 extraction and writes an isolated joint_neural
-result folder:
-  EXPERIMENT_MODE=full DATASETS_CSV=Electricity \
-  DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
-  sbatch ts_ifa_joint_neural.slurm
+LATEST 30K JOINT-RIDGE PILOTS (OPERATIONAL CHECK ONLY)
+1. Job 42493: Electricity, raw Euclidean K=3, three full-profile settings,
+   RESULTS_ROOT=outputs/adaptation_results/ts_ifa_joint_ridge_raw_30k.
+2. Job 42494: Electricity, instance Euclidean K=3, three full-profile settings,
+   RESULTS_ROOT=outputs/adaptation_results/ts_ifa_joint_ridge_instance_30k.
+State: both jobs completed successfully on 2026-08-06. Both stderr files are
+empty, all 6/6 configurations reached step 30000, all six current joint-ridge
+result and prediction manifests are present, and all six non-empty training
+plots were synchronized. Checkpoints and NumPy predictions remain cluster-only
+as intended. The runs have been checked operationally but their scores have not
+yet been analyzed.
 
 LATEST ANALYZED SCREEN
 Run/profile: EXPERIMENT_MODE=screen workflow
@@ -54,26 +58,17 @@ Analysis note: The complete screen was analyzed, its canonical cov/avgy artifact
 names were migrated without recomputation, and the nine selected pipelines are
 recorded in SWEEP_CANDIDATES.txt.
 
-LATEST K-ABLATION ATTEMPT
-Run/profile: k_ablation.slurm with the nine SWEEP_CANDIDATES.txt pipelines
-Job ID/dependency: 42152 / none recorded
-Artifacts synchronized locally: logs only
-Analyzed locally: execution state only; metric artifacts are not synchronized
-State: incomplete. Slurm cancelled the job at its 23 h limit on 2026-08-04
-13:36:39 CEST. There is no traceback or out-of-memory failure.
-Completed work:
-- instance-space extraction completed all 84/84 configurations;
-- instance-space gates completed all 72/72 configurations;
-- raw-space extraction completed 26/84 configurations and was interrupted
-  during configuration 27/84 (Traffic 168:24, K=15);
-- no baseline configuration and no final table stage started.
-Validity note: the completed extraction payloads use the current
-compute_transformed_prediction=false contract and remain reusable. The gate
-results were fitted with only two CatBoost iterations because of the previous
-publication-profile launcher default; they are not valid K-ablation scores.
-The launcher now reserves two iterations for test only and uses 300 maximum
-iterations for every publication profile. Rerun the K gate fits after candidate
-selection; K mode deliberately does not skip fitted results.
+LATEST COMPLETED K-ABLATION
+Run/profile: k_ablation.slurm with the nine SWEEP_CANDIDATES.txt pipelines and
+K=1,3,5,10,15,20.
+Job ID/dependency: 42332 / none recorded
+Artifacts synchronized locally: yes.
+Analyzed locally: yes.
+State: completed successfully through final tables on 2026-08-05; stderr is
+empty. All 72/72 gate configurations used the current 300-tree ceiling, all
+144/144 baseline configurations completed, and both full and average tables
+were written. These configurations remain reusable. K=100 is the only pending
+extension.
 
 LATEST FORMULATION ABLATIONS
 1. Job 42301: convex_baselines_ablation.slurm, completed successfully.
@@ -98,14 +93,31 @@ orchestrator's NEIGHBORS array. The orchestrator now preserves the complete grid
 separately in SELECTED_NEIGHBORS. Shell syntax and the profile regression check
 pass. Future mixed-K tables, including the K ablation, enumerate every K.
 
-NEXT K ABLATION
-Submit k_ablation.slurm with the unchanged nine-entry WINNERS_CSV from
-SWEEP_CANDIDATES.txt. Matching extraction manifests are skipped, but K-mode
-baseline and gate fits deliberately rerun; this replaces the obsolete
-two-iteration gate outputs with current 300-tree-ceiling fits. Current reusable
-state: all 72 instance extractions and 38/72 raw extractions are complete. The
-remaining 34 raw extractions are expected to take about 10 hours; allow 12--14
-hours for the complete resumed workflow and tables.
+TABLE ARTIFACT CONTRACT FIX
+Table construction now reads baseline, gate, TS-IFA, and Cross-RAG metrics only
+through their current result manifests and verifies complete selected
+dataset/setting/model/pipeline coverage before writing tables. Selected
+pipelines remain family-qualified internally. Historical combined ts_ifa/TS-IFA
+folders were removed locally; isolated joint/meta variant outputs are the only
+supported TS-IFA contract. Existing current baseline, gate, and isolated TS-IFA
+results remain reusable. Cross-RAG outputs made before its new completion
+manifest and positive-window metric must be rerun; no such completed run is
+recorded here.
+
+TABLE COEFFICIENT EXPORT
+The shared table stage now exports exact signed fitted baseline coefficients as
+CSV and imshow PNG files, including horizon-wise and convex-family parameters.
+All profile and ablation fronts now reuse complete baseline/gate results by
+default, so resubmitting an already-completed front skips fitting and rebuilds
+tables plus coefficient plots. Set SKIP_COMPLETE=false only for an intentional
+fit rerun.
+
+K=100 EXTENSION
+The K-ablation grid now adds K=100. Resubmitting k_ablation.slurm reuses all
+complete K=1,3,5,10,15,20 configurations, computes only missing K=100
+extractions and selected baseline/gate results, and then rebuilds the tables,
+coefficient heatmaps, and one combined average nMSE-improvement-versus-K plot
+containing every selected candidate. K=100 has not yet been submitted.
 
 MAINTENANCE
 Update this file after submission, completion, artifact synchronization, and analysis.

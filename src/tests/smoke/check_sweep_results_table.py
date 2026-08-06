@@ -20,6 +20,61 @@ def _write(path: Path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_evaluation(path: Path, family: str, rows) -> None:
+    complete_rows = []
+    for row in rows:
+        complete_rows.append(
+            {
+                "split": "eval",
+                "mse": 0.01,
+                "mae": 0.01,
+                "nmse": 1.0,
+                "positive_window_pct": 50.0,
+                "relative_nmse_improvement_pct": 0.0,
+                **row,
+            }
+        )
+    _write(path, complete_rows)
+    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+    _write(
+        path.parent / "result_manifest.json",
+        {
+            "format": "adaptation_evaluation_result",
+            "family": family,
+            "methods": [row["baseline"] for row in complete_rows if row["baseline"] != "vanilla"],
+            "metric_fields": list(complete_rows[0]),
+            "files": {
+                "metrics_json": path.name,
+                "predictions": "prediction_manifest.json",
+            },
+        },
+    )
+
+
+def _write_ts_ifa(path: Path, variant: str, metrics) -> None:
+    complete = {
+        f"{branch}_{metric}": 0.5
+        for branch in ("adapted", "vanilla_branch", "cov_branch", "residual_branch", "memory_branch")
+        for metric in ("mse", "mae", "nmse")
+    }
+    complete.update(metrics)
+    _write(path, complete)
+    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+    _write(
+        path.parent / "result_manifest.json",
+        {
+            "format": "adaptation_ts_ifa_result",
+            "variant": variant,
+            "architecture": "shared_delta_branches_four_rooters_v3",
+            "run_signature": "test",
+            "files": {
+                "metrics": path.name,
+                "predictions": "prediction_manifest.json",
+            },
+        },
+    )
+
+
 def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -53,8 +108,9 @@ def main() -> None:
             ]:
                 run_bonus = 10.0 if run.startswith("instance") else 0.0
                 dataset_bonus = 10.0 * offset
-                _write(
+                _write_evaluation(
                     setting / run / "baselines" / "baseline_metrics.json",
+                    "baselines",
                     [
                         {
                             "split": "eval",
@@ -79,8 +135,9 @@ def main() -> None:
                         },
                     ],
                 )
-                _write(
+                _write_evaluation(
                     setting / run / "gates" / "gate_metrics.json",
+                    "gates",
                     [
                         {
                             "split": "eval",
@@ -105,8 +162,9 @@ def main() -> None:
                         },
                     ],
                 )
-                _write(
+                _write_ts_ifa(
                     setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json",
+                    "joint_ridge",
                     {
                         "adapted_nmse": ts_ifa,
                         "adapted_mse": 0.005,
@@ -117,6 +175,39 @@ def main() -> None:
                     },
                 )
 
+        selected_pipelines = [
+            f"{family}/{run}/{method}"
+            for run in ("raw_euclidean_1_online", "instance_euclidean_3_online")
+            for family, methods in (
+                (
+                    "baselines",
+                    (
+                        "cov_forecast",
+                        "y_ridge_shared",
+                        "residual_ridge_horizon_eval_fit",
+                    ),
+                ),
+                (
+                    "gates",
+                    (
+                        "bayes_cov_shared",
+                        "catboost_cov_classifier_shared",
+                        "oracle_cov_horizon",
+                    ),
+                ),
+                (
+                    "ts_ifa",
+                    (
+                        "joint_ridge",
+                        "joint_ridge_vanilla_branch",
+                        "joint_ridge_cov_branch",
+                        "joint_ridge_residual_branch",
+                        "joint_ridge_memory_branch",
+                    ),
+                ),
+            )
+            for method in methods
+        ]
         full_outputs = generate_full_results_tables(
             root,
             root / "tables" / "full",
@@ -124,6 +215,7 @@ def main() -> None:
             settings=["168_24"],
             spaces=["raw", "instance"],
             neighbors=[1, 3],
+            pipelines=selected_pipelines,
         )
         assert {output.name for output in full_outputs} == {
             "full_results.tex",
@@ -145,6 +237,7 @@ def main() -> None:
             settings=["168_24"],
             spaces=["raw", "instance"],
             neighbors=[1, 3],
+            pipelines=selected_pipelines,
         )
         assert {output.name for output in average_outputs} == {
             "full_results.tex",
@@ -184,8 +277,9 @@ def main() -> None:
             tabpfn_setting / "vanilla" / "vanilla_metrics.json",
             [{"split": "eval", "baseline": "vanilla", "nmse": 1.0}],
         )
-        _write(
+        _write_evaluation(
             tabpfn_setting / "raw_euclidean_1_online" / "baselines" / "baseline_metrics.json",
+            "baselines",
             [{"split": "eval", "baseline": "cov_forecast", "nmse": 0.9}],
         )
         generate_average_results_tables(
@@ -207,6 +301,43 @@ def main() -> None:
         assert r"TS-IFA joint ridge & " in ts_ifa
         assert r"TS-IFA JR-R & " in ts_ifa
         assert r"TS-IFA JR-M & " in ts_ifa
+
+        selected_output = root / "tables" / "selected"
+        generate_average_results_tables(
+            root,
+            selected_output,
+            datasets=["electricity", "solar"],
+            settings=["168_24"],
+            models=["chronos2"],
+            families=["baselines"],
+            spaces=["raw", "instance"],
+            neighbors=[1, 3],
+            pipelines=[
+                "baselines/instance_euclidean_3_online/y_ridge_shared"
+            ],
+        )
+        assert (selected_output / "baselines_results.tex").is_file()
+
+        incomplete_output = root / "tables" / "must_not_exist"
+        try:
+            generate_average_results_tables(
+                root,
+                incomplete_output,
+                datasets=["electricity", "solar", "traffic"],
+                settings=["168_24"],
+                models=["chronos2"],
+                families=["baselines"],
+                spaces=["instance"],
+                neighbors=[3],
+                pipelines=[
+                    "baselines/instance_euclidean_3_online/y_ridge_shared"
+                ],
+            )
+        except ValueError as error:
+            assert "incomplete table inputs" in str(error)
+        else:
+            raise AssertionError("incomplete selected pipeline was accepted")
+        assert not incomplete_output.exists()
 
     print("adaptation table checks passed")
 

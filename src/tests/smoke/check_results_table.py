@@ -17,6 +17,56 @@ def _write(path: Path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_evaluation(path: Path, family: str, rows) -> None:
+    complete_rows = []
+    for row in rows:
+        complete = {
+            "positive_window_pct": 50.0,
+            "relative_nmse_improvement_pct": 0.0,
+            **row,
+        }
+        complete_rows.append(complete)
+    _write(path, complete_rows)
+    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+    _write(
+        path.parent / "result_manifest.json",
+        {
+            "format": "adaptation_evaluation_result",
+            "family": family,
+            "methods": [row["baseline"] for row in complete_rows if row["baseline"] != "vanilla"],
+            "metric_fields": list(complete_rows[0]),
+            "files": {
+                "metrics_json": path.name,
+                "predictions": "prediction_manifest.json",
+            },
+        },
+    )
+
+
+def _write_ts_ifa(path: Path, variant: str, metrics) -> None:
+    complete = {
+        f"{branch}_{metric}": 0.5
+        for branch in ("adapted", "vanilla_branch", "cov_branch", "residual_branch", "memory_branch")
+        for metric in ("mse", "mae", "nmse")
+    }
+    complete.update(metrics)
+    _write(path, complete)
+    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+    _write(
+        path.parent / "result_manifest.json",
+        {
+            "format": "adaptation_ts_ifa_result",
+            "variant": variant,
+            "architecture": "shared_delta_branches_four_rooters_v3",
+            "run_signature": "test",
+            "files": {
+                "metrics": path.name,
+                "predictions": "prediction_manifest.json",
+            },
+        },
+    )
+
+
 def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -24,14 +74,14 @@ def main() -> None:
         _write(setting / "direct" / "chronos2" / "univariate_summary.json",
                {"eval": {"mse": {"mean": 0.0012}, "nmse": {"mean": 0.4}}})
         run = "instance_euclidean_3_online"
-        _write(setting / run / "baselines" / "baseline_metrics.json",
+        _write_evaluation(setting / run / "baselines" / "baseline_metrics.json", "baselines",
                [{"split": "eval", "baseline": "vanilla", "mse": 0.0012, "mae": 0.03, "nmse": 0.4},
                 {"split": "eval", "baseline": "avgy_ridge_shared", "mse": 0.0009, "mae": 0.02, "nmse": 0.3},
                 {"split": "eval", "baseline": "cov_delta_ridge_shared", "mse": 0.00085,
                  "mae": 0.019, "nmse": 0.28},
                 {"split": "eval", "baseline": "avgy_ridge_shared_eval_fit", "mse": 0.0005,
                  "mae": 0.015, "nmse": 0.18}])
-        _write(setting / run / "gates" / "gate_metrics.json",
+        _write_evaluation(setting / run / "gates" / "gate_metrics.json", "gates",
                [{"split": "eval", "baseline": "bayes_cov_shared", "mse": 0.00075,
                  "mae": 0.019, "nmse": 0.24},
                 {"split": "eval", "baseline": "catboost_cov_classifier_shared", "mse": 0.0007,
@@ -42,7 +92,7 @@ def main() -> None:
                  "mae": 0.016, "nmse": 0.2},
                 {"split": "eval", "baseline": "oracle_cov_shared", "mse": 0.0002, "mae": 0.01, "nmse": 0.1},
                 {"split": "eval", "baseline": "oracle_cov_horizon", "mse": 0.0001, "mae": 0.005, "nmse": 0.05}])
-        _write(setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json",
+        _write_ts_ifa(setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json", "joint_ridge",
                {"adapted_mse": 0.0008, "adapted_mae": 0.018, "adapted_nmse": 0.25,
                 "vanilla_branch_nmse": 0.4,
                 "residual_branch_nmse": 0.28, "memory_branch_nmse": 0.32})
@@ -62,6 +112,10 @@ def main() -> None:
             f"{run}/oracle_cov_shared",
             f"{run}/oracle_cov_horizon",
             f"{run}/joint_ridge",
+            f"{run}/joint_ridge_vanilla_branch",
+            f"{run}/joint_ridge_cov_branch",
+            f"{run}/joint_ridge_residual_branch",
+            f"{run}/joint_ridge_memory_branch",
         }, methods
         output = generate_results_table(
             root,
@@ -112,7 +166,7 @@ def main() -> None:
         assert r"IN\_L2\_3/TS-IFA JR-M" in ts_ifa_latex
 
         fixed_run = "raw_euclidean_3_fixed"
-        _write(setting / fixed_run / "baselines" / "baseline_metrics.json",
+        _write_evaluation(setting / fixed_run / "baselines" / "baseline_metrics.json", "baselines",
                [{"split": "eval", "baseline": "avgy_convex_shared", "mse": 0.001, "mae": 0.02, "nmse": 0.35}])
         fixed_output = generate_results_table(root, output=root / "fixed.tex", datasets=["electricity"])
         assert r"raw\_L2\_3\_fixed/avgy-convex-s" in fixed_output.read_text(encoding="utf-8")
@@ -158,6 +212,24 @@ def main() -> None:
         )
         negative_latex = negative_output.read_text(encoding="utf-8")
         assert "reference" not in negative_latex
+
+        obsolete_root = root / "obsolete"
+        _write(
+            obsolete_root
+            / "electricity"
+            / "168_24"
+            / run
+            / "ts_ifa"
+            / "TS-IFA"
+            / "eval_metrics.json",
+            {"adapted_nmse": 0.1},
+        )
+        try:
+            discover_results(obsolete_root)
+        except ValueError as error:
+            assert "obsolete TS-IFA result directory" in str(error)
+        else:
+            raise AssertionError("obsolete TS-IFA output was accepted")
 
     print("results table checks passed")
 

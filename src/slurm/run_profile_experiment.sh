@@ -18,6 +18,7 @@ PROFILE_SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 PROFILE_K_CSV="$DEFAULT_NEIGHBORS_CSV"
 WINNERS_CSV="${WINNERS_CSV:-}"
 EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"
+RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
 
 run_screen() {
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
@@ -30,7 +31,7 @@ run_screen() {
   GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"
   SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
   source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
-  SKIP_COMPLETE=true
+  SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"
   source "$PROJECT_ROOT/src/slurm/run_baselines.sh"
   source "$PROJECT_ROOT/src/slurm/run_gates.sh"
   FAMILIES_CSV=baselines,gates
@@ -84,11 +85,11 @@ parse_winners() {
       group_neighbors="$PROFILE_K_CSV"
       csv_to_array "$PROFILE_K_CSV" k_values
       for k in "${k_values[@]}"; do
-        PIPELINES+=("${space}_${metric}_${k}_${retrieval}/$method")
+        PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")
       done
     elif [ "$EXPERIMENT_MODE" = crossrag ]; then
       group_neighbors=15
-      PIPELINES+=("${space}_${metric}_15_${retrieval}/$method")
+      PIPELINES+=("$family/${space}_${metric}_15_${retrieval}/$method")
       CANDIDATE_RUN="${space}_${metric}_15_${retrieval}"
     else
       case "$neighbors" in
@@ -99,7 +100,7 @@ parse_winners() {
           ;;
       esac
       group_neighbors="$neighbors"
-      PIPELINES+=("$run/$method")
+      PIPELINES+=("$family/$run/$method")
     fi
     key="$family|$space|$metric|$group_neighbors|$retrieval"
     append_method "$key" "$method"
@@ -131,10 +132,7 @@ run_groups() {
     RETRIEVAL_MODE="$retrieval"
     SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
     source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
-    case "$EXPERIMENT_MODE" in
-      full|ultra) SKIP_COMPLETE=true ;;
-      *) SKIP_COMPLETE=false ;;
-    esac
+    SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"
     if [ "$family" = baselines ]; then
       BASELINE_METHODS_CSV="$methods"
       source "$PROJECT_ROOT/src/slurm/run_baselines.sh"
@@ -185,7 +183,7 @@ if [ "$EXPERIMENT_MODE" = crossrag ]; then
   append_unique SPACES minmax
   append_unique METRICS cosine
   append_unique SELECTED_NEIGHBORS 15
-  PIPELINES+=("minmax_cosine_15_online/crossrag")
+  PIPELINES+=("crossrag/minmax_cosine_15_online/crossrag")
   FAMILIES=(comparison)
   METHODS+=(crossrag)
   CANDIDATE_FAMILY="${!GROUP_METHODS[*]}"

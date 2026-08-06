@@ -145,6 +145,8 @@ def _metrics(
     scale = arrays["x"].std(dim=1, keepdim=True, unbiased=False).clamp_min(1e-8)
     vanilla_nmse = (((arrays["vanilla"] - target) / scale) ** 2).mean()
     nmse = ((error / scale) ** 2).mean()
+    candidate_window_mse = error.square().mean(dim=-1)
+    vanilla_window_mse = (arrays["vanilla"] - target).square().mean(dim=-1)
     return [
         {
             "baseline": "crossrag",
@@ -152,6 +154,9 @@ def _metrics(
             "mse": float(error.square().mean().item()),
             "mae": float(error.abs().mean().item()),
             "nmse": float(nmse.item()),
+            "positive_window_pct": float(
+                100.0 * (candidate_window_mse < vanilla_window_mse).float().mean().item()
+            ),
             "relative_nmse_improvement_pct": float(
                 100.0 * (vanilla_nmse - nmse) / vanilla_nmse.clamp_min(1e-12)
             ),
@@ -251,6 +256,27 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         ),
         encoding="utf-8",
     )
+    manifest_path = output_dir / "result_manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "format": "adaptation_crossrag_result",
+                "metric_fields": list(rows[0]),
+                "protocol": {
+                    "lags": EXPECTED_LAGS,
+                    "horizon": EXPECTED_HORIZON,
+                    "neighbors": EXPECTED_NEIGHBORS,
+                },
+                "files": {
+                    "metrics": metrics_path.name,
+                    "predictions": predictions_path.name,
+                    "timing": timing_path.name,
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     LOGGER.info(
         "Cross-RAG done examples=%s nmse=%.6f seconds=%.2f",
         prediction.shape[0],
@@ -262,6 +288,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         "metrics": metrics_path,
         "predictions": predictions_path,
         "timing": timing_path,
+        "manifest": manifest_path,
     }
 
 

@@ -9,7 +9,10 @@ export PYTHONPATH="$PROJECT_ROOT"
 
 case "${TS_IFA_VARIANT:-}" in
   joint_ridge|joint_neural|meta_ridge|meta_neural) ;;
-  *) die "TS_IFA_VARIANT must be joint_ridge, joint_neural, meta_ridge, or meta_neural" ;;
+  *)
+    log_error "TS_IFA_VARIANT must be joint_ridge, joint_neural, meta_ridge, or meta_neural"
+    return 2
+    ;;
 esac
 
 OUT_ROOT="${OUT_ROOT:-outputs/extractions}"

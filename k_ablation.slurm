@@ -10,7 +10,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Copy complete winner names from screen's pipeline_ranking.csv.
+# Copy complete winner names from screen's pipeline_ranking.csv. The default
+# grid is K=1,3,5,10,15,20,100; complete K values are reused on resubmission.
 # Example: baselines/instance_euclidean_3_online/y_ridge_shared
 WINNERS_CSV="${WINNERS_CSV:-}"
 

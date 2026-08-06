@@ -64,7 +64,10 @@ crossrag_complete() {
   local output="$1"
   [ -s "$output/crossrag_metrics.json" ] &&
     [ -s "$output/crossrag_predictions.pt" ] &&
-    [ -s "$output/crossrag_timing.json" ]
+    [ -s "$output/crossrag_timing.json" ] &&
+    [ -s "$output/result_manifest.json" ] &&
+    grep -Eq '"format"[[:space:]]*:[[:space:]]*"adaptation_crossrag_result"' \
+      "$output/result_manifest.json"
 }
 
 log_section "job start kind=crossrag experiment_mode=$EXPERIMENT_MODE tasks=${#TASKS[@]} fixed_setting=512:64 fixed_neighbors=15"
@@ -110,6 +113,7 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   assert_files crossrag-output \
     "$OUTPUT_DIR/crossrag_metrics.json" \
     "$OUTPUT_DIR/crossrag_predictions.pt" \
-    "$OUTPUT_DIR/crossrag_timing.json"
+    "$OUTPUT_DIR/crossrag_timing.json" \
+    "$OUTPUT_DIR/result_manifest.json"
 done
 log_section "job done kind=crossrag output=$RESULTS_ROOT"

@@ -1,9 +1,4 @@
-"""Build publication-ready LaTeX tables from a TS-IFA experiment folder.
-
-The loader understands direct ``univariate_summary.json`` results, adapter
-``baseline_metrics.json`` results, ``gate_metrics.json`` results, and
-``ts_ifa/eval_metrics.json`` results.
-"""
+"""Build publication-ready LaTeX tables from current adaptation artifacts."""
 
 from __future__ import annotations
 
@@ -32,6 +27,129 @@ _RUN_NAME_RE = re.compile(
     r"(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
     r"_(euclidean|cosine|pearson)_(\d+)_(online|fixed)"
 )
+_EVALUATION_RESULT_FORMAT = "adaptation_evaluation_result"
+_TS_IFA_RESULT_FORMAT = "adaptation_ts_ifa_result"
+_TS_IFA_ARCHITECTURE = "shared_delta_branches_four_rooters_v3"
+_TS_IFA_VARIANTS = {"joint_ridge", "joint_neural", "meta_ridge", "meta_neural"}
+_REQUIRED_METRIC_FIELDS = {
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+}
+
+
+def _load_json(path: Path, expected_type: type, description: str) -> Any:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read {description} at {path}: {error}") from error
+    if not isinstance(payload, expected_type):
+        raise ValueError(
+            f"invalid {description} at {path}: expected {expected_type.__name__}"
+        )
+    return payload
+
+
+def _require_file(directory: Path, filename: Any, description: str) -> Path:
+    if not isinstance(filename, str) or not filename or Path(filename).name != filename:
+        raise ValueError(f"invalid {description} filename in {directory}: {filename!r}")
+    path = directory / filename
+    if not path.is_file() or path.stat().st_size == 0:
+        raise ValueError(f"missing {description}: {path}")
+    return path
+
+
+def _load_evaluation_metrics(path: Path, family: str) -> list[Mapping[str, Any]]:
+    manifest_path = path.parent / "result_manifest.json"
+    manifest = _load_json(manifest_path, dict, "evaluation result manifest")
+    if manifest.get("format") != _EVALUATION_RESULT_FORMAT:
+        raise ValueError(f"obsolete evaluation result format at {manifest_path}")
+    if manifest.get("family") != family:
+        raise ValueError(
+            f"evaluation family mismatch at {manifest_path}: expected {family!r}"
+        )
+    files = manifest.get("files")
+    if not isinstance(files, Mapping) or files.get("metrics_json") != path.name:
+        raise ValueError(f"metrics file is not indexed by {manifest_path}")
+    _require_file(path.parent, files.get("predictions"), "prediction manifest")
+    fields = manifest.get("metric_fields")
+    if not isinstance(fields, list) or not _REQUIRED_METRIC_FIELDS <= set(fields):
+        raise ValueError(f"incomplete metric contract at {manifest_path}")
+    methods = manifest.get("methods")
+    if not isinstance(methods, list) or any(not isinstance(item, str) for item in methods):
+        raise ValueError(f"invalid method list at {manifest_path}")
+    rows = _load_json(path, list, f"{family} metrics")
+    for index, row in enumerate(rows):
+        if not isinstance(row, Mapping) or not _REQUIRED_METRIC_FIELDS <= set(row):
+            raise ValueError(f"invalid metric row {index} at {path}")
+        method = row["baseline"]
+        if method != "vanilla" and method not in methods:
+            raise ValueError(f"unindexed method {method!r} in {path}")
+        for metric in ("mse", "mae", "nmse", "positive_window_pct"):
+            value = float(row[metric])
+            if not math.isfinite(value):
+                raise ValueError(f"non-finite {metric} in row {index} at {path}")
+    row_methods = {str(row["baseline"]) for row in rows if row["baseline"] != "vanilla"}
+    if row_methods != set(methods):
+        raise ValueError(f"metric methods do not match {manifest_path}")
+    return rows
+
+
+def _load_ts_ifa_metrics(path: Path) -> Mapping[str, Any]:
+    variant = path.parent.name
+    if variant not in _TS_IFA_VARIANTS:
+        raise ValueError(f"obsolete TS-IFA result directory: {path.parent}")
+    manifest_path = path.parent / "result_manifest.json"
+    manifest = _load_json(manifest_path, dict, "TS-IFA result manifest")
+    if manifest.get("format") != _TS_IFA_RESULT_FORMAT:
+        raise ValueError(f"obsolete TS-IFA result format at {manifest_path}")
+    if manifest.get("variant") != variant:
+        raise ValueError(f"TS-IFA variant mismatch at {manifest_path}")
+    if manifest.get("architecture") != _TS_IFA_ARCHITECTURE:
+        raise ValueError(f"obsolete TS-IFA architecture at {manifest_path}")
+    if not isinstance(manifest.get("run_signature"), str) or not manifest["run_signature"]:
+        raise ValueError(f"missing TS-IFA run signature at {manifest_path}")
+    files = manifest.get("files")
+    if not isinstance(files, Mapping) or files.get("metrics") != path.name:
+        raise ValueError(f"metrics file is not indexed by {manifest_path}")
+    _require_file(path.parent, files.get("predictions"), "prediction manifest")
+    payload = _load_json(path, dict, "TS-IFA metrics")
+    required = {
+        f"{branch}_{metric}"
+        for branch in ("adapted", "vanilla_branch", "cov_branch", "residual_branch", "memory_branch")
+        for metric in ("mse", "mae", "nmse")
+    }
+    if not required <= set(payload):
+        missing = sorted(required - set(payload))
+        raise ValueError(f"incomplete TS-IFA metrics at {path}: missing {missing}")
+    for key in required:
+        if not math.isfinite(float(payload[key])):
+            raise ValueError(f"non-finite {key} at {path}")
+    return payload
+
+
+def _load_crossrag_metrics(path: Path) -> list[Mapping[str, Any]]:
+    manifest_path = path.parent / "result_manifest.json"
+    manifest = _load_json(manifest_path, dict, "Cross-RAG result manifest")
+    if manifest.get("format") != "adaptation_crossrag_result":
+        raise ValueError(f"obsolete Cross-RAG result format at {manifest_path}")
+    if manifest.get("protocol") != {"lags": 512, "horizon": 64, "neighbors": 15}:
+        raise ValueError(f"unexpected Cross-RAG protocol at {manifest_path}")
+    fields = manifest.get("metric_fields")
+    if not isinstance(fields, list) or not _REQUIRED_METRIC_FIELDS <= set(fields):
+        raise ValueError(f"incomplete Cross-RAG metric contract at {manifest_path}")
+    files = manifest.get("files")
+    if not isinstance(files, Mapping) or files.get("metrics") != path.name:
+        raise ValueError(f"metrics file is not indexed by {manifest_path}")
+    _require_file(path.parent, files.get("timing"), "Cross-RAG timing")
+    rows = _load_json(path, list, "Cross-RAG metrics")
+    for index, row in enumerate(rows):
+        if not isinstance(row, Mapping) or not _REQUIRED_METRIC_FIELDS <= set(row):
+            raise ValueError(f"invalid Cross-RAG metric row {index} at {path}")
+    return rows
 
 
 def _setting_ancestor(path: Path, root: Path) -> tuple[str, str] | None:
@@ -89,7 +207,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             continue
         dataset, setting = identity
         model = _path_model(path, root, setting)
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = _load_json(path, dict, "univariate summary")
         for split, metrics in payload.items():
             if not isinstance(metrics, Mapping):
                 continue
@@ -107,12 +225,15 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             continue
         dataset, setting = identity
         model = _path_model(path, root, setting)
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        for row in payload if isinstance(payload, list) else ():
-            if not isinstance(row, Mapping):
-                continue
+        payload = _load_json(path, list, "vanilla metrics")
+        for index, row in enumerate(payload):
+            if not isinstance(row, Mapping) or row.get("baseline") != "vanilla":
+                raise ValueError(f"invalid vanilla metric row {index} at {path}")
             for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
+                    value = float(row[metric])
+                    if not math.isfinite(value):
+                        raise ValueError(f"non-finite {metric} in row {index} at {path}")
                     results.append(
                         Result(
                             dataset,
@@ -120,34 +241,38 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
                             "vanilla",
                             str(row.get("split", "eval")),
                             metric,
-                            float(row[metric]),
+                            value,
                             path,
                             model,
                         )
                     )
 
-    metric_paths = [
-        *root.rglob("baseline_metrics.json"),
-        *root.rglob("gate_metrics.json"),
-        *root.rglob("crossrag_metrics.json"),
-    ]
-    for path in sorted(metric_paths):
-        identity = _setting_ancestor(path, root)
-        if identity is None:
-            continue
-        dataset, setting = identity
-        model = _path_model(path, root, setting)
-        run = _relative_run(path, root, setting)
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        for row in payload if isinstance(payload, list) else ():
-            if not isinstance(row, Mapping) or "baseline" not in row:
+    for filename, family in (
+        ("baseline_metrics.json", "baselines"),
+        ("gate_metrics.json", "gates"),
+        ("crossrag_metrics.json", "crossrag"),
+    ):
+        for path in sorted(root.rglob(filename)):
+            if path.parent.name != family:
                 continue
-            for metric in ("mse", "mae", "nmse", "positive_window_pct"):
-                if metric in row:
-                    results.append(
-                        Result(dataset, setting, f"{run}/{row['baseline']}", str(row.get("split", "eval")), metric,
-                               float(row[metric]), path, model)
-                    )
+            identity = _setting_ancestor(path, root)
+            if identity is None:
+                continue
+            dataset, setting = identity
+            model = _path_model(path, root, setting)
+            run = _relative_run(path, root, setting)
+            payload = (
+                _load_crossrag_metrics(path)
+                if family == "crossrag"
+                else _load_evaluation_metrics(path, family)
+            )
+            for row in payload:
+                for metric in ("mse", "mae", "nmse", "positive_window_pct"):
+                    if metric in row:
+                        results.append(
+                            Result(dataset, setting, f"{run}/{row['baseline']}", str(row.get("split", "eval")), metric,
+                                   float(row[metric]), path, model)
+                        )
 
     for path in sorted(root.rglob("eval_metrics.json")):
         identity = _setting_ancestor(path, root)
@@ -157,9 +282,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         model = _path_model(path, root, setting)
         run = _relative_run(path, root, setting)
         variant_name = path.parent.name
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(payload, Mapping):
-            continue
+        payload = _load_ts_ifa_metrics(path)
         for key, value in payload.items():
             match = re.fullmatch(r"(.+)_(mse|mae|nmse)", str(key).lower())
             if match is None:

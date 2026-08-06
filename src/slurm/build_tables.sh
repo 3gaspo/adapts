@@ -99,49 +99,10 @@ PIPELINE_ARGS=()
 
 log_section "job start kind=adaptation_tables experiment_mode=$EXPERIMENT_MODE datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC distance_metrics=$METRIC_ARG methods=${METHODS_CSV:-all} table_kinds=$TABLE_KINDS_CSV results_root=$RESULTS_ROOT"
 for model in "${MODELS[@]}"; do
-  # Fail instead of silently averaging an incomplete sweep.
-  for dataset in "${DATASETS[@]}"; do
-    for setting in "${SETTING_NAMES[@]}"; do
-      VANILLA_ROOT="$RESULTS_ROOT/$dataset/$setting/$model/vanilla"
-      assert_files table-input "$VANILLA_ROOT/vanilla_metrics.json"
-      if [ -z "$PIPELINES_CSV" ]; then
-      for space in "${DISTANCE_SPACES[@]}"; do
-        for distance_metric in "${DISTANCE_METRICS[@]}"; do
-          for neighbors in "${NEIGHBORS[@]}"; do
-            RUN_ROOT="$RESULTS_ROOT/$dataset/$setting/$model/${space}_${distance_metric}_${neighbors}_${RETRIEVAL_MODE}"
-            for family in "${FAMILIES[@]}"; do
-              case "$family" in
-                baselines) assert_files table-input "$RUN_ROOT/baselines/baseline_metrics.json" ;;
-                gates) assert_files table-input "$RUN_ROOT/gates/gate_metrics.json" ;;
-                ts_ifa) assert_files table-input "$RUN_ROOT/ts_ifa/TS-IFA/eval_metrics.json" ;;
-                crossrag) assert_files table-input "$RUN_ROOT/crossrag/crossrag_metrics.json" ;;
-                comparison)
-                  assert_files table-input "$RUN_ROOT/crossrag/crossrag_metrics.json"
-                  if [ -n "${BASELINE_METHODS_CSV:-}" ]; then
-                    assert_files table-input "$RUN_ROOT/baselines/baseline_metrics.json"
-                  fi
-                  if [ -n "${GATE_METHODS_CSV:-}" ]; then
-                    assert_files table-input "$RUN_ROOT/gates/gate_metrics.json"
-                  fi
-                  ;;
-                full)
-                  assert_files table-input \
-                    "$RUN_ROOT/baselines/baseline_metrics.json" \
-                    "$RUN_ROOT/gates/gate_metrics.json" \
-                    "$RUN_ROOT/ts_ifa/TS-IFA/eval_metrics.json"
-                  ;;
-                *) log_error "unknown table family=$family"; exit 1 ;;
-              esac
-            done
-          done
-        done
-      done
-      fi
-    done
-  done
-
   for table_kind in "${TABLE_KINDS[@]}"; do
     OUTPUT_DIR="$RESULTS_ROOT/tables/$model/$table_kind"
+    # The Python constructor validates every selected dataset/setting/model/
+    # pipeline and each current result manifest before creating OUTPUT_DIR.
     log_section "table start model=$model kind=$table_kind metric=$METRIC split=eval decimals=$DECIMALS output=$OUTPUT_DIR"
     srun --ntasks=1 python -m src.visu.sweep_results_table \
       "$RESULTS_ROOT" \
@@ -175,6 +136,38 @@ for model in "${MODELS[@]}"; do
     fi
     log "table done model=$model kind=$table_kind output=$OUTPUT_DIR"
   done
+  COEFFICIENT_OUTPUT_DIR="$RESULTS_ROOT/tables/$model/coefficients"
+  log_section "baseline coefficient plots start model=$model output=$COEFFICIENT_OUTPUT_DIR"
+  srun --ntasks=1 python -m src.visu.baseline_coefficients \
+    "$RESULTS_ROOT" \
+    --output-dir "$COEFFICIENT_OUTPUT_DIR" \
+    --datasets "$DATASET_ARG" \
+    --settings "$SETTING_ARG" \
+    --models "$model" \
+    --families "$FAMILY_ARG" \
+    --spaces "$SPACE_ARG" \
+    --distance-metrics "$METRIC_ARG" \
+    --neighbors "$NEIGHBOR_ARG" \
+    --retrieval-mode "$RETRIEVAL_MODE" \
+    "${METHOD_ARGS[@]}" \
+    "${PIPELINE_ARGS[@]}"
+  assert_files table-output "$COEFFICIENT_OUTPUT_DIR/coefficient_index.csv"
+  log "baseline coefficient plots done model=$model output=$COEFFICIENT_OUTPUT_DIR"
+  if [ "$EXPERIMENT_MODE" = k_ablation ]; then
+    K_PLOT_OUTPUT_DIR="$RESULTS_ROOT/tables/$model/average"
+    K_PLOT_STEM="k_ablation_average_${METRIC}_improvement"
+    log_section "K-ablation plot start model=$model metric=$METRIC output=$K_PLOT_OUTPUT_DIR"
+    srun --ntasks=1 python -m src.visu.k_ablation_plot \
+      "$K_PLOT_OUTPUT_DIR/pipeline_ranking.csv" \
+      --output-dir "$K_PLOT_OUTPUT_DIR" \
+      --neighbors "$NEIGHBOR_ARG" \
+      --metric "$METRIC"
+    assert_files table-output \
+      "$K_PLOT_OUTPUT_DIR/$K_PLOT_STEM.csv" \
+      "$K_PLOT_OUTPUT_DIR/$K_PLOT_STEM.png" \
+      "$K_PLOT_OUTPUT_DIR/$K_PLOT_STEM.pdf"
+    log "K-ablation plot done model=$model output=$K_PLOT_OUTPUT_DIR/$K_PLOT_STEM.png"
+  fi
 done
 if [ "$EXPERIMENT_MODE" = crossrag ]; then
   TIMING_OUTPUT="$RESULTS_ROOT/tables/chronos-bolt/timing_comparison.tex"

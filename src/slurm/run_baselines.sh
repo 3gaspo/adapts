@@ -13,14 +13,7 @@ RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/${EXPERIMENT_MODE:-test
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
 require_experiment_mode
 adaptation_profile_defaults
-case "$EXPERIMENT_MODE" in
-  test|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|k_ablation|h_ablation|l_ablation|crossrag)
-    DEFAULT_SKIP_COMPLETE=false
-    ;;
-  *)
-    DEFAULT_SKIP_COMPLETE=true
-    ;;
-esac
+DEFAULT_SKIP_COMPLETE=true
 DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
 SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"

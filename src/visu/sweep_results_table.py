@@ -265,18 +265,161 @@ def _methods_for_variants(runs: Sequence[str], variants: Sequence[str]) -> list[
     return [f"{run}/{variant}" for run in runs for variant in variants]
 
 
+def _pipeline_parts(pipeline: str) -> tuple[str, str, str]:
+    parts = pipeline.split("/")
+    if len(parts) == 3 and parts[0] in {
+        "baselines",
+        "gates",
+        "ts_ifa",
+        "crossrag",
+    }:
+        family, run, method = parts
+        return family, run, method
+    raise ValueError(
+        f"invalid pipeline {pipeline!r}; expected family/retrieval_run/method"
+    )
+
+
+def _pipeline_method(pipeline: str) -> str:
+    _, run, method = _pipeline_parts(pipeline)
+    return f"{run}/{method}"
+
+
 def _selected_runs(
     runs: Sequence[str],
     pipelines: Sequence[str] | None,
 ) -> list[str]:
     if not pipelines:
         return list(runs)
-    requested = {
-        pipeline.rsplit("/", 1)[0]
-        for pipeline in pipelines
-        if "/" in pipeline
+    requested = {_pipeline_parts(pipeline)[1] for pipeline in pipelines}
+    selected = [run for run in runs if run in requested]
+    missing = sorted(requested - set(selected))
+    if missing:
+        raise ValueError(f"selected pipelines are outside the requested retrieval grid: {missing}")
+    return selected
+
+
+def _result_family(result: Result) -> str:
+    return {
+        "baseline_metrics.json": "baselines",
+        "gate_metrics.json": "gates",
+        "eval_metrics.json": "ts_ifa",
+        "crossrag_metrics.json": "crossrag",
+        "vanilla_metrics.json": "vanilla",
+    }.get(result.path.name, "direct")
+
+
+def _records_for_family(results: Sequence[Result], family: str) -> list[Result]:
+    if family in {"full", "comparison"}:
+        return list(results)
+    return [
+        result
+        for result in results
+        if result.method == REFERENCE_METHOD or _result_family(result) == family
+    ]
+
+
+def _selected_axis(
+    requested: Sequence[str] | None,
+    records: Sequence[Result],
+    attribute: str,
+) -> tuple[str, ...]:
+    if requested:
+        return tuple(requested)
+    values = sorted(
+        {
+            str(getattr(result, attribute))
+            for result in records
+            if str(getattr(result, attribute))
+        },
+        key=str.casefold,
+    )
+    return tuple(values or ("",))
+
+
+def _require_complete_inputs(
+    results: Sequence[Result],
+    *,
+    families: Sequence[Family],
+    runs: Sequence[str],
+    datasets: Sequence[str] | None,
+    settings: Sequence[str] | None,
+    models: Sequence[str] | None,
+    metric: str,
+    split: str,
+    variants: Sequence[str] | None,
+    pipelines: Sequence[str] | None,
+) -> None:
+    dataset_axis = _selected_axis(datasets, results, "dataset")
+    setting_axis = _selected_axis(settings, results, "setting")
+    model_axis = _selected_axis(models, results, "model")
+    selected_family_names = {family.name for family in families}
+    available = {
+        (
+            _result_family(result),
+            result.dataset,
+            result.setting,
+            result.model,
+            result.method,
+        )
+        for result in results
+        if result.metric.casefold() == metric.casefold()
+        and result.split.casefold() == split.casefold()
+        and math.isfinite(result.value)
     }
-    return [run for run in runs if run in requested]
+    expected: list[tuple[str, str, str]] = []
+    if pipelines:
+        expected.extend(_pipeline_parts(pipeline) for pipeline in pipelines)
+    else:
+        for family in families:
+            if family.name in {"full", "comparison"}:
+                continue
+            family_records = _records_for_family(results, family.name)
+            selected = _select_variants(family, family.full_variants, variants)
+            if variants is None:
+                present = {
+                    result.method.rsplit("/", 1)[-1]
+                    for result in family_records
+                    if result.method != REFERENCE_METHOD
+                }
+                selected = tuple(item for item in selected if item in present)
+            expected.extend(
+                (family.name, run, method)
+                for run in runs
+                for method in selected
+            )
+    missing: list[str] = []
+    for dataset in dataset_axis:
+        for setting in setting_axis:
+            for model in model_axis:
+                if (
+                    "vanilla",
+                    dataset,
+                    setting,
+                    model,
+                    REFERENCE_METHOD,
+                ) not in available:
+                    missing.append(f"vanilla/{dataset}/{setting}/{model or '<none>'}")
+                for family, run, method in expected:
+                    method_name = f"{run}/{method}"
+                    if family not in selected_family_names and not (
+                        "comparison" in selected_family_names
+                        and family in {"baselines", "gates", "crossrag"}
+                    ) and not (
+                        "full" in selected_family_names
+                        and family in {"baselines", "gates", "ts_ifa"}
+                    ):
+                        raise ValueError(
+                            f"pipeline family {family!r} is absent from selected table families"
+                        )
+                    if (family, dataset, setting, model, method_name) not in available:
+                        missing.append(
+                            f"{family}/{dataset}/{setting}/{model or '<none>'}/{method_name}"
+                        )
+    if missing:
+        preview = ", ".join(missing[:8])
+        suffix = "" if len(missing) <= 8 else f", ... ({len(missing)} missing)"
+        raise ValueError(f"incomplete table inputs: {preview}{suffix}")
 
 
 def _filters_match(
@@ -762,6 +905,7 @@ def _write_pipeline_ranking(
 ) -> None:
     rows: list[dict[str, object]] = []
     for family in families:
+        family_results = _records_for_family(results, family.name)
         variants = _select_variants(
             family,
             family.average_variants,
@@ -775,7 +919,7 @@ def _write_pipeline_ranking(
                 if variant.startswith("oracle_") or variant.endswith("_eval_fit"):
                     continue
                 value, improvement = _average_method_statistics(
-                    results,
+                    family_results,
                     method=method,
                     metric=metric,
                     split=split,
@@ -843,16 +987,29 @@ def generate_full_results_tables(
 ) -> list[Path]:
     root = Path(experiment_dir).expanduser().resolve()
     destination = Path(output_dir).expanduser().resolve() if output_dir else root / "full_tables"
-    destination.mkdir(parents=True, exist_ok=True)
     records = _filter_models(discover_results(root), models)
     runs = _selected_runs(
         _run_names(spaces, distance_metrics, neighbors, retrieval_mode),
         pipelines,
     )
-    allowed_methods = set(pipelines) if pipelines else None
+    allowed_methods = {_pipeline_method(item) for item in pipelines} if pipelines else None
+    selected_families = _selected_families(families)
+    _require_complete_inputs(
+        records,
+        families=selected_families,
+        runs=runs,
+        datasets=datasets,
+        settings=settings,
+        models=models,
+        metric=metric,
+        split=split,
+        variants=variants,
+        pipelines=pipelines,
+    )
+    destination.mkdir(parents=True, exist_ok=True)
     return [
         _write_full_family_table(
-            records,
+            _records_for_family(records, family.name),
             destination,
             (
                 Family(
@@ -879,7 +1036,7 @@ def generate_full_results_tables(
             lower_is_better=lower_is_better,
             allowed_methods=allowed_methods,
         )
-        for family in _selected_families(families)
+        for family in selected_families
     ]
 
 
@@ -905,17 +1062,29 @@ def generate_average_results_tables(
 ) -> list[Path]:
     root = Path(experiment_dir).expanduser().resolve()
     destination = Path(output_dir).expanduser().resolve() if output_dir else root / "average_tables"
-    destination.mkdir(parents=True, exist_ok=True)
     records = _filter_models(discover_results(root), models)
     runs = _selected_runs(
         _run_names(spaces, distance_metrics, neighbors, retrieval_mode),
         pipelines,
     )
-    allowed_methods = set(pipelines) if pipelines else None
+    allowed_methods = {_pipeline_method(item) for item in pipelines} if pipelines else None
     selected_families = _selected_families(families)
+    _require_complete_inputs(
+        records,
+        families=selected_families,
+        runs=runs,
+        datasets=datasets,
+        settings=settings,
+        models=models,
+        metric=metric,
+        split=split,
+        variants=variants,
+        pipelines=pipelines,
+    )
+    destination.mkdir(parents=True, exist_ok=True)
     outputs = [
         _write_average_family_table(
-            records,
+            _records_for_family(records, family.name),
             destination,
             (
                 Family(
