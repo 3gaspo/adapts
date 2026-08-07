@@ -10,7 +10,12 @@ if [ -z "${EXPERIMENT_MODE:-}" ]; then
   return 2
 fi
 require_experiment_mode
+require_experiment_family
 adaptation_profile_defaults
+
+OUT_ROOT="${OUT_ROOT:-outputs/extraction}"
+RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/$EXPERIMENT_FAMILY}"
+export OUT_ROOT RESULTS_ROOT
 
 PROFILE_DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 PROFILE_MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
@@ -81,13 +86,13 @@ parse_winners() {
       log_error "invalid retrieval run=$run in winner=$entry"
       return 2
     fi
-    if [ "$EXPERIMENT_MODE" = k_ablation ]; then
+    if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then
       group_neighbors="$PROFILE_K_CSV"
       csv_to_array "$PROFILE_K_CSV" k_values
       for k in "${k_values[@]}"; do
         PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")
       done
-    elif [ "$EXPERIMENT_MODE" = crossrag ]; then
+    elif [ "$EXPERIMENT_FAMILY" = crossrag ]; then
       group_neighbors=15
       PIPELINES+=("$family/${space}_${metric}_15_${retrieval}/$method")
       CANDIDATE_RUN="${space}_${metric}_15_${retrieval}"
@@ -108,7 +113,7 @@ parse_winners() {
     append_unique METRICS "$metric"
     append_unique FAMILIES "$family"
     append_unique METHODS "$method"
-    if [ "$EXPERIMENT_MODE" = k_ablation ]; then
+    if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then
       csv_to_array "$PROFILE_K_CSV" k_values
       for k in "${k_values[@]}"; do append_unique SELECTED_NEIGHBORS "$k"; done
     else
@@ -143,7 +148,7 @@ run_groups() {
   done
 }
 
-if [ "$EXPERIMENT_MODE" = screen ]; then
+if [ "$EXPERIMENT_FAMILY" = screen ]; then
   run_screen
   return
 fi
@@ -161,14 +166,14 @@ PIPELINES=()
 RETRIEVAL_MODE_SELECTED=online
 parse_winners
 
-if [ "$EXPERIMENT_MODE" = crossrag ] && [ "${#GROUP_METHODS[@]}" -ne 1 ]; then
+if [ "$EXPERIMENT_FAMILY" = crossrag ] && [ "${#GROUP_METHODS[@]}" -ne 1 ]; then
   log_error "crossrag.slurm accepts exactly one winning pipeline"
   return 2
 fi
 
 run_groups
 
-if [ "$EXPERIMENT_MODE" = crossrag ]; then
+if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
   # Cross-RAG has its own fixed minmax/cosine retrieval pipeline.
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
   MODELS_CSV="$PROFILE_MODELS_CSV"

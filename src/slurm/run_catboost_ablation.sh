@@ -6,8 +6,8 @@ source src/slurm/common.sh
 source src/slurm/profiles.sh
 require_project_root
 
-if [ "${EXPERIMENT_MODE:-}" != catboost_ablation ]; then
-  log_error "run_catboost_ablation.sh requires EXPERIMENT_MODE=catboost_ablation"
+if [ "${EXPERIMENT_FAMILY:-}" != catboost_ablation ]; then
+  log_error "run_catboost_ablation.sh requires EXPERIMENT_FAMILY=catboost_ablation"
   return 2
 fi
 

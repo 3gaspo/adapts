@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
+from experiment_runs import write_report_manifest
+
 from .results_table import (
     Result,
     _latex,
@@ -18,7 +20,9 @@ from .results_table import (
     _short_run_name,
     _split_names,
     build_table,
+    configure_run_selection,
     discover_results,
+    selected_manifest_runs,
 )
 
 
@@ -84,11 +88,12 @@ GATE_DIAGNOSTIC_VARIANTS = (
     "oracle_avgy_horizon",
 )
 
-TS_IFA_MAIN_VARIANTS = (
-    "joint_ridge",
-    "joint_neural",
-    "meta_ridge",
-    "meta_neural",
+TS_IFA_MAIN_VARIANTS = tuple(
+    f"{variant}_{scope}_{constraint}_{branches}"
+    for variant in ("joint_ridge", "joint_neural", "meta_ridge", "meta_neural")
+    for scope in ("shared", "horizon")
+    for constraint in ("unconstrained", "softmax")
+    for branches in ("cov", "residual", "memory", "full")
 )
 TS_IFA_BRANCH_VARIANTS = tuple(
     f"{variant}_{branch}_branch"
@@ -300,6 +305,8 @@ def _selected_runs(
 
 
 def _result_family(result: Result) -> str:
+    if result.method == REFERENCE_METHOD:
+        return "vanilla"
     return {
         "baseline_metrics.json": "baselines",
         "gate_metrics.json": "gates",
@@ -1155,6 +1162,29 @@ def _parse_neighbors(value: str | Sequence[str] | None) -> list[int]:
     return [int(item) for item in _split_names(value)]
 
 
+def _value(text: str):
+    lowered = text.casefold()
+    if lowered in {"true", "false"}:
+        return lowered == "true"
+    try:
+        return int(text)
+    except ValueError:
+        try:
+            return float(text)
+        except ValueError:
+            return text
+
+
+def _pipeline_pairs(values: Sequence[str]) -> dict:
+    output = {}
+    for item in values:
+        if "=" not in item:
+            raise ValueError(f"pipeline config must be KEY=VALUE, got {item!r}")
+        key, value = item.split("=", 1)
+        output[key] = _value(value)
+    return output
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("experiment_dir")
@@ -1179,6 +1209,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--retrieval-mode", default="online")
     parser.add_argument("--decimals", type=int, default=2)
     parser.add_argument("--higher-is-better", action="store_true")
+    parser.add_argument("--pipeline-config", action="append", default=[])
+    parser.add_argument("--config-policy", choices=("distinct", "latest", "selected", "average"), default="distinct")
+    parser.add_argument("--repeat-policy", choices=("distinct", "latest", "selected", "average"), default="selected")
+    parser.add_argument("--purpose", action="append", default=[])
     args = parser.parse_args(argv)
     if args.decimals < 0:
         parser.error("--decimals must be non-negative")
@@ -1187,6 +1221,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> list[Path]:
     args = parse_args(argv)
+    pipeline = _pipeline_pairs(args.pipeline_config)
+    configure_run_selection(
+        pipeline_config=pipeline,
+        config_policy=args.config_policy,
+        repeat_policy=args.repeat_policy,
+        purposes=args.purpose,
+    )
     generator = generate_full_results_tables if args.table_kind == "full" else generate_average_results_tables
     outputs = generator(
         args.experiment_dir,
@@ -1209,6 +1250,36 @@ def main(argv: Sequence[str] | None = None) -> list[Path]:
     )
     for output in outputs:
         print(f"LaTeX table written to {output}")
+    datasets = set(_split_names(args.datasets) or [])
+    settings = set(_split_names(args.settings) or [])
+    models = set(_split_names(args.models) or [])
+    selected = []
+    for run in selected_manifest_runs(args.experiment_dir):
+        identity = run.manifest["identity"]
+        setting = f"{identity['lookback']}_{identity['horizon']}"
+        if datasets and identity["dataset"] not in datasets:
+            continue
+        if settings and setting not in settings:
+            continue
+        if models and identity["backbone"] not in models:
+            continue
+        selected.append(run)
+    if outputs:
+        write_report_manifest(
+            outputs[0].parent / "report_manifest.json",
+            inputs=selected,
+            config_policy=args.config_policy,
+            repeat_policy=args.repeat_policy,
+            filters={
+                "pipeline": pipeline,
+                "purposes": args.purpose,
+                "datasets": sorted(datasets),
+                "settings": sorted(settings),
+                "models": sorted(models),
+                "families": _split_names(args.families),
+                "variants": _split_names(args.variants),
+            },
+        )
     return outputs
 
 

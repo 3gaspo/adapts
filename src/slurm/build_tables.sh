@@ -9,10 +9,12 @@ require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
-OUT_ROOT="${OUT_ROOT:-outputs/extractions}"
+OUT_ROOT="${OUT_ROOT:-outputs/extraction}"
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
-RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/$EXPERIMENT_MODE}"
+EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-tables}"
+RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/$EXPERIMENT_FAMILY}"
 require_experiment_mode
+require_experiment_family
 adaptation_profile_defaults
 DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
@@ -21,7 +23,7 @@ DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
-if [ "$EXPERIMENT_MODE" = crossrag ]; then
+if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
   DEFAULT_FAMILIES_CSV=comparison
 else
   DEFAULT_FAMILIES_CSV=baselines,gates
@@ -29,8 +31,8 @@ fi
 FAMILIES_CSV="${FAMILIES_CSV:-$DEFAULT_FAMILIES_CSV}"
 TABLE_KINDS_CSV="${TABLE_KINDS_CSV:-full,average}"
 PROFILE_METHODS_CSV=""
-case "$EXPERIMENT_MODE" in
-  test|screen)
+case "$EXPERIMENT_MODE:$EXPERIMENT_FAMILY" in
+  test:*|*:screen)
     if [ "$FAMILIES_CSV" = baselines ]; then
       PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"
     elif [ "$FAMILIES_CSV" = gates ]; then
@@ -50,7 +52,7 @@ PIPELINES_CSV="${PIPELINES_CSV:-}"
 METRIC="${METRIC:-nmse}"
 DECIMALS="${DECIMALS:-2}"
 CANDIDATE_FAMILY="${CANDIDATE_FAMILY:-}"
-if [ "$EXPERIMENT_MODE" = crossrag ] && [ -z "$CANDIDATE_FAMILY" ]; then
+if [ "$EXPERIMENT_FAMILY" = crossrag ] && [ -z "$CANDIDATE_FAMILY" ]; then
   if [ -n "${BASELINE_METHODS_CSV:-}" ] && [ -z "${GATE_METHODS_CSV:-}" ]; then
     CANDIDATE_FAMILY=baselines
   elif [ -n "${GATE_METHODS_CSV:-}" ] && [ -z "${BASELINE_METHODS_CSV:-}" ]; then
@@ -96,11 +98,19 @@ METHOD_ARGS=()
 [ -z "$METHODS_CSV" ] || METHOD_ARGS+=(--variants "$METHODS_CSV")
 PIPELINE_ARGS=()
 [ -z "$PIPELINES_CSV" ] || PIPELINE_ARGS+=(--pipelines "$PIPELINES_CSV")
+TABLE_CONFIG_POLICY="${TABLE_CONFIG_POLICY:-distinct}"
+TABLE_REPEAT_POLICY="${TABLE_REPEAT_POLICY:-selected}"
+if [ "$EXPERIMENT_MODE" = test ]; then TABLE_PURPOSE="${TABLE_PURPOSE:-smoke}"; else TABLE_PURPOSE="${TABLE_PURPOSE:-publication}"; fi
+TABLE_SELECTION_ARGS=(--config-policy "$TABLE_CONFIG_POLICY" --repeat-policy "$TABLE_REPEAT_POLICY")
+if [ -n "${TABLE_PIPELINE_CONFIGS:-}" ]; then
+  for table_config in ${TABLE_PIPELINE_CONFIGS}; do TABLE_SELECTION_ARGS+=(--pipeline-config "$table_config"); done
+fi
+if [ -n "${TABLE_PURPOSE:-}" ]; then TABLE_SELECTION_ARGS+=(--purpose "$TABLE_PURPOSE"); fi
 
 log_section "job start kind=adaptation_tables experiment_mode=$EXPERIMENT_MODE datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC distance_metrics=$METRIC_ARG methods=${METHODS_CSV:-all} table_kinds=$TABLE_KINDS_CSV results_root=$RESULTS_ROOT"
 for model in "${MODELS[@]}"; do
   for table_kind in "${TABLE_KINDS[@]}"; do
-    OUTPUT_DIR="$RESULTS_ROOT/tables/$model/$table_kind"
+    OUTPUT_DIR="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE/$model/$table_kind"
     # The Python constructor validates every selected dataset/setting/model/
     # pipeline and each current result manifest before creating OUTPUT_DIR.
     log_section "table start model=$model kind=$table_kind metric=$METRIC split=eval decimals=$DECIMALS output=$OUTPUT_DIR"
@@ -120,7 +130,8 @@ for model in "${MODELS[@]}"; do
       --retrieval-mode "$RETRIEVAL_MODE" \
       --decimals "$DECIMALS" \
       "${METHOD_ARGS[@]}" \
-      "${PIPELINE_ARGS[@]}"
+      "${PIPELINE_ARGS[@]}" \
+      "${TABLE_SELECTION_ARGS[@]}"
     for family in "${FAMILIES[@]}"; do
       assert_files table-output "$OUTPUT_DIR/${family}_results.tex"
     done
@@ -136,7 +147,7 @@ for model in "${MODELS[@]}"; do
     fi
     log "table done model=$model kind=$table_kind output=$OUTPUT_DIR"
   done
-  COEFFICIENT_OUTPUT_DIR="$RESULTS_ROOT/tables/$model/coefficients"
+  COEFFICIENT_OUTPUT_DIR="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE/$model/coefficients"
   log_section "baseline coefficient plots start model=$model output=$COEFFICIENT_OUTPUT_DIR"
   srun --ntasks=1 python -m src.visu.baseline_coefficients \
     "$RESULTS_ROOT" \
@@ -150,11 +161,12 @@ for model in "${MODELS[@]}"; do
     --neighbors "$NEIGHBOR_ARG" \
     --retrieval-mode "$RETRIEVAL_MODE" \
     "${METHOD_ARGS[@]}" \
-    "${PIPELINE_ARGS[@]}"
+    "${PIPELINE_ARGS[@]}" \
+    "${TABLE_SELECTION_ARGS[@]}"
   assert_files table-output "$COEFFICIENT_OUTPUT_DIR/coefficient_index.csv"
   log "baseline coefficient plots done model=$model output=$COEFFICIENT_OUTPUT_DIR"
-  if [ "$EXPERIMENT_MODE" = k_ablation ]; then
-    K_PLOT_OUTPUT_DIR="$RESULTS_ROOT/tables/$model/average"
+  if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then
+    K_PLOT_OUTPUT_DIR="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE/$model/average"
     K_PLOT_STEM="k_ablation_average_${METRIC}_improvement"
     log_section "K-ablation plot start model=$model metric=$METRIC output=$K_PLOT_OUTPUT_DIR"
     srun --ntasks=1 python -m src.visu.k_ablation_plot \
@@ -169,8 +181,8 @@ for model in "${MODELS[@]}"; do
     log "K-ablation plot done model=$model output=$K_PLOT_OUTPUT_DIR/$K_PLOT_STEM.png"
   fi
 done
-if [ "$EXPERIMENT_MODE" = crossrag ]; then
-  TIMING_OUTPUT="$RESULTS_ROOT/tables/chronos-bolt/timing_comparison.tex"
+if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
+  TIMING_OUTPUT="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE/chronos-bolt/timing_comparison.tex"
   srun --ntasks=1 python -m src.visu.timing_table \
     "$RESULTS_ROOT" \
     --output "$TIMING_OUTPUT" \
@@ -179,7 +191,9 @@ if [ "$EXPERIMENT_MODE" = crossrag ]; then
     --model chronos-bolt \
     --candidate-run "$CANDIDATE_RUN" \
     --crossrag-run minmax_cosine_15_online \
-    --candidate-family "$CANDIDATE_FAMILY"
+    --candidate-family "$CANDIDATE_FAMILY" \
+    --candidate-formula "$METHODS_CSV" \
+    "${TABLE_SELECTION_ARGS[@]}"
   assert_files table-output "$TIMING_OUTPUT"
 fi
-log_section "job done kind=adaptation_tables output=$RESULTS_ROOT/tables"
+log_section "job done kind=adaptation_tables output=$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE"

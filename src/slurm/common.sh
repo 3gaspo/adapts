@@ -5,6 +5,13 @@
 export HF_HUB_DISABLE_PROGRESS_BARS="${HF_HUB_DISABLE_PROGRESS_BARS:-1}"
 export TRANSFORMERS_VERBOSITY="${TRANSFORMERS_VERBOSITY:-error}"
 
+RUN_CONFLICT_POLICY="${RUN_CONFLICT_POLICY:-overwrite_exact}"
+FORCE_RUN="${FORCE_RUN:-false}"
+SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
+EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
+export EXPERIMENT_LAUNCH_ID
+trap 'status=$?; if [ "$status" -ne 0 ] && [ -n "${PROJECT_ROOT:-}" ]; then python -m experiment_runs interrupt-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" || true; fi' EXIT
+
 log() {
   printf '%s %s\n' "$(date -Is)" "$*"
 }
@@ -26,11 +33,18 @@ is_true() {
 
 require_experiment_mode() {
   case "${EXPERIMENT_MODE:-test}" in
-    test|screen|full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) ;;
+    test|full|ultra) ;;
     *)
       log_error "unknown EXPERIMENT_MODE=${EXPERIMENT_MODE:-}"
       return 2
       ;;
+  esac
+}
+
+require_experiment_family() {
+  case "${EXPERIMENT_FAMILY:-}" in
+    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|tables) ;;
+    *) log_error "unknown EXPERIMENT_FAMILY=${EXPERIMENT_FAMILY:-}"; return 2 ;;
   esac
 }
 
@@ -229,4 +243,60 @@ assert_files() {
       return 1
     fi
   done
+}
+
+allocate_manifest_run() {
+  local identity_root="$1" workflow="$2" dataset="$3" lags="$4" horizon="$5" backbone="$6"
+  local model_order="$7" display_name="$8" row_config="$9" column_config="${10}"
+  local model_values_name="${11}" pipeline_values_name="${12}" seed="${13}" input_path="${14:-}"
+  local -n model_values_ref="$model_values_name"
+  local -n pipeline_values_ref="$pipeline_values_name"
+  local purpose pair
+  local -a args
+  if [ "${EXPERIMENT_MODE:-test}" = test ]; then purpose=smoke; else purpose=publication; fi
+  args=(
+    --identity-root "$identity_root" --project adaptation --workflow "$workflow"
+    --dataset "$dataset" --lookback "$lags" --horizon "$horizon" --backbone "$backbone"
+    --model-config-order "$model_order" --purpose "$purpose" --mode "${EXPERIMENT_MODE:-test}"
+    --display-name "$display_name" --row-config "$row_config" --column-config "$column_config"
+    --runtime-config "slurm.job_id=${SLURM_JOB_ID:-}" --project-root "$PROJECT_ROOT"
+    --policy "$RUN_CONFLICT_POLICY" --skip-completed "$SKIP_COMPLETE" --force "$FORCE_RUN"
+    --launch-id "$EXPERIMENT_LAUNCH_ID" --seed "$seed"
+  )
+  for pair in "${model_values_ref[@]}"; do args+=(--model-config "$pair"); done
+  for pair in "${pipeline_values_ref[@]}"; do args+=(--pipeline-config "$pair"); done
+  if [ -n "$input_path" ]; then args+=(--input "upstream_manifest=$input_path"); fi
+  for pair in "${ADDITIONAL_INPUTS[@]:-}"; do args+=(--input "$pair"); done
+  if [ -n "${RUN_INDEX:-}" ]; then args+=(--run-index "$RUN_INDEX"); fi
+  IFS=$'\t' read -r ALLOCATED_RUN_DIR ALLOCATED_ACTION ALLOCATED_SIGNATURE < <(
+    python -m experiment_runs allocate "${args[@]}"
+  )
+}
+
+mark_manifest_running() {
+  python -m experiment_runs status --run-dir "$1" --status running
+}
+
+mark_manifest_completed() {
+  local run_dir="$1"
+  shift
+  local artifact
+  local -a args=()
+  for artifact in "$@"; do args+=(--artifact "$artifact"); done
+  python -m experiment_runs status --run-dir "$run_dir" --status completed "${args[@]}"
+}
+
+resolve_extraction_run() {
+  local dataset="$1" lags="$2" horizon="$3" backbone="$4" space="$5" metric="$6" neighbors="$7" mode="$8"
+  local identity_root="$PROJECT_ROOT/outputs/extraction/$dataset/${lags}_${horizon}/${backbone,,}/${space,,}/${metric,,}/$neighbors/${mode,,}"
+  local label manifest_id extra
+  IFS=$'\t' read -r EXTRACTION_RUN_DIR label manifest_id extra < <(
+    python -m experiment_runs resolve --identity-root "$identity_root" --config-policy selected --repeat-policy selected
+  )
+  if [ -z "${EXTRACTION_RUN_DIR:-}" ] || [ -n "${extra:-}" ]; then
+    log_error "expected exactly one selected extraction run identity=$identity_root"
+    return 1
+  fi
+  python -m experiment_runs validate --run-dir "$EXTRACTION_RUN_DIR" >/dev/null
+  EXTRACTION_MANIFEST_ID="$manifest_id"
 }

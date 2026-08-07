@@ -14,8 +14,9 @@
 # Its formula and normalization are retained; K is set to 15 for comparison.
 WINNERS_CSV="${WINNERS_CSV:-}"
 
-EXPERIMENT_MODE=crossrag
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY=crossrag
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE WINNERS_CSV
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY WINNERS_CSV
 source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"

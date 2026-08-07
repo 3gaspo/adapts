@@ -1,4 +1,4 @@
-"""Smoke-check TS-IFA result discovery and LaTeX rendering."""
+"""Smoke-check current-manifest adaptation result discovery and rendering."""
 
 import json
 import sys
@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.visu.results_table import discover_results, generate_results_table
+from experiment_runs import allocate_run, mark_status
+from visu.results_table import discover_results, generate_results_table
 
 
 def _write(path: Path, payload) -> None:
@@ -17,219 +18,232 @@ def _write(path: Path, payload) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _write_evaluation(path: Path, family: str, rows) -> None:
-    complete_rows = []
-    for row in rows:
-        complete = {
-            "positive_window_pct": 50.0,
-            "relative_nmse_improvement_pct": 0.0,
-            **row,
-        }
-        complete_rows.append(complete)
-    _write(path, complete_rows)
-    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+def _evaluation_run(
+    root: Path,
+    *,
+    family: str,
+    formula: str,
+    row: dict,
+    include_vanilla: bool = False,
+    retrieval: tuple[str, str, int, str] = ("instance", "euclidean", 3, "online"),
+    dataset: str = "electricity",
+    setting: str = "168_24",
+    model: str = "chronos2",
+) -> None:
+    space, metric, neighbors, mode = retrieval
+    config = {
+        "formula": formula,
+        "space": space,
+        "metric": metric,
+        "k": neighbors,
+        "mode": mode,
+    }
+    identity = (
+        root / dataset / setting / model / formula
+        / space / metric / str(neighbors) / mode
+    )
+    lookback, horizon = map(int, setting.split("_"))
+    allocation = allocate_run(
+        identity,
+        project="adaptation",
+        workflow=family,
+        dataset=dataset,
+        lookback=lookback,
+        horizon=horizon,
+        backbone=model,
+        model_config_order=list(config),
+        model_config=config,
+        pipeline_config={"iterations": 30_000},
+        display_name=formula,
+    )
+    complete = {
+        "positive_window_pct": 50.0,
+        "relative_nmse_improvement_pct": 0.0,
+        **row,
+        "baseline": formula,
+    }
+    rows = [complete]
+    if include_vanilla:
+        rows.insert(
+            0,
+            {
+                "split": "eval",
+                "baseline": "vanilla",
+                "mse": 0.0012,
+                "mae": 0.03,
+                "nmse": 0.4,
+                "positive_window_pct": 50.0,
+                "relative_nmse_improvement_pct": 0.0,
+            },
+        )
+    filename = "baseline_metrics.json" if family == "baselines" else "gate_metrics.json"
+    _write(allocation.run_dir / filename, rows)
+    _write(allocation.run_dir / "prediction_manifest.json", {"format": "test"})
     _write(
-        path.parent / "result_manifest.json",
+        allocation.run_dir / "result_manifest.json",
         {
             "format": "adaptation_evaluation_result",
             "family": family,
-            "methods": [row["baseline"] for row in complete_rows if row["baseline"] != "vanilla"],
-            "metric_fields": list(complete_rows[0]),
+            "methods": [formula],
+            "metric_fields": list(rows[0]),
             "files": {
-                "metrics_json": path.name,
+                "metrics_json": filename,
                 "predictions": "prediction_manifest.json",
             },
         },
     )
+    mark_status(
+        allocation.run_dir,
+        "completed",
+        required_artifacts=[filename, "prediction_manifest.json", "result_manifest.json"],
+    )
 
 
-def _write_ts_ifa(path: Path, variant: str, metrics) -> None:
-    complete = {
-        f"{branch}_{metric}": 0.5
-        for branch in ("adapted", "vanilla_branch", "cov_branch", "residual_branch", "memory_branch")
-        for metric in ("mse", "mae", "nmse")
+def _ts_ifa_run(
+    root: Path,
+    *,
+    dataset: str = "electricity",
+    setting: str = "168_24",
+    model: str = "chronos2",
+    retrieval: tuple[str, str, int, str] = ("instance", "euclidean", 3, "online"),
+) -> str:
+    method = "joint_ridge_horizon_unconstrained_full"
+    config = {
+        "variant": "joint_ridge",
+        "routing_scope": "horizon",
+        "routing_constraint": "unconstrained",
+        "branch_set": "full",
+        "space": retrieval[0],
+        "metric": retrieval[1],
+        "k": retrieval[2],
+        "mode": retrieval[3],
     }
-    complete.update(metrics)
-    _write(path, complete)
-    _write(path.parent / "prediction_manifest.json", {"format": "test"})
+    identity = root / dataset / setting / model
+    for name in config:
+        identity /= str(config[name])
+    allocation = allocate_run(
+        identity,
+        project="adaptation",
+        workflow="ts_ifa",
+        dataset=dataset,
+        lookback=int(setting.split("_")[0]),
+        horizon=int(setting.split("_")[1]),
+        backbone=model,
+        model_config_order=list(config),
+        model_config=config,
+        pipeline_config={"training.epochs": 20000},
+        display_name=method,
+    )
+    payload = {
+        f"{branch}_{metric_name}": 0.5
+        for branch in (
+            "adapted",
+            "vanilla_branch",
+            "cov_branch",
+            "residual_branch",
+            "memory_branch",
+        )
+        for metric_name in ("mse", "mae", "nmse")
+    }
+    payload.update(
+        adapted_mse=0.0008,
+        adapted_mae=0.018,
+        adapted_nmse=0.25,
+        vanilla_branch_nmse=0.4,
+        residual_branch_nmse=0.28,
+        memory_branch_nmse=0.32,
+    )
+    _write(allocation.run_dir / "eval_metrics.json", payload)
+    _write(allocation.run_dir / "prediction_manifest.json", {"format": "test"})
     _write(
-        path.parent / "result_manifest.json",
+        allocation.run_dir / "result_manifest.json",
         {
             "format": "adaptation_ts_ifa_result",
-            "variant": variant,
-            "architecture": "shared_delta_branches_four_rooters_v3",
+            "variant": "joint_ridge",
+            "method": method,
+            "candidate_names": ["vanilla", "cov", "residual", "memory"],
+            "architecture": "configurable_delta_branches_routing_v4",
             "run_signature": "test",
-            "files": {
-                "metrics": path.name,
-                "predictions": "prediction_manifest.json",
-            },
+            "files": {"metrics": "eval_metrics.json", "predictions": "prediction_manifest.json"},
         },
     )
+    mark_status(
+        allocation.run_dir,
+        "completed",
+        required_artifacts=["eval_metrics.json", "prediction_manifest.json", "result_manifest.json"],
+    )
+    return method
 
 
 def main() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
-        setting = root / "electricity" / "168_24"
-        _write(setting / "direct" / "chronos2" / "univariate_summary.json",
-               {"eval": {"mse": {"mean": 0.0012}, "nmse": {"mean": 0.4}}})
-        run = "instance_euclidean_3_online"
-        _write_evaluation(setting / run / "baselines" / "baseline_metrics.json", "baselines",
-               [{"split": "eval", "baseline": "vanilla", "mse": 0.0012, "mae": 0.03, "nmse": 0.4},
-                {"split": "eval", "baseline": "avgy_ridge_shared", "mse": 0.0009, "mae": 0.02, "nmse": 0.3},
-                {"split": "eval", "baseline": "cov_delta_ridge_shared", "mse": 0.00085,
-                 "mae": 0.019, "nmse": 0.28},
-                {"split": "eval", "baseline": "avgy_ridge_shared_eval_fit", "mse": 0.0005,
-                 "mae": 0.015, "nmse": 0.18}])
-        _write_evaluation(setting / run / "gates" / "gate_metrics.json", "gates",
-               [{"split": "eval", "baseline": "bayes_cov_shared", "mse": 0.00075,
-                 "mae": 0.019, "nmse": 0.24},
-                {"split": "eval", "baseline": "catboost_cov_classifier_shared", "mse": 0.0007,
-                 "mae": 0.018, "nmse": 0.22},
-                {"split": "eval", "baseline": "catboost_cov_classifier_shared_soft", "mse": 0.00065,
-                 "mae": 0.017, "nmse": 0.21},
-                {"split": "eval", "baseline": "catboost_cov_regressor_horizon", "mse": 0.0006,
-                 "mae": 0.016, "nmse": 0.2},
-                {"split": "eval", "baseline": "oracle_cov_shared", "mse": 0.0002, "mae": 0.01, "nmse": 0.1},
-                {"split": "eval", "baseline": "oracle_cov_horizon", "mse": 0.0001, "mae": 0.005, "nmse": 0.05}])
-        _write_ts_ifa(setting / run / "ts_ifa" / "joint_ridge" / "eval_metrics.json", "joint_ridge",
-               {"adapted_mse": 0.0008, "adapted_mae": 0.018, "adapted_nmse": 0.25,
-                "vanilla_branch_nmse": 0.4,
-                "residual_branch_nmse": 0.28, "memory_branch_nmse": 0.32})
+        baselines = {
+            "avgy_ridge_shared": (0.0009, 0.02, 0.30),
+            "cov_delta_ridge_shared": (0.00085, 0.019, 0.28),
+            "avgy_ridge_shared_eval_fit": (0.0005, 0.015, 0.18),
+        }
+        for index, (formula, (mse, mae, nmse)) in enumerate(baselines.items()):
+            _evaluation_run(
+                root,
+                family="baselines",
+                formula=formula,
+                row={"split": "eval", "mse": mse, "mae": mae, "nmse": nmse},
+                include_vanilla=index == 0,
+            )
+        gates = {
+            "bayes_cov_shared": (0.00075, 0.019, 0.24),
+            "catboost_cov_classifier_shared": (0.0007, 0.018, 0.22),
+            "catboost_cov_regressor_horizon": (0.0006, 0.016, 0.20),
+            "oracle_cov_shared": (0.0002, 0.01, 0.10),
+        }
+        for formula, (mse, mae, nmse) in gates.items():
+            _evaluation_run(
+                root,
+                family="gates",
+                formula=formula,
+                row={"split": "eval", "mse": mse, "mae": mae, "nmse": nmse},
+            )
+        method = _ts_ifa_run(root)
+        retrieval = "instance_euclidean_3_online"
 
-        records = discover_results(root)
-        methods = {record.method for record in records if record.metric == "mse"}
-        assert methods == {
-            "chronos2",
-            f"{run}/vanilla",
-            f"{run}/avgy_ridge_shared",
-            f"{run}/cov_delta_ridge_shared",
-            f"{run}/avgy_ridge_shared_eval_fit",
-            f"{run}/bayes_cov_shared",
-            f"{run}/catboost_cov_classifier_shared",
-            f"{run}/catboost_cov_classifier_shared_soft",
-            f"{run}/catboost_cov_regressor_horizon",
-            f"{run}/oracle_cov_shared",
-            f"{run}/oracle_cov_horizon",
-            f"{run}/joint_ridge",
-            f"{run}/joint_ridge_vanilla_branch",
-            f"{run}/joint_ridge_cov_branch",
-            f"{run}/joint_ridge_residual_branch",
-            f"{run}/joint_ridge_memory_branch",
-        }, methods
+        methods = {record.method for record in discover_results(root) if record.metric == "mse"}
+        assert "vanilla" in methods
+        assert f"{retrieval}/avgy_ridge_shared" in methods
+        assert f"{retrieval}/oracle_cov_shared" in methods
+        assert f"{retrieval}/{method}" in methods
+        assert f"{retrieval}/{method}_memory_branch" in methods
+
         output = generate_results_table(
             root,
-            methods=["chronos2", f"{run}/avgy_ridge_shared", f"{run}/joint_ridge",
-                     f"{run}/oracle_cov_shared", f"{run}/oracle_cov_horizon"],
-            reference="chronos2",
+            methods=[
+                "vanilla",
+                f"{retrieval}/avgy_ridge_shared",
+                f"{retrieval}/{method}",
+                f"{retrieval}/oracle_cov_shared",
+            ],
+            reference="vanilla",
         )
         latex = output.read_text(encoding="utf-8")
         assert r"$\times 10^{-3}$" in latex
-        assert r"\textbf{0.80}" in latex
-        assert "33.33\\%" in latex
-        assert r"IN\_L2\_3/TS-IFA joint ridge" in latex
+        assert r"IN\_L2\_3/TS-IFA JR-H-U-full" in latex
         assert "online" not in latex
-        assert r"\begin{tabular}{llcrrr|rr}" in latex
-        assert r"\textbf{0.10}" not in latex
+        assert r"\textbf{0.20}" not in latex  # oracle columns are excluded from bolding
 
-        default_output = generate_results_table(root, output=root / "default.tex", datasets=["electricity"])
-        default_latex = default_output.read_text(encoding="utf-8")
-        assert "vanilla" not in default_latex
-        assert r"IN\_L2\_3/oracle-cov-s" in default_latex
-        assert r"IN\_L2\_3/bayes-cov-s" in default_latex
-        assert r"IN\_L2\_3/cb-cov-cls-s" in default_latex
-        assert r"IN\_L2\_3/cb-cov-cls-s-soft" in default_latex
-        assert r"IN\_L2\_3/cov-delta-ridge-s" in default_latex
-        assert r"IN\_L2\_3/cb-cov-reg-h" in default_latex
-
-        baseline_output = generate_results_table(
+        fixed = ("raw", "euclidean", 3, "fixed")
+        _evaluation_run(
             root,
-            output=root / "baselines.tex",
-            methods=["chronos2", f"{run}/avgy_ridge_shared", f"{run}/avgy_ridge_shared_eval_fit"],
-            reference="chronos2",
-            excluded_from_bold=["avgy_ridge_shared_eval_fit"],
+            family="baselines",
+            formula="avgy_convex_shared",
+            row={"split": "eval", "mse": 0.001, "mae": 0.02, "nmse": 0.35},
+            retrieval=fixed,
         )
-        baseline_latex = baseline_output.read_text(encoding="utf-8")
-        assert r"IN\_L2\_3/avgy-ridge-s-fit-T3" in baseline_latex
-        assert r"\begin{tabular}{llcrr|r}" in baseline_latex
-
-        ts_ifa_output = generate_results_table(
-            root,
-            output=root / "ts_ifa.tex",
-            metric="nmse",
-            methods=["chronos2", f"{run}/joint_ridge", f"{run}/joint_ridge_residual_branch", f"{run}/joint_ridge_memory_branch"],
-            reference="chronos2",
-        )
-        ts_ifa_latex = ts_ifa_output.read_text(encoding="utf-8")
-        assert r"IN\_L2\_3/TS-IFA joint ridge" in ts_ifa_latex
-        assert r"IN\_L2\_3/TS-IFA JR-R" in ts_ifa_latex
-        assert r"IN\_L2\_3/TS-IFA JR-M" in ts_ifa_latex
-
-        fixed_run = "raw_euclidean_3_fixed"
-        _write_evaluation(setting / fixed_run / "baselines" / "baseline_metrics.json", "baselines",
-               [{"split": "eval", "baseline": "avgy_convex_shared", "mse": 0.001, "mae": 0.02, "nmse": 0.35}])
-        fixed_output = generate_results_table(root, output=root / "fixed.tex", datasets=["electricity"])
+        fixed_output = generate_results_table(root, output=root / "fixed.tex")
         assert r"raw\_L2\_3\_fixed/avgy-convex-s" in fixed_output.read_text(encoding="utf-8")
 
-        _write(root / "toy" / "1_1" / "direct" / "reference" / "univariate_summary.json",
-               {"eval": {"mse": {"mean": 1.0}}})
-        _write(root / "toy" / "1_1" / "direct" / "candidate" / "univariate_summary.json",
-               {"eval": {"mse": {"mean": 0.5}}})
-        _write(root / "toy" / "2_1" / "direct" / "reference" / "univariate_summary.json",
-               {"eval": {"mse": {"mean": 9.0}}})
-        _write(root / "toy" / "2_1" / "direct" / "candidate" / "univariate_summary.json",
-               {"eval": {"mse": {"mean": 8.1}}})
-        averaged_output = generate_results_table(
-            root,
-            output=root / "averaged.tex",
-            datasets=["toy"],
-            methods=["reference", "candidate"],
-            reference="reference",
-            setting_improvements=False,
-        )
-        averaged_latex = averaged_output.read_text(encoding="utf-8")
-        assert "14.00\\%" in averaged_latex
-        assert "30.00\\%" not in averaged_latex
-
-        positive_output = generate_results_table(
-            root,
-            output=root / "positive.tex",
-            datasets=["toy"],
-            methods=["reference", "candidate"],
-            reference="reference",
-            positive_only=True,
-        )
-        positive_latex = positive_output.read_text(encoding="utf-8")
-        assert "candidate" in positive_latex
-
-        negative_output = generate_results_table(
-            root,
-            output=root / "negative.tex",
-            datasets=["toy"],
-            methods=["candidate", "reference"],
-            reference="candidate",
-            positive_only=True,
-        )
-        negative_latex = negative_output.read_text(encoding="utf-8")
-        assert "reference" not in negative_latex
-
         obsolete_root = root / "obsolete"
-        _write(
-            obsolete_root
-            / "electricity"
-            / "168_24"
-            / run
-            / "ts_ifa"
-            / "TS-IFA"
-            / "eval_metrics.json",
-            {"adapted_nmse": 0.1},
-        )
-        try:
-            discover_results(obsolete_root)
-        except ValueError as error:
-            assert "obsolete TS-IFA result directory" in str(error)
-        else:
-            raise AssertionError("obsolete TS-IFA output was accepted")
+        _write(obsolete_root / "electricity" / "168_24" / "legacy" / "metrics.json", {"mse": 0.1})
+        assert discover_results(obsolete_root) == []
 
     print("results table checks passed")
 

@@ -5,7 +5,7 @@ source src/slurm/common.sh
 source src/slurm/profiles.sh
 require_project_root
 
-case "${EXPERIMENT_MODE:-}" in
+case "${EXPERIMENT_FAMILY:-}" in
   horizon_baselines_ablation) family=horizon ;;
   convex_baselines_ablation) family=convex ;;
   delta_baselines_ablation) family=delta ;;

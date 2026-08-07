@@ -7,15 +7,16 @@ require_project_root
 activate_project_environment
 export PYTHONPATH="$PROJECT_ROOT"
 
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-crossrag}"
-if [ "$EXPERIMENT_MODE" != crossrag ]; then
-  log_error "crossrag.slurm only supports EXPERIMENT_MODE=crossrag"
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-crossrag}"
+if [ "$EXPERIMENT_FAMILY" != crossrag ]; then
+  log_error "crossrag.slurm only supports EXPERIMENT_FAMILY=crossrag"
   return 2
 fi
 require_experiment_mode
 adaptation_profile_defaults
-OUT_ROOT="${OUT_ROOT:-outputs/extractions}"
-RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/crossrag}"
+OUT_ROOT="${OUT_ROOT:-outputs/extraction}"
+RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/crossrag}"
 DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
 SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
@@ -83,24 +84,31 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
     return 2
   fi
   RETRIEVAL_SETTING="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
-  INPUT_DIR="$OUT_ROOT/$dataset/${L}_${H}/$model/$RETRIEVAL_SETTING/extracted"
-  RESULT_RUN_ROOT="$RESULTS_ROOT/$dataset/${L}_${H}/$model/$RETRIEVAL_SETTING"
-  OUTPUT_DIR="$RESULT_RUN_ROOT/crossrag"
+  resolve_extraction_run "$dataset" "$L" "$H" "$model" "$space" "$metric" "$neighbors" "$RETRIEVAL_MODE"
+  INPUT_DIR="$EXTRACTION_RUN_DIR"
   require_extraction "$INPUT_DIR"
-  VANILLA_SOURCE="$OUT_ROOT/$dataset/${L}_${H}/$model/vanilla/vanilla_metrics.json"
-  VANILLA_TIMING_SOURCE="$OUT_ROOT/$dataset/${L}_${H}/$model/vanilla/extraction_timing.json"
-  VANILLA_DEST="$RESULTS_ROOT/$dataset/${L}_${H}/$model/vanilla"
+  resolve_extraction_run "$dataset" "$L" "$H" "$model" none none 0 none
+  VANILLA_SOURCE="$EXTRACTION_RUN_DIR/vanilla_metrics.json"
+  VANILLA_TIMING_SOURCE="$EXTRACTION_RUN_DIR/extraction_timing.json"
   assert_files vanilla-metrics "$VANILLA_SOURCE" "$VANILLA_TIMING_SOURCE" "$INPUT_DIR/extraction_timing.json"
-  mkdir -p "$VANILLA_DEST"
-  copy_if_needed "$VANILLA_SOURCE" "$VANILLA_DEST/vanilla_metrics.json"
-  copy_if_needed "$VANILLA_TIMING_SOURCE" "$VANILLA_DEST/extraction_timing.json"
-  mkdir -p "$RESULT_RUN_ROOT"
-  copy_if_needed "$INPUT_DIR/extraction_timing.json" "$RESULT_RUN_ROOT/extraction_timing.json"
-  if is_true "$SKIP_COMPLETE" && crossrag_complete "$OUTPUT_DIR" &&
-    [ "$OUTPUT_DIR/crossrag_metrics.json" -nt "$INPUT_DIR/extraction_manifest.json" ]; then
-    log "skip complete family=crossrag dataset=$dataset"
+  identity_root="$RESULTS_ROOT/$dataset/${L}_${H}/${model,,}/crossrag/${space,,}/${metric,,}/$neighbors/${RETRIEVAL_MODE,,}"
+  model_values=("formula=crossrag" "space=$space" "metric=$metric" "k=$neighbors" "mode=$RETRIEVAL_MODE")
+  pipeline_values=("batch_size=$CROSSRAG_BATCH_SIZE")
+  ADDITIONAL_INPUTS=(
+    "vanilla_manifest=$EXTRACTION_RUN_DIR/manifest.json"
+    "crossrag_base_checkpoint=$CROSSRAG_BASE_CHECKPOINT"
+    "crossrag_checkpoint=$CROSSRAG_CHECKPOINT"
+  )
+  allocate_manifest_run "$identity_root" adaptation/crossrag "$dataset" "$L" "$H" "$model" \
+    formula,space,metric,k,mode crossrag formula space,metric,k,mode \
+    model_values pipeline_values 1 "$INPUT_DIR/manifest.json"
+  unset ADDITIONAL_INPUTS
+  OUTPUT_DIR="$ALLOCATED_RUN_DIR"
+  if [ "$ALLOCATED_ACTION" = skip ]; then
+    log "skip complete family=crossrag dataset=$dataset run=$OUTPUT_DIR"
     continue
   fi
+  mark_manifest_running "$OUTPUT_DIR"
   log_section "crossrag start configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset retrieval=$RETRIEVAL_SETTING"
   srun --ntasks=1 python -m src.adaptors.cross_rag.evaluate \
     --input-dir "$INPUT_DIR" \
@@ -115,5 +123,6 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
     "$OUTPUT_DIR/crossrag_predictions.pt" \
     "$OUTPUT_DIR/crossrag_timing.json" \
     "$OUTPUT_DIR/result_manifest.json"
+  mark_manifest_completed "$OUTPUT_DIR" crossrag_metrics.json crossrag_predictions.pt crossrag_timing.json result_manifest.json
 done
 log_section "job done kind=crossrag output=$RESULTS_ROOT"

@@ -13,8 +13,9 @@
 # Selected shared-ridge winners from the completed primary screen. The runner
 # compares each control with the same ridge model fitted per horizon.
 BASELINE_WINNERS_CSV="${BASELINE_WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared,baselines/instance_euclidean_3_online/cov_y_ridge_shared,baselines/instance_euclidean_3_online/residual_ridge_shared,baselines/raw_euclidean_3_online/cov_avgy_ridge_shared,baselines/raw_euclidean_3_online/cov_ridge_shared}"
-EXPERIMENT_MODE=horizon_baselines_ablation
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY=horizon_baselines_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE BASELINE_WINNERS_CSV
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY BASELINE_WINNERS_CSV
 source "$PROJECT_ROOT/src/slurm/run_baseline_family_ablation.sh"

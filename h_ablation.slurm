@@ -13,8 +13,9 @@
 # Copy complete winner names from screen's pipeline_ranking.csv.
 WINNERS_CSV="${WINNERS_CSV:-}"
 
-EXPERIMENT_MODE=h_ablation
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY=h_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE WINNERS_CSV
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY WINNERS_CSV
 source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"

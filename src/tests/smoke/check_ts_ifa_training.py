@@ -1,4 +1,4 @@
-"""Smoke-test all four TS-IFA router/optimization contracts."""
+"""Smoke-test configurable TS-IFA branches, routing, and optimization contracts."""
 
 from __future__ import annotations
 
@@ -62,34 +62,77 @@ def random_batch() -> dict[str, torch.Tensor]:
 def check_models() -> None:
     batch = random_batch()
     for rooter_form in ("ridge", "neural"):
-        model = TimeSeriesInformedForecastingAdapter(
-            TSIFAConfig(
-                lags=6,
-                horizon=2,
-                neighbors=2,
-                rooter_form=rooter_form,
-                residual_heads=2,
-                memory_heads=2,
-                rooter_heads=2,
-                residual_attn_dim=8,
-                memory_attn_dim=8,
-                rooter_attn_dim=8,
-                residual_hidden=16,
-                memory_hidden=16,
-                rooter_hidden=16,
-            )
-        )
-        outputs = model(batch)
-        torch.testing.assert_close(outputs["prediction"], batch["pred"])
-        torch.testing.assert_close(outputs["residual_prediction"], batch["pred"])
-        torch.testing.assert_close(outputs["memory_prediction"], batch["pred"])
-        torch.testing.assert_close(outputs["coefficients"], torch.zeros_like(outputs["coefficients"]))
-        rooter_parameters = sum(parameter.numel() for parameter in model.rooter_parameters())
-        assert rooter_parameters == 6 if rooter_form == "ridge" else rooter_parameters > 6
+        for scope in ("shared", "horizon"):
+            for constraint in ("unconstrained", "softmax"):
+                for branches in (
+                    ("cov",),
+                    ("residual",),
+                    ("memory",),
+                    ("cov", "residual", "memory"),
+                ):
+                    model = TimeSeriesInformedForecastingAdapter(
+                        TSIFAConfig(
+                            lags=6,
+                            horizon=2,
+                            neighbors=2,
+                            rooter_form=rooter_form,
+                            branches=branches,
+                            routing_scope=scope,
+                            routing_constraint=constraint,
+                            residual_heads=2,
+                            memory_heads=2,
+                            rooter_heads=2,
+                            residual_attn_dim=8,
+                            memory_attn_dim=8,
+                            rooter_attn_dim=8,
+                            residual_hidden=16,
+                            memory_hidden=16,
+                            rooter_hidden=16,
+                        )
+                    )
+                    outputs = model(batch)
+                    assert model.candidate_names == ("vanilla", *branches)
+                    if "residual" in branches:
+                        torch.testing.assert_close(
+                            outputs["residual_prediction"], batch["pred"]
+                        )
+                    if "memory" in branches:
+                        torch.testing.assert_close(
+                            outputs["memory_prediction"], batch["pred"]
+                        )
+                    if constraint == "softmax":
+                        torch.testing.assert_close(
+                            outputs["coefficients"].sum(dim=1),
+                            torch.ones_like(outputs["coefficients"][:, 0]),
+                        )
+                        assert torch.all(outputs["coefficients"] >= 0)
+                    else:
+                        torch.testing.assert_close(outputs["prediction"], batch["pred"])
+                        torch.testing.assert_close(
+                            outputs["coefficients"],
+                            torch.zeros_like(outputs["coefficients"]),
+                        )
+                    if scope == "shared":
+                        torch.testing.assert_close(
+                            outputs["coefficients"][..., :1],
+                            outputs["coefficients"][..., 1:],
+                        )
+                    rooter_parameters = sum(
+                        parameter.numel() for parameter in model.rooter_parameters()
+                    )
+                    route_dim = 1 if scope == "shared" else 2
+                    if rooter_form == "ridge":
+                        assert rooter_parameters == len(branches) * route_dim
+                    else:
+                        assert rooter_parameters > len(branches) * route_dim
 
     design = torch.randn(7, 3, 2, requires_grad=True)
     differentiable_horizon_ridge(design, torch.randn(7, 2), alpha=0.1, eps=1e-8).square().mean().backward()
     assert design.grad is not None and torch.isfinite(design.grad).all()
+    shared = differentiable_horizon_ridge(
+        design.detach(), torch.randn(7, 2), alpha=0.1, eps=1e-8, scope="shared"
+    )
+    assert shared.shape == (3, 1)
 
 
 def run_variant(base: Path, variant: str, adapt_path: Path, eval_path: Path) -> None:
@@ -124,11 +167,12 @@ def run_variant(base: Path, variant: str, adapt_path: Path, eval_path: Path) -> 
     manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
     assert config["architecture"] == TSIFA_ARCHITECTURE
     assert config["variant"] == manifest["variant"] == variant
+    assert manifest["method"] == f"{variant}_horizon_unconstrained_full"
     assert config["rooter_form"] == variant.split("_")[1]
     assert config["optimization"] == variant.split("_")[0]
     rooter = torch.load(paths["rooter"], map_location="cpu", weights_only=False)
     if variant == "joint_ridge":
-        assert rooter["fit"] == "gradient_updates_on_T1"
+        assert rooter["fit"] == "gradient_updates"
         assert torch.count_nonzero(rooter["coefficients"]).item() > 0
     if variant == "meta_ridge":
         assert rooter["fit"] == "closed_form_on_T2"

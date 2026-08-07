@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
+from experiment_runs import SelectedRun, load_manifest, select_identity_runs
+
 
 @dataclass(frozen=True)
 class Result:
@@ -29,7 +31,7 @@ _RUN_NAME_RE = re.compile(
 )
 _EVALUATION_RESULT_FORMAT = "adaptation_evaluation_result"
 _TS_IFA_RESULT_FORMAT = "adaptation_ts_ifa_result"
-_TS_IFA_ARCHITECTURE = "shared_delta_branches_four_rooters_v3"
+_TS_IFA_ARCHITECTURE = "configurable_delta_branches_routing_v4"
 _TS_IFA_VARIANTS = {"joint_ridge", "joint_neural", "meta_ridge", "meta_neural"}
 _REQUIRED_METRIC_FIELDS = {
     "split",
@@ -39,6 +41,48 @@ _REQUIRED_METRIC_FIELDS = {
     "nmse",
     "positive_window_pct",
 }
+_RUN_SELECTION = {
+    "pipeline_config": {},
+    "config_policy": "distinct",
+    "repeat_policy": "selected",
+    "purposes": [],
+}
+_LAST_SELECTED_RUNS: list[SelectedRun] = []
+
+
+def configure_run_selection(
+    *, pipeline_config: Mapping[str, Any] | None = None,
+    config_policy: str = "distinct",
+    repeat_policy: str = "selected",
+    purposes: Sequence[str] = (),
+) -> None:
+    _RUN_SELECTION.update(
+        pipeline_config=dict(pipeline_config or {}),
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        purposes=list(purposes),
+    )
+
+
+def selected_manifest_runs(root: str | Path) -> list[SelectedRun]:
+    base = Path(root).expanduser().resolve()
+    identity_roots = sorted(
+        {path.parent.parent for path in base.rglob("manifest.json") if path.parent.name.startswith("run_") and "archive" not in path.relative_to(base).parts}
+    )
+    selected: list[SelectedRun] = []
+    for identity_root in identity_roots:
+        manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
+        if any(manifest["status"] == "completed" for manifest in manifests):
+            selected.extend(
+                select_identity_runs(
+                    identity_root,
+                    requested_pipeline=_RUN_SELECTION["pipeline_config"],
+                    config_policy=_RUN_SELECTION["config_policy"],
+                    repeat_policy=_RUN_SELECTION["repeat_policy"],
+                    purposes=_RUN_SELECTION["purposes"],
+                )
+            )
+    return selected
 
 
 def _load_json(path: Path, expected_type: type, description: str) -> Any:
@@ -98,16 +142,16 @@ def _load_evaluation_metrics(path: Path, family: str) -> list[Mapping[str, Any]]
     return rows
 
 
-def _load_ts_ifa_metrics(path: Path) -> Mapping[str, Any]:
-    variant = path.parent.name
-    if variant not in _TS_IFA_VARIANTS:
-        raise ValueError(f"obsolete TS-IFA result directory: {path.parent}")
+def _load_ts_ifa_metrics(path: Path, method: str | None = None) -> Mapping[str, Any]:
     manifest_path = path.parent / "result_manifest.json"
     manifest = _load_json(manifest_path, dict, "TS-IFA result manifest")
+    variant = manifest.get("variant")
+    if variant not in _TS_IFA_VARIANTS:
+        raise ValueError(f"invalid TS-IFA variant at {manifest_path}: {variant!r}")
     if manifest.get("format") != _TS_IFA_RESULT_FORMAT:
         raise ValueError(f"obsolete TS-IFA result format at {manifest_path}")
-    if manifest.get("variant") != variant:
-        raise ValueError(f"TS-IFA variant mismatch at {manifest_path}")
+    if method is not None and manifest.get("method") != method:
+        raise ValueError(f"TS-IFA method mismatch at {manifest_path}")
     if manifest.get("architecture") != _TS_IFA_ARCHITECTURE:
         raise ValueError(f"obsolete TS-IFA architecture at {manifest_path}")
     if not isinstance(manifest.get("run_signature"), str) or not manifest["run_signature"]:
@@ -117,9 +161,12 @@ def _load_ts_ifa_metrics(path: Path) -> Mapping[str, Any]:
         raise ValueError(f"metrics file is not indexed by {manifest_path}")
     _require_file(path.parent, files.get("predictions"), "prediction manifest")
     payload = _load_json(path, dict, "TS-IFA metrics")
+    candidates = manifest.get("candidate_names")
+    if not isinstance(candidates, list) or not candidates or candidates[0] != "vanilla":
+        raise ValueError(f"invalid TS-IFA candidates at {manifest_path}")
     required = {
         f"{branch}_{metric}"
-        for branch in ("adapted", "vanilla_branch", "cov_branch", "residual_branch", "memory_branch")
+        for branch in ("adapted", *(f"{name}_branch" for name in candidates))
         for metric in ("mse", "mae", "nmse")
     }
     if not required <= set(payload):
@@ -193,107 +240,57 @@ def _relative_run(path: Path, root: Path, setting: str) -> str:
 
 
 def discover_results(experiment_dir: str | Path) -> list[Result]:
-    """Discover direct, baseline, and TS-IFA metrics below a result root."""
+    """Discover metrics only from selected, completed current manifests."""
     root = Path(experiment_dir).expanduser().resolve()
     if not root.is_dir():
         raise FileNotFoundError(f"experiment directory does not exist: {root}")
     results: list[Result] = []
-
-    for path in sorted(root.rglob("univariate_summary.json")):
-        if path.parent.name == "vanilla":
-            continue
-        identity = _setting_ancestor(path, root)
-        if identity is None:
-            continue
-        dataset, setting = identity
-        model = _path_model(path, root, setting)
-        payload = _load_json(path, dict, "univariate summary")
-        for split, metrics in payload.items():
-            if not isinstance(metrics, Mapping):
+    selected = selected_manifest_runs(root)
+    _LAST_SELECTED_RUNS[:] = selected
+    for choice in selected:
+        identity = choice.manifest["identity"]
+        config = identity["model_config"]
+        dataset = str(identity["dataset"])
+        setting = f"{identity['lookback']}_{identity['horizon']}"
+        model = str(identity["backbone"])
+        run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode") if name in config)
+        if (choice.run_dir / "baseline_metrics.json").is_file():
+            path = choice.run_dir / "baseline_metrics.json"
+            family = "baselines"
+            payload = _load_evaluation_metrics(path, family)
+        elif (choice.run_dir / "gate_metrics.json").is_file():
+            path = choice.run_dir / "gate_metrics.json"
+            family = "gates"
+            payload = _load_evaluation_metrics(path, family)
+        elif (choice.run_dir / "crossrag_metrics.json").is_file():
+            path = choice.run_dir / "crossrag_metrics.json"
+            family = "crossrag"
+            payload = _load_crossrag_metrics(path)
+        else:
+            path = choice.run_dir / "eval_metrics.json"
+            if not path.is_file():
                 continue
-            for metric, summary in metrics.items():
-                value = summary.get("mean") if isinstance(summary, Mapping) else summary
-                try:
-                    value = float(value)
-                except (TypeError, ValueError):
-                    value = math.nan
-                results.append(Result(dataset, setting, path.parent.name, str(split), str(metric), value, path, model))
-
-    for path in sorted(root.rglob("vanilla_metrics.json")):
-        identity = _setting_ancestor(path, root)
-        if identity is None:
+            method_name = "_".join(
+                str(config[name])
+                for name in ("variant", "routing_scope", "routing_constraint", "branch_set")
+            )
+            payload = _load_ts_ifa_metrics(path, method_name)
+            for key, value in payload.items():
+                match = re.fullmatch(r"(.+)_(mse|mae|nmse)", str(key).lower())
+                if match is None:
+                    continue
+                variant, metric = match.groups()
+                method = f"{run}/{choice.label}" if variant == "adapted" else f"{run}/{choice.label}_{variant}"
+                results.append(Result(dataset, setting, method, "eval", metric, float(value), path, model))
             continue
-        dataset, setting = identity
-        model = _path_model(path, root, setting)
-        payload = _load_json(path, list, "vanilla metrics")
-        for index, row in enumerate(payload):
-            if not isinstance(row, Mapping) or row.get("baseline") != "vanilla":
-                raise ValueError(f"invalid vanilla metric row {index} at {path}")
+        for row in payload:
+            formula = "vanilla" if row["baseline"] == "vanilla" else choice.label
+            method = formula if formula == "vanilla" else f"{run}/{formula}"
             for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
-                    value = float(row[metric])
-                    if not math.isfinite(value):
-                        raise ValueError(f"non-finite {metric} in row {index} at {path}")
                     results.append(
-                        Result(
-                            dataset,
-                            setting,
-                            "vanilla",
-                            str(row.get("split", "eval")),
-                            metric,
-                            value,
-                            path,
-                            model,
-                        )
+                        Result(dataset, setting, method, str(row.get("split", "eval")), metric, float(row[metric]), path, model)
                     )
-
-    for filename, family in (
-        ("baseline_metrics.json", "baselines"),
-        ("gate_metrics.json", "gates"),
-        ("crossrag_metrics.json", "crossrag"),
-    ):
-        for path in sorted(root.rglob(filename)):
-            if path.parent.name != family:
-                continue
-            identity = _setting_ancestor(path, root)
-            if identity is None:
-                continue
-            dataset, setting = identity
-            model = _path_model(path, root, setting)
-            run = _relative_run(path, root, setting)
-            payload = (
-                _load_crossrag_metrics(path)
-                if family == "crossrag"
-                else _load_evaluation_metrics(path, family)
-            )
-            for row in payload:
-                for metric in ("mse", "mae", "nmse", "positive_window_pct"):
-                    if metric in row:
-                        results.append(
-                            Result(dataset, setting, f"{run}/{row['baseline']}", str(row.get("split", "eval")), metric,
-                                   float(row[metric]), path, model)
-                        )
-
-    for path in sorted(root.rglob("eval_metrics.json")):
-        identity = _setting_ancestor(path, root)
-        if identity is None:
-            continue
-        dataset, setting = identity
-        model = _path_model(path, root, setting)
-        run = _relative_run(path, root, setting)
-        variant_name = path.parent.name
-        payload = _load_ts_ifa_metrics(path)
-        for key, value in payload.items():
-            match = re.fullmatch(r"(.+)_(mse|mae|nmse)", str(key).lower())
-            if match is None:
-                continue
-            variant, metric = match.groups()
-            method = (
-                f"{run}/{variant_name}"
-                if variant == "adapted"
-                else f"{run}/{variant_name}_{variant}"
-            )
-            results.append(Result(dataset, setting, method, "eval", metric, float(value), path, model))
     return results
 
 
@@ -427,6 +424,35 @@ for _variant, _variant_label in (
         _METHOD_LABELS[f"{_variant}_{_branch}_branch"] = (
             f"TS-IFA {_variant_label}-{_branch_label}"
         )
+for _variant, _variant_label in (
+    ("joint_ridge", "JR"),
+    ("joint_neural", "JN"),
+    ("meta_ridge", "MR"),
+    ("meta_neural", "MN"),
+):
+    for _scope, _scope_label in (("shared", "S"), ("horizon", "H")):
+        for _constraint, _constraint_label in (
+            ("unconstrained", "U"),
+            ("softmax", "SM"),
+        ):
+            for _branches in ("cov", "residual", "memory", "full"):
+                _method = (
+                    f"{_variant}_{_scope}_{_constraint}_{_branches}"
+                )
+                _METHOD_LABELS[_method] = (
+                    f"TS-IFA {_variant_label}-{_scope_label}-"
+                    f"{_constraint_label}-{_branches}"
+                )
+                for _branch, _branch_label in (
+                    ("vanilla", "V"),
+                    ("cov", "C"),
+                    ("residual", "R"),
+                    ("memory", "M"),
+                ):
+                    _METHOD_LABELS[f"{_method}_{_branch}_branch"] = (
+                        f"TS-IFA {_variant_label}-{_scope_label}-"
+                        f"{_constraint_label}-{_branches}-{_branch_label}"
+                    )
 for _design, _label in _BASELINE_DESIGN_LABELS.items():
     for _mode, _mode_label in (("shared", "s"), ("horizon", "h")):
         for _family, _family_label in (

@@ -7,7 +7,7 @@ from html import escape
 import json
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,13 +37,10 @@ def _flatten_optional(payload: dict[str, Any], key: str) -> np.ndarray | None:
 
 def load_dashboard_data(
     extraction_dir: str | Path,
-    result_dir: str | Path,
-    *,
-    ts_ifa_variant: str = "joint_ridge",
+    result_dirs: Sequence[str | Path],
 ) -> dict[str, Any]:
-    """Load current extraction and completed result artifacts."""
+    """Load one current extraction run and explicitly selected result runs."""
     root = Path(extraction_dir).expanduser()
-    result_root = Path(result_dir).expanduser()
     extraction_complete, extraction_reason = validate_extraction(root)
     if not extraction_complete:
         raise ValueError(f"Extraction is not complete: {extraction_reason}")
@@ -55,24 +52,25 @@ def load_dashboard_data(
     if not extracted:
         raise FileNotFoundError(f"No *_prediction_payload.pt files found under {root}")
 
-    result_specs = [
-        (result_root / "baselines", "adaptation_evaluation_result", "baselines"),
-        (result_root / "gates", "adaptation_evaluation_result", "gates"),
-        (result_root / "ts_ifa" / ts_ifa_variant, "adaptation_ts_ifa_result", None),
-    ]
     baseline: dict[str, Any] = {"splits": {}}
     baseline_artifacts: dict[str, Any] = {"models": {}}
     gate_importances: dict[str, dict[str, np.ndarray]] = {}
     ts_ifa_artifacts: dict[str, Any] = {}
     loaded_result_dirs: list[Path] = []
-    for current_dir, expected_format, expected_family in result_specs:
+    for selected_dir in result_dirs:
+        current_dir = Path(selected_dir).expanduser()
         result_manifest = current_dir / "result_manifest.json"
         if not result_manifest.exists():
-            continue
+            raise FileNotFoundError(f"Missing selected result manifest: {result_manifest}")
         completion = json.loads(result_manifest.read_text(encoding="utf-8"))
-        if completion.get("format") != expected_format:
+        result_format = completion.get("format")
+        expected_family = completion.get("family")
+        if result_format not in {
+            "adaptation_evaluation_result",
+            "adaptation_ts_ifa_result",
+        }:
             raise ValueError(f"{result_manifest} is not a current result manifest")
-        if expected_family is not None and completion.get("family") != expected_family:
+        if result_format == "adaptation_evaluation_result" and expected_family not in {"baselines", "gates"}:
             raise ValueError(f"{result_manifest} has the wrong result family")
         if completion.get("files", {}).get("predictions") != "prediction_manifest.json":
             raise ValueError(f"{result_manifest} does not index current predictions")
@@ -89,9 +87,13 @@ def load_dashboard_data(
             artifact_path = current_dir / str(files.get("artifacts", ""))
             if not artifact_path.is_file():
                 raise FileNotFoundError(f"Missing baseline artifacts: {artifact_path}")
-            baseline_artifacts = torch_load(artifact_path)
-            if baseline_artifacts.get("format") != "adaptation_baseline_models":
+            current_artifacts = torch_load(artifact_path)
+            if current_artifacts.get("format") != "adaptation_baseline_models":
                 raise ValueError(f"{artifact_path} is not a current baseline artifact")
+            baseline_artifacts["models"].update(current_artifacts.get("models", {}))
+            baseline_artifacts.setdefault("eval_fit_models", {}).update(
+                current_artifacts.get("eval_fit_models") or {}
+            )
         elif expected_family == "gates":
             artifact_path = current_dir / str(files.get("artifacts", ""))
             if not artifact_path.is_file():
@@ -113,7 +115,7 @@ def load_dashboard_data(
                         dtype=np.float64,
                     ),
                 }
-        elif expected_family is None:
+        elif result_format == "adaptation_ts_ifa_result":
             rooter_path = current_dir / str(files.get("rooter", ""))
             if not rooter_path.is_file():
                 raise FileNotFoundError(f"Missing TS-IFA rooter: {rooter_path}")
@@ -134,7 +136,7 @@ def load_dashboard_data(
 
     data = {
         "run_dir": root,
-        "result_dir": result_root,
+        "result_dirs": loaded_result_dirs,
         "extracted": extracted,
         "baseline": baseline,
         "baseline_artifacts": baseline_artifacts,

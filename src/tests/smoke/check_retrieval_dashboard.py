@@ -203,7 +203,7 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        ts_ifa_dir = result_root / "ts_ifa" / "joint_ridge"
+        ts_ifa_dir = result_root / "ts_ifa" / "joint_ridge_horizon_unconstrained_full"
         ts_ifa_dir.mkdir(parents=True)
         target = payloads["eval"]["eval_Y_values"].reshape(-1, 3)
         ts_ifa_store = PredictionStore(ts_ifa_dir)
@@ -252,7 +252,7 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        data = load_dashboard_data(extraction_root, result_root)
+        data = load_dashboard_data(extraction_root, [baseline_dir, gate_dir, ts_ifa_dir])
         arrays = split_arrays(data, "eval")
         assert arrays["x"].shape == (6, 4)
         assert "avgy" in prediction_names(data, "eval")

@@ -49,16 +49,19 @@
 \newcommand{\nMSE}{\operatorname{nMSE}}
 \newcommand{\TopK}{\operatorname{TopK}}
 
-\title{\vspace{-1.5em}\textbf{Retrieval-Based Adaptation of \\Time Series Foundation Models}\vspace{-0.4em}}
+\title{\vspace{-1.5em}\textbf{Retrieval-Based Adaptation of \\Time Series Foundation Models}\\[2mm]\large Experiment Guideline\vspace{-0.4em}}
 \author{Gaspard Berthelier}
-\date{4 August 2026}
+\date{7 August 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This report describes my current work on retrieval-based adaptation for pretrained time series forecasting models. We briefly introduce notations,
-the literature context, and the implemented baselines as well as the proposed TS-IFA architecture.
+This guideline is the current specification for retrieval-based adaptation of
+pretrained time-series forecasters. It defines the notation, leakage controls,
+retrieval contract, implemented baselines, TS-IFA variants, experiment grids,
+artifacts, and practical workflow. Obtained results are maintained separately
+in \code{executive_summary.tex}.
 \end{abstract}
 
 \tableofcontents
@@ -793,10 +796,10 @@ Memory attention reads realised neighbour horizons directly:
  z_m=A_m(X,\{X_j\},\{Y_j\}),
  \qquad c_m=p+M_m([p,z_m]).
 \]
-The default candidate bank is
-$\mathcal C=(c_0,c_1,c_2,c_3)=(p,p^c,c_r,c_m)$.
-The rooters exclude $c_0$ and operate on the three non-vanilla deltas
-$d_j=c_j-p$, $j\in\{1,2,3\}$. Fixed and learned transformed covariates are a
+Vanilla is always present, and any non-empty subset of
+$\{p^c,c_r,c_m\}$ can be selected. For active candidate set $I$, the
+unconstrained rooters operate on the non-vanilla deltas $d_j=c_j-p$, $j\in I$.
+Fixed and learned transformed covariates are a
 separate experiment rather than TS-IFA candidates.
 
 \subsection{Neural and ridge rooters}
@@ -808,26 +811,26 @@ where $d_g$ is the configured representation width:
 \[
  z_g=A_g(X,\{X_j\},\{X_j\})\in\reals^{d_g}.
 \]
-For the learned type embedding $\tau_j\in\reals^{d_g}$ of delta $d_j$,
-with $j\in\{1,2,3\}$,
+For the learned type embedding $\tau_j\in\reals^{d_g}$ of active delta $d_j$,
 let $\operatorname{LN}$ denote dimension-preserving layer normalization and
-let $S_\omega:\reals^{2d_g+2H}\to\reals^H$ be the shared MLP scorer. It returns
-the unconstrained horizon vector
+let $S_\omega:\reals^{2d_g+2H}\to\reals^R$ be the shared MLP scorer, where
+$R=1$ for shared routing and $R=H$ for horizon routing. It returns
 \begin{align}
  a_j&=S_\omega\!\left([
  \operatorname{LN}(z_g),\operatorname{LN}(p),
  \operatorname{LN}(d_j),\operatorname{LN}(\tau_j)
- ]\right)\in\reals^H,\\
- \widehat Y_{\rm neural}&=p+\sum_{j=1}^{3}a_j\odot d_j,
- \qquad a_j\in\reals^H.
+ ]\right)\in\reals^R,\\
+ \widehat Y_{\rm neural}&=p+\sum_{j\in I}a_j\odot d_j.
 \end{align}
 Here $\omega$ denotes all neural-rooter parameters: $A_g$, its layer
 normalizations, the type embeddings, and the shared scorer.
-There is no sigmoid, softmax, or convexity constraint. The vanilla fallback is
-$a_j=0$ for every candidate.
+Unconstrained routing uses these signed delta weights. Optional softmax routing
+prepends a vanilla logit, then normalizes vanilla and every active candidate to
+non-negative weights summing to one. The shared form broadcasts one value over
+all horizons; the horizon form retains one value per horizon index.
 
-The ridge rooter is horizon-wise on the same candidate deltas. In the joint
-variant its free coefficient matrix is $\nu\in\reals^{3\times H}$ and is updated
+The ridge rooter uses the same active candidates. In the joint variant its free
+routing matrix is $\nu\in\reals^{|I|\times R}$ and is updated
 by gradient descent with the branches. Only the meta variant uses the following
 closed-form solve.
 For any non-empty fit set $\mathcal A$, let
@@ -855,9 +858,11 @@ For ridge penalty $\alpha>0$, the standardized coefficient matrix is
  \qquad \nu^*_{\mathcal A,j,h}(\theta_b)
  =\Gamma^*_{\mathcal A,j,h}(\theta_b)/s_{j,h}^{(d,\mathcal A)},
 \]
-where $\|\cdot\|_F$ is the Frobenius norm. The ridge prediction is
+where $\|\cdot\|_F$ is the Frobenius norm. This exact solve applies to
+unconstrained meta-ridge; softmax meta-ridge uses differentiable gradient inner
+updates. The unconstrained ridge prediction is
 $p_{i,h}+\sum_{j=1}^{3}\nu_{j,h}d_{i,j,h}$. Both ridge variants have exactly
-$3H$ coefficients; $\alpha=10^{-2}$ applies to meta-ridge solves only.
+$|I|R$ routing parameters; $\alpha=10^{-2}$ applies to exact meta-ridge solves only.
 
 \subsection{Training and initialization}
 
@@ -898,7 +903,7 @@ $\mathcal S_1$ and later query $\mathcal Q_1$. Meta ridge computes
  \mathcal L_R^{\mathcal Q_1^{(e)}}(\theta_b,\nu_e^*(\theta_b))
  +\lambda_B\mathcal L_B^{\mathcal Q_1^{(e)}}(\theta_b),
 \end{align}
-differentiating through each exact standardized $3\times3$ solve. It freezes
+differentiating through each exact standardized $|I|\times|I|$ solve. It freezes
 $\theta_b^*$ and fits $\nu^*_{\Ttwo}(\theta_b^*)$ in closed form.
 Meta neural starts from learned $\omega^{(0)}=\omega$ and takes
 \[
@@ -914,7 +919,7 @@ $\Ttwo$. Both meta variants score $\Tthree$ once. The default query fraction is
 Output-zero initialization of $M_r$, $M_m$, the neural scorer, and the free
 joint-ridge matrix gives $c_r=c_m=p$, $a_j=0$, and $\widehat Y=p$ at step zero.
 All AdamW stages use learning rate $10^{-5}$, weight decay $10^{-4}$, batch size
-256, and 10,000 one-random-batch epochs outside smoke mode. The exact variant,
+256, and 20,000 one-random-batch epochs outside smoke mode. The exact variant,
 split, optimizer, regularizers, widths, caps, and seed enter the completion
 signature.
 
@@ -925,7 +930,7 @@ support set $\mathcal S_1$ and a later query set $\mathcal Q_1$; the active
 query fraction is 0.2. Episode $e$ samples minibatches
 $\mathcal S_1^{(e)}\subseteq\mathcal S_1$ and
 $\mathcal Q_1^{(e)}\subseteq\mathcal Q_1$. Solve
-$\nu^*_{\mathcal S_1^{(e)}}(\theta_b)$ exactly by the preceding $3\times3$
+$\nu^*_{\mathcal S_1^{(e)}}(\theta_b)$ exactly by the preceding active-candidate
 horizon-wise systems. Starting from the learned neural initialization
 $\omega^{(0)}=\omega$, take $K_{\rm in}$ support steps
 \[
@@ -982,7 +987,7 @@ The ridge query loss has the first two terms of $\mathcal L_R$, with ridge
 regularization applied in its support solve. Active meta weights are
 $\lambda_{\rm ridge}=\lambda_{\rm neural}=1$ and $\lambda_B=0.1$;
 $K_{\rm in}=1$ and $\eta_{\rm in}=10^{-3}$. Outer and final-rooter AdamW use
-learning rate $10^{-5}$, weight decay $10^{-4}$, batch size 256, and 10,000
+ learning rate $10^{-5}$, weight decay $10^{-4}$, batch size 256, and 20,000
 one-random-batch epochs outside smoke mode.
 Output-zero initialization of $M_r$, $M_m$, and the shared rooter scorer gives
 $c_r=c_m=p$, $a_j=0$, and $\widehat Y=p$ at step zero.
@@ -993,15 +998,16 @@ under the old signature and must be rerun.
 
 \subsection{Parameter counts}
 
-The active configuration uses four attention heads, per-head dimension 32,
-128-unit hidden layers, and three rooter deltas. $K$ affects compute and memory,
-not parameter count.
+The full horizon-routing reference configuration uses four attention heads,
+per-head dimension 32, 128-unit hidden layers, and three rooter deltas. Shared
+routing or a branch subset reduces the rooter and branch counts. $K$ affects
+compute and memory, not parameter count.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Exact current TS-IFA parameter counts, reproduced by the implementation
-and synchronized \code{config.json} artifacts.}
+\caption{Full horizon-routing TS-IFA reference parameter counts, reproduced by
+the implementation and synchronized \code{config.json} artifacts.}
 \label{tab:tsifa-counts}
 \begin{tabular}{@{}rrrrrr@{}}
 \toprule
@@ -1190,10 +1196,11 @@ Front & Model set / controlled axis \\
 \code{catboost_ablation.slurm} & two controls in \cref{tab:selected-catboost}; three separate one-axis variants \\
 \code{mixed_quantity_ablation.slurm} & selected pipelines transferred to the five mixed-quantity panels \\
 \code{crossrag.slurm} & one selected pipeline versus Cross-RAG at $(L,H,K)=(512,64,15)$ \\
-\code{ts_ifa\_joint\_ridge.slurm} & joint-gradient ridge TS-IFA; current focus \\
-\code{ts_ifa\_joint\_neural.slurm} & joint-gradient neural TS-IFA \\
-\code{ts_ifa\_meta\_ridge.slurm} & exact support-solve ridge meta-TS-IFA \\
-\code{ts_ifa\_meta\_neural.slurm} & gradient-inner-loop neural meta-TS-IFA \\
+\code{ts_ifa.slurm} & complete non-meta routing/branch grid over the selected test/full/ultra subset \\
+\code{ts_ifa\_h\_ablation.slurm} & selected candidates at $L=504$ over three horizons \\
+\code{ts_ifa\_l\_ablation.slurm} & selected candidates at $H=24$ over three lookbacks \\
+\code{ts_ifa\_meta\_ridge.slurm} & meta-learning on textually selected ridge candidates \\
+\code{ts_ifa\_meta\_neural.slurm} & meta-learning on textually selected neural candidates \\
 \code{extraction.slurm} & standalone extraction smoke or TS-IFA-input front \\
 \code{baselines.slurm} & standalone primary-baseline smoke front \\
 \code{gates.slurm} & standalone primary-gate smoke front \\
@@ -1202,13 +1209,46 @@ Front & Model set / controlled axis \\
 \end{tabularx}
 \end{table}
 
-The completed screen selected six shared-ridge baselines, two hard shared
+Earlier screen analysis selected six shared-ridge baselines, two hard shared
 CatBoost regressors, and one shared Bayes gate; no convex or delta baseline was
-eligible for that screen. Its extraction payloads and controls remain valid.
-The convex, delta-ridge, and CatBoost formulation fronts are also complete and
-did not replace those controls. The next study expands the retained candidates
-over $K$; the screen fits need not be recomputed. Publication CatBoost fits
+eligible for that screen. Those historical synchronized artifacts lack enough
+payload and configuration evidence for current-schema reuse and are archived.
+They remain analysis evidence, but a current table or continued $K$ study must
+rerun the affected extraction and result identities. Publication CatBoost fits
 allow 300 trees; only the smoke profile uses two.
+
+\subsection{Result identity, repetitions, and selection}
+Extraction is a reusable workflow with identity
+\begin{verbatim}
+outputs/extraction/dataset/L_H/backbone/space/metric/k/mode/run_n/
+\end{verbatim}
+and vanilla uses \code{none/none/0/none}. Baselines, gates, Cross-RAG, and each
+ablation use a separate family root with identity
+\begin{verbatim}
+outputs/adaptation/family/dataset/L_H/backbone/formula/space/metric/k/mode/run_n/
+\end{verbatim}
+TS-IFA instead orders \code{variant/routing_scope/routing_constraint/branch_set}
+before \code{space/metric/k/mode}. Each config owns one directory. Optional row
+and column config subsets affect only table layout.
+
+Splits, budgets, optimizers, regularizers, fit caps, candidate lists, and
+evaluation controls are pipeline configs in \code{manifest.json}; device and
+scheduler placement are runtime-only. The recorded seed fixes all stochastic
+choices. Repeated seeds, when used, are \code{seed_n} leaves. Mode is only a
+test/full/ultra path-subset selector and is never a family, phase, path field,
+or computation-signature field.
+
+Every run uses \code{schema_version: 1}, input fingerprints, launch attempts,
+required artifacts, and status not-run/running/interrupted/completed. The
+default \code{overwrite_exact} collision policy skips exact completion,
+resumes exact interruption, and adds \code{run_n} for a changed pipeline.
+Tables support distinct/latest/selected/average pipeline configurations and
+selected/latest/distinct/average exact repeats. Explicit pipeline filters must
+match even with one run. \code{SELECTED_RUNS.txt} records automatic or pinned
+selection, and every report records its exact manifests. Unmigratable legacy
+material is isolated under
+\code{outputs/archive/legacy_pre_schema_v1_2026-08-07} and is never read by
+current tables.
 
 Table construction accepts only current result manifests, keeps selected
 pipelines family-qualified, and requires complete dataset--setting--model
@@ -1221,7 +1261,7 @@ configurations are reused by default, so resubmitting a profile or ablation
 front rebuilds these tables and plots without refitting. For the $K$ ablation,
 the same stage also overlays every candidate's average held-out nMSE improvement
 against $K$ and marks the global optimum. The obsolete combined
-\code{TS-IFA} directory is not a valid input; each current TS-IFA variant owns
+\code{TS-IFA} directory is not a valid input; each current TS-IFA method owns
 its isolated manifest and result folder.
 
 For setting $c$, method $m$, method score $\nMSE_{m,c}$, and matching vanilla
@@ -1254,6 +1294,6 @@ retrieval choice, and validation protocol explicit rather than conflating them
 with backbone quality.
 
 \bibliographystyle{plainnat}
-\bibliography{adaptation_references}
+\bibliography{latex/adaptation_references}
 
 \end{document}

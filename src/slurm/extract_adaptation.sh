@@ -13,9 +13,11 @@ export PYTHONPATH="$PROJECT_ROOT"
 # directories or edit the candidate paths in common.sh.
 : "${DATA_ROOT:=}"
 : "${WEIGHTS_ROOT:=}"
-: "${OUT_ROOT:=outputs/extractions}"
+: "${OUT_ROOT:=outputs/extraction}"
 : "${EXPERIMENT_MODE:=test}"
 require_experiment_mode
+EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-extraction}"
+require_experiment_family
 
 : "${SKIP_COMPLETE:=true}"
 adaptation_profile_defaults
@@ -75,9 +77,6 @@ model_kwargs() {
   esac
 }
 
-SKIP_ARGS=()
-is_true "$SKIP_COMPLETE" && SKIP_ARGS+=(--skip-complete)
-
 run_extraction() {
   local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
   local dataset_dir config model_options retrieval_period datastore_stride
@@ -113,8 +112,7 @@ run_extraction() {
     --device gpu \
     --output-dir "$output_root" \
     --save-name "$save_name" \
-    --seed "$SEED" \
-    "${SKIP_ARGS[@]}"
+    --seed "$SEED"
 }
 
 TASK_DATASETS=()
@@ -156,7 +154,9 @@ run_task() {
   local space="${TASK_SPACES[$task_id]}"
   local metric="${TASK_METRICS[$task_id]}"
   local neighbors="${TASK_NEIGHBORS[$task_id]}"
-  local save_name run_root retrieval_setting retrieval_period datastore_stride
+  local save_name run_root retrieval_setting retrieval_period datastore_stride identity_root
+  local path_space path_metric path_neighbors path_mode dataset_dir dataset_config
+  local -a model_values pipeline_values required_artifacts
   parse_setting "$setting"
   L="$SETTING_LAGS"
   H="$SETTING_HORIZON"
@@ -169,20 +169,53 @@ run_task() {
   # Resolve before loading a multi-GB model so a missing dataset fails promptly.
   find_dataset_dir "$dataset" >/dev/null
   if [ "$neighbors" -eq 0 ]; then
-    save_name=vanilla
-    run_root="$MODEL_ROOT"
+    save_name=.
     retrieval_setting=vanilla
+    path_space=none
+    path_metric=none
+    path_neighbors=0
+    path_mode=none
   else
-    save_name=extracted
+    save_name=.
     retrieval_setting="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
-    run_root="$MODEL_ROOT/$retrieval_setting"
+    path_space="$space"
+    path_metric="$metric"
+    path_neighbors="$neighbors"
+    path_mode="$RETRIEVAL_MODE"
   fi
-  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting period=$retrieval_period datastore_stride=$datastore_stride adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
+  identity_root="$MODEL_ROOT/${path_space,,}/${path_metric,,}/$path_neighbors/${path_mode,,}"
+  model_values=("space=$path_space" "metric=$path_metric" "k=$path_neighbors" "mode=$path_mode")
+  pipeline_values=(
+    "data.splits=$SPLITS" "data.datastore_stride=$datastore_stride"
+    "data.adapt_query_stride=$ADAPT_QUERY_STRIDE" "data.eval_query_stride=$EVAL_QUERY_STRIDE"
+    "data.period=$retrieval_period" "data.max_store_windows=$MAX_STORE_WINDOWS"
+    "normalization=instance"
+  )
+  dataset_dir="$(find_dataset_dir "$dataset")"
+  dataset_config="$dataset_dir/config.json"
+  allocate_manifest_run "$identity_root" extraction "$dataset" "$L" "$H" "$model" \
+    space,metric,k,mode "$model/$retrieval_setting" space metric,k,mode \
+    model_values pipeline_values "$SEED" "$dataset_config"
+  run_root="$ALLOCATED_RUN_DIR"
+  if [ "$ALLOCATED_ACTION" = skip ]; then
+    log "skip complete family=extraction dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting run=$run_root"
+    return
+  fi
+  mark_manifest_running "$run_root"
+  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting run=$run_root computation_signature=$ALLOCATED_SIGNATURE period=$retrieval_period datastore_stride=$datastore_stride adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root"
+  require_extraction "$run_root"
+  required_artifacts=(
+    adapt_prediction_payload.pt adapt_features_payload.pt
+    eval_prediction_payload.pt eval_features_payload.pt
+    extraction_timing.json extraction_manifest.json
+  )
+  if [ "$neighbors" -eq 0 ]; then required_artifacts+=(vanilla_metrics.json); fi
+  mark_manifest_completed "$run_root" "${required_artifacts[@]}"
   log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 
-log_section "job start kind=adaptation_extraction experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV"
+log_section "job start kind=adaptation_extraction family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASK_DATASETS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV"
 for ((task_id = 0; task_id < ${#TASK_DATASETS[@]}; task_id++)); do
   run_task "$task_id"
 done

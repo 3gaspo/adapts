@@ -11,9 +11,10 @@
 
 # Smoke-only primary direct/shared baseline front.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
+EXPERIMENT_FAMILY=baselines
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY
 source "$PROJECT_ROOT/src/slurm/common.sh"
 require_test_experiment_mode || exit $?
 source "$PROJECT_ROOT/src/slurm/run_baselines.sh"

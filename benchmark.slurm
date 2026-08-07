@@ -14,12 +14,13 @@
 # full defaults to Chronos-2; ultra adds TabPFN-TS. Both write to the same
 # publication result tree so ultra reuses completed full outputs.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY=benchmark
 WINNERS_CSV="${WINNERS_CSV:-}"
-RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/full}"
+RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/benchmark}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE WINNERS_CSV RESULTS_ROOT
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY WINNERS_CSV RESULTS_ROOT
 source "$PROJECT_ROOT/src/slurm/common.sh"
 require_benchmark_experiment_mode || exit $?
 source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"

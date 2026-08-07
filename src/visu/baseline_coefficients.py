@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import re
 import shutil
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 import matplotlib
 
@@ -18,6 +18,8 @@ from matplotlib.colors import Normalize, TwoSlopeNorm
 import numpy as np
 import pandas as pd
 import torch
+
+from experiment_runs import load_manifest, select_identity_runs, write_report_manifest
 
 
 RESULT_FORMAT = "adaptation_evaluation_result"
@@ -204,25 +206,16 @@ def export_baseline_coefficient_plots(
     retrieval_mode: str = "online",
     variants: Sequence[str] | None = None,
     pipelines: Sequence[str] | None = None,
+    pipeline_config: Mapping[str, Any] | None = None,
+    config_policy: str = "distinct",
+    repeat_policy: str = "selected",
+    purposes: Sequence[str] = (),
 ) -> list[Path]:
     """Write one exact signed-coefficient heatmap per fitted result configuration."""
     root = Path(experiment_dir).expanduser().resolve()
     destination = Path(output_dir).expanduser().resolve()
     requested_families = set(families)
-    selected_baseline_pipelines: dict[str, set[str]] = {}
-    exact_pipeline_selection = bool(pipelines)
-    if pipelines:
-        for pipeline in pipelines:
-            family, run, method = _pipeline_parts(pipeline)
-            if family == "baselines":
-                selected_baseline_pipelines.setdefault(run, set()).add(method)
-    elif requested_families & {"baselines", "full", "comparison"}:
-        selected_baseline_pipelines = {
-            run: set(variants or ())
-            for run in _run_names(spaces, distance_metrics, neighbors, retrieval_mode)
-        }
-
-    if not selected_baseline_pipelines:
+    if not requested_families & {"baselines", "full", "comparison"}:
         destination.mkdir(parents=True, exist_ok=True)
         index_path = destination / "coefficient_index.csv"
         if not index_path.exists():
@@ -235,66 +228,98 @@ def export_baseline_coefficient_plots(
     destination.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, str]] = []
     outputs: list[Path] = []
-    for model_name in models:
-        for dataset in datasets:
-            for setting in settings:
-                for run, selected_methods in selected_baseline_pipelines.items():
-                    baseline_dir = root / dataset / setting / model_name / run / "baselines"
-                    artifacts = _load_current_artifacts(baseline_dir)
-                    fitted = _coefficient_models(artifacts)
-                    methods = (
-                        sorted(selected_methods)
-                        if exact_pipeline_selection
-                        else sorted(set(fitted) & selected_methods)
-                        if selected_methods
-                        else sorted(fitted)
-                    )
-                    neighbors_value = _neighbors_from_run(run)
-                    for method in methods:
-                        if method in DIRECT_BASELINES:
-                            continue
-                        if method not in fitted:
-                            raise ValueError(
-                                f"selected fitted baseline {method!r} is missing from "
-                                f"{baseline_dir / 'baseline_artifacts.pt'}"
-                            )
-                        baseline = fitted[method]
-                        coefficients, colorbar_label = _coefficient_payload(baseline)
-                        feature_names = _expanded_signal_names(
-                            baseline.get("signals", ()), neighbors_value
-                        )
-                        feature_count = coefficients.shape[-1] if coefficients.ndim else 0
-                        if feature_count != len(feature_names):
-                            raise ValueError(
-                                f"{method} has {feature_count} coefficients but "
-                                f"{len(feature_names)} expanded signal names"
-                            )
-                        method_dir = destination / dataset / setting / run
-                        method_dir.mkdir(parents=True, exist_ok=True)
-                        csv_path = method_dir / f"{method}.csv"
-                        png_path = method_dir / f"{method}.png"
-                        _write_coefficient_csv(csv_path, coefficients, feature_names)
-                        _plot_coefficients(
-                            png_path,
-                            coefficients,
-                            feature_names,
-                            title=f"{dataset} | {setting} | {run}\n{method}",
-                            colorbar_label=colorbar_label,
-                        )
-                        outputs.extend((csv_path, png_path))
-                        rows.append(
-                            {
-                                "dataset": dataset,
-                                "setting": setting,
-                                "model": model_name,
-                                "retrieval": run,
-                                "baseline": method,
-                                "kind": str(baseline.get("kind", "")),
-                                "mode": str(baseline.get("mode", "")),
-                                "coefficients_csv": csv_path.relative_to(destination).as_posix(),
-                                "coefficients_plot": png_path.relative_to(destination).as_posix(),
-                            }
-                        )
+    used_choices = []
+    allowed_pipelines = {
+        (run, method)
+        for family, run, method in map(_pipeline_parts, pipelines or ())
+        if family == "baselines"
+    }
+    allowed_runs = set(_run_names(spaces, distance_metrics, neighbors, retrieval_mode))
+    allowed_variants = set(variants or ())
+    identity_roots = sorted(
+        {
+            path.parent.parent
+            for path in root.rglob("manifest.json")
+            if path.parent.name.startswith("run_")
+            and "archive" not in path.relative_to(root).parts
+        }
+    )
+    selected = []
+    for identity_root in identity_roots:
+        manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
+        if not any(manifest["status"] == "completed" for manifest in manifests):
+            continue
+        selected.extend(
+            select_identity_runs(
+                identity_root,
+                requested_pipeline=pipeline_config,
+                config_policy=config_policy,
+                repeat_policy=repeat_policy,
+                purposes=purposes,
+            )
+        )
+    for choice in selected:
+        identity = choice.manifest["identity"]
+        config = identity["model_config"]
+        formula = str(config.get("formula", ""))
+        if not formula or not (choice.run_dir / "baseline_artifacts.pt").is_file():
+            continue
+        dataset = str(identity["dataset"])
+        setting = f"{identity['lookback']}_{identity['horizon']}"
+        model_name = str(identity["backbone"])
+        run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode"))
+        if dataset not in datasets or setting not in settings or model_name not in models:
+            continue
+        if pipelines and (run, formula) not in allowed_pipelines:
+            continue
+        if not pipelines and (run not in allowed_runs or allowed_variants and formula not in allowed_variants):
+            continue
+        if formula in DIRECT_BASELINES:
+            continue
+        artifacts = _load_current_artifacts(choice.run_dir)
+        fitted = _coefficient_models(artifacts)
+        if formula not in fitted:
+            raise ValueError(
+                f"selected fitted baseline {formula!r} is missing from "
+                f"{choice.run_dir / 'baseline_artifacts.pt'}"
+            )
+        baseline = fitted[formula]
+        coefficients, colorbar_label = _coefficient_payload(baseline)
+        feature_names = _expanded_signal_names(baseline.get("signals", ()), int(config["k"]))
+        feature_count = coefficients.shape[-1] if coefficients.ndim else 0
+        if feature_count != len(feature_names):
+            raise ValueError(
+                f"{formula} has {feature_count} coefficients but "
+                f"{len(feature_names)} expanded signal names"
+            )
+        method = choice.label
+        method_dir = destination / dataset / setting / run
+        method_dir.mkdir(parents=True, exist_ok=True)
+        csv_path = method_dir / f"{method}.csv"
+        png_path = method_dir / f"{method}.png"
+        _write_coefficient_csv(csv_path, coefficients, feature_names)
+        _plot_coefficients(
+            png_path,
+            coefficients,
+            feature_names,
+            title=f"{dataset} | {setting} | {run}\n{method}",
+            colorbar_label=colorbar_label,
+        )
+        outputs.extend((csv_path, png_path))
+        rows.append(
+            {
+                "dataset": dataset,
+                "setting": setting,
+                "model": model_name,
+                "retrieval": run,
+                "baseline": method,
+                "kind": str(baseline.get("kind", "")),
+                "mode": str(baseline.get("mode", "")),
+                "coefficients_csv": csv_path.relative_to(destination).as_posix(),
+                "coefficients_plot": png_path.relative_to(destination).as_posix(),
+            }
+        )
+        used_choices.append(choice)
 
     index_path = destination / "coefficient_index.csv"
     with index_path.open("w", encoding="utf-8", newline="") as stream:
@@ -302,6 +327,21 @@ def export_baseline_coefficient_plots(
         writer.writeheader()
         writer.writerows(rows)
     outputs.append(index_path)
+    write_report_manifest(
+        destination / "report_manifest.json",
+        inputs=used_choices,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        filters={
+            "pipeline": dict(pipeline_config or {}),
+            "purposes": list(purposes),
+            "datasets": list(datasets),
+            "settings": list(settings),
+            "models": list(models),
+            "families": list(families),
+            "pipelines": list(pipelines or ()),
+        },
+    )
     return outputs
 
 
@@ -319,7 +359,39 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--retrieval-mode", default="online")
     parser.add_argument("--variants", default=None)
     parser.add_argument("--pipelines", default=None)
+    parser.add_argument("--pipeline-config", action="append", default=[])
+    parser.add_argument(
+        "--config-policy",
+        choices=("distinct", "latest", "selected", "average"),
+        default="distinct",
+    )
+    parser.add_argument(
+        "--repeat-policy",
+        choices=("selected", "latest", "distinct", "average"),
+        default="selected",
+    )
+    parser.add_argument("--purpose", action="append", default=[])
     return parser.parse_args(argv)
+
+
+def _pipeline_config(values: Sequence[str]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for item in values:
+        if "=" not in item:
+            raise ValueError(f"pipeline config must be KEY=VALUE, got {item!r}")
+        key, value = item.split("=", 1)
+        lowered = value.casefold()
+        if lowered in {"true", "false"}:
+            parsed[key] = lowered == "true"
+        else:
+            try:
+                parsed[key] = int(value)
+            except ValueError:
+                try:
+                    parsed[key] = float(value)
+                except ValueError:
+                    parsed[key] = value
+    return parsed
 
 
 def main(argv: Sequence[str] | None = None) -> list[Path]:
@@ -337,6 +409,10 @@ def main(argv: Sequence[str] | None = None) -> list[Path]:
         retrieval_mode=args.retrieval_mode,
         variants=_split_names(args.variants),
         pipelines=_split_names(args.pipelines),
+        pipeline_config=_pipeline_config(args.pipeline_config),
+        config_policy=args.config_policy,
+        repeat_policy=args.repeat_policy,
+        purposes=args.purpose,
     )
     print(f"Baseline coefficient outputs written: {len(outputs) - 1}")
     print(f"Coefficient index written to {outputs[-1]}")

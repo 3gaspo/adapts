@@ -48,54 +48,78 @@ never separated. The model-specific protocols are:
 
 Nothing fitted on T3 belongs in the main comparison.
 
-Extraction writes to
-`outputs/extractions/<dataset>/<L>_<H>/<model>/<retrieval>/extracted/`.
-A usable extraction contains adapt/eval prediction and feature payloads
-plus `extraction_manifest.json`.  The manifest is written atomically only after
-all payloads exist and records the exact extraction signature, the resolved
-dataset-config path and content hash, and file sizes.
-`--skip-complete` therefore skips a matching complete run but re-runs a partial,
-changed, or obsolete extraction.
+## Result identity and manifests
 
-This extraction root replaces `outputs/adaptation/` without a compatibility
-reader. Git does not move ignored payloads already present on a persistent
-cluster checkout, so migrate them once after pulling this change:
-
-```bash
-mkdir -p outputs/extractions
-rsync -a --remove-source-files outputs/adaptation/ outputs/extractions/
-```
-
-After migration, downstream jobs reuse the extraction manifests and payloads
-from `outputs/extractions/`; extraction does not need to be rerun.
-
-Downstream results are profile-separated under
-`outputs/adaptation_results/<experiment_mode>/`; extraction payloads remain
-shared under `outputs/extractions/`. Their contracts are:
+Extraction is an independently reusable workflow. Its ordered identity is
 
 ```text
-outputs/adaptation_results/<mode>/<dataset>/<L>_<H>/<model>/
-  <retrieval>/baselines/{baseline_metrics.json,baseline_artifacts.pt,prediction_manifest.json,result_manifest.json,...}
-  <retrieval>/gates/{gate_metrics.json,gate_artifacts.json,prediction_manifest.json,result_manifest.json,...}
-  <retrieval>/crossrag/{crossrag_metrics.json,crossrag_predictions.pt,crossrag_timing.json,result_manifest.json}
-  <retrieval>/ts_ifa/<joint_ridge|joint_neural|meta_ridge|meta_neural>/{eval_metrics.json,config.json,ts_ifa.pt,rooter.pt,prediction_manifest.json,result_manifest.json,...}
-  tables/<model>/{full,average}/{baselines_results.tex,gates_results.tex,positive_windows_results.tex,...}
-  tables/<model>/coefficients/<dataset>/<L>_<H>/<retrieval>/<baseline>.{csv,png}
+outputs/extraction/dataset/L_H/backbone/space/metric/k/mode/run_n/
 ```
+
+The vanilla extraction uses `none/none/0/none`. Each completed run contains the
+adapt/eval prediction and feature payloads plus the scientific extraction
+manifest. Downstream jobs select a completed extraction manifest and fingerprint
+it as an input; they never infer one from a similarly named directory.
+
+Every independently submitted comparison or ablation owns a workflow root
+below `outputs/adaptation/`, for example `baselines`, `gates`, `benchmark`,
+`screen`, `k_ablation`, or `crossrag`. Baseline, gate, and Cross-RAG identities
+are
+
+```text
+outputs/adaptation/<family>/dataset/L_H/backbone/formula/space/metric/k/mode/run_n/
+```
+
+TS-IFA identities are
+
+```text
+outputs/adaptation/<family>/dataset/L_H/backbone/
+  variant/routing_scope/routing_constraint/branch_set/space/metric/k/mode/run_n/
+```
+
+Every model config has its own directory component in the declared order.
+Train/validation split, iteration or epoch budget, optimizer, regularization,
+fit caps, candidate list, and evaluation controls are pipeline configs in
+`run_n/manifest.json`; device, worker, and scheduler placement are runtime
+configs. The project currently uses a single manifest-recorded seed per run,
+and that seed fixes every stochastic choice. Future repeated seeds use
+`seed_n/` leaves under the run.
+
+The shared contract is `schema_version: 1` with status `not_run`, `running`,
+`interrupted`, or `completed`. The default `RUN_CONFLICT_POLICY=overwrite_exact`
+skips an identical completed run, resumes an identical interruption, and
+allocates the next `run_n` when pipeline config differs. `overwrite_path`
+explicitly replaces the latest path occupant; `new` always adds a run. A forced
+exact overwrite preserves the prior manifest in `manifest_history/`.
+
+`EXPERIMENT_MODE=test|full|ultra` selects delayed subsets of the same identity
+trees; it is not a family, phase, path component, or computation-signature
+field. Reports live under `outputs/reports/<family>/<mode>/`. They default to
+distinct pipeline configs and the selected exact repeat, with
+`TABLE_CONFIG_POLICY=distinct|latest|selected|average` and
+`TABLE_REPEAT_POLICY=selected|latest|distinct|average`. Explicit pipeline
+filters must match even when only one run exists. `SELECTED_RUNS.txt` stores the
+automatic or pinned run per pipeline signature, and every report records its
+exact input manifests.
+
+The former `outputs/extractions` and `outputs/adaptation_results` trees could
+not be migrated faithfully: synchronized extraction tensor payloads were
+missing, and several result folders bundled formulas without enough pipeline or
+launch evidence. They are preserved under
+`outputs/archive/legacy_pre_schema_v1_2026-08-07/`, excluded from all current
+readers, and may be consulted only for legacy analysis.
 
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed
 `prediction_manifest.json` contract. Each array is a separate `.npy` file below
 `predictions/`; the dashboard reads only this contract. `result_manifest.json`
-is written last and is the completion marker. Obsolete or partial result
-folders are not accepted and are replaced when the run is launched again.
+is written last as a family-specific scientific artifact. Overall completion
+is recorded only after all required files exist in `run_n/manifest.json`.
+Obsolete or partial result folders are not accepted.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
 from `gate_artifacts.json`. Every TS-IFA variant stores its T3 active-rooter
 coefficients under the prediction store's `gate_diagnostics` kind and its
-rooter state in `rooter.pt`. Downstream launchers publish the shared vanilla metrics
-and extraction timing only when the destination is absent or stale; this
-publication is atomic, so baseline, gate, and TS-IFA jobs may start in parallel.
-Cross-RAG likewise writes `result_manifest.json` last; outputs without that
-current completion marker must be rerun.
+rooter state in `rooter.pt`. Cross-RAG likewise writes its scientific
+`result_manifest.json` before the shared run manifest is marked completed.
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
@@ -114,8 +138,9 @@ reusable.
 Baseline and gate fitting may optionally use reproducible subsets of the
 already-extracted payloads through `MAX_T1_FIT_SAMPLES`,
 `MAX_T2_VALID_SAMPLES`, `MAX_ADAPT_REFIT_SAMPLES`, and
-`MAX_EVAL_FIT_SAMPLES`. All default to unlimited; `FIT_SAMPLE_SEED` defaults to
-`SEED`. The first three limits affect only T1 fitting, T2 validation, and the
+`MAX_EVAL_FIT_SAMPLES`. All default to unlimited. The single run `SEED`
+determines every subsample and model random state; deterministic derived
+substreams are not separately configurable. The first three limits affect only T1 fitting, T2 validation, and the
 final T1+T2 refit respectively. The T3 maximum applies only to explicitly
 optimistic `_eval_fit` methods. Final T3 scoring always uses every evaluation
 sample.
@@ -310,9 +335,12 @@ Every TS-IFA variant reports vanilla, cov, residual, and memory candidates plus
 one active rooter. The four models share the same branch architecture; only the
 rooter form and optimization contract differ.
 
-Modes provide default grids, including default backbone models; they are not
-model-free labels. `test`, `screen`, and `full` default to `chronos2`, `ultra`
-defaults to `chronos2,tabpfnts`, and `crossrag` fixes `chronos-bolt`.
+Modes provide delayed subsets of experiment identities. `test` is the narrow
+Electricity smoke subset, `full` is the complete one-backbone subset, and
+`ultra` adds the configured backbones. Independently submitted studies such as
+`screen`, `crossrag`, and every ablation are families, not modes. Full defaults
+to `chronos2`, ultra to `chronos2,tabpfnts`, and the Cross-RAG family fixes
+`chronos-bolt`.
 `MODELS_CSV` explicitly overrides a model list where the launcher enumerates
 backbones, for example `MODELS_CSV=chronos2,tabpfnts`. The primary screen is
 defined on Chronos-2 and should retain that reference backbone. Every
@@ -321,37 +349,37 @@ there is no separate univariate submission.
 
 `test` is exactly one Electricity setting and one retrieval pipeline:
 `L=504`, `H=168`, raw-space Euclidean online retrieval, and `K=3`. `screen`
-is the only complete candidate sweep. `full` is the final selected-candidate
+is the family that performs the complete candidate sweep. `full` is the final selected-candidate
 benchmark on `D_full` and the same three default settings; the selected winner
 name already fixes formula, raw/instance normalization, metric, K, and online
 or fixed retrieval. `ultra`
-uses that identical final benchmark and adds the additional default backbones. Both modes write to
-`outputs/adaptation_results/full`, allowing ultra to reuse completed full
-results. The obsolete `small` profile has been removed.
+uses that identical path set and adds the additional default backbones. Matching
+full computations are reused because mode does not alter their identities.
 
 The intended submission interface is:
 
 | Slurm front | Accessible mode(s) | What it runs |
 |---|---|---|
-| `screen.slurm` | fixed `screen` | Primary extraction, 10 baselines, 8 gate/reference methods, and tables |
+| `screen.slurm` | `full` | `screen` family: primary extraction, 10 baselines, 8 gate/reference methods, and tables |
 | `benchmark.slurm` | `full` or `ultra` | Selected screen winners on `D_full`, followed by tables |
 | `extraction.slurm` | `test`, `full`, `ultra` | Standalone extraction, mainly for smoke or TS-IFA inputs |
 | `baselines.slurm` | `test` | Primary baseline smoke run; requires test extraction |
 | `gates.slurm` | `test` | Primary gate smoke run; requires test extraction |
 | `tables.slurm` | `test`, `full`, `ultra` | Standalone tables, including optional TS-IFA tables |
-| `ts_ifa_joint_ridge.slurm` | `test`, `full`, `ultra` | Joint-gradient ridge TS-IFA; requires matching extraction |
-| `ts_ifa_joint_neural.slurm` | `test`, `full`, `ultra` | Joint-gradient neural TS-IFA; requires matching extraction |
-| `ts_ifa_meta_ridge.slurm` | `test`, `full`, `ultra` | Closed-form-adapted ridge meta-TS-IFA; requires matching extraction |
-| `ts_ifa_meta_neural.slurm` | `test`, `full`, `ultra` | Gradient-adapted neural meta-TS-IFA; requires matching extraction |
-| `mixed_quantity_ablation.slurm` | fixed `mixed_quantity_ablation` | Selected winners on original ETT panels and Weather |
-| `horizon_baselines_ablation.slurm` | fixed `horizon_baselines_ablation` | Selected shared ridge versus horizon ridge |
-| `convex_baselines_ablation.slurm` | fixed `convex_baselines_ablation` | Selected shared ridge versus shared convex |
-| `delta_baselines_ablation.slurm` | fixed `delta_baselines_ablation` | Selected shared ridge versus shared delta-ridge |
-| `catboost_ablation.slurm` | fixed `catboost_ablation` | Selected shared-regressor gates versus three one-axis variants |
-| `k_ablation.slurm` | fixed `k_ablation` | Selected winners over the K grid |
-| `h_ablation.slurm` | fixed `h_ablation` | Selected winners over the H grid |
-| `l_ablation.slurm` | fixed `l_ablation` | Selected winners over the L grid |
-| `crossrag.slurm` | fixed `crossrag` | One selected winner versus Cross-RAG |
+| `ts_ifa.slurm` | `test`, `full`, `ultra` | `ts_ifa` family: complete non-meta configurable TS-IFA grid over the selected scale subset |
+| `ts_ifa_h_ablation.slurm` | `full` | `ts_ifa_h_ablation` family at `L=504`, over `H=24,168,504` |
+| `ts_ifa_l_ablation.slurm` | `full` | `ts_ifa_l_ablation` family at `H=24`, over `L=24,168,504` |
+| `ts_ifa_meta_ridge.slurm` | `full` by default | Meta-learning for textually selected joint-ridge candidates |
+| `ts_ifa_meta_neural.slurm` | `full` by default | Meta-learning for textually selected joint-neural candidates |
+| `mixed_quantity_ablation.slurm` | `full` | `mixed_quantity_ablation` family on original ETT panels and Weather |
+| `horizon_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus horizon ridge |
+| `convex_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared convex |
+| `delta_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared delta-ridge |
+| `catboost_ablation.slurm` | `full` | separate family: selected shared-regressor gates versus three one-axis variants |
+| `k_ablation.slurm` | `full` | `k_ablation` family over the K grid |
+| `h_ablation.slurm` | `full` | `h_ablation` family over the H grid |
+| `l_ablation.slurm` | `full` | `l_ablation` family over the L grid |
+| `crossrag.slurm` | `full` | `crossrag` family: one selected winner versus Cross-RAG |
 
 There is no aggregate smoke submitter. If needed, submit the `test` extraction,
 then the baseline and gate smoke jobs, then tables after both complete. Final
@@ -365,7 +393,7 @@ The paper experiment order is:
 1. Optionally validate the installation with the manual `test` stage sequence.
 2. Run the complete Chronos-2 candidate screen.
 3. Select complete winner names from
-   `outputs/adaptation_results/screen/tables/chronos2/average/pipeline_ranking.csv`.
+   `outputs/reports/screen/full/chronos2/average/pipeline_ranking.csv`.
 4. Run the final Chronos-2 benchmark with those winners.
 5. Optionally run `ultra` with the same winners to add backbones.
 6. Run selected-winner ablations; TS-IFA is an independent architecture track.
@@ -589,15 +617,18 @@ For a TS-IFA-only table, name the completed current variants explicitly, for
 example:
 
 ```bash
-EXPERIMENT_MODE=full FAMILIES_CSV=ts_ifa METHODS_CSV=joint_ridge \
+EXPERIMENT_MODE=full FAMILIES_CSV=ts_ifa \
+  METHODS_CSV=joint_ridge_shared_softmax_cov \
   DATASETS_CSV=Electricity DISTANCE_SPACES_CSV=raw NEIGHBORS_CSV=3 \
   sbatch tables.slurm
 ```
 
 ## TS-IFA variants and optimization
 
-All four TS-IFA models use the same candidates. For vanilla prediction
-`p in R^H`, the fixed covariate candidate is `c_c`; the trainable branches are
+TS-IFA now has a configurable candidate set. Vanilla is always present and any
+non-empty subset of `cov`, `residual`, and `memory` can be enabled. For vanilla
+prediction `p in R^H`, the fixed covariate candidate is `c_c`; the learned
+branches are
 
 ```text
 c_r = p + delta_r(theta_r; x, p, Xc, Nc, Ec),
@@ -605,18 +636,22 @@ c_m = p + delta_m(theta_m; p, z_m),
 theta_b = theta_r union theta_m.
 ```
 
-Both correction heads are output-zero initialized. With
-`I={c,r,m}` and `d_i=c_i-p`, every rooter has the delta form
+Both correction heads are output-zero initialized. With active set `I` and
+`d_i=c_i-p`, unconstrained routing has the signed-delta form
 
 ```text
 y_hat_h = p_h + sum_(i in I) a_(i,h) d_(i,h).
 ```
 
-The ridge form has free `nu=(a_i) in R^(3 x H)`. The neural form has
+Softmax routing instead assigns non-negative weights to vanilla and every
+active candidate, constrained to sum to one. Routing can be shared across all
+horizon indexes (`a_i`) or horizon-specific (`a_(i,h)`). The ridge form has
+free routing values; the neural form has
 `a_i=f_omega(z_g,p,d_i,tau_i)`, where `omega` includes the attention encoder,
 candidate tokens `tau_i`, normalizers, and shared scorer. Ridge coefficients
-and the neural scorer output are initialized to zero, so all four complete
-models initially reproduce `p`. Neither rooter consumes handcrafted retrieval
+and neural outputs are initialized at the vanilla solution: zero deltas for
+unconstrained routing and low non-vanilla logits for softmax routing. Neither
+rooter consumes handcrafted retrieval
 features. Fixed and learned transformed-covariate gates are a separate project
 documented in `../transformed_covariates/README.md`.
 
@@ -644,8 +679,11 @@ r=y-p,
 min_theta_b L_R(theta_b,nu*_S(theta_b);Q1)+lambda_B L_B(theta_b;Q1).
 ```
 
-Gradients pass through the exact standardized `3 x 3` support solves. After
-outer training, branches freeze and a final closed-form ridge is fit on all T2.
+For unconstrained ridge routing, gradients pass through the exact standardized
+support solves. Softmax ridge uses differentiable inner gradient updates because
+the simplex mapping is nonlinear. After outer training, branches freeze; the
+unconstrained ridge router is fit exactly on all T2, while neural and softmax
+routers are fit by gradient updates.
 Meta neural instead takes `K_in` differentiable support updates from the
 learned `omega` initialization, then updates `theta_b` and `omega` from the Q1
 loss. First-order MAML is the default; `NEURAL_FIRST_ORDER=false` retains the
@@ -656,20 +694,32 @@ T2. Both meta variants evaluate T3 exactly once.
 `BRANCH_AUX_WEIGHT` control the common regularizers; `RIDGE_ROOTER_ALPHA`
 applies only to the meta-ridge closed-form solves. `META_QUERY_FRACTION`
 controls the chronological meta split. Each run writes an isolated
-`ts_ifa/<variant>/` folder with `branches.pt`, `rooter.pt`, `ts_ifa.pt`, exact
+`ts_ifa/<method>/` folder with `branches.pt`, `rooter.pt`, `ts_ifa.pt`, exact
 configuration/signature manifests, and disk-backed candidate, active-rooter,
 and coefficient predictions.
 
-The four smoke submissions are:
+All TS-IFA training stages use 20,000 steps. The complete non-meta grid is
+`ridge/neural x shared/horizon x unconstrained/softmax x raw/instance x`
+`{cov, residual, memory, full}`, where the branch labels mean vanilla plus the
+named branch(es). Run its 64 Electricity pilot configurations with:
 
 ```bash
-EXPERIMENT_MODE=test sbatch ts_ifa_joint_ridge.slurm
-EXPERIMENT_MODE=test sbatch ts_ifa_joint_neural.slurm
-EXPERIMENT_MODE=test sbatch ts_ifa_meta_ridge.slurm
-EXPERIMENT_MODE=test sbatch ts_ifa_meta_neural.slurm
+sbatch ts_ifa.slurm
+EXPERIMENT_MODE=full sbatch ts_ifa.slurm
 ```
 
-Each requires an already complete matching extraction. The launcher only
+After inspecting the grid, copy chosen entries in the format documented by
+`TS_IFA_CANDIDATES.txt` into `TS_IFA_CANDIDATES_CSV`. The H/L and meta fronts
+accept only that explicit selection, for example:
+
+```bash
+TS_IFA_CANDIDATES_CSV='ts_ifa/raw_euclidean_3_online/joint_ridge_shared_softmax_cov' \
+  sbatch ts_ifa_h_ablation.slurm
+TS_IFA_CANDIDATES_CSV='ts_ifa/raw_euclidean_3_online/joint_ridge_shared_softmax_cov' \
+  sbatch ts_ifa_meta_ridge.slurm
+```
+
+Every front requires already complete matching extractions. The launcher only
 validates and reads extraction artifacts; it never reruns extraction.
 
 ## Executable files
@@ -689,7 +739,8 @@ enumeration, input checks, and command invocation:
   `src/slurm/run_baseline_family_ablation.sh`.
 - `catboost_ablation.slurm` -> `src/slurm/run_catboost_ablation.sh`.
 - `tables.slurm` -> `src/slurm/build_tables.sh`.
-- `ts_ifa_{joint,meta}_{ridge,neural}.slurm` are the four optional TS-IFA jobs.
+- `ts_ifa.slurm`, `ts_ifa_{h,l}_ablation.slurm`, and
+  `ts_ifa_meta_{ridge,neural}.slurm` dispatch the configurable TS-IFA studies.
 
 Implementation shells:
 
@@ -705,8 +756,9 @@ Implementation shells:
 - `run_catboost_ablation.sh` validates selected shared-regressor winners and
   applies the classifier, soft-mixture, and horizon-regressor changes one at a
   time under their fixed retrieval pipelines.
-- `run_ts_ifa.sh` dispatches the selected joint or chronological meta contract,
-  reusing the matching extraction and writing one isolated active-rooter result.
+- `run_ts_ifa.sh` enumerates the complete non-meta grid or dispatches textually
+  selected ablation/meta candidates, reusing the matching extraction and writing
+  one isolated method result.
 - `build_tables.sh` verifies the selected sweep is complete before producing
   full and equal-configuration-average tables.
 - `common.sh` provides resource lookup, setting parsing, manifest checks, and
@@ -763,10 +815,11 @@ python src/tests/smoke/check_k_ablation_plot.py
 python src/tests/smoke/check_retrieval_dashboard.py
 ```
 
-The consolidated technical report and bibliography are
-`latex/adaptation_report.tex` and `latex/adaptation_references.bib`. It records
-the current notation, formulas, retrieval contract, split semantics, parameter
-counts, related work, and complete experiment grid; it is the sole LaTeX model
-and workflow specification. Source code, notebooks, tests, and Slurm helpers
-remain under `src/`; generated artifacts stay under `outputs/`, and runtime
-logs under `logs/`.
+`latex/experiment_guideline.tex` records the current notation, formulas,
+retrieval contract, split semantics, parameter counts, related work, complete
+experiment grid, and practical workflow. `latex/executive_summary.tex` records
+only synchronized and analyzed results, their limitations, and current
+decisions. Their PDFs are kept beside the sources; the guideline uses
+`latex/adaptation_references.bib`. Source code, notebooks, tests, and Slurm
+helpers remain under `src/`; generated artifacts stay under `outputs/`, and
+runtime logs under `logs/`.

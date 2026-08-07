@@ -1,5 +1,77 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-06
+Updated: 2026-08-07
+
+SCHEMA V1 CUTOVER (CURRENT HANDOFF)
+- Current table-eligible runs: none. The synchronized extraction copy omits the
+  required tensor payloads, and the result trees bundle formulas without all
+  pipeline/launch identity fields. They could not be migrated without guessing.
+- All prior outputs are preserved under
+  outputs/archive/legacy_pre_schema_v1_2026-08-07/ and are historical analysis
+  only. Every older statement below that a configuration "remains reusable"
+  applies only to the legacy contract and is superseded for execution.
+- New roots are outputs/extraction and outputs/adaptation/<family>; reports use
+  outputs/reports/<family>/<mode>. Mode only selects identity subsets.
+- Next cluster action: rerun the test extraction, baseline, gate, and table
+  sequence under schema 1 before restarting screen/benchmark/ablation work.
+- The scientific findings below remain recorded, but no archived run may enter
+  a current table.
+
+HISTORICAL TS-IFA FINDINGS BEFORE THE CONFIGURABLE-ROUTING RESET
+- All completed pilots used Electricity, Chronos-2, K=3, seed 1, and the coupled
+  settings 168:24, 336:48, and 504:168; they do not isolate lookback from horizon.
+- The obsolete combined-rooter implementation generalized poorly: mean held-out
+  T3 nMSE improvement was -27.42% for its neural router and -14.58% for ridge.
+- The isolated 10K joint-ridge raw pilot was the least-bad aggregate result at
+  +0.04% mean T3 nMSE improvement: +3.26%, +0.58%, and -3.72% by setting.
+- Extending joint ridge to 30K improved the selected T2 criterion but damaged
+  T3: raw retrieval averaged +3.03% on T2 and -6.71% on T3; instance retrieval
+  averaged +3.25% on T2 and -17.97% on T3.
+- At 30K, raw/instance T3 nMSE improvements were +3.64%/+3.72% at 168:24,
+  -0.50%/-15.02% at 336:48, and -23.29%/-42.60% at 504:168.
+- Every 30K joint-ridge configuration worsened raw MSE and MAE. At 504:168,
+  raw MSE was 175.54% worse than vanilla with raw retrieval and 369.76% worse
+  with instance retrieval.
+- Residual and memory were the unstable learned branches. At 504:168 their T3
+  nMSE was 275%--745% worse than vanilla, while cov was only 11%--13% worse.
+- At the selected 336:48 and 504:168 T2 checkpoints, every non-vanilla branch
+  was individually worse than vanilla even though their signed combination was
+  better, indicating fragile cancellation that did not transfer to T3.
+- The duplicate 30K joint-neural jobs selected early checkpoints for four of
+  six configurations and produced zero T3 wins; they were not independent runs.
+- The strongest deployable screen method under matching retrieval beat every
+  30K joint-ridge result and eight of nine isolated 10K configurations.
+- These observations motivated the new 20K-only configurable routing contract:
+  branch subsets, shared or horizon routing, and optional softmax constraints.
+
+CURRENT TS-IFA CONTRACT / NEXT RUN
+- The sole current architecture is configurable_delta_branches_routing_v4.
+- Every branch/rooter training stage is fixed at 20,000 steps.
+- Submit ts_ifa.slurm in pilot mode first: Electricity, 336:48, raw/instance,
+  K=3, and the complete 32-model routing/branch grid (64 retrieval/model runs).
+- Record selected winners textually using TS_IFA_CANDIDATES.txt, then submit the
+  dedicated H/L ablations and matching ridge/neural meta-learning fronts.
+- All pre-v4 TS-IFA result directories and logs are obsolete and were removed
+  locally after the historical findings above were preserved.
+
+CURRENT CLUSTER JOBS (SYNCHRONIZED 2026-08-07)
+1. Run/profile: screen.slurm rerun
+   State: job 42517 completed successfully; stderr is empty and the rebuilt
+   tables plus signed coefficient CSV/PNG exports are synchronized locally.
+
+2. Run/profile: convex_baselines_ablation.slurm rerun
+   State: job 42518 completed successfully; stderr is empty and the coefficient
+   exports are synchronized locally.
+
+3. Run/profile: delta_baselines_ablation.slurm rerun
+   State: job 42519 completed successfully; stderr is empty and the coefficient
+   exports are synchronized locally.
+
+4. Run/profile: k_ablation.slurm rerun with K=1,3,5,10,15,20,100
+   State: job 42520 failed during extraction configuration 24/96 with one OOM
+   kill at Electricity 504:168, raw Euclidean K=100. Only the first two new
+   K=100 extraction manifests (Electricity 168:24 and 336:48, raw) completed;
+   no K=100 baseline/gate evaluation or table stage ran. The complete K<=20
+   results remain valid and were analyzed locally on 2026-08-07.
 
 PREVIOUS TS-IFA PILOT (HISTORICAL)
 Run/profile: EXPERIMENT_MODE=full TS-IFA training with DATASETS_CSV=Electricity,
@@ -37,7 +109,7 @@ improves nMSE by +3.26% at 168:24 and +0.58% at 336:48, but loses -3.72% at
 in every run; the long-horizon T2 gain still reverses on T3. Joint training uses
 3H free ridge coefficients with adjacent-horizon smoothness 0.01.
 
-LATEST 30K JOINT-RIDGE PILOTS (OPERATIONAL CHECK ONLY)
+LATEST 30K JOINT-RIDGE PILOTS
 1. Job 42493: Electricity, raw Euclidean K=3, three full-profile settings,
    RESULTS_ROOT=outputs/adaptation_results/ts_ifa_joint_ridge_raw_30k.
 2. Job 42494: Electricity, instance Euclidean K=3, three full-profile settings,
@@ -46,8 +118,45 @@ State: both jobs completed successfully on 2026-08-06. Both stderr files are
 empty, all 6/6 configurations reached step 30000, all six current joint-ridge
 result and prediction manifests are present, and all six non-empty training
 plots were synchronized. Checkpoints and NumPy predictions remain cluster-only
-as intended. The runs have been checked operationally but their scores have not
-yet been analyzed.
+as intended. Analyzed locally: yes.
+Convergence note: raw retrieval selected T2 checkpoints at steps 29000, 20000,
+and 20000 for 168:24, 336:48, and 504:168; instance retrieval selected 30000,
+26000, and 20000. Thus 168:24 still improves late, while both longer settings
+plateau or turn upward before 30000. Mean best-checkpoint T2 nMSE improvement is
++3.03% for raw and +3.25% for instance retrieval.
+Generalization note: held-out T3 nMSE improvements for raw retrieval are +3.64%,
+-0.50%, and -23.29% (mean -6.71%); instance retrieval gives +3.72%, -15.02%,
+and -42.60% (mean -17.97%). The corresponding mean T2-to-T3 generalization
+gaps are -9.75 and -21.21 percentage points. Every configuration worsens raw
+MSE and MAE; at 504:168, raw MSE is 175.54% worse than vanilla and instance MSE
+is 369.76% worse. Extending the raw joint-ridge trajectory beyond 10000 steps
+raises mean T2 improvement from +1.84% to +3.03% but lowers mean T3 improvement
+from +0.04% to -6.71%. Do not extend training further.
+
+30K JOINT-NEURAL PILOTS
+Jobs 42399 and 42400 each ran the same six Electricity raw/instance K=3
+configurations into outputs/adaptation_results/ts_ifa_ridge_30k and
+outputs/adaptation_results/ts_ifa_ridge_inst_30k. Despite those historical
+result-root names, every config and manifest records variant=joint_neural. The
+two jobs are deterministic duplicates and must be counted once.
+Analysis note: T2 selected steps are 15000/14000 at 168:24, 5000/5000 at
+336:48, and 4000/3000 at 504:168 for raw/instance retrieval. The 30K extension
+therefore overtrains four of six configurations. Equal-setting T3 nMSE
+improvement is -4.60% for raw and -2.14% for instance retrieval, with zero wins
+over vanilla; the matching 10K results are -1.94% and +0.13%, respectively.
+
+OVERALL TS-IFA ASSESSMENT
+All synchronized TS-IFA evidence is limited to Electricity and seed 1. The
+historical combined-rooter run is obsolete; among current isolated variants,
+the raw joint-ridge 10K pilot remains the least-bad aggregate result at +0.04%
+mean T3 nMSE improvement, but its raw MSE and MAE worsen and it loses badly at
+504:168. The strongest deployable screen method under the same retrieval beats
+every 30K joint-ridge configuration and eight of the nine current 10K isolated
+configurations; raw joint-ridge 10K at 336:48 is the sole exception. TS-IFA
+therefore remains an architecture-tuning track and should not enter the
+publication benchmark. The next useful pilot must constrain or freeze the
+unstable residual/memory branches and select against scale-sensitive failure;
+additional epochs or an instance-retrieval expansion are not justified.
 
 LATEST ANALYZED SCREEN
 Run/profile: EXPERIMENT_MODE=screen workflow
@@ -69,6 +178,13 @@ empty. All 72/72 gate configurations used the current 300-tree ceiling, all
 144/144 baseline configurations completed, and both full and average tables
 were written. These configurations remain reusable. K=100 is the only pending
 extension.
+Analysis update (2026-08-07): across the 12 primary configurations, full ridge
+is best at K=10 with +2.99% mean held-out nMSE improvement. The other family
+optima are cov-Y ridge K=20 (+2.95%), residual ridge K=20 (+2.86%), cov-avgY
+ridge K=15 (+2.78%), Y ridge K=20 (+2.66%), and cov ridge K=15 (+2.44%). The
+CatBoost avgY and cov gates peak at K=3 (+0.019%) and K=1 (+0.015%); Bayes cov
+peaks at K=1 (-0.003%). Curves, best-K CSV, and screen-model importance
+aggregates are under outputs/adaptation_results/k_ablation/analysis/.
 
 LATEST FORMULATION ABLATIONS
 1. Job 42301: convex_baselines_ablation.slurm, completed successfully.
@@ -117,7 +233,10 @@ The K-ablation grid now adds K=100. Resubmitting k_ablation.slurm reuses all
 complete K=1,3,5,10,15,20 configurations, computes only missing K=100
 extractions and selected baseline/gate results, and then rebuilds the tables,
 coefficient heatmaps, and one combined average nMSE-improvement-versus-K plot
-containing every selected candidate. K=100 has not yet been submitted.
+containing every selected candidate. Job 42520 failed with an OOM kill during
+the third raw K=100 extraction, before evaluation or tables. Its two complete
+K=100 raw Electricity extraction payloads remain reusable; resume the same
+front after resolving the extraction memory requirement.
 
 MAINTENANCE
 Update this file after submission, completion, artifact synchronization, and analysis.

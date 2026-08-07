@@ -65,34 +65,34 @@ def main() -> None:
         "15",
     }
     assert neighbor_defaults.count("1,3") == 6
-    assert neighbor_defaults.count("3") == 1
+    assert neighbor_defaults.count("3") == 3
     assert 'DEFAULT_SETTINGS_CSV="504:168"' in text
     assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 5
-    assert 'EXPERIMENT_MODE=test permits only K=3' in text
+    assert 'permits only K=3' in text
 
     ts_ifa_fronts = (
-        "ts_ifa_joint_ridge.slurm",
-        "ts_ifa_joint_neural.slurm",
+        "ts_ifa.slurm",
+        "ts_ifa_h_ablation.slurm",
+        "ts_ifa_l_ablation.slurm",
         "ts_ifa_meta_ridge.slurm",
         "ts_ifa_meta_neural.slurm",
     )
-    for scale_front in ("extraction.slurm", "tables.slurm", *ts_ifa_fronts):
+    for scale_front in ("extraction.slurm", "tables.slurm"):
         front_text = (ROOT / scale_front).read_text(encoding="utf-8")
         assert "require_scale_experiment_mode || exit $?" in front_text
-    for variant, front in zip(
-        ("joint_ridge", "joint_neural", "meta_ridge", "meta_neural"),
-        ts_ifa_fronts,
-        strict=True,
-    ):
+    for front in ts_ifa_fronts:
         front_text = (ROOT / front).read_text(encoding="utf-8")
-        assert f"TS_IFA_VARIANT={variant}" in front_text
         assert 'source "$PROJECT_ROOT/src/slurm/run_ts_ifa.sh"' in front_text
+    assert "TS_IFA_GRID=complete" in (ROOT / "ts_ifa.slurm").read_text(encoding="utf-8")
+    assert "TS_IFA_META_FORM=ridge" in (ROOT / "ts_ifa_meta_ridge.slurm").read_text(encoding="utf-8")
+    assert "TS_IFA_META_FORM=neural" in (ROOT / "ts_ifa_meta_neural.slurm").read_text(encoding="utf-8")
     for test_front in ("baselines.slurm", "gates.slurm"):
         front_text = (ROOT / test_front).read_text(encoding="utf-8")
         assert "require_test_experiment_mode || exit $?" in front_text
     assert not (ROOT / "run_all.sh").exists()
     assert not (ROOT / "univariate.slurm").exists()
-    assert not (ROOT / "ts_ifa.slurm").exists()
+    assert not (ROOT / "ts_ifa_joint_ridge.slurm").exists()
+    assert not (ROOT / "ts_ifa_joint_neural.slurm").exists()
     assert not (ROOT / "src" / "slurm" / "run_univariate.sh").exists()
 
     profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
@@ -113,12 +113,13 @@ def main() -> None:
     ).group()
     benchmark_front = (ROOT / "benchmark.slurm").read_text(encoding="utf-8")
     assert 'EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"' in benchmark_front
-    assert 'RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation_results/full}"' in benchmark_front
+    assert 'RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/benchmark}"' in benchmark_front
     assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in benchmark_front
     assert "require_benchmark_experiment_mode || exit $?" in benchmark_front
     assert 'source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"' in benchmark_front
     screen_front = (ROOT / "screen.slurm").read_text(encoding="utf-8")
-    assert "EXPERIMENT_MODE=screen" in screen_front
+    assert 'EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"' in screen_front
+    assert "EXPERIMENT_FAMILY=screen" in screen_front
     assert "MODELS_CSV=chronos2" in screen_front
 
     for front, implementation in (
@@ -172,7 +173,7 @@ def main() -> None:
     profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
         encoding="utf-8"
     )
-    assert 'if [ "$EXPERIMENT_MODE" = screen ]; then' in profile_runner
+    assert 'if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then' in profile_runner
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
     assert 'RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"' in profile_runner
@@ -206,9 +207,9 @@ def main() -> None:
         encoding="utf-8"
     )
     assert gate_runner.count("DEFAULT_GATE_ITERATIONS=2") == 1
-    assert re.search(r"test\)\s+DEFAULT_GATE_ITERATIONS=2", gate_runner)
+    assert re.search(r"test:\*\)\s+DEFAULT_GATE_ITERATIONS=2", gate_runner)
     assert re.search(
-        r"k_ablation\|h_ablation\|l_ablation\|crossrag\)\s+"
+        r"\*:k_ablation\|\*:h_ablation\|\*:l_ablation\|\*:crossrag\)\s+"
         r"DEFAULT_GATE_ITERATIONS=300",
         gate_runner,
     )
@@ -221,20 +222,24 @@ def main() -> None:
     table_runner = (ROOT / "src" / "slurm" / "build_tables.sh").read_text(
         encoding="utf-8"
     )
-    for runner in (baseline_runner, gate_runner, ts_ifa_runner, crossrag_runner):
-        assert 'OUT_ROOT="${OUT_ROOT:-outputs/extractions}"' in runner
-        assert runner.count("copy_if_needed") == 3
-    assert 'OUT_ROOT="${OUT_ROOT:-outputs/extractions}"' in table_runner
-    assert ': "${OUT_ROOT:=outputs/extractions}"' in (
+    for runner in (baseline_runner, gate_runner, crossrag_runner):
+        assert 'OUT_ROOT="${OUT_ROOT:-outputs/extraction}"' in runner
+        assert "copy_if_needed" not in runner
+    assert 'OUT_ROOT="${OUT_ROOT:-outputs/extraction}"' in ts_ifa_runner
+    assert "copy_if_needed" not in ts_ifa_runner
+    assert "TS_IFA_GRID" in ts_ifa_runner
+    assert "TRAIN_EPOCHS=\"${TRAIN_EPOCHS:-20000}\"" in ts_ifa_runner
+    assert 'OUT_ROOT="${OUT_ROOT:-outputs/extraction}"' in table_runner
+    assert ': "${OUT_ROOT:=outputs/extraction}"' in (
         ROOT / "src" / "slurm" / "extract_adaptation.sh"
     ).read_text(encoding="utf-8")
-    assert 'test|screen) DEFAULT_BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"' in baseline_runner
-    assert 'test|screen) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"' in gate_runner
+    assert 'test:*|*:screen|*:baselines) DEFAULT_BASELINE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV"' in baseline_runner
+    assert 'test:*|*:screen|*:gates) DEFAULT_GATE_METHODS_CSV="$PRIMARY_GATE_METHODS_CSV"' in gate_runner
     assert 'PROFILE_METHODS_CSV="$PRIMARY_BASELINE_METHODS_CSV,$PRIMARY_GATE_METHODS_CSV"' in table_runner
-    assert 'test|screen)' in table_runner
+    assert 'test:*|*:screen)' in table_runner
     assert "src.visu.baseline_coefficients" in table_runner
     assert "coefficient_index.csv" in table_runner
-    assert 'if [ "$EXPERIMENT_MODE" = k_ablation ]; then' in table_runner
+    assert 'if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then' in table_runner
     assert "src.visu.k_ablation_plot" in table_runner
     assert "k_ablation_average_${METRIC}_improvement" in table_runner
     assert "ts_ifa/TS-IFA" not in table_runner

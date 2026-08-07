@@ -28,6 +28,10 @@ PRIMARY_GATE_METHODS_CSV="cov_forecast,avgy,bayes_cov_shared,bayes_avgy_shared,c
 
 adaptation_profile_defaults() {
   local mode="${EXPERIMENT_MODE:-test}"
+  local profile="${EXPERIMENT_FAMILY:-}"
+  case "$profile" in
+    ""|extraction|baselines|gates|benchmark|tables|ts_ifa) profile="$mode" ;;
+  esac
   DEFAULT_DATASETS_CSV=""
   DEFAULT_MODELS_CSV=""
   DEFAULT_SETTINGS_CSV=""
@@ -39,7 +43,7 @@ adaptation_profile_defaults() {
   DEFAULT_EVAL_QUERY_STRIDE=128
   DEFAULT_MAX_STORE_WINDOWS=30000
 
-  case "$mode" in
+  case "$profile" in
     test)
       DEFAULT_DATASETS_CSV="Electricity"
       DEFAULT_MODELS_CSV="chronos2"
@@ -86,6 +90,20 @@ adaptation_profile_defaults() {
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
       DEFAULT_NEIGHBORS_CSV="1,3"
       ;;
+    ts_ifa_h_ablation)
+      DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
+      DEFAULT_MODELS_CSV="chronos2"
+      DEFAULT_SETTINGS_CSV="504:24,504:168,504:504"
+      DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+      DEFAULT_NEIGHBORS_CSV="3"
+      ;;
+    ts_ifa_l_ablation)
+      DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
+      DEFAULT_MODELS_CSV="chronos2"
+      DEFAULT_SETTINGS_CSV="24:24,168:24,504:24"
+      DEFAULT_DISTANCE_SPACES_CSV="raw,instance"
+      DEFAULT_NEIGHBORS_CSV="3"
+      ;;
     crossrag)
       DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
       DEFAULT_MODELS_CSV="chronos-bolt"
@@ -109,7 +127,7 @@ adaptation_profile_defaults() {
       DEFAULT_NEIGHBORS_CSV="1,3"
       ;;
     *)
-      log_error "no defaults for experiment mode=$mode"
+      log_error "no defaults for experiment family=$profile mode=$mode"
       return 2
       ;;
   esac
@@ -129,14 +147,15 @@ require_resolved_profile_grid() {
 require_profile_neighbors() {
   local raw="$1" value
   local requested_neighbors=()
-  case "${EXPERIMENT_MODE:-test}" in
+  case "${EXPERIMENT_FAMILY:-}" in
     k_ablation|crossrag) return 0 ;;
   esac
   csv_to_array "$raw" requested_neighbors
   for value in "${requested_neighbors[@]}"; do
-    if [ "${EXPERIMENT_MODE:-test}" = test ]; then
+    if [ "${EXPERIMENT_MODE:-test}" = test ] ||
+      [ "${EXPERIMENT_FAMILY:-}" = ts_ifa_h_ablation ] || [ "${EXPERIMENT_FAMILY:-}" = ts_ifa_l_ablation ]; then
       if [ "$value" != 3 ]; then
-        log_error "EXPERIMENT_MODE=test permits only K=3; got K=$value"
+        log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE permits only K=3; got K=$value"
         return 2
       fi
     else
@@ -152,8 +171,8 @@ require_profile_neighbors() {
 }
 
 requires_selected_methods() {
-  case "${EXPERIMENT_MODE:-test}" in
-    full|ultra|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) return 0 ;;
+  case "${EXPERIMENT_FAMILY:-}" in
+    benchmark|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) return 0 ;;
     *) return 1 ;;
   esac
 }

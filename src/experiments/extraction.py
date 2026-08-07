@@ -630,7 +630,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pool-representation", action="store_true")
     parser.add_argument("--compute-ec", action="store_true", help="Also save neighbor-context residuals Ec")
     parser.add_argument("--search-chunk-size", type=int, default=512)
-    parser.add_argument("--output-dir", default="outputs/extractions")
+    parser.add_argument("--output-dir", default="outputs/extraction")
     parser.add_argument("--save-name", default="neighbors")
     parser.add_argument(
         "--skip-complete",

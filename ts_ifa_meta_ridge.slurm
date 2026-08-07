@@ -10,12 +10,13 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# T1 support/query meta-learning with exact ridge adaptation; exact T2 ridge fit.
-EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"
-TS_IFA_VARIANT=meta_ridge
+# Meta-learning evaluation of manually selected joint-ridge candidates.
+: "${TS_IFA_CANDIDATES_CSV:?copy ridge candidates from TS_IFA_CANDIDATES.txt into TS_IFA_CANDIDATES_CSV}"
+EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
+EXPERIMENT_FAMILY=ts_ifa_meta_ridge
+TS_IFA_GRID=selected
+TS_IFA_META_FORM=ridge
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
-export PROJECT_ROOT EXPERIMENT_MODE TS_IFA_VARIANT
-source "$PROJECT_ROOT/src/slurm/common.sh"
-require_scale_experiment_mode || exit $?
+export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY TS_IFA_GRID TS_IFA_META_FORM TS_IFA_CANDIDATES_CSV
 source "$PROJECT_ROOT/src/slurm/run_ts_ifa.sh"
