@@ -266,7 +266,9 @@ allocate_manifest_run() {
   for pair in "${model_values_ref[@]}"; do args+=(--model-config "$pair"); done
   for pair in "${pipeline_values_ref[@]}"; do args+=(--pipeline-config "$pair"); done
   if [ -n "$input_path" ]; then args+=(--input "upstream_manifest=$input_path"); fi
-  for pair in "${ADDITIONAL_INPUTS[@]:-}"; do args+=(--input "$pair"); done
+  if declare -p ADDITIONAL_INPUTS >/dev/null 2>&1; then
+    for pair in "${ADDITIONAL_INPUTS[@]}"; do args+=(--input "$pair"); done
+  fi
   if [ -n "${RUN_INDEX:-}" ]; then args+=(--run-index "$RUN_INDEX"); fi
   IFS=$'\t' read -r ALLOCATED_RUN_DIR ALLOCATED_ACTION ALLOCATED_SIGNATURE < <(
     python -m experiment_runs allocate "${args[@]}"

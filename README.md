@@ -115,7 +115,7 @@ The former `outputs/extractions` and `outputs/adaptation_results` trees could
 not be migrated faithfully: synchronized extraction tensor payloads were
 missing, and several result folders bundled formulas without enough pipeline or
 launch evidence. They are preserved under
-`outputs/archive/legacy_pre_schema_v1_2026-08-07/`, excluded from all current
+`archive/legacy_pre_schema_v1_2026-08-07/`, excluded from all current
 readers, and may be consulted only for legacy analysis.
 
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed

@@ -140,7 +140,7 @@ def load_manifest(path_or_run: str | Path) -> dict[str, Any]:
     if payload.get("schema_version") != SCHEMA_VERSION:
         raise ManifestError(
             f"{path} uses schema_version={payload.get('schema_version')!r}; "
-            f"migrate it to {SCHEMA_VERSION} or move it under outputs/archive/"
+            f"migrate it to {SCHEMA_VERSION} or move it under archive/"
         )
     if payload.get("status") not in VALID_STATUSES:
         raise ManifestError(f"{path} has invalid status={payload.get('status')!r}")

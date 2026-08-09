@@ -6,7 +6,7 @@ SCHEMA V1 CUTOVER (CURRENT HANDOFF)
   required tensor payloads, and the result trees bundle formulas without all
   pipeline/launch identity fields. They could not be migrated without guessing.
 - All prior outputs are preserved under
-  outputs/archive/legacy_pre_schema_v1_2026-08-07/ and are historical analysis
+  archive/legacy_pre_schema_v1_2026-08-07/ and are historical analysis
   only. Every older statement below that a configuration "remains reusable"
   applies only to the legacy contract and is superseded for execution.
 - New roots are outputs/extraction and outputs/adaptation/<family>; reports use
