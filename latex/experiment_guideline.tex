@@ -56,14 +56,6 @@
 \begin{document}
 \maketitle
 
-\begin{abstract}
-This guideline is the current specification for retrieval-based adaptation of
-pretrained time-series forecasters. It defines the notation, leakage controls,
-retrieval contract, implemented baselines, TS-IFA variants, experiment grids,
-artifacts, and practical workflow. Obtained results are maintained separately
-in \code{executive_summary.tex}.
-\end{abstract}
-
 \tableofcontents
 
 \section{Time Series Forecasting}
@@ -728,8 +720,9 @@ store then keeps that many \emph{most recent} eligible dates, subject to the
 because the query is later. \code{full_online_history} removes this implicit
 date-count cap; explicit date and window caps still apply. Defaults are
 $P=96$ samples for ETTm1, ETTm2, ETT\_T\_15T, and ETT\_L\_15T, and $P=24$
-otherwise. An implicit datastore stride is rounded upward to a multiple of
-$P$.
+otherwise. Publication profiles disable period alignment so their datastore
+origins rotate through seasonal phases. If period alignment is explicitly
+enabled, the datastore stride must be a multiple of $P$.
 
 \subsection{Fitting and leakage controls}
 
@@ -1093,8 +1086,8 @@ Profile & Datasets & $(L,H)$ & Backbone & Retrieval / methods \\
 & selected complete screen pipelines only \\
 \code{ultra} & same as full & default three & Chronos-2, TabPFN-TS
 & same winners and output root as full \\
-\code{crossrag} & four primary & $512{:}64$ & Chronos-Bolt
-& min--max cosine, $K=15$; one winner vs. released Cross-RAG \\
+\code{crossrag} & four primary & $512{:}64$ & Chronos-2, Chronos-Bolt
+& winner at selected $K$ on Chronos-2; winner and released Cross-RAG at $K=15$ on Chronos-Bolt \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1127,10 +1120,12 @@ where \code{direct_cov}=\code{cov_forecast} and
 10 and 8 artifacts per retrieval pipeline; convex, delta, horizon, classifier,
 and mixture forms are excluded.
 
-Default publication strides are 24 pooled-adaptation query dates and 128
-evaluation query dates; the datastore stride is 24 before period rounding and
-the cap is 30,000 windows. The test profile uses adaptation/evaluation stride
-256, datastore stride 168, and 2,048 store windows. Seed 1 is used throughout.
+Default publication datastore, pooled-adaptation-query, and evaluation-query
+strides are $25/25/127$, respectively, with period alignment disabled. All
+three strides are coprime with the 24-step hourly and 96-step quarter-hourly
+periods, so sampled origins rotate through every seasonal phase. The datastore
+cap is 30,000 windows. The test profile uses aligned strides $168/256/256$ and
+2,048 store windows. Seed 1 is used throughout.
 
 \subsection{Benchmarks and ablations}
 
@@ -1195,7 +1190,7 @@ Front & Model set / controlled axis \\
 \code{delta_baselines_ablation.slurm} & same six; shared ridge versus shared delta-ridge \\
 \code{catboost_ablation.slurm} & two controls in \cref{tab:selected-catboost}; three separate one-axis variants \\
 \code{mixed_quantity_ablation.slurm} & selected pipelines transferred to the five mixed-quantity panels \\
-\code{crossrag.slurm} & one selected pipeline versus Cross-RAG at $(L,H,K)=(512,64,15)$ \\
+\code{crossrag.slurm} & winner on Chronos-2 at its own $K$; winner and Cross-RAG on Chronos-Bolt at $(L,H,K)=(512,64,15)$ \\
 \code{ts_ifa.slurm} & complete non-meta routing/branch grid over the selected test/full/ultra subset \\
 \code{ts_ifa\_h\_ablation.slurm} & selected candidates at $L=504$ over three horizons \\
 \code{ts_ifa\_l\_ablation.slurm} & selected candidates at $H=24$ over three lookbacks \\
@@ -1238,9 +1233,14 @@ choices. Repeated seeds, when used, are \code{seed_n} leaves. Mode is only a
 test/full/ultra path-subset selector and is never a family, phase, path field,
 or computation-signature field.
 
-Every run uses \code{schema_version: 1}, input fingerprints, launch attempts,
-required artifacts, and status not-run/running/interrupted/completed. The
-default \code{overwrite_exact} collision policy skips exact completion,
+Every run uses \code{schema_version: 1}, declared configs, optional plain
+provenance, launch attempts, required artifacts, and status
+not-run/running/interrupted/completed. Run identity contains only the schema,
+identity/model configs, pipeline/experiment configs, and seeds. It never
+fingerprints or hashes code, Slurm files, data, weights, logs, outputs, checkpoints, or
+directories; code/data changes are manual rerun decisions. The schema changes
+only for a deliberate global contract break, and \code{new} creates another
+repeat with unchanged parameters. The default \code{overwrite_exact} collision policy skips exact completion,
 resumes exact interruption, and adds \code{run_n} for a changed pipeline.
 Tables support distinct/latest/selected/average pipeline configurations and
 selected/latest/distinct/average exact repeats. Explicit pipeline filters must

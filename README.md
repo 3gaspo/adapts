@@ -58,8 +58,8 @@ outputs/extraction/dataset/L_H/backbone/space/metric/k/mode/run_n/
 
 The vanilla extraction uses `none/none/0/none`. Each completed run contains the
 adapt/eval prediction and feature payloads plus the scientific extraction
-manifest. Downstream jobs select a completed extraction manifest and fingerprint
-it as an input; they never infer one from a similarly named directory.
+manifest. Downstream jobs select an explicit completed extraction manifest;
+they never infer one from a similarly named directory.
 
 Every independently submitted comparison or ablation owns a workflow root
 below `outputs/adaptation/`, for example `baselines`, `gates`, `benchmark`,
@@ -84,6 +84,15 @@ fit caps, candidate list, and evaluation controls are pipeline configs in
 configs. The project currently uses a single manifest-recorded seed per run,
 and that seed fixes every stochastic choice. Future repeated seeds use
 `seed_n/` leaves under the run.
+
+Run identity contains only the manifest schema, ordered identity/model configs,
+pipeline and experiment parameters, and seeds. Source files, Slurm fronts,
+datasets, weights, logs, outputs, checkpoints, and directories are never
+fingerprinted or hashed. Plain upstream-manifest and checkpoint paths may be recorded for
+provenance but do not affect reuse. Code and data changes are manual rerun
+decisions; use `RUN_CONFLICT_POLICY=new` for another repeat with unchanged
+parameters. Change `schema_version` only for a deliberate global
+artifact-contract break.
 
 The shared contract is `schema_version: 1` with status `not_run`, `running`,
 `interrupted`, or `completed`. The default `RUN_CONFLICT_POLICY=overwrite_exact`
@@ -152,9 +161,15 @@ already observable at query date `s`. A neighbor future may overlap the
 observed query lookback but can never overlap the query target.
 
 The extraction launcher resolves `P=96` for `ETTm1`, `ETTm2`, `ETT_T_15T`,
-and `ETT_L_15T`, and `P=24` otherwise. Unless `DATASTORE_STRIDE` is explicitly
-set, its profile default is rounded up to a multiple of the resolved period;
-explicit `PERIOD` and `DATASTORE_STRIDE` overrides remain available.
+and `ETT_L_15T`, and `P=24` otherwise. Publication profiles use datastore,
+pooled T1+T2 query, and untouched T3 query strides `25/25/127`, respectively,
+with period alignment disabled. These strides are coprime with the 24-step
+hourly and 96-step quarter-hourly periods, so sampled origins rotate through
+every seasonal phase. The test profile retains its independent aligned
+`168/256/256` smoke strides. T1 and T2 share the pooled adaptation stride
+because their chronological boundary is assigned downstream by whole query
+dates. Explicit `PERIOD`, `DATASTORE_STRIDE`, and `ALIGN_PERIOD` overrides
+remain available; an aligned datastore stride must be a multiple of `P`.
 Neighbor search accepts raw, instance-normalized, min--max, Fourier-amplitude,
 and encoder representation spaces. Fourier retrieval standardizes each
 lookback before taking the FFT magnitude; it is an override option and is not
@@ -239,9 +254,11 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   `H in {24,168,504}`.
 - `l_ablation`: manually named pipelines with `H=24` and
   `L in {24,168,504}`.
-- `crossrag`: a separate Chronos-Bolt comparison at exactly `L=512`, `H=64`,
-  `K=15`, per-window min-max X-space retrieval, and cosine distance. It is not
-  crossed with `S`.
+- `crossrag`: a three-pipeline study at exactly `L=512`, `H=64`. It runs the
+  selected winner on Chronos-2 with its selected retrieval pipeline, reruns the
+  same formula and normalization on Chronos-Bolt at `K=15`, and evaluates
+  released Cross-RAG on Chronos-Bolt with its prescribed per-window min-max,
+  cosine, `K=15` retrieval. It is not crossed with `S`.
 
 The publication screen uses `K in {1,3}`; the smoke-only `test` profile fixes
 `K=3`. The only wider grids are the selected-winner `k_ablation` and
@@ -267,7 +284,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20,100` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
-| `crossrag` | `D_primary` | `512:64` | Chronos-Bolt | Min-max cosine / `15` | One selected winner versus released Cross-RAG |
+| `crossrag` | `D_primary` | `512:64` | Chronos-2, Chronos-Bolt | Winner's selected retrieval on Chronos-2; winner's space/metric with `K=15` on Chronos-Bolt; Cross-RAG min-max cosine / `15` | Selected winner on both backbones plus released Cross-RAG |
 
 For the primary methods, let `V` be the vanilla forecast, `C` the
 covariate-conditioned forecast, `Y_j` the observed future of neighbor `j`,
@@ -339,8 +356,8 @@ Modes provide delayed subsets of experiment identities. `test` is the narrow
 Electricity smoke subset, `full` is the complete one-backbone subset, and
 `ultra` adds the configured backbones. Independently submitted studies such as
 `screen`, `crossrag`, and every ablation are families, not modes. Full defaults
-to `chronos2`, ultra to `chronos2,tabpfnts`, and the Cross-RAG family fixes
-`chronos-bolt`.
+to `chronos2`, ultra to `chronos2,tabpfnts`, and the Cross-RAG family fixes the
+two-backbone sequence `chronos2,chronos-bolt`.
 `MODELS_CSV` explicitly overrides a model list where the launcher enumerates
 backbones, for example `MODELS_CSV=chronos2,tabpfnts`. The primary screen is
 defined on Chronos-2 and should retain that reference backbone. Every
@@ -379,7 +396,7 @@ The intended submission interface is:
 | `k_ablation.slurm` | `full` | `k_ablation` family over the K grid |
 | `h_ablation.slurm` | `full` | `h_ablation` family over the H grid |
 | `l_ablation.slurm` | `full` | `l_ablation` family over the L grid |
-| `crossrag.slurm` | `full` | `crossrag` family: one selected winner versus Cross-RAG |
+| `crossrag.slurm` | `full` | `crossrag` family: selected winner on Chronos-2 at its own K, then winner and Cross-RAG on Chronos-Bolt at K=15 |
 
 There is no aggregate smoke submitter. If needed, submit the `test` extraction,
 then the baseline and gate smoke jobs, then tables after both complete. Final
@@ -526,23 +543,27 @@ retain each full winning pipeline, including its K and normalization, while
 changing only the requested lookback/horizon axis. Dataset–`L:H` pairs remain
 evaluation settings.
 
-The Cross-RAG comparison is also one job. Enter one complete winning pipeline in
-`crossrag.slurm`, configure the three released-code/checkpoint paths in the
-environment, and submit it:
+The Cross-RAG comparison is also one job. The launcher defaults to the selected
+full-ridge winner at `K=10`; override `WINNERS_CSV` with one complete pipeline
+when the selection changes. Configure the three released-code/checkpoint paths
+in the environment and submit it:
 
 ```bash
 CROSSRAG_ROOT=/cluster/code/Cross-RAG \
 CROSSRAG_BASE_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/base \
 CROSSRAG_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/.../best.pth \
-WINNERS_CSV=baselines/instance_euclidean_3_online/y_ridge_shared \
+WINNERS_CSV=baselines/instance_euclidean_10_online/full_ridge_shared \
 sbatch crossrag.slurm
 ```
 
 `crossrag.slurm` imports the official released model implementation and loads
-its pretrained adapter checkpoint; it does not retrain Cross-RAG. It evaluates
-the released model on the same T3 settings as our candidate. The candidate
-retains its selected normalization while Cross-RAG uses its prescribed
-min-max/cosine retrieval. The comparison tables include accuracy, and
+its pretrained adapter checkpoint; it does not retrain Cross-RAG. First, the
+winner runs with Chronos-2 and the K encoded in `WINNERS_CSV`. Then its same
+formula, normalization, metric, and retrieval mode run with Chronos-Bolt at
+`K=15`; released Cross-RAG uses Chronos-Bolt and its prescribed min-max/cosine
+retrieval at `K=15`. Reports are separated by backbone, so the Chronos-2 table
+contains only the original winner and the Chronos-Bolt table contains the
+matched winner and Cross-RAG. The comparison tables include accuracy, and
 `timing_comparison.tex` reports wall-clock vanilla, retrieval, adaptation, and
 Cross-RAG totals, including each pipeline's own retrieval pass.
 

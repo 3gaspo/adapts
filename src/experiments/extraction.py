@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import logging
 from pathlib import Path
@@ -45,8 +44,6 @@ LOGGER = logging.getLogger(__name__)
 def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[str, Any]:
     """Return the configuration fields that determine extracted tensor contents."""
     fields = (
-        "csv",
-        "dataset_config",
         "target_cols",
         "date_col",
         "drop_users",
@@ -55,7 +52,6 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
         "aggr_period",
         "model",
         "model_kwargs",
-        "pretrained_path",
         "normalization",
         "lags",
         "horizon",
@@ -83,24 +79,6 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
     signature = {name: getattr(args, name) for name in fields}
     signature["dataset_name"] = dataset_name
     signature["window_anchor"] = "query_t"
-    signature["csv"] = str(Path(args.csv).expanduser().resolve())
-    config_path = (
-        Path(args.dataset_config).expanduser()
-        if args.dataset_config
-        else Path(args.csv).expanduser().with_name("config.json")
-    )
-    if config_path.is_dir():
-        config_path = config_path / "config.json"
-    if config_path.is_file():
-        signature["dataset_config"] = str(config_path.resolve())
-        signature["dataset_config_sha256"] = hashlib.sha256(
-            config_path.read_bytes()
-        ).hexdigest()
-    else:
-        signature["dataset_config"] = None
-        signature["dataset_config_sha256"] = None
-    if args.pretrained_path:
-        signature["pretrained_path"] = str(Path(args.pretrained_path).expanduser().resolve())
     return signature
 
 

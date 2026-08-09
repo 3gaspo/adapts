@@ -259,7 +259,7 @@ allocate_manifest_run() {
     --dataset "$dataset" --lookback "$lags" --horizon "$horizon" --backbone "$backbone"
     --model-config-order "$model_order" --purpose "$purpose" --mode "${EXPERIMENT_MODE:-test}"
     --display-name "$display_name" --row-config "$row_config" --column-config "$column_config"
-    --runtime-config "slurm.job_id=${SLURM_JOB_ID:-}" --project-root "$PROJECT_ROOT"
+    --runtime-config "slurm.job_id=${SLURM_JOB_ID:-}"
     --policy "$RUN_CONFLICT_POLICY" --skip-completed "$SKIP_COMPLETE" --force "$FORCE_RUN"
     --launch-id "$EXPERIMENT_LAUNCH_ID" --seed "$seed"
   )

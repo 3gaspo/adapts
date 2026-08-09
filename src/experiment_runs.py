@@ -66,70 +66,11 @@ def signature(value: Any) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
-def _scientific_input(value: Any) -> Any:
-    """Drop machine-local provenance fields from computation signatures."""
-    if isinstance(value, Mapping):
-        return {
-            str(key): _scientific_input(item)
-            for key, item in value.items()
-            if key not in {"path", "modified_at_utc", "exists"}
-        }
-    if isinstance(value, (list, tuple)):
-        return [_scientific_input(item) for item in value]
-    return plain(value)
-
-
 def _variant_config(manifest: Mapping[str, Any]) -> dict[str, Any]:
     config = manifest.get("config", {})
     values = dict(config.get("pipeline", {}))
     values.update({f"experiment.{key}": value for key, value in config.get("experiment", {}).items()})
     return values
-
-
-def file_sha256(path: str | Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def input_record(path: str | Path) -> dict[str, Any]:
-    source = Path(path).expanduser().resolve()
-    record: dict[str, Any] = {"path": str(source), "exists": source.exists()}
-    if not source.exists():
-        return record
-    stat = source.stat()
-    record.update({"size": stat.st_size, "modified_at_utc": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat()})
-    if source.is_file():
-        record["sha256"] = file_sha256(source)
-    else:
-        record["kind"] = "directory"
-    return record
-
-
-def source_signature(project_root: str | Path) -> str:
-    root = Path(project_root).expanduser().resolve()
-    candidates = [
-        path for path in root.rglob("*")
-        if path.is_file()
-        and (
-            (
-                path.relative_to(root).parts[0] == "src"
-                and path.suffix in {".py", ".sh", ".yaml", ".yml"}
-            )
-            or (path.parent == root and path.suffix == ".slurm")
-            or (path.parent == root and path.name in {"pyproject.toml", "uv.lock"})
-        )
-        and "__pycache__" not in path.parts
-    ]
-    digest = hashlib.sha256()
-    for path in sorted(candidates):
-        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(file_sha256(path).encode("ascii"))
-        digest.update(b"\0")
-    return digest.hexdigest()
 
 
 def identity_path(
@@ -152,6 +93,34 @@ def identity_path(
     for name in model_config_order:
         path /= slug(model_config[name])
     return path.resolve()
+
+
+def computation_signature(
+    identity: Mapping[str, Any],
+    pipeline_config: Mapping[str, Any],
+    experiment_config: Mapping[str, Any],
+    seeds: Sequence[int],
+) -> str:
+    """Identify a run only by its declared scientific parameters."""
+    return signature(
+        {
+            "schema_version": SCHEMA_VERSION,
+            "identity": dict(identity),
+            "pipeline": dict(pipeline_config),
+            "experiment": dict(experiment_config),
+            "seeds": sorted(int(seed) for seed in seeds),
+        }
+    )
+
+
+def manifest_computation_signature(manifest: Mapping[str, Any]) -> str:
+    config = manifest.get("config", {})
+    return computation_signature(
+        manifest["identity"],
+        config.get("pipeline", {}),
+        config.get("experiment", {}),
+        manifest.get("seeds", []),
+    )
 
 
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -289,7 +258,6 @@ def _allocate_run_unlocked(
     row_config: Sequence[str] = (),
     column_config: Sequence[str] = (),
     inputs: Mapping[str, Any] | None = None,
-    code_signature: str | None = None,
     policy: str = "overwrite_exact",
     skip_completed: bool = True,
     force: bool = False,
@@ -310,22 +278,16 @@ def _allocate_run_unlocked(
         "model_config": model_config,
     }
     path_signature = signature(identity)
-    variant_payload = {
-        "pipeline": dict(pipeline_config),
-        "experiment": dict(experiment_config or {}),
-        "inputs": _scientific_input(dict(inputs or {})),
-        "code_signature": code_signature,
-    }
     pipeline_signature = signature(
         {"pipeline": dict(pipeline_config), "experiment": dict(experiment_config or {})}
     )
-    computation_signature = signature(
-        {"schema_version": SCHEMA_VERSION, "identity": identity, "variant": variant_payload, "seeds": sorted(int(seed) for seed in seeds)}
+    run_signature = computation_signature(
+        identity, pipeline_config, experiment_config or {}, seeds
     )
     existing: list[tuple[Path, dict[str, Any]]] = []
     for run_dir in _run_dirs(root):
         existing.append((run_dir, load_manifest(run_dir)))
-    exact = [item for item in existing if item[1]["signatures"]["computation"] == computation_signature]
+    exact = [item for item in existing if manifest_computation_signature(item[1]) == run_signature]
 
     action = "new"
     target: Path | None = None
@@ -334,7 +296,7 @@ def _allocate_run_unlocked(
         target = root / f"run_{int(run_index)}"
         if target.exists():
             old_manifest = load_manifest(target)
-            same_computation = old_manifest["signatures"]["computation"] == computation_signature
+            same_computation = manifest_computation_signature(old_manifest) == run_signature
             if not same_computation and policy != "overwrite_path":
                 raise ManifestError(f"{target} contains a different computation; use overwrite_path or another RUN_INDEX")
             if same_computation:
@@ -344,7 +306,7 @@ def _allocate_run_unlocked(
                     if purposes != old_manifest.get("purposes", []):
                         old_manifest["purposes"] = purposes
                         _atomic_json(target / MANIFEST_NAME, old_manifest)
-                    return Allocation(target, "skip", computation_signature)
+                    return Allocation(target, "skip", run_signature)
                 if status == "running" and old_manifest.get("launch", {}).get("launch_id") != launch_id:
                     raise ManifestError(f"matching run is already running: {target}")
                 action = "resume" if status in {"not_run", "interrupted"} and not force else "overwrite"
@@ -358,7 +320,7 @@ def _allocate_run_unlocked(
             if purposes != old_manifest.get("purposes", []):
                 old_manifest["purposes"] = purposes
                 _atomic_json(target / MANIFEST_NAME, old_manifest)
-            return Allocation(target, "skip", computation_signature)
+            return Allocation(target, "skip", run_signature)
         if status == "running" and old_manifest.get("launch", {}).get("launch_id") != launch_id:
             raise ManifestError(f"matching run is already running: {target}")
         action = "resume" if status in {"not_run", "interrupted"} and not force else "overwrite"
@@ -410,8 +372,7 @@ def _allocate_run_unlocked(
         "signatures": {
             "path": path_signature,
             "pipeline": pipeline_signature,
-            "computation": computation_signature,
-            "code": code_signature,
+            "computation": run_signature,
         },
         "table": {
             "display_name": display_name or backbone,
@@ -432,7 +393,7 @@ def _allocate_run_unlocked(
     }
     target.mkdir(parents=True, exist_ok=True)
     _atomic_json(target / MANIFEST_NAME, manifest)
-    return Allocation(target, action, computation_signature)
+    return Allocation(target, action, run_signature)
 
 
 def allocate_run(*args: Any, **kwargs: Any) -> Allocation:
@@ -699,7 +660,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     allocate.add_argument("--row-config", default="")
     allocate.add_argument("--column-config", default="")
     allocate.add_argument("--input", action="append", default=[])
-    allocate.add_argument("--project-root")
     allocate.add_argument("--policy", default="overwrite_exact")
     allocate.add_argument("--skip-completed", default="true")
     allocate.add_argument("--force", default="false")
@@ -738,8 +698,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if args.command == "allocate":
         model_order = [item for item in args.model_config_order.split(",") if item]
-        inputs = {key: input_record(value) for key, value in _pairs(args.input).items()}
-        code = source_signature(args.project_root) if args.project_root else None
+        inputs = {key: {"path": str(value)} for key, value in _pairs(args.input).items()}
         result = allocate_run(
             args.identity_root,
             project=args.project,
@@ -760,7 +719,6 @@ def main(argv: Sequence[str] | None = None) -> None:
             row_config=[item for item in args.row_config.split(",") if item],
             column_config=[item for item in args.column_config.split(",") if item],
             inputs=inputs,
-            code_signature=code,
             policy=args.policy,
             skip_completed=_bool(args.skip_completed),
             force=_bool(args.force),

@@ -106,6 +106,15 @@ class ExperimentRunsTest(unittest.TestCase):
             with self.assertRaises(ManifestError):
                 load_manifest(run)
 
+    def test_provenance_does_not_define_computation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            first = self._allocate(identity, 10, inputs={"dataset": "old/location.csv"})
+            self._complete(first)
+
+            reused = self._allocate(identity, 10, inputs={"dataset": "new/location.csv"})
+            self.assertEqual((reused.run_dir.name, reused.action), ("run_0", "skip"))
+
 
 if __name__ == "__main__":
     unittest.main()
