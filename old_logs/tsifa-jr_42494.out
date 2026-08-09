@@ -1,0 +1,130 @@
+
+2026-08-06T15:46:07+02:00 job start kind=ts_ifa_training variant=joint_ridge experiment_mode=full skip_complete=true tasks=3
+2026-08-06 15:46:10,653 INFO [__main__] extraction validation directory=outputs/extractions/Electricity/168_24/chronos2/instance_euclidean_3_online/extracted status=complete
+
+2026-08-06T15:46:11+02:00 training start variant=joint_ridge configuration=1/3 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_3_online
+2026-08-06 15:46:13,476 INFO [__main__] ========================================================================
+2026-08-06 15:46:13,795 INFO [__main__] experiment start kind=ts_ifa variant=joint_ridge train_epochs=30000 rooter_epochs=10000
+2026-08-06 15:46:17,521 INFO [__main__] payload scale split=T1 samples=136656 std_min=0.28843 std_q001=0.485621 std_q01=4.08462 std_q05=21.4344 std_q10=39.7766 std_median=184.362 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:46:17,527 INFO [__main__] payload scale split=T2 samples=34320 std_min=0.306533 std_q001=0.471405 std_q01=4.28871 std_q05=22.1471 std_q10=39.1245 std_median=177.6 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:46:17,530 INFO [__main__] payload scale split=T3 samples=12792 std_min=0.361678 std_q001=0.630142 std_q01=5.04926 std_q05=20.1042 std_q10=36.0183 std_median=181.613 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:46:29,391 INFO [__main__] stage progress stage=joint step=1000/30000 train_nmse=0.304585 t2_nmse=0.298608
+2026-08-06 15:46:40,794 INFO [__main__] stage progress stage=joint step=2000/30000 train_nmse=0.313085 t2_nmse=0.297918
+2026-08-06 15:46:52,133 INFO [__main__] stage progress stage=joint step=3000/30000 train_nmse=0.356993 t2_nmse=0.297153
+2026-08-06 15:47:03,309 INFO [__main__] stage progress stage=joint step=4000/30000 train_nmse=0.296277 t2_nmse=0.296274
+2026-08-06 15:47:14,348 INFO [__main__] stage progress stage=joint step=5000/30000 train_nmse=0.340632 t2_nmse=0.295345
+2026-08-06 15:47:25,423 INFO [__main__] stage progress stage=joint step=6000/30000 train_nmse=0.340986 t2_nmse=0.294421
+2026-08-06 15:47:36,557 INFO [__main__] stage progress stage=joint step=7000/30000 train_nmse=0.288088 t2_nmse=0.293430
+2026-08-06 15:47:47,723 INFO [__main__] stage progress stage=joint step=8000/30000 train_nmse=0.272836 t2_nmse=0.292563
+2026-08-06 15:47:58,907 INFO [__main__] stage progress stage=joint step=9000/30000 train_nmse=0.293926 t2_nmse=0.291675
+2026-08-06 15:48:10,069 INFO [__main__] stage progress stage=joint step=10000/30000 train_nmse=0.349862 t2_nmse=0.290743
+2026-08-06 15:48:21,260 INFO [__main__] stage progress stage=joint step=11000/30000 train_nmse=0.321187 t2_nmse=0.289960
+2026-08-06 15:48:32,446 INFO [__main__] stage progress stage=joint step=12000/30000 train_nmse=0.274913 t2_nmse=0.289040
+2026-08-06 15:48:43,542 INFO [__main__] stage progress stage=joint step=13000/30000 train_nmse=0.296786 t2_nmse=0.288462
+2026-08-06 15:48:54,655 INFO [__main__] stage progress stage=joint step=14000/30000 train_nmse=0.308126 t2_nmse=0.287602
+2026-08-06 15:49:05,795 INFO [__main__] stage progress stage=joint step=15000/30000 train_nmse=0.294029 t2_nmse=0.286976
+2026-08-06 15:49:16,969 INFO [__main__] stage progress stage=joint step=16000/30000 train_nmse=0.332331 t2_nmse=0.286324
+2026-08-06 15:49:28,026 INFO [__main__] stage progress stage=joint step=17000/30000 train_nmse=0.286006 t2_nmse=0.285979
+2026-08-06 15:49:39,157 INFO [__main__] stage progress stage=joint step=18000/30000 train_nmse=0.310233 t2_nmse=0.285253
+2026-08-06 15:49:50,300 INFO [__main__] stage progress stage=joint step=19000/30000 train_nmse=0.306365 t2_nmse=0.284865
+2026-08-06 15:50:01,513 INFO [__main__] stage progress stage=joint step=20000/30000 train_nmse=0.283040 t2_nmse=0.284491
+2026-08-06 15:50:12,661 INFO [__main__] stage progress stage=joint step=21000/30000 train_nmse=0.284230 t2_nmse=0.284145
+2026-08-06 15:50:23,759 INFO [__main__] stage progress stage=joint step=22000/30000 train_nmse=0.321005 t2_nmse=0.283679
+2026-08-06 15:50:34,939 INFO [__main__] stage progress stage=joint step=23000/30000 train_nmse=0.243317 t2_nmse=0.283792
+2026-08-06 15:50:46,088 INFO [__main__] stage progress stage=joint step=24000/30000 train_nmse=0.282348 t2_nmse=0.283547
+2026-08-06 15:50:57,097 INFO [__main__] stage progress stage=joint step=25000/30000 train_nmse=0.295524 t2_nmse=0.282977
+2026-08-06 15:51:08,135 INFO [__main__] stage progress stage=joint step=26000/30000 train_nmse=0.306284 t2_nmse=0.282943
+2026-08-06 15:51:19,056 INFO [__main__] stage progress stage=joint step=27000/30000 train_nmse=0.291031 t2_nmse=0.282819
+2026-08-06 15:51:29,944 INFO [__main__] stage progress stage=joint step=28000/30000 train_nmse=0.284513 t2_nmse=0.282914
+2026-08-06 15:51:40,715 INFO [__main__] stage progress stage=joint step=29000/30000 train_nmse=0.300258 t2_nmse=0.282484
+2026-08-06 15:51:51,958 INFO [__main__] stage progress stage=joint step=30000/30000 train_nmse=0.301874 t2_nmse=0.282383
+2026-08-06 15:51:53,561 INFO [__main__] outputs saved variant=joint_ridge dir=outputs/adaptation_results/ts_ifa_joint_ridge_instance_30k/Electricity/168_24/chronos2/instance_euclidean_3_online/ts_ifa/joint_ridge
+2026-08-06 15:51:53,561 INFO [__main__] experiment done seconds=340.08
+2026-08-06 15:51:53,561 INFO [__main__] ========================================================================
+2026-08-06T15:51:54+02:00 training done variant=joint_ridge configuration=1/3
+2026-08-06 15:51:57,408 INFO [__main__] extraction validation directory=outputs/extractions/Electricity/336_48/chronos2/instance_euclidean_3_online/extracted status=complete
+
+2026-08-06T15:51:57+02:00 training start variant=joint_ridge configuration=2/3 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=instance_euclidean_3_online
+2026-08-06 15:52:00,494 INFO [__main__] ========================================================================
+2026-08-06 15:52:00,908 INFO [__main__] experiment start kind=ts_ifa variant=joint_ridge train_epochs=30000 rooter_epochs=10000
+2026-08-06 15:52:04,747 INFO [__main__] payload scale split=T1 samples=136656 std_min=0.333426 std_q001=0.604608 std_q01=4.68589 std_q05=22.2151 std_q10=40.6165 std_median=185.89 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:52:04,755 INFO [__main__] payload scale split=T2 samples=34008 std_min=0.375413 std_q001=0.581196 std_q01=4.58251 std_q05=23.1815 std_q10=40.6876 std_median=179.161 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:52:04,758 INFO [__main__] payload scale split=T3 samples=12792 std_min=0.403962 std_q001=1.32202 std_q01=6.05807 std_q05=20.6529 std_q10=36.6447 std_median=183.341 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:52:16,873 INFO [__main__] stage progress stage=joint step=1000/30000 train_nmse=0.324480 t2_nmse=0.204979
+2026-08-06 15:52:29,045 INFO [__main__] stage progress stage=joint step=2000/30000 train_nmse=0.292581 t2_nmse=0.204848
+2026-08-06 15:52:40,583 INFO [__main__] stage progress stage=joint step=3000/30000 train_nmse=0.297942 t2_nmse=0.204663
+2026-08-06 15:52:52,145 INFO [__main__] stage progress stage=joint step=4000/30000 train_nmse=0.312642 t2_nmse=0.204424
+2026-08-06 15:53:03,732 INFO [__main__] stage progress stage=joint step=5000/30000 train_nmse=0.375616 t2_nmse=0.204176
+2026-08-06 15:53:15,389 INFO [__main__] stage progress stage=joint step=6000/30000 train_nmse=0.353323 t2_nmse=0.203898
+2026-08-06 15:53:26,908 INFO [__main__] stage progress stage=joint step=7000/30000 train_nmse=0.328091 t2_nmse=0.203654
+2026-08-06 15:53:38,367 INFO [__main__] stage progress stage=joint step=8000/30000 train_nmse=0.309286 t2_nmse=0.203438
+2026-08-06 15:53:49,824 INFO [__main__] stage progress stage=joint step=9000/30000 train_nmse=0.316628 t2_nmse=0.203153
+2026-08-06 15:54:01,266 INFO [__main__] stage progress stage=joint step=10000/30000 train_nmse=0.335420 t2_nmse=0.202932
+2026-08-06 15:54:12,760 INFO [__main__] stage progress stage=joint step=11000/30000 train_nmse=0.293105 t2_nmse=0.202778
+2026-08-06 15:54:24,275 INFO [__main__] stage progress stage=joint step=12000/30000 train_nmse=0.292120 t2_nmse=0.202592
+2026-08-06 15:54:35,830 INFO [__main__] stage progress stage=joint step=13000/30000 train_nmse=0.311336 t2_nmse=0.202468
+2026-08-06 15:54:47,311 INFO [__main__] stage progress stage=joint step=14000/30000 train_nmse=0.301767 t2_nmse=0.202237
+2026-08-06 15:54:58,903 INFO [__main__] stage progress stage=joint step=15000/30000 train_nmse=0.309373 t2_nmse=0.202035
+2026-08-06 15:55:10,471 INFO [__main__] stage progress stage=joint step=16000/30000 train_nmse=0.354710 t2_nmse=0.202055
+2026-08-06 15:55:22,066 INFO [__main__] stage progress stage=joint step=17000/30000 train_nmse=0.287207 t2_nmse=0.201908
+2026-08-06 15:55:33,510 INFO [__main__] stage progress stage=joint step=18000/30000 train_nmse=0.307000 t2_nmse=0.201737
+2026-08-06 15:55:45,037 INFO [__main__] stage progress stage=joint step=19000/30000 train_nmse=0.282754 t2_nmse=0.201735
+2026-08-06 15:55:56,597 INFO [__main__] stage progress stage=joint step=20000/30000 train_nmse=0.278500 t2_nmse=0.201719
+2026-08-06 15:56:08,082 INFO [__main__] stage progress stage=joint step=21000/30000 train_nmse=0.280628 t2_nmse=0.201731
+2026-08-06 15:56:19,606 INFO [__main__] stage progress stage=joint step=22000/30000 train_nmse=0.323670 t2_nmse=0.201707
+2026-08-06 15:56:31,064 INFO [__main__] stage progress stage=joint step=23000/30000 train_nmse=0.248468 t2_nmse=0.201668
+2026-08-06 15:56:42,615 INFO [__main__] stage progress stage=joint step=24000/30000 train_nmse=0.267839 t2_nmse=0.201642
+2026-08-06 15:56:54,106 INFO [__main__] stage progress stage=joint step=25000/30000 train_nmse=0.303897 t2_nmse=0.201724
+2026-08-06 15:57:05,622 INFO [__main__] stage progress stage=joint step=26000/30000 train_nmse=0.268377 t2_nmse=0.201641
+2026-08-06 15:57:16,993 INFO [__main__] stage progress stage=joint step=27000/30000 train_nmse=0.292565 t2_nmse=0.201685
+2026-08-06 15:57:28,507 INFO [__main__] stage progress stage=joint step=28000/30000 train_nmse=0.262151 t2_nmse=0.201704
+2026-08-06 15:57:40,022 INFO [__main__] stage progress stage=joint step=29000/30000 train_nmse=0.291341 t2_nmse=0.201809
+2026-08-06 15:57:51,497 INFO [__main__] stage progress stage=joint step=30000/30000 train_nmse=0.293707 t2_nmse=0.201827
+2026-08-06 15:57:53,202 INFO [__main__] outputs saved variant=joint_ridge dir=outputs/adaptation_results/ts_ifa_joint_ridge_instance_30k/Electricity/336_48/chronos2/instance_euclidean_3_online/ts_ifa/joint_ridge
+2026-08-06 15:57:53,202 INFO [__main__] experiment done seconds=352.71
+2026-08-06 15:57:53,202 INFO [__main__] ========================================================================
+2026-08-06T15:57:54+02:00 training done variant=joint_ridge configuration=2/3
+2026-08-06 15:57:56,821 INFO [__main__] extraction validation directory=outputs/extractions/Electricity/504_168/chronos2/instance_euclidean_3_online/extracted status=complete
+
+2026-08-06T15:57:57+02:00 training start variant=joint_ridge configuration=3/3 dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=instance_euclidean_3_online
+2026-08-06 15:57:59,625 INFO [__main__] ========================================================================
+2026-08-06 15:57:59,960 INFO [__main__] experiment start kind=ts_ifa variant=joint_ridge train_epochs=30000 rooter_epochs=10000
+2026-08-06 15:58:06,030 INFO [__main__] payload scale split=T1 samples=135408 std_min=0.351 std_q001=0.681835 std_q01=5.1929 std_q05=22.9299 std_q10=40.942 std_median=187.009 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:58:06,040 INFO [__main__] payload scale split=T2 samples=33696 std_min=0.411241 std_q001=0.67151 std_q01=4.46421 std_q05=23.9296 std_q10=42.4786 std_median=180.785 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:58:06,044 INFO [__main__] payload scale split=T3 samples=12480 std_min=0.508119 std_q001=1.32202 std_q01=6.47204 std_q05=20.6262 std_q10=36.5714 std_median=184.723 below_1e-8=0 below_1e-6=0 below_1e-3=0
+2026-08-06 15:58:19,104 INFO [__main__] stage progress stage=joint step=1000/30000 train_nmse=0.276871 t2_nmse=0.245572
+2026-08-06 15:58:32,248 INFO [__main__] stage progress stage=joint step=2000/30000 train_nmse=0.286597 t2_nmse=0.245047
+2026-08-06 15:58:44,463 INFO [__main__] stage progress stage=joint step=3000/30000 train_nmse=0.300076 t2_nmse=0.244536
+2026-08-06 15:58:56,889 INFO [__main__] stage progress stage=joint step=4000/30000 train_nmse=0.265719 t2_nmse=0.244029
+2026-08-06 15:59:09,073 INFO [__main__] stage progress stage=joint step=5000/30000 train_nmse=0.301490 t2_nmse=0.243385
+2026-08-06 15:59:21,409 INFO [__main__] stage progress stage=joint step=6000/30000 train_nmse=0.279015 t2_nmse=0.243081
+2026-08-06 15:59:33,671 INFO [__main__] stage progress stage=joint step=7000/30000 train_nmse=0.275957 t2_nmse=0.242553
+2026-08-06 15:59:45,972 INFO [__main__] stage progress stage=joint step=8000/30000 train_nmse=0.293321 t2_nmse=0.242035
+2026-08-06 15:59:58,287 INFO [__main__] stage progress stage=joint step=9000/30000 train_nmse=0.273392 t2_nmse=0.241643
+2026-08-06 16:00:10,709 INFO [__main__] stage progress stage=joint step=10000/30000 train_nmse=0.268781 t2_nmse=0.241277
+2026-08-06 16:00:22,831 INFO [__main__] stage progress stage=joint step=11000/30000 train_nmse=0.264796 t2_nmse=0.240908
+2026-08-06 16:00:35,048 INFO [__main__] stage progress stage=joint step=12000/30000 train_nmse=0.276022 t2_nmse=0.240765
+2026-08-06 16:00:47,186 INFO [__main__] stage progress stage=joint step=13000/30000 train_nmse=0.285579 t2_nmse=0.240625
+2026-08-06 16:00:59,363 INFO [__main__] stage progress stage=joint step=14000/30000 train_nmse=0.250369 t2_nmse=0.240547
+2026-08-06 16:01:11,226 INFO [__main__] stage progress stage=joint step=15000/30000 train_nmse=0.266004 t2_nmse=0.240342
+2026-08-06 16:01:23,602 INFO [__main__] stage progress stage=joint step=16000/30000 train_nmse=0.253897 t2_nmse=0.240244
+2026-08-06 16:01:35,917 INFO [__main__] stage progress stage=joint step=17000/30000 train_nmse=0.286875 t2_nmse=0.240170
+2026-08-06 16:01:48,096 INFO [__main__] stage progress stage=joint step=18000/30000 train_nmse=0.242723 t2_nmse=0.239803
+2026-08-06 16:02:00,272 INFO [__main__] stage progress stage=joint step=19000/30000 train_nmse=0.252744 t2_nmse=0.239997
+2026-08-06 16:02:12,465 INFO [__main__] stage progress stage=joint step=20000/30000 train_nmse=0.257449 t2_nmse=0.239788
+2026-08-06 16:02:24,631 INFO [__main__] stage progress stage=joint step=21000/30000 train_nmse=0.271159 t2_nmse=0.240296
+2026-08-06 16:02:36,852 INFO [__main__] stage progress stage=joint step=22000/30000 train_nmse=0.260281 t2_nmse=0.239950
+2026-08-06 16:02:49,033 INFO [__main__] stage progress stage=joint step=23000/30000 train_nmse=0.244664 t2_nmse=0.240085
+2026-08-06 16:03:01,251 INFO [__main__] stage progress stage=joint step=24000/30000 train_nmse=0.271545 t2_nmse=0.240061
+2026-08-06 16:03:13,346 INFO [__main__] stage progress stage=joint step=25000/30000 train_nmse=0.252432 t2_nmse=0.240119
+2026-08-06 16:03:25,517 INFO [__main__] stage progress stage=joint step=26000/30000 train_nmse=0.258858 t2_nmse=0.240507
+2026-08-06 16:03:37,641 INFO [__main__] stage progress stage=joint step=27000/30000 train_nmse=0.235821 t2_nmse=0.240043
+2026-08-06 16:03:49,819 INFO [__main__] stage progress stage=joint step=28000/30000 train_nmse=0.242189 t2_nmse=0.240714
+2026-08-06 16:04:01,935 INFO [__main__] stage progress stage=joint step=29000/30000 train_nmse=0.262820 t2_nmse=0.240678
+2026-08-06 16:04:14,099 INFO [__main__] stage progress stage=joint step=30000/30000 train_nmse=0.256012 t2_nmse=0.240802
+2026-08-06 16:04:16,017 INFO [__main__] outputs saved variant=joint_ridge dir=outputs/adaptation_results/ts_ifa_joint_ridge_instance_30k/Electricity/504_168/chronos2/instance_euclidean_3_online/ts_ifa/joint_ridge
+2026-08-06 16:04:16,017 INFO [__main__] experiment done seconds=376.39
+2026-08-06 16:04:16,017 INFO [__main__] ========================================================================
+2026-08-06T16:04:16+02:00 training done variant=joint_ridge configuration=3/3
+
+2026-08-06T16:04:16+02:00 job done kind=ts_ifa_training variant=joint_ridge output=outputs/adaptation_results/ts_ifa_joint_ridge_instance_30k

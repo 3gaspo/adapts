@@ -4,7 +4,7 @@
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --time=23:00:00
-#SBATCH --partition=h100
+#SBATCH --partition=h100-bis
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
