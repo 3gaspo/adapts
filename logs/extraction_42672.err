@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 754, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 701, in main
+    inputs = {key: {"path": str(value)} for key, value in _pairs(args.input).items()}
+                                                          ^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 630, in _pairs
+    raise ValueError(f"expected KEY=VALUE, got {item!r}")
+ValueError: expected KEY=VALUE, got ''
