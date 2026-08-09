@@ -7,7 +7,7 @@ source src/slurm/common.sh
 source src/slurm/profiles.sh
 require_project_root
 activate_project_environment
-export PYTHONPATH="$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/src:$PROJECT_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 
 # On another machine, set DATA_ROOT and WEIGHTS_ROOT to the available resource
 # directories or edit the candidate paths in common.sh.

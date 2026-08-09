@@ -6,7 +6,7 @@ source src/slurm/common.sh
 source src/slurm/profiles.sh
 require_project_root
 activate_project_environment
-export PYTHONPATH="$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/src:$PROJECT_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 
 OUT_ROOT="${OUT_ROOT:-outputs/extraction}"
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-test}"

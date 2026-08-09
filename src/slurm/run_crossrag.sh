@@ -5,7 +5,7 @@ source src/slurm/common.sh
 source src/slurm/profiles.sh
 require_project_root
 activate_project_environment
-export PYTHONPATH="$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/src:$PROJECT_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY="${EXPERIMENT_FAMILY:-crossrag}"
