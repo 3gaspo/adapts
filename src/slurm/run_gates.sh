@@ -166,7 +166,7 @@ run_task() {
       "$OUTPUT_DIR/gate_metrics.csv" "$OUTPUT_DIR/gate_metrics.json" \
       "$OUTPUT_DIR/gate_artifacts.json" "$OUTPUT_DIR/prediction_manifest.json" \
       "$OUTPUT_DIR/gate_timing.json" "$OUTPUT_DIR/result_manifest.json"
-    mark_manifest_completed "$OUTPUT_DIR" gate_metrics.csv gate_metrics.json gate_artifacts.json prediction_manifest.json gate_timing.json result_manifest.json
+    mark_manifest_ready "$OUTPUT_DIR" gate_metrics.csv gate_metrics.json gate_artifacts.json prediction_manifest.json gate_timing.json result_manifest.json
     log "gates done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model formula=$method lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
   done
 }

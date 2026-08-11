@@ -8,7 +8,6 @@ import json
 import logging
 from dataclasses import asdict
 from pathlib import Path
-import shutil
 from time import perf_counter
 from typing import Any, Callable
 
@@ -21,6 +20,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from src.data.load_dataset import set_seed
 from src.data.neighbors import neighbor_to_query_scale
+from src.experiment_runs import prepare_run_output
 from src.experiments.prediction_store import PredictionStore
 from src.experiments.runtime import log_experiment_separator, setup_logging
 from src.experiments.splits import chronological_date_slices
@@ -1335,9 +1335,7 @@ def main() -> dict[str, Path]:
         raise FileNotFoundError(adapt_payload_path)
     if eval_payload_path is not None and not eval_payload_path.is_file():
         raise FileNotFoundError(eval_payload_path)
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True)
+    prepare_run_output(output_dir)
     train_epochs, rooter_epochs = _resolved_epochs(args)
     branches = _resolved_branches(args.branches)
     variant = str(args.variant)

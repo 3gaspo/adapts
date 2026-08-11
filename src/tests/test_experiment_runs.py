@@ -1,6 +1,7 @@
 """Contract tests for schema-v1 run allocation and table selection."""
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,9 +9,14 @@ from pathlib import Path
 from experiment_runs import (
     ManifestError,
     allocate_run,
+    complete_launch,
     load_manifest,
+    mark_ready,
     mark_status,
+    prepare_run_output,
     select_identity_runs,
+    validate_completed,
+    write_report_manifest,
 )
 
 
@@ -45,6 +51,7 @@ class ExperimentRunsTest(unittest.TestCase):
             seed=1,
             required_artifacts=[relative],
         )
+        assert load_manifest(allocation.run_dir)["status"] == "running"
         mark_status(
             allocation.run_dir,
             "completed",
@@ -114,6 +121,106 @@ class ExperimentRunsTest(unittest.TestCase):
 
             reused = self._allocate(identity, 10, inputs={"dataset": "new/location.csv"})
             self.assertEqual((reused.run_dir.name, reused.action), ("run_0", "skip"))
+
+    def test_allocation_reclaims_manifestless_run_directory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            orphan = identity / "run_0"
+            orphan.mkdir(parents=True)
+            stale = orphan / "result.json"
+            stale.write_text('{"stale": true}\n', encoding="utf-8")
+
+            allocation = self._allocate(identity, 10)
+
+            self.assertEqual((allocation.run_dir.name, allocation.action), ("run_0", "new"))
+            self.assertFalse(stale.exists())
+            self.assertEqual(load_manifest(allocation.run_dir)["status"], "not_run")
+
+    def test_prepare_preserves_manifest_history_and_completed_seed_outputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            allocation = allocate_run(
+                identity,
+                project="contract_test",
+                workflow="family",
+                dataset="electricity",
+                lookback=504,
+                horizon=168,
+                backbone="patchtst",
+                model_config_order=["formula", "space"],
+                model_config={"formula": "ridge", "space": "instance"},
+                pipeline_config={"steps": 10},
+                seeds=[1, 2],
+                launch_id="launch_prepare",
+            )
+            completed = allocation.run_dir / "seed_1/result.json"
+            completed.parent.mkdir()
+            completed.write_text('{"mse": 1.0}\n', encoding="utf-8")
+            stale = allocation.run_dir / "seed_2/partial.json"
+            stale.parent.mkdir()
+            stale.write_text('{"partial": true}\n', encoding="utf-8")
+            history = allocation.run_dir / "manifest_history/prior.json"
+            history.parent.mkdir()
+            history.write_text("{}\n", encoding="utf-8")
+            mark_status(
+                allocation.run_dir,
+                "completed",
+                seed=1,
+                required_artifacts=["seed_1/result.json"],
+            )
+
+            prepare_run_output(allocation.run_dir)
+
+            self.assertTrue((allocation.run_dir / "manifest.json").is_file())
+            self.assertTrue(history.is_file())
+            self.assertTrue(completed.is_file())
+            self.assertFalse(stale.exists())
+
+    def test_ready_run_completes_only_after_slurm_workflow_success(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            allocation = self._allocate(identity, 10)
+            mark_status(allocation.run_dir, "running")
+            artifact = allocation.run_dir / "result.json"
+            artifact.write_text('{"mse": 1.0}\n', encoding="utf-8")
+
+            mark_ready(allocation.run_dir, required_artifacts=["result.json"])
+            ready = load_manifest(allocation.run_dir)
+            self.assertEqual(ready["status"], "running")
+            self.assertEqual(ready["seed_status"]["1"]["status"], "ready")
+            self.assertEqual(complete_launch(folder, "launch_10_default"), [allocation.run_dir])
+            self.assertEqual(load_manifest(allocation.run_dir)["status"], "completed")
+
+            artifact.unlink()
+            self.assertEqual(validate_completed(allocation.run_dir)["status"], "completed")
+
+    def test_report_manifest_records_requested_and_obtained(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            allocation = self._allocate(identity, 10)
+            self._complete(allocation)
+            selected = select_identity_runs(identity, requested_pipeline={"steps": 10})
+            destination = Path(folder) / "report_manifest.json"
+            previous_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
+            os.environ["EXPERIMENT_LAUNCH_ID"] = "report_launch"
+            try:
+                write_report_manifest(
+                    destination,
+                    inputs=selected,
+                    config_policy="distinct",
+                    repeat_policy="selected",
+                    filters={"pipeline": {"steps": 10}},
+                )
+            finally:
+                if previous_launch is None:
+                    os.environ.pop("EXPERIMENT_LAUNCH_ID", None)
+                else:
+                    os.environ["EXPERIMENT_LAUNCH_ID"] = previous_launch
+            report = json.loads(destination.read_text(encoding="utf-8"))
+            self.assertEqual(report["launch_id"], "report_launch")
+            self.assertEqual(report["requested"]["filters"]["pipeline"], {"steps": 10})
+            self.assertEqual(report["obtained"]["count"], 1)
+            self.assertEqual(report["obtained"]["inputs"][0]["pipeline_config"], {"steps": 10})
 
 
 if __name__ == "__main__":

@@ -49,6 +49,8 @@ else
 fi
 METHODS_CSV="${METHODS_CSV:-$DEFAULT_METHODS_CSV}"
 PIPELINES_CSV="${PIPELINES_CSV:-}"
+CHRONOS2_PIPELINES_CSV="${CHRONOS2_PIPELINES_CSV:-}"
+CHRONOS_BOLT_PIPELINES_CSV="${CHRONOS_BOLT_PIPELINES_CSV:-}"
 METRIC="${METRIC:-nmse}"
 DECIMALS="${DECIMALS:-2}"
 CANDIDATE_FAMILY="${CANDIDATE_FAMILY:-}"
@@ -96,8 +98,6 @@ NEIGHBOR_ARG="$(join_csv "${NEIGHBORS[@]}")"
 FAMILY_ARG="$(join_csv "${FAMILIES[@]}")"
 METHOD_ARGS=()
 [ -z "$METHODS_CSV" ] || METHOD_ARGS+=(--variants "$METHODS_CSV")
-PIPELINE_ARGS=()
-[ -z "$PIPELINES_CSV" ] || PIPELINE_ARGS+=(--pipelines "$PIPELINES_CSV")
 TABLE_CONFIG_POLICY="${TABLE_CONFIG_POLICY:-distinct}"
 TABLE_REPEAT_POLICY="${TABLE_REPEAT_POLICY:-selected}"
 if [ "$EXPERIMENT_MODE" = test ]; then TABLE_PURPOSE="${TABLE_PURPOSE:-smoke}"; else TABLE_PURPOSE="${TABLE_PURPOSE:-publication}"; fi
@@ -109,6 +109,22 @@ if [ -n "${TABLE_PURPOSE:-}" ]; then TABLE_SELECTION_ARGS+=(--purpose "$TABLE_PU
 
 log_section "job start kind=adaptation_tables experiment_mode=$EXPERIMENT_MODE datasets=$DATASET_ARG models=$MODELS_CSV settings=$SETTING_ARG families=$FAMILY_ARG metric=$METRIC distance_metrics=$METRIC_ARG methods=${METHODS_CSV:-all} table_kinds=$TABLE_KINDS_CSV results_root=$RESULTS_ROOT"
 for model in "${MODELS[@]}"; do
+  MODEL_PIPELINES_CSV="$PIPELINES_CSV"
+  MODEL_FAMILY_ARG="$FAMILY_ARG"
+  MODEL_FAMILIES=("${FAMILIES[@]}")
+  if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
+    case "$model" in
+      chronos2)
+        MODEL_PIPELINES_CSV="$CHRONOS2_PIPELINES_CSV"
+        MODEL_FAMILY_ARG="$CANDIDATE_FAMILY"
+        MODEL_FAMILIES=("$CANDIDATE_FAMILY")
+        ;;
+      chronos-bolt) MODEL_PIPELINES_CSV="$CHRONOS_BOLT_PIPELINES_CSV" ;;
+      *) log_error "crossrag tables do not define pipelines for model=$model"; return 2 ;;
+    esac
+  fi
+  MODEL_PIPELINE_ARGS=()
+  [ -z "$MODEL_PIPELINES_CSV" ] || MODEL_PIPELINE_ARGS+=(--pipelines "$MODEL_PIPELINES_CSV")
   for table_kind in "${TABLE_KINDS[@]}"; do
     OUTPUT_DIR="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE/$model/$table_kind"
     # The Python constructor validates every selected dataset/setting/model/
@@ -123,20 +139,20 @@ for model in "${MODELS[@]}"; do
       --datasets "$DATASET_ARG" \
       --settings "$SETTING_ARG" \
       --models "$model" \
-      --families "$FAMILY_ARG" \
+      --families "$MODEL_FAMILY_ARG" \
       --spaces "$SPACE_ARG" \
       --distance-metrics "$METRIC_ARG" \
       --neighbors "$NEIGHBOR_ARG" \
       --retrieval-mode "$RETRIEVAL_MODE" \
       --decimals "$DECIMALS" \
       "${METHOD_ARGS[@]}" \
-      "${PIPELINE_ARGS[@]}" \
+      "${MODEL_PIPELINE_ARGS[@]}" \
       "${TABLE_SELECTION_ARGS[@]}"
-    for family in "${FAMILIES[@]}"; do
+    for family in "${MODEL_FAMILIES[@]}"; do
       assert_files table-output "$OUTPUT_DIR/${family}_results.tex"
     done
     if [ "$table_kind" = average ]; then
-      for family in "${FAMILIES[@]}"; do
+      for family in "${MODEL_FAMILIES[@]}"; do
         case "$family" in
           baselines|gates|full|comparison)
             assert_files table-output "$OUTPUT_DIR/positive_windows_results.tex"
@@ -155,13 +171,13 @@ for model in "${MODELS[@]}"; do
     --datasets "$DATASET_ARG" \
     --settings "$SETTING_ARG" \
     --models "$model" \
-    --families "$FAMILY_ARG" \
+    --families "$MODEL_FAMILY_ARG" \
     --spaces "$SPACE_ARG" \
     --distance-metrics "$METRIC_ARG" \
     --neighbors "$NEIGHBOR_ARG" \
     --retrieval-mode "$RETRIEVAL_MODE" \
     "${METHOD_ARGS[@]}" \
-    "${PIPELINE_ARGS[@]}" \
+    "${MODEL_PIPELINE_ARGS[@]}" \
     "${TABLE_SELECTION_ARGS[@]}"
   assert_files table-output "$COEFFICIENT_OUTPUT_DIR/coefficient_index.csv"
   log "baseline coefficient plots done model=$model output=$COEFFICIENT_OUTPUT_DIR"
@@ -192,7 +208,7 @@ if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
     --candidate-run "$CANDIDATE_RUN" \
     --crossrag-run minmax_cosine_15_online \
     --candidate-family "$CANDIDATE_FAMILY" \
-    --candidate-formula "$METHODS_CSV" \
+    --candidate-formula "$CANDIDATE_METHOD" \
     "${TABLE_SELECTION_ARGS[@]}"
   assert_files table-output "$TIMING_OUTPUT"
 fi

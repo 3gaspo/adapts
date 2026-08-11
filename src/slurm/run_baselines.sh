@@ -139,7 +139,7 @@ run_task() {
       "$OUTPUT_DIR/baseline_metrics.csv" "$OUTPUT_DIR/baseline_metrics.json" \
       "$OUTPUT_DIR/baseline_artifacts.pt" "$OUTPUT_DIR/prediction_manifest.json" \
       "$OUTPUT_DIR/baseline_timing.json" "$OUTPUT_DIR/result_manifest.json"
-    mark_manifest_completed "$OUTPUT_DIR" baseline_metrics.csv baseline_metrics.json baseline_artifacts.pt prediction_manifest.json baseline_timing.json result_manifest.json
+    mark_manifest_ready "$OUTPUT_DIR" baseline_metrics.csv baseline_metrics.json baseline_artifacts.pt prediction_manifest.json baseline_timing.json result_manifest.json
     log "baselines done configuration=$((task_id + 1))/${#TASKS[@]} dataset=$dataset model=$model formula=$method lags=$L horizon=$H retrieval=$RETRIEVAL_SETTING"
   done
 }

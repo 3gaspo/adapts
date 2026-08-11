@@ -123,6 +123,6 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
     "$OUTPUT_DIR/crossrag_predictions.pt" \
     "$OUTPUT_DIR/crossrag_timing.json" \
     "$OUTPUT_DIR/result_manifest.json"
-  mark_manifest_completed "$OUTPUT_DIR" crossrag_metrics.json crossrag_predictions.pt crossrag_timing.json result_manifest.json
+  mark_manifest_ready "$OUTPUT_DIR" crossrag_metrics.json crossrag_predictions.pt crossrag_timing.json result_manifest.json
 done
 log_section "job done kind=crossrag output=$RESULTS_ROOT"

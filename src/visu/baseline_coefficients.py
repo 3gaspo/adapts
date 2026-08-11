@@ -362,7 +362,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--pipeline-config", action="append", default=[])
     parser.add_argument(
         "--config-policy",
-        choices=("distinct", "latest", "selected", "average"),
+        choices=("distinct", "latest", "average"),
         default="distinct",
     )
     parser.add_argument(

@@ -93,8 +93,14 @@ parse_winners() {
         PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")
       done
     elif [ "$EXPERIMENT_FAMILY" = crossrag ]; then
-      group_neighbors=15
-      PIPELINES+=("$family/${space}_${metric}_15_${retrieval}/$method")
+      group_neighbors="$neighbors"
+      PIPELINES+=("$family/$run/$method")
+      CHRONOS2_PIPELINE="$family/$run/$method"
+      CANDIDATE_FAMILY="$family"
+      CANDIDATE_METHOD="$method"
+      CANDIDATE_SPACE="$space"
+      CANDIDATE_METRIC="$metric"
+      CANDIDATE_RETRIEVAL_MODE="$retrieval"
       CANDIDATE_RUN="${space}_${metric}_15_${retrieval}"
     else
       case "$neighbors" in
@@ -123,28 +129,35 @@ parse_winners() {
   done
 }
 
+run_method_group() {
+  local model_csv="$1" family="$2" space="$3" metric="$4"
+  local neighbors="$5" retrieval="$6" methods="$7"
+  DATASETS_CSV="$PROFILE_DATASETS_CSV"
+  MODELS_CSV="$model_csv"
+  SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
+  DISTANCE_SPACES_CSV="$space"
+  DISTANCE_METRICS_CSV="$metric"
+  NEIGHBORS_CSV="$neighbors"
+  RETRIEVAL_MODE="$retrieval"
+  SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
+  source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
+  SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"
+  if [ "$family" = baselines ]; then
+    BASELINE_METHODS_CSV="$methods"
+    source "$PROJECT_ROOT/src/slurm/run_baselines.sh"
+  else
+    GATE_METHODS_CSV="$methods"
+    source "$PROJECT_ROOT/src/slurm/run_gates.sh"
+  fi
+}
+
 run_groups() {
-  local key family space metric neighbors retrieval methods
+  local model_csv="$1" key family space metric neighbors retrieval methods
   for key in "${!GROUP_METHODS[@]}"; do
     IFS='|' read -r family space metric neighbors retrieval <<< "$key"
     methods="${GROUP_METHODS[$key]}"
-    DATASETS_CSV="$PROFILE_DATASETS_CSV"
-    MODELS_CSV="$PROFILE_MODELS_CSV"
-    SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
-    DISTANCE_SPACES_CSV="$space"
-    DISTANCE_METRICS_CSV="$metric"
-    NEIGHBORS_CSV="$neighbors"
-    RETRIEVAL_MODE="$retrieval"
-    SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
-    source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
-    SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"
-    if [ "$family" = baselines ]; then
-      BASELINE_METHODS_CSV="$methods"
-      source "$PROJECT_ROOT/src/slurm/run_baselines.sh"
-    else
-      GATE_METHODS_CSV="$methods"
-      source "$PROJECT_ROOT/src/slurm/run_gates.sh"
-    fi
+    run_method_group \
+      "$model_csv" "$family" "$space" "$metric" "$neighbors" "$retrieval" "$methods"
   done
 }
 
@@ -171,12 +184,23 @@ if [ "$EXPERIMENT_FAMILY" = crossrag ] && [ "${#GROUP_METHODS[@]}" -ne 1 ]; then
   return 2
 fi
 
-run_groups
+if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
+  run_groups chronos2
+else
+  run_groups "$PROFILE_MODELS_CSV"
+fi
 
 if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
+  # Re-evaluate the selected method on Chronos-Bolt at the comparison K.
+  run_method_group \
+    chronos-bolt "$CANDIDATE_FAMILY" "$CANDIDATE_SPACE" "$CANDIDATE_METRIC" \
+    15 "$CANDIDATE_RETRIEVAL_MODE" "$CANDIDATE_METHOD"
+  CHRONOS_BOLT_CANDIDATE_PIPELINE="$CANDIDATE_FAMILY/$CANDIDATE_RUN/$CANDIDATE_METHOD"
+  PIPELINES+=("$CHRONOS_BOLT_CANDIDATE_PIPELINE")
+
   # Cross-RAG has its own fixed minmax/cosine retrieval pipeline.
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
-  MODELS_CSV="$PROFILE_MODELS_CSV"
+  MODELS_CSV=chronos-bolt
   SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
   DISTANCE_SPACES_CSV=minmax
   DISTANCE_METRICS_CSV=cosine
@@ -189,10 +213,10 @@ if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
   append_unique METRICS cosine
   append_unique SELECTED_NEIGHBORS 15
   PIPELINES+=("crossrag/minmax_cosine_15_online/crossrag")
+  CHRONOS2_PIPELINES_CSV="$CHRONOS2_PIPELINE"
+  CHRONOS_BOLT_PIPELINES_CSV="$CHRONOS_BOLT_CANDIDATE_PIPELINE,crossrag/minmax_cosine_15_online/crossrag"
   FAMILIES=(comparison)
-  METHODS+=(crossrag)
-  CANDIDATE_FAMILY="${!GROUP_METHODS[*]}"
-  CANDIDATE_FAMILY="${CANDIDATE_FAMILY%%|*}"
+  append_unique METHODS crossrag
 fi
 
 join_csv_values() {
@@ -201,7 +225,11 @@ join_csv_values() {
 }
 
 DATASETS_CSV="$PROFILE_DATASETS_CSV"
-MODELS_CSV="$PROFILE_MODELS_CSV"
+if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
+  MODELS_CSV=chronos2,chronos-bolt
+else
+  MODELS_CSV="$PROFILE_MODELS_CSV"
+fi
 SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
 DISTANCE_SPACES_CSV="$(join_csv_values "${SPACES[@]}")"
 DISTANCE_METRICS_CSV="$(join_csv_values "${METRICS[@]}")"
@@ -212,6 +240,6 @@ PIPELINES_CSV="$(join_csv_values "${PIPELINES[@]}")"
 RETRIEVAL_MODE="$RETRIEVAL_MODE_SELECTED"
 export DATASETS_CSV MODELS_CSV SETTINGS_CSV DISTANCE_SPACES_CSV
 export DISTANCE_METRICS_CSV NEIGHBORS_CSV FAMILIES_CSV METHODS_CSV
-export PIPELINES_CSV RETRIEVAL_MODE CANDIDATE_FAMILY
-export CANDIDATE_RUN
+export PIPELINES_CSV RETRIEVAL_MODE CANDIDATE_FAMILY CANDIDATE_METHOD
+export CANDIDATE_RUN CHRONOS2_PIPELINES_CSV CHRONOS_BOLT_PIPELINES_CSV
 source "$PROJECT_ROOT/src/slurm/build_tables.sh"

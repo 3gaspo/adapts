@@ -100,16 +100,22 @@ skips an identical completed run, resumes an identical interruption, and
 allocates the next `run_n` when pipeline config differs. `overwrite_path`
 explicitly replaces the latest path occupant; `new` always adds a run. A forced
 exact overwrite preserves the prior manifest in `manifest_history/`.
+Before a non-skipped attempt is marked running, the schema layer clears stale
+generated artifacts without deleting `manifest.json`, `manifest_history/`, or
+completed `seed_n/` leaves. Artifact writers must never delete the allocated
+`run_n/` root. A manifest-less `run_n/` is an invalid partial directory, not a
+current run; the next allocation safely reclaims its index and recomputes it.
 
 `EXPERIMENT_MODE=test|full|ultra` selects delayed subsets of the same identity
 trees; it is not a family, phase, path component, or computation-signature
 field. Reports live under `outputs/reports/<family>/<mode>/`. They default to
 distinct pipeline configs and the selected exact repeat, with
-`TABLE_CONFIG_POLICY=distinct|latest|selected|average` and
+`TABLE_CONFIG_POLICY=distinct|latest|average` and
 `TABLE_REPEAT_POLICY=selected|latest|distinct|average`. Explicit pipeline
-filters must match even when only one run exists. `SELECTED_RUNS.txt` stores the
-automatic or pinned run per pipeline signature, and every report records its
-exact input manifests.
+filters select a pipeline configuration and must match even when only one run
+exists. `SELECTED_RUNS.txt` stores only the automatic or pinned exact repeat per
+pipeline signature. Every report records the requested filters and the input
+manifests actually obtained.
 
 The former `outputs/extractions` and `outputs/adaptation_results` trees could
 not be migrated faithfully: synchronized extraction tensor payloads were
@@ -121,14 +127,17 @@ readers, and may be consulted only for legacy analysis.
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed
 `prediction_manifest.json` contract. Each array is a separate `.npy` file below
 `predictions/`; the dashboard reads only this contract. `result_manifest.json`
-is written last as a family-specific scientific artifact. Overall completion
-is recorded only after all required files exist in `run_n/manifest.json`.
+is written last as a family-specific scientific artifact. Runs remain `ready`
+until the owning Slurm workflow exits successfully; only that final exit path
+records overall completion after all launched work and required files are done.
 Obsolete or partial result folders are not accepted.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
 from `gate_artifacts.json`. Every TS-IFA variant stores its T3 active-rooter
 coefficients under the prediction store's `gate_diagnostics` kind and its
 rooter state in `rooter.pt`. Cross-RAG likewise writes its scientific
 `result_manifest.json` before the shared run manifest is marked completed.
+Seed completion never promotes the overall run. Once completed, the manifest
+is authoritative; reuse does not hash or revalidate synchronized files.
 
 The baseline launcher retains `--fit-baselines-on-eval`.  Methods suffixed
 `_eval_fit` are optimistic T3 in-sample oracle diagnostics for the appendix;
@@ -819,6 +828,30 @@ optimizer, regularizer, architecture, or sample cap invalidates completion.
 Older outputs are incomplete and unsupported; rerun the required variant front
 for every affected configuration.
 
+## Publishing completed Slurm artifacts
+
+A successful root workflow automatically submits `publish.slurm` with an
+`afterok` dependency. The producer handoff contains its exact
+`logs/<job-name>_<job-id>.out`, `.err`, and launch-tagged run/report output
+directories. The publisher excludes `*.pt`, `*.npy`, and `*.cbm`, commits only
+those paths on `main`, sources `$HOME/proxy.sh`, and runs `git push origin main`.
+It never pulls or creates a pull request. Set `PUBLISH_RESULTS=false` to disable
+automatic submission.
+
+The default credential file is `.secrets/proxy.credentials`, with the NNI on
+the first line and password on the second. Create it only on the cluster and run
+`chmod 600 .secrets/proxy.credentials`; `.secrets/` is ignored. Override
+`PROXY_SCRIPT_PATH`, `PROXY_CREDENTIALS_FILE`, or `PUBLISH_PARTITION` when
+needed. Retry a failed publication manually with:
+
+```bash
+bash src/slurm/publish_results.sh --job-id <producer-job-id>
+```
+
+The external proxy script must accept
+`--credentials-file <path>`, export `https_proxy` when authentication succeeds,
+set `NOEXPORT=0`, and return nonzero on failure.
+
 ## Local checks
 
 Full extraction and model inference run only on the remote cluster.  With the
@@ -844,3 +877,13 @@ decisions. Their PDFs are kept beside the sources; the guideline uses
 `latex/adaptation_references.bib`. Source code, notebooks, tests, and Slurm
 helpers remain under `src/`; generated artifacts stay under `outputs/`, and
 runtime logs under `logs/`.
+
+## Maintenance workflow
+
+Every project change is recorded in `PENDING_UPDATES.md` with its scope,
+affected contracts, focused checks already completed, deferred integration
+coverage, documentation impact, and rerun requirements. Routine edits use only
+the smallest relevant smoke check. Periodic maintenance verifies pending entries
+against the implementation, runs complementary generic lightweight smoke tests,
+reconciles this README and the project LaTeX documents, and renders affected
+PDFs before resolving the entries.

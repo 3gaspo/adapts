@@ -159,7 +159,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-family", choices=("baselines", "gates"), required=True)
     parser.add_argument("--candidate-formula", required=True)
     parser.add_argument("--pipeline-config", action="append", default=[])
-    parser.add_argument("--config-policy", choices=("distinct", "latest", "selected", "average"), default="distinct")
+    parser.add_argument("--config-policy", choices=("distinct", "latest", "average"), default="distinct")
     parser.add_argument("--repeat-policy", choices=("selected", "latest", "distinct", "average"), default="selected")
     parser.add_argument("--purpose", action="append", default=[])
     return parser.parse_args()

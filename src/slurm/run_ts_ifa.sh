@@ -229,6 +229,6 @@ for task_id in "${!TASKS[@]}"; do
     "$OUTPUT_DIR/rooter.pt" "$OUTPUT_DIR/training_history.json" "$OUTPUT_DIR/eval_metrics.json" \
     "$OUTPUT_DIR/prediction_manifest.json" "$OUTPUT_DIR/config.json" \
     "$OUTPUT_DIR/training_nmse.pdf" "$OUTPUT_DIR/result_manifest.json"
-  mark_manifest_completed "$OUTPUT_DIR" ts_ifa.pt branches.pt rooter.pt training_history.json eval_metrics.json prediction_manifest.json config.json training_nmse.pdf result_manifest.json
+  mark_manifest_ready "$OUTPUT_DIR" ts_ifa.pt branches.pt rooter.pt training_history.json eval_metrics.json prediction_manifest.json config.json training_nmse.pdf result_manifest.json
 done
 log_section "job done kind=ts_ifa_training family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE tasks=${#TASKS[@]} output=$RESULTS_ROOT"

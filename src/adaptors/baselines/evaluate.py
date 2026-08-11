@@ -7,7 +7,6 @@ import gc
 import json
 import logging
 from pathlib import Path
-import shutil
 from time import perf_counter
 from typing import Any, Sequence
 
@@ -17,6 +16,7 @@ import torch
 from einops import rearrange
 
 from src.data.neighbors import neighbor_to_query_scale
+from src.experiment_runs import prepare_run_output
 from src.experiments.prediction_store import PredictionStore
 from src.experiments.runtime import log_experiment_separator, setup_logging
 from src.experiments.splits import chronological_resplit_arrays
@@ -2430,9 +2430,7 @@ def main() -> dict[str, Path]:
     missing_payloads = [path for path in payload_paths if not path.is_file()]
     if missing_payloads:
         raise FileNotFoundError(f"missing extraction payloads: {missing_payloads}")
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    prepare_run_output(output_dir)
     arrays_by_split: dict[str, dict[str, np.ndarray]] = {}
     for prefix, payload_path in zip(("adapt", "eval"), payload_paths, strict=True):
         payload = torch_load(payload_path)

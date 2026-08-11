@@ -10,7 +10,21 @@ FORCE_RUN="${FORCE_RUN:-false}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
 EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
 export EXPERIMENT_LAUNCH_ID
-trap 'status=$?; if [ "$status" -ne 0 ] && [ -n "${PROJECT_ROOT:-}" ]; then python -m experiment_runs interrupt-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" || true; fi' EXIT
+source "${PROJECT_ROOT:-$(pwd)}/src/slurm/publish_results.sh"
+
+adaptation_on_exit() {
+  local status=$?
+  trap - EXIT
+  if [ "$status" -ne 0 ] && [ -n "${PROJECT_ROOT:-}" ]; then
+    python -m experiment_runs interrupt-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
+  elif python -m experiment_runs complete-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
+    submit_publish_job || true
+  else
+    status=$?
+  fi
+  exit "$status"
+}
+trap adaptation_on_exit EXIT
 
 log() {
   printf '%s %s\n' "$(date -Is)" "$*"
@@ -276,27 +290,32 @@ allocate_manifest_run() {
 }
 
 mark_manifest_running() {
+  python -m experiment_runs prepare --run-dir "$1" >/dev/null
   python -m experiment_runs status --run-dir "$1" --status running
 }
 
-mark_manifest_completed() {
+mark_manifest_ready() {
   local run_dir="$1"
   shift
   local artifact
   local -a args=()
   for artifact in "$@"; do args+=(--artifact "$artifact"); done
-  python -m experiment_runs status --run-dir "$run_dir" --status completed "${args[@]}"
+  python -m experiment_runs ready --run-dir "$run_dir" "${args[@]}"
 }
 
 resolve_extraction_run() {
   local dataset="$1" lags="$2" horizon="$3" backbone="$4" space="$5" metric="$6" neighbors="$7" mode="$8"
   local identity_root="$PROJECT_ROOT/outputs/extraction/$dataset/${lags}_${horizon}/${backbone,,}/${space,,}/${metric,,}/$neighbors/${mode,,}"
-  local label manifest_id extra
+  local label manifest_id extra pair
+  local -a resolve_args=(--config-policy distinct --repeat-policy selected)
+  if [ -n "${EXTRACTION_PIPELINE_CONFIGS:-}" ]; then
+    for pair in ${EXTRACTION_PIPELINE_CONFIGS}; do resolve_args+=(--pipeline-config "$pair"); done
+  fi
   IFS=$'\t' read -r EXTRACTION_RUN_DIR label manifest_id extra < <(
-    python -m experiment_runs resolve --identity-root "$identity_root" --config-policy selected --repeat-policy selected
+    python -m experiment_runs resolve --identity-root "$identity_root" "${resolve_args[@]}"
   )
   if [ -z "${EXTRACTION_RUN_DIR:-}" ] || [ -n "${extra:-}" ]; then
-    log_error "expected exactly one selected extraction run identity=$identity_root"
+    log_error "expected exactly one extraction pipeline identity=$identity_root; set EXTRACTION_PIPELINE_CONFIGS='key=value ...' when multiple pipeline configs exist"
     return 1
   fi
   python -m experiment_runs validate --run-dir "$EXTRACTION_RUN_DIR" >/dev/null

@@ -68,6 +68,11 @@ def main() -> None:
     assert neighbor_defaults.count("3") == 3
     assert 'DEFAULT_SETTINGS_CSV="504:168"' in text
     assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 5
+    assert "DEFAULT_DATASTORE_STRIDE=25" in text
+    assert "DEFAULT_ADAPT_QUERY_STRIDE=25" in text
+    assert "DEFAULT_EVAL_QUERY_STRIDE=127" in text
+    assert "DEFAULT_ALIGN_PERIOD=false" in text
+    assert "DEFAULT_ALIGN_PERIOD=true" in text
     assert 'permits only K=3' in text
 
     ts_ifa_fronts = (
@@ -98,12 +103,24 @@ def main() -> None:
     profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
         encoding="utf-8"
     )
+    extraction_runner = (ROOT / "src" / "slurm" / "extract_adaptation.sh").read_text(
+        encoding="utf-8"
+    )
+    assert 'ALIGN_PERIOD="${ALIGN_PERIOD:-$DEFAULT_ALIGN_PERIOD}"' in extraction_runner
+    assert '[ "$ALIGN_PERIOD" = true ] || alignment_args+=(--no-align-period)' in extraction_runner
+    assert '"data.align_period=$ALIGN_PERIOD"' in extraction_runner
     assert "SELECTED_NEIGHBORS=()" in profile_runner
     assert 'append_unique SELECTED_NEIGHBORS "$group_neighbors"' in profile_runner
     assert 'append_unique SELECTED_NEIGHBORS "$k"' in profile_runner
     assert 'NEIGHBORS_CSV="$(join_csv_values "${SELECTED_NEIGHBORS[@]}")"' in profile_runner
     assert 'PIPELINES+=("$family/$run/$method")' in profile_runner
     assert 'PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")' in profile_runner
+    assert 'run_groups chronos2' in profile_runner
+    assert re.search(
+        r'run_method_group \\\s+chronos-bolt "\$CANDIDATE_FAMILY"', profile_runner
+    )
+    assert 'CHRONOS2_PIPELINES_CSV="$CHRONOS2_PIPELINE"' in profile_runner
+    assert 'CHRONOS_BOLT_PIPELINES_CSV="$CHRONOS_BOLT_CANDIDATE_PIPELINE,crossrag/' in profile_runner
 
     common = (ROOT / "src" / "slurm" / "common.sh").read_text(encoding="utf-8")
     assert "copy_if_needed()" in common
@@ -142,11 +159,17 @@ def main() -> None:
         "k_ablation.slurm",
         "h_ablation.slurm",
         "l_ablation.slurm",
-        "crossrag.slurm",
     ):
         assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in (
             ROOT / selected_front
         ).read_text(encoding="utf-8")
+    crossrag_front = (ROOT / "crossrag.slurm").read_text(encoding="utf-8")
+    assert (
+        'WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/'
+        'full_ridge_shared}"'
+    ) in crossrag_front
+    assert 'same method then runs on Chronos-Bolt at K=15' in crossrag_front
+    assert 'DEFAULT_MODELS_CSV="chronos2,chronos-bolt"' in text
     for family_front in (
         "horizon_baselines_ablation.slurm",
         "convex_baselines_ablation.slurm",
@@ -244,6 +267,10 @@ def main() -> None:
     assert "k_ablation_average_${METRIC}_improvement" in table_runner
     assert "ts_ifa/TS-IFA" not in table_runner
     assert "validates every selected dataset/setting/model/" in table_runner
+    assert 'MODEL_PIPELINES_CSV="$CHRONOS2_PIPELINES_CSV"' in table_runner
+    assert 'chronos-bolt) MODEL_PIPELINES_CSV="$CHRONOS_BOLT_PIPELINES_CSV"' in table_runner
+    assert 'MODEL_FAMILY_ARG="$CANDIDATE_FAMILY"' in table_runner
+    assert '--candidate-formula "$CANDIDATE_METHOD"' in table_runner
     crossrag_evaluator = (
         ROOT / "src" / "adaptors" / "cross_rag" / "evaluate.py"
     ).read_text(encoding="utf-8")
@@ -267,6 +294,16 @@ def main() -> None:
     assert 'variant="${design}_convex_shared"' in family_runner
     assert 'variant="${design}_delta_ridge_shared"' in family_runner
     assert "positive_window_pct" in common
+    assert 'python -m experiment_runs prepare --run-dir "$1"' in common
+    baseline_evaluator = (
+        ROOT / "src" / "adaptors" / "baselines" / "evaluate.py"
+    ).read_text(encoding="utf-8")
+    ts_ifa_trainer = (
+        ROOT / "src" / "adaptors" / "ts_ifa" / "train.py"
+    ).read_text(encoding="utf-8")
+    for run_writer in (baseline_evaluator, ts_ifa_trainer):
+        assert "prepare_run_output(output_dir)" in run_writer
+        assert "shutil.rmtree(output_dir)" not in run_writer
 
 
 if __name__ == "__main__":

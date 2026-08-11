@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-07
+Updated: 2026-08-11
 
 SCHEMA V1 CUTOVER (CURRENT HANDOFF)
 - Current table-eligible runs: none. The synchronized extraction copy omits the
@@ -11,8 +11,17 @@ SCHEMA V1 CUTOVER (CURRENT HANDOFF)
   applies only to the legacy contract and is superseded for execution.
 - New roots are outputs/extraction and outputs/adaptation/<family>; reports use
   outputs/reports/<family>/<mode>. Mode only selects identity subsets.
-- Next cluster action: rerun the test extraction, baseline, gate, and table
-  sequence under schema 1 before restarting screen/benchmark/ablation work.
+- Smoke extraction job 42774 completed both the vanilla and raw-Euclidean K=3
+  identities under schema 1. Jobs 42775 and 42776 then computed the first
+  baseline/gate result but failed because those evaluators deleted their
+  allocated `run_0/manifest.json` before the completion update. Their
+  manifest-less result folders are invalid partial runs. Run allocation now
+  reclaims such folders, and every writer preserves schema-owned metadata.
+- Next cluster action: keep the completed job 42774 smoke extractions, resubmit
+  the test baseline and gate fronts, and submit the test table front after both
+  succeed. Then restart screen/benchmark/ablation work. Publication extractions
+  use unaligned datastore/T1+T2/T3 strides 25/25/127 and must be rerun under
+  this contract.
 - The scientific findings below remain recorded, but no archived run may enter
   a current table.
 

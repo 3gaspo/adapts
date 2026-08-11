@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import time
 import uuid
 from dataclasses import dataclass
@@ -17,7 +18,7 @@ from typing import Any, Iterable, Mapping, Sequence
 SCHEMA_VERSION = 1
 MANIFEST_NAME = "manifest.json"
 SELECTION_NAME = "SELECTED_RUNS.txt"
-VALID_STATUSES = {"not_run", "running", "interrupted", "completed"}
+VALID_STATUSES = {"not_run", "running", "ready", "interrupted", "completed"}
 RUN_PATTERN = re.compile(r"run_(\d+)$")
 
 
@@ -164,9 +165,50 @@ def _run_dirs(identity_root: Path) -> list[Path]:
     if not identity_root.exists():
         return []
     return sorted(
-        (path for path in identity_root.iterdir() if path.is_dir() and RUN_PATTERN.fullmatch(path.name)),
+        (
+            path
+            for path in identity_root.iterdir()
+            if path.is_dir()
+            and RUN_PATTERN.fullmatch(path.name)
+            and (path / MANIFEST_NAME).is_file()
+        ),
         key=lambda path: int(RUN_PATTERN.fullmatch(path.name).group(1)),  # type: ignore[union-attr]
     )
+
+
+def _clear_run_contents(run_dir: Path, *, preserve: Iterable[str] = ()) -> None:
+    """Remove generated run contents while retaining schema-owned metadata."""
+    if not run_dir.exists():
+        return
+    preserved = {MANIFEST_NAME, "manifest_history", *preserve}
+    for path in run_dir.iterdir():
+        if path.name in preserved:
+            continue
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+
+def prepare_run_output(run_dir: str | Path) -> Path:
+    """Reset one allocated output directory without deleting its manifest."""
+    root = Path(run_dir).expanduser().resolve()
+    manifest_path = root / MANIFEST_NAME
+    if manifest_path.is_file():
+        manifest = load_manifest(root)
+        if manifest["status"] == "completed":
+            raise ManifestError(f"refusing to prepare completed run without allocation: {root}")
+        completed_seeds = {
+            f"seed_{seed}"
+            for seed, state in manifest.get("seed_status", {}).items()
+            if state.get("status") == "completed"
+        }
+        _clear_run_contents(root, preserve=completed_seeds)
+    else:
+        if root.exists():
+            shutil.rmtree(root)
+        root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 def _archive_manifest(run_dir: Path, manifest: Mapping[str, Any]) -> None:
@@ -334,6 +376,8 @@ def _allocate_run_unlocked(
 
     if old_manifest is not None and action == "overwrite":
         _archive_manifest(target, old_manifest)
+    if action in {"new", "overwrite"}:
+        _clear_run_contents(target)
     now = utc_now()
     effective_launch_id = str(launch_id or os.environ.get("SLURM_JOB_ID") or uuid.uuid4())
     attempt = {
@@ -385,6 +429,7 @@ def _allocate_run_unlocked(
             "launch_id": effective_launch_id,
             "launched_at_utc": now,
             "started_at_utc": None,
+            "ready_at_utc": None,
             "finished_at_utc": None,
             "mode": mode,
             "attempts": attempts,
@@ -436,19 +481,20 @@ def mark_status(
     now = utc_now()
     if status == "running":
         manifest["launch"]["started_at_utc"] = manifest["launch"].get("started_at_utc") or now
-    if status == "completed":
+    if status in {"ready", "completed"}:
         missing = [name for name in required_artifacts if not (root / name).is_file()]
         empty = [name for name in required_artifacts if (root / name).is_file() and (root / name).stat().st_size == 0]
         if missing or empty:
-            raise ManifestError(f"cannot complete {root}: missing={missing} empty={empty}")
+            raise ManifestError(f"cannot mark {status} {root}: missing={missing} empty={empty}")
         records = [
             {"path": name, "size": (root / name).stat().st_size}
             for name in required_artifacts
         ]
-        manifest["artifacts"] = {"required": list(required_artifacts), "files": records}
-        manifest["launch"]["finished_at_utc"] = now
     if seed is None:
         manifest["status"] = status
+        if status == "completed":
+            manifest["artifacts"] = {"required": list(required_artifacts), "files": records}
+            manifest["launch"]["finished_at_utc"] = now
         for item in manifest.get("seed_status", {}).values():
             if item.get("status") != "completed" or status == "completed":
                 item["status"] = status
@@ -459,13 +505,60 @@ def mark_status(
         manifest["seed_status"][key]["status"] = status
         manifest["seed_status"][key]["artifacts"] = list(required_artifacts)
         states = {item["status"] for item in manifest["seed_status"].values()}
-        manifest["status"] = "completed" if states == {"completed"} else ("running" if "running" in states else "interrupted")
-        if manifest["status"] == "completed":
-            manifest["launch"]["finished_at_utc"] = now
+        manifest["status"] = "running" if states & {"running", "ready", "completed"} else "interrupted"
     _atomic_json(root / MANIFEST_NAME, manifest)
     if manifest["status"] == "completed":
         _update_auto_selection(root, manifest)
     return manifest
+
+
+def mark_ready(run_dir: str | Path, *, required_artifacts: Sequence[str]) -> dict[str, Any]:
+    """Record finished artifacts without completing the run before its process exits."""
+    root = Path(run_dir).expanduser().resolve()
+    manifest = load_manifest(root)
+    if manifest["status"] != "running":
+        raise ManifestError(f"run is not running: {root}")
+    missing = [name for name in required_artifacts if not (root / name).is_file()]
+    empty = [name for name in required_artifacts if (root / name).is_file() and (root / name).stat().st_size == 0]
+    if missing or empty:
+        raise ManifestError(f"cannot mark ready {root}: missing={missing} empty={empty}")
+    manifest["artifacts"] = {
+        "required": list(required_artifacts),
+        "files": [{"path": name, "size": (root / name).stat().st_size} for name in required_artifacts],
+    }
+    manifest["launch"]["ready_at_utc"] = utc_now()
+    for item in manifest.get("seed_status", {}).values():
+        if item.get("status") != "completed":
+            item["status"] = "ready"
+        item["artifacts"] = list(required_artifacts)
+    _atomic_json(root / MANIFEST_NAME, manifest)
+    return manifest
+
+
+def complete_launch(root: str | Path, launch_id: str) -> list[Path]:
+    """Complete ready runs only after their owning Slurm process returned successfully."""
+    changed: list[Path] = []
+    base = Path(root).expanduser().resolve()
+    if not base.exists():
+        return changed
+    for manifest_path in sorted(base.rglob(MANIFEST_NAME)):
+        if "archive" in manifest_path.relative_to(base).parts:
+            continue
+        manifest = load_manifest(manifest_path)
+        launch = manifest.get("launch", {})
+        if (
+            manifest["status"] == "running"
+            and str(launch.get("launch_id")) == str(launch_id)
+            and launch.get("ready_at_utc")
+        ):
+            manifest["status"] = "completed"
+            manifest["launch"]["finished_at_utc"] = utc_now()
+            for item in manifest.get("seed_status", {}).values():
+                item["status"] = "completed"
+            _atomic_json(manifest_path, manifest)
+            _update_auto_selection(manifest_path.parent, manifest)
+            changed.append(manifest_path.parent)
+    return changed
 
 
 def validate_completed(run_dir: str | Path) -> dict[str, Any]:
@@ -473,9 +566,6 @@ def validate_completed(run_dir: str | Path) -> dict[str, Any]:
     manifest = load_manifest(root)
     if manifest["status"] != "completed":
         raise ManifestError(f"run is not completed: {root}")
-    missing = [name for name in manifest.get("artifacts", {}).get("required", []) if not (root / name).is_file()]
-    if missing:
-        raise ManifestError(f"completed run is missing required artifacts: {missing}")
     return manifest
 
 
@@ -515,7 +605,7 @@ def select_identity_runs(
     repeat_policy: str = "selected",
     purposes: Iterable[str] | None = None,
 ) -> list[SelectedRun]:
-    if config_policy not in {"distinct", "latest", "selected", "average"}:
+    if config_policy not in {"distinct", "latest", "average"}:
         raise ValueError(f"unknown config policy: {config_policy}")
     if repeat_policy not in {"distinct", "latest", "selected", "average"}:
         raise ValueError(f"unknown repeat policy: {repeat_policy}")
@@ -534,15 +624,8 @@ def select_identity_runs(
     for item in candidates:
         groups.setdefault(item[1]["signatures"]["pipeline"], []).append(item)
     selections = _parse_selections(root)
-    if config_policy in {"latest", "selected"} and len(groups) > 1:
-        if config_policy == "latest":
-            chosen = max(candidates, key=_latest_key)[1]["signatures"]["pipeline"]
-        else:
-            selected_names = {run for _, run in selections.values()}
-            selected_candidates = [item for item in candidates if item[0].name in selected_names]
-            if not selected_candidates:
-                raise ManifestError(f"{root} has no selected completed configuration")
-            chosen = max(selected_candidates, key=_latest_key)[1]["signatures"]["pipeline"]
+    if config_policy == "latest" and len(groups) > 1:
+        chosen = max(candidates, key=_latest_key)[1]["signatures"]["pipeline"]
         groups = {chosen: groups[chosen]}
 
     differing_keys: set[str] = set()
@@ -591,18 +674,26 @@ def write_report_manifest(
     payload = {
         "schema_version": SCHEMA_VERSION,
         "created_at_utc": utc_now(),
-        "config_policy": config_policy,
-        "repeat_policy": repeat_policy,
-        "filters": dict(filters),
-        "inputs": [
-            {
-                "manifest_id": item.manifest["manifest_id"],
-                "path": str(item.run_dir / MANIFEST_NAME),
-                "label": item.label,
-                "pipeline_signature": item.manifest["signatures"]["pipeline"],
-            }
-            for item in inputs
-        ],
+        "launch_id": os.environ.get("EXPERIMENT_LAUNCH_ID") or os.environ.get("SLURM_JOB_ID"),
+        "requested": {
+            "config_policy": config_policy,
+            "repeat_policy": repeat_policy,
+            "filters": dict(filters),
+        },
+        "obtained": {
+            "count": len(inputs),
+            "inputs": [
+                {
+                    "manifest_id": item.manifest["manifest_id"],
+                    "path": str(item.run_dir / MANIFEST_NAME),
+                    "label": item.label,
+                    "pipeline_signature": item.manifest["signatures"]["pipeline"],
+                    "pipeline_config": dict(item.manifest.get("config", {}).get("pipeline", {})),
+                    "purposes": list(item.manifest.get("purposes", [])),
+                }
+                for item in inputs
+            ],
+        },
     }
     _atomic_json(path, payload)
     return path
@@ -672,6 +763,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     status.add_argument("--artifact", action="append", default=[])
     status.add_argument("--seed", type=int)
 
+    ready = commands.add_parser("ready")
+    ready.add_argument("--run-dir", required=True)
+    ready.add_argument("--artifact", action="append", default=[])
+
+    prepare = commands.add_parser("prepare")
+    prepare.add_argument("--run-dir", required=True)
+
     validate = commands.add_parser("validate")
     validate.add_argument("--run-dir", required=True)
 
@@ -685,13 +783,17 @@ def main(argv: Sequence[str] | None = None) -> None:
     interrupt.add_argument("--root", required=True)
     interrupt.add_argument("--launch-id", required=True)
 
+    complete = commands.add_parser("complete-launch")
+    complete.add_argument("--root", required=True)
+    complete.add_argument("--launch-id", required=True)
+
     pending = commands.add_parser("pending-seeds")
     pending.add_argument("--run-dir", required=True)
 
     resolve = commands.add_parser("resolve")
     resolve.add_argument("--identity-root", required=True)
     resolve.add_argument("--pipeline-config", action="append", default=[])
-    resolve.add_argument("--config-policy", default="selected")
+    resolve.add_argument("--config-policy", default="distinct")
     resolve.add_argument("--repeat-policy", default="selected")
     resolve.add_argument("--purpose", action="append", default=[])
 
@@ -728,6 +830,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(f"{result.run_dir}\t{result.action}\t{result.computation_signature}")
     elif args.command == "status":
         mark_status(args.run_dir, args.status, required_artifacts=args.artifact, seed=args.seed)
+    elif args.command == "ready":
+        mark_ready(args.run_dir, required_artifacts=args.artifact)
+    elif args.command == "prepare":
+        print(prepare_run_output(args.run_dir))
     elif args.command == "validate":
         validate_completed(args.run_dir)
         print(Path(args.run_dir).expanduser().resolve())
@@ -735,6 +841,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         set_selected_run(args.identity_root, args.pipeline_signature, args.run, pinned=not args.auto)
     elif args.command == "interrupt-launch":
         for run_dir in interrupt_launch(args.root, args.launch_id):
+            print(run_dir)
+    elif args.command == "complete-launch":
+        for run_dir in complete_launch(args.root, args.launch_id):
             print(run_dir)
     elif args.command == "pending-seeds":
         manifest = load_manifest(args.run_dir)

@@ -27,13 +27,17 @@ SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
-DATASTORE_STRIDE_OVERRIDE="${DATASTORE_STRIDE:-}"
-DATASTORE_STRIDE="${DATASTORE_STRIDE_OVERRIDE:-$DEFAULT_DATASTORE_STRIDE}"
+DATASTORE_STRIDE="${DATASTORE_STRIDE:-$DEFAULT_DATASTORE_STRIDE}"
 ADAPT_QUERY_STRIDE="${ADAPT_QUERY_STRIDE:-$DEFAULT_ADAPT_QUERY_STRIDE}"
 EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
+ALIGN_PERIOD="${ALIGN_PERIOD:-$DEFAULT_ALIGN_PERIOD}"
 MAX_STORE_WINDOWS="${MAX_STORE_WINDOWS:-$DEFAULT_MAX_STORE_WINDOWS}"
 require_resolved_profile_grid
 require_profile_neighbors "$NEIGHBORS_CSV"
+case "$ALIGN_PERIOD" in
+  true|false) ;;
+  *) log_error "ALIGN_PERIOD must be true or false (got $ALIGN_PERIOD)"; exit 1 ;;
+esac
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -80,16 +84,14 @@ model_kwargs() {
 run_extraction() {
   local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
   local dataset_dir config model_options retrieval_period datastore_stride
-  local data_args=()
+  local data_args=() alignment_args=()
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
   model_options="$(model_kwargs "$model")"
   retrieval_period="${PERIOD_OVERRIDE:-$(dataset_period "$dataset")}"
   datastore_stride="$DATASTORE_STRIDE"
-  if [ -z "$DATASTORE_STRIDE_OVERRIDE" ]; then
-    datastore_stride="$(aligned_datastore_stride "$DEFAULT_DATASTORE_STRIDE" "$retrieval_period")"
-  fi
+  [ "$ALIGN_PERIOD" = true ] || alignment_args+=(--no-align-period)
   srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \
     --dataset-name "$dataset" \
@@ -101,6 +103,7 @@ run_extraction() {
     --adapt-stride "$ADAPT_QUERY_STRIDE" \
     --eval-stride "$EVAL_QUERY_STRIDE" \
     --period "$retrieval_period" \
+    "${alignment_args[@]}" \
     --neighbors "$neighbors" \
     --distance-space "$space" \
     --distance-metric "$metric" \
@@ -162,9 +165,6 @@ run_task() {
   H="$SETTING_HORIZON"
   retrieval_period="${PERIOD_OVERRIDE:-$(dataset_period "$dataset")}"
   datastore_stride="$DATASTORE_STRIDE"
-  if [ -z "$DATASTORE_STRIDE_OVERRIDE" ]; then
-    datastore_stride="$(aligned_datastore_stride "$DEFAULT_DATASTORE_STRIDE" "$retrieval_period")"
-  fi
   MODEL_ROOT="$OUT_ROOT/$dataset/${L}_${H}/$model"
   # Resolve before loading a multi-GB model so a missing dataset fails promptly.
   find_dataset_dir "$dataset" >/dev/null
@@ -188,7 +188,8 @@ run_task() {
   pipeline_values=(
     "data.splits=$SPLITS" "data.datastore_stride=$datastore_stride"
     "data.adapt_query_stride=$ADAPT_QUERY_STRIDE" "data.eval_query_stride=$EVAL_QUERY_STRIDE"
-    "data.period=$retrieval_period" "data.max_store_windows=$MAX_STORE_WINDOWS"
+    "data.period=$retrieval_period" "data.align_period=$ALIGN_PERIOD"
+    "data.max_store_windows=$MAX_STORE_WINDOWS"
     "normalization=instance"
   )
   dataset_dir="$(find_dataset_dir "$dataset")"
@@ -202,7 +203,7 @@ run_task() {
     return
   fi
   mark_manifest_running "$run_root"
-  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting run=$run_root computation_signature=$ALLOCATED_SIGNATURE period=$retrieval_period datastore_stride=$datastore_stride adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
+  log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting run=$run_root computation_signature=$ALLOCATED_SIGNATURE period=$retrieval_period align_period=$ALIGN_PERIOD datastore_stride=$datastore_stride adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
   run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root"
   require_extraction "$run_root"
   required_artifacts=(
@@ -211,7 +212,7 @@ run_task() {
     extraction_timing.json extraction_manifest.json
   )
   if [ "$neighbors" -eq 0 ]; then required_artifacts+=(vanilla_metrics.json); fi
-  mark_manifest_completed "$run_root" "${required_artifacts[@]}"
+  mark_manifest_ready "$run_root" "${required_artifacts[@]}"
   log "extraction done configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting"
 }
 

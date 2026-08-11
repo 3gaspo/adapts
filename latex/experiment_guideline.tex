@@ -674,11 +674,12 @@ The first $n_1$ and last $n_2$ whole dates form $\Tone$ and $\Ttwo$,
 respectively, so $\Tpool=\Tone\cup\Ttwo$ and the two sets are disjoint; users
 on the same date are never split.
 
-\subsection{Dynamically aligned datastores}
+\subsection{Datastore date grids}
 
-Let $P$ be the retrieval period and $D_{\rm stride}$ the datastore stride,
-with $P\mid D_{\rm stride}$. Before optional explicit history bounds, define
-the admissible endpoint pair
+Let $P$ be the retrieval period, $D_{\rm stride}>0$ the datastore stride, and
+$A\in\{0,1\}$ the period-alignment indicator. Alignment requires
+$P\mid D_{\rm stride}$. Before optional explicit history bounds, define the
+admissible endpoint pair
 \[
  (a_s,b_s)=
  \begin{cases}
@@ -686,11 +687,15 @@ the admissible endpoint pair
   (L-1,s-H),&\text{online mode}.
  \end{cases}
 \]
-The first phase-aligned candidate is
-$r_s^{\rm align}=a_s+((s-a_s)\bmod P)$, and the uncapped date grid is
+The first candidate and uncapped date grid are
 \[
- \mathcal G_s=\{r_s^{\rm align}+\ell D_{\rm stride}:\ell\in\mathbb N_0,\
- r_s^{\rm align}+\ell D_{\rm stride}\leq b_s\}.
+ r_s^{A}=\begin{cases}
+ a_s+((s-a_s)\bmod P),&A=1,\\
+ a_s,&A=0,
+ \end{cases}
+ \qquad
+ \mathcal G_s=\{r_s^{A}+\ell D_{\rm stride}:\ell\in\mathbb N_0,\
+ r_s^{A}+\ell D_{\rm stride}\leq b_s\}.
 \]
 Let $\operatorname{Tail}_M(\mathcal G)$ denote the $M$ most recent ordered
 elements of $\mathcal G$, with
@@ -702,10 +707,8 @@ $+\infty$, and \code{full_online_history} omits the last term. The code returns
 \[
  \mathcal R_s=\operatorname{Tail}_{M_s}(\mathcal G_s).
 \]
-Thus every $r\in\mathcal R_s$ satisfies
-\[
- (s-r)\bmod P=0.
-\]
+Thus $A=1$ implies $(s-r)\bmod P=0$ for every
+$r\in\mathcal R_s$; $A=0$ imposes no phase constraint.
 In fixed mode, both $(r-L,r]$ and $(r,r+H]$ lie in $\Tzero$. In online mode,
 \[
  r\geq L-1,\qquad r+H\leq s,
@@ -713,8 +716,8 @@ In fixed mode, both $(r-L,r]$ and $(r,r+H]$ lie in $\Tzero$. In online mode,
 so the neighbour future is already observed. It may overlap the query
 lookback, but never the query target.
 
-Without an explicit override, the code first counts the phase-aligned dates
-that a fixed $\Tzero$ store would provide for the current query. The online
+Without an explicit override, the code first counts the dates that a fixed
+$\Tzero$ store would provide under the same value of $A$. The online
 store then keeps that many \emph{most recent} eligible dates, subject to the
 30,000-window cap. Thus the store slides forward without growing merely
 because the query is later. \code{full_online_history} removes this implicit
@@ -754,8 +757,9 @@ candidate predictions are introduced.
 Dataset loaders discover \code{config.json} beside the selected CSV. Portable
 fields live at the JSON top level and adaptation-only overrides under
 \code{adaptation}. Project-scoped values override shared values, explicit run
-arguments override both, and \code{drop_users} is additive. The resolved path,
-content hash, and applied keys are recorded in the extraction manifest.
+arguments override both, and \code{drop_users} is additive. The resolved path
+and applied keys are recorded in the extraction manifest; no file content hash
+is created.
 
 \section{TS-IFA}
 \label{sec:tsifa}
@@ -1242,13 +1246,32 @@ directories; code/data changes are manual rerun decisions. The schema changes
 only for a deliberate global contract break, and \code{new} creates another
 repeat with unchanged parameters. The default \code{overwrite_exact} collision policy skips exact completion,
 resumes exact interruption, and adds \code{run_n} for a changed pipeline.
-Tables support distinct/latest/selected/average pipeline configurations and
-selected/latest/distinct/average exact repeats. Explicit pipeline filters must
-match even with one run. \code{SELECTED_RUNS.txt} records automatic or pinned
-selection, and every report records its exact manifests. Unmigratable legacy
+Before a non-skipped attempt becomes running, schema-owned preparation removes
+stale generated artifacts while preserving \code{manifest.json}, archived
+manifest history, and completed \code{seed_n} leaves. Computation entry points
+never delete the allocated \code{run_n} root. A manifest-less \code{run_n} is
+an invalid partial directory and is reclaimed by the next allocation at that
+index.
+Finished work remains \code{ready}; completion is recorded only by the owning
+Slurm workflow's final successful exit. Completed manifests are
+authoritative and are not followed by file hashing or synchronization checks.
+Tables support distinct/latest/average pipeline configurations and
+selected/latest/distinct/average exact repeats. Explicit pipeline filters
+select configurations and must match even with one run.
+\code{SELECTED_RUNS.txt} records only automatic or pinned exact repeats, and
+every report records requested filters and obtained manifests. Unmigratable legacy
 material is isolated under
 \code{archive/legacy_pre_schema_v1_2026-08-07} and is never read by
 current tables.
+
+After a successful root workflow, the launcher submits \code{publish.slurm}
+with an \code{afterok} dependency. The handoff contains only the producer's exact
+stdout/stderr and launch-tagged run/report roots. The publisher excludes
+\code{*.pt}, \code{*.npy}, and \code{*.cbm}, commits only those paths on
+\code{main}, sources \code{$HOME/proxy.sh} using the ignored two-line
+\code{.secrets/proxy.credentials}, and pushes \code{origin/main} without pulling
+or creating a pull request. Set \code{PUBLISH_RESULTS=false} to disable it; the
+same script accepts \code{--job-id} for a manual retry.
 
 Table construction accepts only current result manifests, keeps selected
 pipelines family-qualified, and requires complete dataset--setting--model

@@ -13,11 +13,6 @@ dataset_period() {
   esac
 }
 
-aligned_datastore_stride() {
-  local requested="$1" period="$2"
-  printf '%s\n' "$(( (requested + period - 1) / period * period ))"
-}
-
 # The primary screen compares variable sets in the most flexible shared-ridge
 # family. Convex, delta-ridge, and per-horizon forms are candidate-only ablations.
 PRIMARY_BASELINE_METHODS_CSV="cov_forecast,avgy,y_mean,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared"
@@ -38,9 +33,10 @@ adaptation_profile_defaults() {
   DEFAULT_DISTANCE_SPACES_CSV=""
   DEFAULT_DISTANCE_METRICS_CSV="euclidean"
   DEFAULT_NEIGHBORS_CSV=""
-  DEFAULT_DATASTORE_STRIDE=24
-  DEFAULT_ADAPT_QUERY_STRIDE=24
-  DEFAULT_EVAL_QUERY_STRIDE=128
+  DEFAULT_DATASTORE_STRIDE=25
+  DEFAULT_ADAPT_QUERY_STRIDE=25
+  DEFAULT_EVAL_QUERY_STRIDE=127
+  DEFAULT_ALIGN_PERIOD=false
   DEFAULT_MAX_STORE_WINDOWS=30000
 
   case "$profile" in
@@ -53,6 +49,7 @@ adaptation_profile_defaults() {
       DEFAULT_DATASTORE_STRIDE=168
       DEFAULT_ADAPT_QUERY_STRIDE=256
       DEFAULT_EVAL_QUERY_STRIDE=256
+      DEFAULT_ALIGN_PERIOD=true
       DEFAULT_MAX_STORE_WINDOWS=2048
       ;;
     screen|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation)
@@ -106,7 +103,7 @@ adaptation_profile_defaults() {
       ;;
     crossrag)
       DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
-      DEFAULT_MODELS_CSV="chronos-bolt"
+      DEFAULT_MODELS_CSV="chronos2,chronos-bolt"
       DEFAULT_SETTINGS_CSV="512:64"
       DEFAULT_DISTANCE_SPACES_CSV="minmax"
       DEFAULT_DISTANCE_METRICS_CSV="cosine"

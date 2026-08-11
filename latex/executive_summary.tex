@@ -3,7 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern,microtype}
 \usepackage[margin=15mm,top=14mm,bottom=15mm]{geometry}
-\usepackage{amsmath,booktabs,tabularx,array,xcolor,graphicx,caption,fancyhdr,hyperref}
+\usepackage{amsmath,amssymb,booktabs,tabularx,array,xcolor,graphicx,caption,fancyhdr,hyperref}
 
 \definecolor{navy}{HTML}{16324F}
 \definecolor{blue}{HTML}{2563A6}
@@ -27,139 +27,161 @@
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 \newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\model}[1]{\nolinkurl{#1}}
 \newcommand{\gain}[1]{\textcolor{green}{+#1\%}}
 \newcommand{\loss}[1]{\textcolor{red}{#1\%}}
+\newcommand{\best}[1]{\textbf{\textcolor{green}{#1}}}
 \newcommand{\sectionbar}[1]{\vspace{2pt}{\large\bfseries\color{navy}#1}\par\vspace{2pt}\color{black}}
-\newcommand{\callout}[1]{\colorbox{lightblue}{\parbox{0.965\linewidth}{\small #1}}}
 
 \begin{document}
 {\huge\bfseries\color{navy}Retrieval-based forecast adaptation}\par
 {\Large\color{blue}Executive summary of results}\par
 \vspace{5pt}
 
-\callout{\textbf{Evaluation basis.} Screen and ablation averages weight equally
-the 12 held-out T3 dataset/window configurations (Electricity, Traffic, Solar,
-Exchange Rate; three $(L,H)$ settings). Gains are nMSE improvements over the
-vanilla forecast; positive is better.}
-
-\sectionbar{Decision snapshot}
-\small
-\begin{tabularx}{\linewidth}{@{}p{31mm}Yp{45mm}@{}}
-\toprule
-\textbf{Question} & \textbf{Quantitative answer} & \textbf{Decision} \\
-\midrule
-Best baseline? & Shared full ridge, instance-space, reaches
-\gain{2.733} at $K=3$ in the screen and \gain{2.991} at $K=10$ in the
-$K$ sweep. & Retain the vanilla-anchored ridge family. \\
-Best gate? & Best screen gate: \gain{0.019}; best gate ablation:
-\gain{0.045}; diagnostic oracle: up to \gain{13.34}. & Current learned gates
-do not capture the available oracle headroom. \\
-Convex or $\Delta$? & Mean over six matched designs: ridge \gain{2.427},
-$\Delta$-ridge \gain{1.251}, convex \gain{0.783}. & Both constraints remain
-positive but are dominated by ordinary ridge. \\
-Does TS-IFA work? & The 10K ridge run reaches only \gain{0.04} on T3; 30K
-ridge fits fall to \loss{-6.71} and \loss{-17.97}. & No robust success; select
-on the fixed T2 criterion and stop earlier. \\
-\bottomrule
-\end{tabularx}
-
-\sectionbar{Best average baselines and gates}
-\begin{tabularx}{\linewidth}{@{}Yp{25mm}p{24mm}r@{}}
-\toprule
-\textbf{Method} & \textbf{Retrieval} & \textbf{Evidence set} &
-\textbf{Mean T3 gain} \\
-\midrule
-Shared full ridge correction & instance, $K=10$ & $K$ sweep & \gain{2.991} \\
-Shared context--future ridge correction & instance, $K=20$ & $K$ sweep & \gain{2.954} \\
-Shared future--forecast ridge correction & instance, $K=20$ & $K$ sweep & \gain{2.861} \\
-Shared full ridge correction & instance, $K=3$ & primary screen & \gain{2.733} \\
-\midrule
-Per-horizon Bayes context gate & instance, $K=1$ & gate ablation & \gain{0.045} \\
-Shared CatBoost neighbour-average gate & instance, $K=3$ & primary screen & \gain{0.019} \\
-Shared CatBoost context gate & instance, $K=1$ & primary screen & \gain{0.015} \\
-Shared neighbour-average oracle & instance, $K=3$ & diagnostic oracle & \gain{13.34} \\
-\bottomrule
-\end{tabularx}
-
-\sectionbar{Winning formulas, written out}
+\sectionbar{Adaptation pipeline and notations}
 \footnotesize
-Let $V_h$ be the vanilla forecast, $C_h$ the context forecast, $Y_{k,h}$ the
-$k$th neighbour's observed future, $N_{k,h}$ its backbone forecast, and
-$\bar Y_h=\sum_k w_kY_{k,h}$. The shared coefficients below are fitted by ridge
-to the correction target $Y_h-V_h$ and are common to every horizon:
+For query lookback $X$ and target $T\in\mathbb R^H$, the frozen backbone $F$
+produces the vanilla forecast $V=F(X)$. Retrieval returns $K$ historical pairs
+$(X_k,Y_k)$ with distance weights $w_k$; their backbone forecasts are
+$N_k=F(X_k)$, their weighted future is $\bar Y=\sum_{k=1}^{K}w_kY_k$, and the
+retrieved pairs also produce the covariate-conditioned forecast
+$C=F(X;\{(X_k,Y_k)\}_{k=1}^{K})$. The adaptor maps
+$(V,C,Y_{1:K},N_{1:K},\bar Y)$ to the final forecast $\widehat T$.
+For a candidate adaptation $A$, its realized advantage over vanilla is
 \[
-\begin{aligned}
-\widehat Y_h^{\mathrm{full}}&=V_h+\beta_VV_h+\beta_CC_h+
- \sum_{k=1}^{K}(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h}),\\
-\widehat Y_h^{\mathrm{context+future}}&=V_h+\beta_VV_h+\beta_CC_h+
- \sum_{k=1}^{K}\beta^Y_kY_{k,h},\\
-\widehat Y_h^{\mathrm{future+forecast}}&=V_h+\beta_VV_h+
- \sum_{k=1}^{K}(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h}).
-\end{aligned}
+\Delta(A)=\frac1H\sum_{h=1}^{H}\left[(T_h-V_h)^2-(T_h-A_h)^2\right].
 \]
-For the best gate, $\widehat Y_h=C_h$ exactly when the T1+T2 mean of
-$(Y_h-V_h)^2-(Y_h-C_h)^2$ is positive, otherwise $\widehat Y_h=V_h$.
-The shared CatBoost gates use $\widehat Y_h=A_h$ when
-$g_\theta(z)>0$, otherwise $V_h$, where $A\in\{\bar Y,C\}$ and $g_\theta$
-regresses the mean squared-error reduction from $V$ to $A$.
+
+We propose various \textit{baselines} corresponding to different formulas fitted on $C=F(X;\{(X_k,Y_k)\}_{k=1}^{K})$ to predict $T$,
+as well as \textit{gates} which take binary decisions to choose between $V$ and a given non-trainable adaptor $A \in \{C, \overline{Y}\}$.
+
+\sectionbar{Practical details}
+\scriptsize
+\begin{tabularx}{\linewidth}{@{}p{27mm}Y@{}}
+\toprule
+\textbf{Component} & \textbf{Protocol} \\
+\midrule
+Datasets & Electricity, Traffic, Solar, and \code{exchange_rate}. \\
+Settings & $(L,H)\in\{(168,24),(336,48),(504,168)\}$: 12 dataset--setting configurations. \\
+Backbone & Frozen \model{chronos2}. \\
+Splits & $T_0$ datastore (30\%); $T_1$ training (40\%); $T_2$ validation (20\%), $T_3$ eval (20\%). \\
+\bottomrule
+\end{tabularx}
+
+For a given configuation $c$ and method $m$, we consider the mean relative improvement in nMSE over vanilla $v$:
+\[
+I_{m,c}=100\frac{\operatorname{nMSE}_{m,c} - \operatorname{nMSE}_{m,v}}{\operatorname{nMSE}_{m,v}}\ \%.
+\]
+Tables report the mean of $I_{m,c}$ over the 12 held-out $T_3$ configurations.
+
+\sectionbar{Selected baseline and gate candidates}
+\scriptsize
+\begin{tabularx}{\linewidth}{@{}p{43mm}Yp{20mm}cr@{}}
+\toprule
+\textbf{Code name} & \textbf{Forecast formula} & \textbf{Space} &
+\textbf{$K$} & \textbf{T3 gain} \\
+\midrule
+\model{full_ridge_shared} &
+$V_h+\beta_VV_h+\beta_CC_h+\sum_k(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h})$
+& instance & 3 & \gain{2.733} \\
+\model{y_ridge_shared} &
+$V_h+\beta_VV_h+\sum_k\beta^Y_kY_{k,h}$
+& instance & 3 & \gain{2.293} \\
+\model{cov_y_ridge_shared} &
+$V_h+\beta_VV_h+\beta_CC_h+\sum_k\beta^Y_kY_{k,h}$
+& instance & 3 & \gain{2.546} \\
+\model{residual_ridge_shared} &
+$V_h+\beta_VV_h+\sum_k(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h})$
+& instance & 3 & \gain{2.539} \\
+\model{cov_avgy_ridge_shared} &
+$V_h+\beta_VV_h+\beta_CC_h+\beta_{\bar Y}\bar Y_h$
+& raw & 3 & \gain{2.306} \\
+\model{cov_ridge_shared} &
+$V_h+\beta_VV_h+\beta_CC_h$
+& raw & 3 & \gain{2.142} \\
+\midrule
+\model{catboost_avgy_regressor_shared} & $G(\bar Y;g_\theta(z))_h$
+& instance & 3 & \gain{0.019} \\
+\model{catboost_cov_regressor_shared} & $G(C;g_\theta(z))_h$
+& instance & 1 & \gain{0.015} \\
+\model{bayes_cov_shared} & $G(C;b(C))_h$
+& instance & 1 & \loss{-0.003} \\
+\bottomrule
+\end{tabularx}
+
+All six ridge candidates improve the mean held-out nMSE, whereas the three
+selected gates are effectively tied with vanilla. The strongest candidate at
+its screened configuration is \model{full_ridge_shared} at \gain{2.733}.
 
 \newpage
 \sectionbar{Formulation ablations}
-\small
+\footnotesize
+Each row holds the variable design and retrieval pipeline fixed. The
+$\Delta$-ridge and convex code names replace \code{_ridge_shared} by
+\code{_delta_ridge_shared} and \code{_convex_shared}, respectively.
+
 \begin{tabularx}{\linewidth}{@{}Yrrr@{}}
 \toprule
-\textbf{Matched feature design} & \textbf{Ridge} & \textbf{$\Delta$-ridge} &
-\textbf{Convex} \\
+\textbf{Shared-ridge control (code name)} & \textbf{Ridge} &
+\textbf{$\Delta$-ridge} & \textbf{Convex} \\
 \midrule
-Full $(C,Y_{1:K},N_{1:K})$ & 2.733\% & 1.515\% & 0.635\% \\
-$Y_{1:K}$ & 2.293\% & 1.347\% & 1.209\% \\
-$C+Y_{1:K}$ & 2.546\% & 1.468\% & 1.115\% \\
-$Y_{1:K}+N_{1:K}$ & 2.539\% & 1.339\% & 0.330\% \\
-$C+\bar Y$ & 2.306\% & 1.183\% & 1.063\% \\
-$C$ & 2.142\% & 0.652\% & 0.347\% \\
-\midrule
-\textbf{Mean over designs} & \textbf{2.427\%} & \textbf{1.251\%} &
-\textbf{0.783\%} \\
-Mean loss versus matched ridge & -- & $-1.176$ pp & $-1.643$ pp \\
+\model{full_ridge_shared} & \best{2.733\%} & 1.515\% & 0.635\% \\
+\model{y_ridge_shared} & \best{2.293\%} & 1.347\% & 1.209\% \\
+\model{cov_y_ridge_shared} & \best{2.546\%} & 1.468\% & 1.115\% \\
+\model{residual_ridge_shared} & \best{2.539\%} & 1.339\% & 0.330\% \\
+\model{cov_avgy_ridge_shared} & \best{2.306\%} & 1.183\% & 1.063\% \\
+\model{cov_ridge_shared} & \best{2.142\%} & 0.652\% & 0.347\% \\
 \bottomrule
 \end{tabularx}
+
+Ordinary shared ridge is best for every matched design.
 
 \vspace{4pt}
 \sectionbar{Effect of the neighbour count $K$}
 \begin{center}
 \includegraphics[width=0.97\linewidth]{k_ablation_ridge_curves.pdf}
 \captionof{figure}{Mean held-out T3 nMSE improvement over 12 configurations.
-Only ridge baselines are shown: most improve from $K=1$ toward $K=10$--20,
-with no common optimum across feature designs.}
+Only the six selected ridge baselines are plotted.}
 \end{center}
 
 \footnotesize
-\begin{tabularx}{\linewidth}{@{}YcrYc@{}}
+\begin{tabularx}{\linewidth}{@{}Yp{18mm}p{18mm}cr@{}}
 \toprule
-\textbf{Ridge} & \textbf{Best $K$} & \textbf{Gain} & \textbf{Ridge} &
-\textbf{Best $K$ / gain} \\
+\textbf{Candidate (code name)} & \textbf{Family} & \textbf{Space} &
+\textbf{Best $K$} & \textbf{T3 gain} \\
 \midrule
-Full & 10 & 2.991\% & $C+Y$ & 20 / 2.954\% \\
-Residual & 20 & 2.861\% & $C+\bar Y$ & 15 / 2.777\% \\
-$Y$ & 20 & 2.661\% & $C$ & 15 / 2.435\% \\
+\model{full_ridge_shared} & baseline & instance & 10 & \gain{2.991} \\
+\model{y_ridge_shared} & baseline & instance & 20 & \gain{2.661} \\
+\model{cov_y_ridge_shared} & baseline & instance & 20 & \gain{2.954} \\
+\model{residual_ridge_shared} & baseline & instance & 20 & \gain{2.861} \\
+\model{cov_avgy_ridge_shared} & baseline & raw & 15 & \gain{2.777} \\
+\model{cov_ridge_shared} & baseline & raw & 15 & \gain{2.435} \\
+\midrule
+\model{catboost_avgy_regressor_shared} & gate & instance & 3 & \gain{0.019} \\
+\model{catboost_cov_regressor_shared} & gate & instance & 1 & \gain{0.015} \\
+\model{bayes_cov_shared} & gate & instance & 1 & \loss{-0.003} \\
 \bottomrule
 \end{tabularx}
 
+The ridge candidates peak between $K=10$ and $K=20$; the gates peak at their
+screen values and remain negligible. The unfinished $K=100$ extension is not
+included.
+
 \newpage
 \sectionbar{TS-IFA results}
-\small
-\begin{tabularx}{\linewidth}{@{}YrrY@{}}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}p{48mm}p{20mm}rrY@{}}
 \toprule
-\textbf{Run} & \textbf{T2 gain} & \textbf{T3 gain} &
+\textbf{Code name} & \textbf{Space / steps} & \textbf{T2 gain} & \textbf{T3 gain} &
 \textbf{Checkpoint / held-out behaviour} \\
 \midrule
-Joint ridge, raw, 10K & +1.84\% & +0.04\% & Window gains
+\model{joint_ridge_horizon_unconstrained_full} & raw / 10K & +1.84\% & +0.04\% & Window gains
 $+3.26,+0.58,-3.72$\%; all three select 10K. \\
-Joint ridge, raw, 30K & +3.03\% & $-6.71$\% & Selected at
+\model{joint_ridge_horizon_unconstrained_full} & raw / 30K & +3.03\% & $-6.71$\% & Selected at
 $29/20/20$K for $(168/24,336/48,504/168)$. \\
-Joint ridge, instance, 30K & +3.25\% & $-17.97$\% & Selected at
+\model{joint_ridge_horizon_unconstrained_full} & instance / 30K & +3.25\% & $-17.97$\% & Selected at
 $30/26/20$K for the same windows. \\
-Joint neural, raw / instance, 30K & -- & $-4.60/-2.14$\% & Zero T3 wins. \\
+\model{joint_neural_horizon_unconstrained_full} & raw / instance, 30K & -- & $-4.60/-2.14$\% & Zero T3 wins. \\
 \bottomrule
 \end{tabularx}
 
@@ -171,25 +193,9 @@ evaluation on one fixed set, so it need not be monotone. The colored T2 trace
 uses a fixed set and selects 10K for all three windows.}
 \end{center}
 
-\callout{\textbf{Answer.} TS-IFA does not yet work reliably. The 30K runs
-generalize worse than the 10K run. Four of six ridge fits select their best T2
-checkpoint at 20--26K, while the two $168/24$ fits select 29--30K; better T2
-selection still does not translate to T3.}
-
-\sectionbar{Decisions before reruns}
-\footnotesize
-\begin{tabularx}{\linewidth}{@{}p{34mm}Y@{}}
-\toprule
-\textbf{Retain} & \textbf{Reason supported above} \\
-\midrule
-Ridge candidates & Reproduce the $K=3$ screen and test $K=10,15,20$ with the
-same held-out evaluation. \\
-Gate diagnostics & Retain hard CatBoost/Bayes gates and oracles to measure the
-unclosed 13.34\% diagnostic gap. \\
-TS-IFA & Re-run with explicit T2 early stopping and untouched T3; include the
-10K checkpoint and continue only while the fixed-set T2 criterion improves. \\
-\bottomrule
-\end{tabularx}
+TS-IFA is not reliable on held-out T3. Longer runs improve T2 selection but
+worsen T3, with the largest failures at $H=168$; the raw 10K ridge pilot remains
+the least-bad aggregate result at \gain{0.04}.
 
 \vfill
 {\scriptsize\color{gray}Source: screen, CatBoost, convex, delta, $K$ and TS-IFA

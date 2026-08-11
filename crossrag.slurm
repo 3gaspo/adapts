@@ -10,9 +10,9 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Copy exactly one complete winner name from screen's pipeline_ranking.csv.
-# Its formula and normalization are retained; K is set to 15 for comparison.
-WINNERS_CSV="${WINNERS_CSV:-}"
+# The selected winner runs first on Chronos-2 with its own retrieval K. The
+# same method then runs on Chronos-Bolt at K=15 beside released Cross-RAG.
+WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/full_ridge_shared}"
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY=crossrag
