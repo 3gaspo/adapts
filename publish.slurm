@@ -8,6 +8,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=1G
 
+set -euo pipefail
+
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 export PROJECT_ROOT

@@ -144,42 +144,53 @@ publish_results_main() {
     ':(exclude,glob)**/*.npy'
     ':(exclude,glob)**/*.cbm'
   )
-  git add -v -f -- "${paths[@]}" "${exclusions[@]}"
-  if ! git diff --cached --quiet -- "${paths[@]}" "${exclusions[@]}"; then
-    if [ -z "$message" ]; then
-      message="slurm: publish ${PRODUCER_JOB_NAME:-job} ${producer_job_id:-manual}"
+  command -v flock >/dev/null 2>&1 || {
+    printf 'publisher requires flock to serialize repository updates\n' >&2
+    return 1
+  }
+  (
+    if ! flock -w "${PUBLISH_LOCK_TIMEOUT:-600}" 9; then
+      printf 'timed out waiting for the repository publisher lock\n' >&2
+      exit 1
     fi
-    git commit --only -m "$message" -- "${paths[@]}" "${exclusions[@]}"
-  else
-    publish_log "no new changes to commit; attempting push"
-  fi
-
-  if [ "${USE_PROXY:-true}" != false ]; then
-    proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
-    credentials_file="${PROXY_CREDENTIALS_FILE:-$HOME/codes/.secrets/proxy.credentials}"
-    [ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; return 1; }
-    [ -f "$credentials_file" ] || { printf 'proxy credentials not found: %s\n' "$credentials_file" >&2; return 1; }
-    credential_mode="$(stat -c '%a' "$credentials_file")"
-    case "$credential_mode" in
-      400|600) ;;
-      *) printf 'proxy credentials must use chmod 600 (or 400): %s\n' "$credentials_file" >&2; return 1 ;;
-    esac
-    case "$-" in *x*) had_xtrace=1 ;; esac
-    set +x
-    # shellcheck disable=SC1090
-    if . "$proxy_script" --credentials-file "$credentials_file"; then
-      proxy_status=0
+    publish_log "acquired repository publisher lock"
+    git add -v -f -- "${paths[@]}" "${exclusions[@]}"
+    if ! git diff --cached --quiet -- "${paths[@]}" "${exclusions[@]}"; then
+      if [ -z "$message" ]; then
+        message="slurm: publish ${PRODUCER_JOB_NAME:-job} ${producer_job_id:-manual}"
+      fi
+      git commit --only -m "$message" -- "${paths[@]}" "${exclusions[@]}"
     else
-      proxy_status=$?
+      publish_log "no new changes to commit; attempting push"
     fi
-    unset PASS NNI
-    [ "$had_xtrace" -eq 1 ] && set -x
-    if [ "$proxy_status" -ne 0 ] || [ "${NOEXPORT:-1}" -ne 0 ] || [ -z "${https_proxy:-}" ]; then
-      printf 'proxy authentication failed\n' >&2
-      return 1
+
+    if [ "${USE_PROXY:-true}" != false ]; then
+      proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
+      credentials_file="${PROXY_CREDENTIALS_FILE:-$HOME/codes/.secrets/proxy.credentials}"
+      [ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; return 1; }
+      [ -f "$credentials_file" ] || { printf 'proxy credentials not found: %s\n' "$credentials_file" >&2; return 1; }
+      credential_mode="$(stat -c '%a' "$credentials_file")"
+      case "$credential_mode" in
+        400|600) ;;
+        *) printf 'proxy credentials must use chmod 600 (or 400): %s\n' "$credentials_file" >&2; return 1 ;;
+      esac
+      case "$-" in *x*) had_xtrace=1 ;; esac
+      set +x
+      # shellcheck disable=SC1090
+      if . "$proxy_script" --credentials-file "$credentials_file"; then
+        proxy_status=0
+      else
+        proxy_status=$?
+      fi
+      unset PASS NNI
+      [ "$had_xtrace" -eq 1 ] && set -x
+      if [ "$proxy_status" -ne 0 ] || [ "${NOEXPORT:-1}" -ne 0 ] || [ -z "${https_proxy:-}" ]; then
+        printf 'proxy authentication failed\n' >&2
+        return 1
+      fi
     fi
-  fi
-  git push origin main
+    git push origin main
+  ) 9>"$project_root/.git/slurm-publish.lock"
 }
 
 if [ "${BASH_SOURCE[0]}" = "$0" ]; then
