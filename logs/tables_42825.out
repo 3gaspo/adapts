@@ -1,0 +1,21 @@
+
+2026-08-11T11:33:58+02:00 job start kind=adaptation_tables experiment_mode=test datasets=Electricity models=chronos2 settings=504_168 families=baselines,gates metric=nmse distance_metrics=euclidean methods=cov_forecast,avgy,y_mean,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared,cov_forecast,avgy,bayes_cov_shared,bayes_avgy_shared,catboost_cov_regressor_shared,catboost_avgy_regressor_shared,oracle_cov_shared,oracle_avgy_shared table_kinds=full,average results_root=outputs/adaptation
+
+2026-08-11T11:33:58+02:00 table start model=chronos2 kind=full metric=nmse split=eval decimals=2 output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/full
+LaTeX table written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/full/baselines_results.tex
+LaTeX table written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/full/gates_results.tex
+2026-08-11T11:34:06+02:00 table done model=chronos2 kind=full output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/full
+
+2026-08-11T11:34:06+02:00 table start model=chronos2 kind=average metric=nmse split=eval decimals=2 output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/average
+LaTeX table written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/average/baselines_results.tex
+LaTeX table written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/average/gates_results.tex
+LaTeX table written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/average/positive_windows_results.tex
+2026-08-11T11:34:11+02:00 table done model=chronos2 kind=average output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/average
+
+2026-08-11T11:34:11+02:00 baseline coefficient plots start model=chronos2 output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/coefficients
+Baseline coefficient outputs written: 14
+Coefficient index written to /home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/coefficients/coefficient_index.csv
+2026-08-11T11:34:16+02:00 baseline coefficient plots done model=chronos2 output=/home/h61084/codes/adapts/outputs/reports/tables/test/chronos2/coefficients
+
+2026-08-11T11:34:16+02:00 job done kind=adaptation_tables output=/home/h61084/codes/adapts/outputs/reports/tables/test
+2026-08-11T11:34:18+02:00 publish | submitted afterok publisher job=42830 producer=42825

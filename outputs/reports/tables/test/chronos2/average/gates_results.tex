@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.24.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lc}
+\toprule
+Model & raw\_L2\_3 \\
+\midrule
+cov & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.76\%}\\{\scriptsize 0.26}\end{tabular} \\
+avgy & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-118.62\%}\\{\scriptsize 0.53}\end{tabular} \\
+bayes-cov-s & \begin{tabular}{@{}c@{}}\textbf{0.00\%}\\{\scriptsize 0.24}\end{tabular} \\
+cb-cov-reg-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.02\%}\\{\scriptsize 0.24}\end{tabular} \\
+bayes-avgy-s & \begin{tabular}{@{}c@{}}\textbf{0.00\%}\\{\scriptsize 0.24}\end{tabular} \\
+cb-avgy-reg-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.03\%}\\{\scriptsize 0.24}\end{tabular} \\
+\midrule
+oracle-cov-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{7.07\%}\\{\scriptsize 0.23}\end{tabular} \\
+oracle-avgy-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{4.45\%}\\{\scriptsize 0.23}\end{tabular} \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results-average}
+\end{table}
