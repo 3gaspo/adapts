@@ -1268,8 +1268,8 @@ After a successful root workflow, the launcher submits \code{publish.slurm}
 with an \code{afterok} dependency. The handoff contains only the producer's exact
 stdout/stderr and launch-tagged run/report roots. The publisher excludes
 \code{*.pt}, \code{*.npy}, and \code{*.cbm}, commits only those paths on
-\code{main}, sources \code{$HOME/proxy.sh} using the ignored two-line
-\code{.secrets/proxy.credentials}, and pushes \code{origin/main} without pulling
+\code{main}, sources \code{$HOME/codes/proxy.sh} using the shared two-line
+\code{$HOME/codes/.secrets/proxy.credentials}, and pushes \code{origin/main} without pulling
 or creating a pull request. Set \code{PUBLISH_RESULTS=false} to disable it; the
 same script accepts \code{--job-id} for a manual retry.
 

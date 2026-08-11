@@ -155,8 +155,8 @@ publish_results_main() {
   fi
 
   if [ "${USE_PROXY:-true}" != false ]; then
-    proxy_script="${PROXY_SCRIPT_PATH:-$HOME/proxy.sh}"
-    credentials_file="${PROXY_CREDENTIALS_FILE:-$project_root/.secrets/proxy.credentials}"
+    proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
+    credentials_file="${PROXY_CREDENTIALS_FILE:-$HOME/codes/.secrets/proxy.credentials}"
     [ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; return 1; }
     [ -f "$credentials_file" ] || { printf 'proxy credentials not found: %s\n' "$credentials_file" >&2; return 1; }
     credential_mode="$(stat -c '%a' "$credentials_file")"
