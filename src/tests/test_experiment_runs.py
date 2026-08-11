@@ -11,6 +11,7 @@ from experiment_runs import (
     allocate_run,
     complete_launch,
     load_manifest,
+    interrupt_launch,
     mark_ready,
     mark_status,
     prepare_run_output,
@@ -193,6 +194,41 @@ class ExperimentRunsTest(unittest.TestCase):
 
             artifact.unlink()
             self.assertEqual(validate_completed(allocation.run_dir)["status"], "completed")
+
+    def test_ready_run_is_selectable_only_inside_its_own_active_launch(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            allocation = self._allocate(identity, 10)
+            mark_status(allocation.run_dir, "running")
+            artifact = allocation.run_dir / "result.json"
+            artifact.write_text('{"mse": 1.0}\n', encoding="utf-8")
+            mark_ready(allocation.run_dir, required_artifacts=["result.json"])
+
+            with self.assertRaises(ManifestError):
+                select_identity_runs(identity)
+            with self.assertRaises(ManifestError):
+                select_identity_runs(identity, allow_ready_launch_id="another_launch")
+            selected = select_identity_runs(
+                identity, allow_ready_launch_id="launch_10_default"
+            )
+            self.assertEqual([choice.run_dir for choice in selected], [allocation.run_dir])
+            self.assertEqual(
+                validate_completed(
+                    allocation.run_dir,
+                    allow_ready_launch_id="launch_10_default",
+                )["status"],
+                "running",
+            )
+            with self.assertRaises(ManifestError):
+                validate_completed(
+                    allocation.run_dir, allow_ready_launch_id="another_launch"
+                )
+
+            interrupt_launch(folder, "launch_10_default")
+            with self.assertRaises(ManifestError):
+                select_identity_runs(
+                    identity, allow_ready_launch_id="launch_10_default"
+                )
 
     def test_report_manifest_records_requested_and_obtained(self):
         with tempfile.TemporaryDirectory() as folder:

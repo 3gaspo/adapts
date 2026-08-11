@@ -5,10 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from experiment_runs import load_manifest, select_identity_runs, write_report_manifest
+from experiment_runs import (
+    load_manifest,
+    manifest_is_selectable,
+    select_identity_runs,
+    write_report_manifest,
+)
 from .results_table import _latex
 
 
@@ -41,6 +47,7 @@ def build_timing_table(
 ) -> str:
     adaptation_file = {"baselines": "baseline_timing.json", "gates": "gate_timing.json"}[candidate_family]
     selected = []
+    active_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
     identity_roots = sorted(
         {
             path.parent.parent
@@ -51,7 +58,7 @@ def build_timing_table(
     )
     for identity_root in identity_roots:
         manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
-        if any(manifest["status"] == "completed" for manifest in manifests):
+        if any(manifest_is_selectable(manifest, allow_ready_launch_id=active_launch) for manifest in manifests):
             selected.extend(
                 select_identity_runs(
                     identity_root,
@@ -59,6 +66,7 @@ def build_timing_table(
                     config_policy=config_policy,
                     repeat_policy=repeat_policy,
                     purposes=purposes,
+                    allow_ready_launch_id=active_launch,
                 )
             )
 

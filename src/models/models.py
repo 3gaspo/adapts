@@ -225,7 +225,7 @@ def load_model(
     Built-ins include ``persistence``, ``linear``, ``patchtst``, ``chronos2``,
     ``chronos-bolt``, and ``tabpfnts``.
     """
-    from .chronos_model import Chronos, ChronosBolt
+    from .chronos_model import Chronos
     from .patchtst import PatchTST
     from .tabpfn_model import TabPFNTS
 
@@ -235,9 +235,12 @@ def load_model(
         "linear": Linear,
         "patchtst": PatchTST,
         "chronos2": Chronos,
-        "chronos-bolt": ChronosBolt,
         "tabpfnts": TabPFNTS,
     }
+    if key == "chronos-bolt":
+        from .chronos_bolt import ChronosBolt
+
+        registry[key] = ChronosBolt
     if key not in registry:
         raise ValueError(f"unknown extraction model {name!r}")
     base = registry[key](lags=lags, dim=dim, horizon=horizon, **kwargs)

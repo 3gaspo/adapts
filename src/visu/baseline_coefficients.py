@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -19,7 +20,12 @@ import numpy as np
 import pandas as pd
 import torch
 
-from experiment_runs import load_manifest, select_identity_runs, write_report_manifest
+from experiment_runs import (
+    load_manifest,
+    manifest_is_selectable,
+    select_identity_runs,
+    write_report_manifest,
+)
 
 
 RESULT_FORMAT = "adaptation_evaluation_result"
@@ -245,9 +251,10 @@ def export_baseline_coefficient_plots(
         }
     )
     selected = []
+    active_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
     for identity_root in identity_roots:
         manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
-        if not any(manifest["status"] == "completed" for manifest in manifests):
+        if not any(manifest_is_selectable(manifest, allow_ready_launch_id=active_launch) for manifest in manifests):
             continue
         selected.extend(
             select_identity_runs(
@@ -256,6 +263,7 @@ def export_baseline_coefficient_plots(
                 config_policy=config_policy,
                 repeat_policy=repeat_policy,
                 purposes=purposes,
+                allow_ready_launch_id=active_launch,
             )
         )
     for choice in selected:

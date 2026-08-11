@@ -248,6 +248,11 @@ def main() -> None:
     for runner in (baseline_runner, gate_runner, crossrag_runner):
         assert 'OUT_ROOT="${OUT_ROOT:-outputs/extraction}"' in runner
         assert "copy_if_needed" not in runner
+    assert "find_weight_path chronos-bolt-base" in crossrag_runner
+    assert "find_weight_path cross-rag" in crossrag_runner
+    assert '--chronos-bolt-weights "$CHRONOS_BOLT_WEIGHTS_PATH"' in crossrag_runner
+    assert '--cross-rag-weights "$CROSSRAG_WEIGHTS_PATH"' in crossrag_runner
+    assert "CROSSRAG_ROOT" not in crossrag_runner
     assert 'OUT_ROOT="${OUT_ROOT:-outputs/extraction}"' in ts_ifa_runner
     assert "copy_if_needed" not in ts_ifa_runner
     assert "TS_IFA_GRID" in ts_ifa_runner
@@ -276,6 +281,8 @@ def main() -> None:
     ).read_text(encoding="utf-8")
     assert '"format": "adaptation_crossrag_result"' in crossrag_evaluator
     assert '"positive_window_pct"' in crossrag_evaluator
+    assert "from src.models.cross_rag import" in crossrag_evaluator
+    assert "importlib" not in crossrag_evaluator
 
     family_runner = (
         ROOT / "src" / "slurm" / "run_baseline_family_ablation.sh"

@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import argparse
 from collections import OrderedDict
-import importlib
 import json
 import logging
-import os
 from pathlib import Path
-import sys
 from time import perf_counter
-import types
 from typing import Any, Sequence
 
 import torch
@@ -19,6 +15,7 @@ from einops import rearrange
 from transformers import AutoConfig
 
 from src.experiments.runtime import log_experiment_separator, setup_logging
+from src.models.cross_rag import ChronosBoltModelForForecastingWithRetrieval
 
 
 LOGGER = logging.getLogger(__name__)
@@ -34,43 +31,31 @@ def _torch_load(path: Path) -> Any:
         return torch.load(path, map_location="cpu")
 
 
-def _code_root(root: Path) -> Path:
-    candidates = (root, root / "cross-rag")
-    for candidate in candidates:
-        if (candidate / "models" / "CrossRAG.py").is_file():
-            return candidate.resolve()
-    raise FileNotFoundError(
-        f"cannot find models/CrossRAG.py below {root}; clone the official Cross-RAG repository"
-    )
+def _checkpoint_file(path: Path) -> Path:
+    if path.is_file():
+        return path
+    matches = sorted(path.rglob("best.pth")) if path.is_dir() else []
+    if len(matches) != 1:
+        raise FileNotFoundError(
+            f"expected one Cross-RAG best.pth below {path}, found {len(matches)}"
+        )
+    return matches[0]
 
 
 def _load_model(
-    crossrag_root: Path,
     base_checkpoint: Path,
     checkpoint: Path,
     device: torch.device,
 ) -> torch.nn.Module:
-    code_root = _code_root(crossrag_root)
-    os.environ["INPUT_LEN"] = str(EXPECTED_LAGS)
-    os.environ["RETRIEVE_SPACE"] = "X"
-    package_name = "_adaptation_crossrag_release_models"
-    package = types.ModuleType(package_name)
-    package.__path__ = [str(code_root / "models")]  # type: ignore[attr-defined]
-    sys.modules[package_name] = package
-    sys.path.insert(0, str(code_root))
-    try:
-        module = importlib.import_module(f"{package_name}.CrossRAG")
-    finally:
-        sys.path.pop(0)
-    model_class = module.ChronosBoltModelForForecastingWithRetrieval
     config = AutoConfig.from_pretrained(
         str(base_checkpoint),
         local_files_only=True,
     )
-    model = model_class.from_pretrained(
+    model = ChronosBoltModelForForecastingWithRetrieval.from_pretrained(
         str(base_checkpoint),
         config=config,
         augment="moe",
+        context_length=EXPECTED_LAGS,
         local_files_only=True,
     )
     state = _torch_load(checkpoint)
@@ -168,9 +153,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--crossrag-root", required=True)
-    parser.add_argument("--base-checkpoint", required=True)
-    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--chronos-bolt-weights", required=True)
+    parser.add_argument("--cross-rag-weights", required=True)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--device", default="cuda")
     return parser.parse_args(argv)
@@ -185,9 +169,10 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         raise ValueError("--batch-size must be positive")
     input_dir = Path(args.input_dir).expanduser().resolve()
     output_dir = Path(args.output_dir).expanduser().resolve()
-    crossrag_root = Path(args.crossrag_root).expanduser().resolve()
-    base_checkpoint = Path(args.base_checkpoint).expanduser().resolve()
-    checkpoint = Path(args.checkpoint).expanduser().resolve()
+    base_checkpoint = Path(args.chronos_bolt_weights).expanduser().resolve()
+    checkpoint = _checkpoint_file(
+        Path(args.cross_rag_weights).expanduser().resolve()
+    )
     for path, kind in (
         (input_dir / "eval_prediction_payload.pt", "evaluation payload"),
         (base_checkpoint, "Chronos-Bolt base checkpoint"),
@@ -200,7 +185,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
     _validate_shapes(arrays)
     device = torch.device(args.device)
     model_started = perf_counter()
-    model = _load_model(crossrag_root, base_checkpoint, checkpoint, device)
+    model = _load_model(base_checkpoint, checkpoint, device)
     model_load_seconds = perf_counter() - model_started
     quantiles = model.quantiles.detach().float().cpu()
     median_index = int(torch.abs(quantiles - 0.5).argmin().item())

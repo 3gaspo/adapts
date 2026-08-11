@@ -24,20 +24,16 @@ DISTANCE_SPACES_CSV="${DISTANCE_SPACES_CSV:-$DEFAULT_DISTANCE_SPACES_CSV}"
 DISTANCE_METRICS_CSV="${DISTANCE_METRICS_CSV:-$DEFAULT_DISTANCE_METRICS_CSV}"
 NEIGHBORS_CSV="${NEIGHBORS_CSV:-$DEFAULT_NEIGHBORS_CSV}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
-CROSSRAG_ROOT="${CROSSRAG_ROOT:-}"
-CROSSRAG_BASE_CHECKPOINT="${CROSSRAG_BASE_CHECKPOINT:-}"
-CROSSRAG_CHECKPOINT="${CROSSRAG_CHECKPOINT:-}"
+CHRONOS_BOLT_WEIGHTS_PATH="${CHRONOS_BOLT_WEIGHTS_PATH:-}"
+[ -n "$CHRONOS_BOLT_WEIGHTS_PATH" ] || \
+  CHRONOS_BOLT_WEIGHTS_PATH="$(find_weight_path chronos-bolt-base)"
+CROSSRAG_WEIGHTS_PATH="${CROSSRAG_WEIGHTS_PATH:-}"
+[ -n "$CROSSRAG_WEIGHTS_PATH" ] || \
+  CROSSRAG_WEIGHTS_PATH="$(find_weight_path cross-rag)"
 CROSSRAG_BATCH_SIZE="${CROSSRAG_BATCH_SIZE:-256}"
 CROSSRAG_DEVICE="${CROSSRAG_DEVICE:-cuda}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
 require_resolved_profile_grid
-
-for variable in CROSSRAG_ROOT CROSSRAG_BASE_CHECKPOINT CROSSRAG_CHECKPOINT; do
-  if [ -z "${!variable}" ]; then
-    log_error "$variable must point to the downloaded official Cross-RAG repository/checkpoint"
-    return 2
-  fi
-done
 
 csv_to_array "$DATASETS_CSV" DATASETS
 csv_to_array "$MODELS_CSV" MODELS
@@ -96,8 +92,8 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   pipeline_values=("batch_size=$CROSSRAG_BATCH_SIZE")
   ADDITIONAL_INPUTS=(
     "vanilla_manifest=$EXTRACTION_RUN_DIR/manifest.json"
-    "crossrag_base_checkpoint=$CROSSRAG_BASE_CHECKPOINT"
-    "crossrag_checkpoint=$CROSSRAG_CHECKPOINT"
+    "chronos_bolt_weights=$CHRONOS_BOLT_WEIGHTS_PATH"
+    "crossrag_weights=$CROSSRAG_WEIGHTS_PATH"
   )
   allocate_manifest_run "$identity_root" adaptation/crossrag "$dataset" "$L" "$H" "$model" \
     formula,space,metric,k,mode crossrag formula space,metric,k,mode \
@@ -113,9 +109,8 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   srun --ntasks=1 python -m src.adaptors.cross_rag.evaluate \
     --input-dir "$INPUT_DIR" \
     --output-dir "$OUTPUT_DIR" \
-    --crossrag-root "$CROSSRAG_ROOT" \
-    --base-checkpoint "$CROSSRAG_BASE_CHECKPOINT" \
-    --checkpoint "$CROSSRAG_CHECKPOINT" \
+    --chronos-bolt-weights "$CHRONOS_BOLT_WEIGHTS_PATH" \
+    --cross-rag-weights "$CROSSRAG_WEIGHTS_PATH" \
     --batch-size "$CROSSRAG_BATCH_SIZE" \
     --device "$CROSSRAG_DEVICE"
   assert_files crossrag-output \

@@ -12,6 +12,7 @@
 
 # The selected winner runs first on Chronos-2 with its own retrieval K. The
 # same method then runs on Chronos-Bolt at K=15 beside released Cross-RAG.
+# Put the released weights under weights/chronos-bolt-base and weights/cross-rag.
 WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/full_ridge_shared}"
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"

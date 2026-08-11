@@ -58,8 +58,10 @@ outputs/extraction/dataset/L_H/backbone/space/metric/k/mode/run_n/
 
 The vanilla extraction uses `none/none/0/none`. Each completed run contains the
 adapt/eval prediction and feature payloads plus the scientific extraction
-manifest. Downstream jobs select an explicit completed extraction manifest;
-they never infer one from a similarly named directory.
+manifest. Independently submitted downstream jobs select an explicit completed
+extraction manifest; they never infer one from a similarly named directory.
+Within one multi-stage Slurm launch, a later stage may select a ready manifest
+only when it carries that same launch ID.
 
 Every independently submitted comparison or ablation owns a workflow root
 below `outputs/adaptation/`, for example `baselines`, `gates`, `benchmark`,
@@ -130,7 +132,9 @@ Baseline, gate, and TS-IFA predictions use the sole current disk-backed
 is written last as a family-specific scientific artifact. Runs remain `ready`
 until the owning Slurm workflow exits successfully; only that final exit path
 records overall completion after all launched work and required files are done.
-Obsolete or partial result folders are not accepted.
+Ready runs can feed later stages of that same active workflow, but are not
+eligible for external reuse. Obsolete or partial result folders are not
+accepted.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
 from `gate_artifacts.json`. Every TS-IFA variant stores its T3 active-rooter
 coefficients under the prediction store's `gate_diagnostics` kind and its
@@ -197,9 +201,12 @@ WEIGHTS_ROOT=/cluster/shared/weights \
 sbatch extraction.slurm
 ```
 
-`CHRONOS2_WEIGHTS_PATH`, `CHRONOS_BOLT_WEIGHTS_PATH`, and
-`TABPFN_WEIGHTS_PATH` can override individual model paths. The model names are
-`chronos2`, `chronos-bolt`, and `tabpfnts`.
+The standard model folders are `weights/chronos2/`,
+`weights/chronos-bolt-base/`, and `weights/tabpfnts/`. Cross-RAG additionally
+expects `weights/cross-rag/` to contain exactly one released `best.pth`
+recursively. `CHRONOS2_WEIGHTS_PATH`, `CHRONOS_BOLT_WEIGHTS_PATH`,
+`CROSSRAG_WEIGHTS_PATH`, and `TABPFN_WEIGHTS_PATH` override the corresponding
+locations. The model names are `chronos2`, `chronos-bolt`, and `tabpfnts`.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -554,25 +561,25 @@ evaluation settings.
 
 The Cross-RAG comparison is also one job. The launcher defaults to the selected
 full-ridge winner at `K=10`; override `WINNERS_CSV` with one complete pipeline
-when the selection changes. Configure the three released-code/checkpoint paths
-in the environment and submit it:
+when the selection changes. Place the downloaded Chronos-Bolt and Cross-RAG
+weights under the standard `weights/` locations above and submit it:
 
 ```bash
-CROSSRAG_ROOT=/cluster/code/Cross-RAG \
-CROSSRAG_BASE_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/base \
-CROSSRAG_CHECKPOINT=/cluster/code/Cross-RAG/cross-rag/checkpoints/.../best.pth \
 WINNERS_CSV=baselines/instance_euclidean_10_online/full_ridge_shared \
 sbatch crossrag.slurm
 ```
 
-`crossrag.slurm` imports the official released model implementation and loads
-its pretrained adapter checkpoint; it does not retrain Cross-RAG. First, the
-winner runs with Chronos-2 and the K encoded in `WINNERS_CSV`. Then its same
-formula, normalization, metric, and retrieval mode run with Chronos-Bolt at
-`K=15`; released Cross-RAG uses Chronos-Bolt and its prescribed min-max/cosine
-retrieval at `K=15`. Reports are separated by backbone, so the Chronos-2 table
-contains only the original winner and the Chronos-Bolt table contains the
-matched winner and Cross-RAG. The comparison tables include accuracy, and
+`src/models/chronos_bolt.py` and `src/models/cross_rag.py` retain the released
+model architectures locally, while deleting the upstream training, dataset,
+and generic pipeline code that this experiment does not use. The launcher
+loads only the downloaded base and adapter weights and does not retrain
+Cross-RAG. First, the winner runs with Chronos-2 and the K encoded in
+`WINNERS_CSV`. Then its same formula, normalization, metric, and retrieval mode
+run with Chronos-Bolt at `K=15`; released Cross-RAG uses Chronos-Bolt and its
+prescribed min-max/cosine retrieval at `K=15`. Reports are separated by
+backbone, so the Chronos-2 table contains only the original winner and the
+Chronos-Bolt table contains the matched winner and Cross-RAG. The comparison
+tables include accuracy, and
 `timing_comparison.tex` reports wall-clock vanilla, retrieval, adaptation, and
 Cross-RAG totals, including each pipeline's own retrieval pass.
 
@@ -801,6 +808,8 @@ The runnable Python modules are:
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
   with `--family baselines` or `--family gates`.
+- `src.adaptors.cross_rag.evaluate`: released Cross-RAG inference on the fixed
+  Chronos-Bolt `512:64`, min-max/cosine, `K=15` extraction payload.
 - `src.adaptors.ts_ifa.train`: joint T1 training with T2 checkpoint selection or
   chronological T1 support/query meta-training with a frozen-branch T2 rooter fit.
 - `src.visu.sweep_results_table`: full and averaged publication tables.
@@ -828,14 +837,15 @@ optimizer, regularizer, architecture, or sample cap invalidates completion.
 Older outputs are incomplete and unsupported; rerun the required variant front
 for every affected configuration.
 
-## Publishing completed Slurm artifacts
+## Publishing terminal Slurm artifacts
 
-A successful root workflow automatically submits `publish.slurm` with an
-`afterok` dependency. The producer handoff contains its exact
+At startup, every root workflow submits `publish.slurm` with an `afterany`
+dependency. Once the producer reaches any terminal state, including failure,
+cancellation, or timeout, the publisher refreshes its handoff with the exact
 `logs/<job-name>_<job-id>.out`, `.err`, and launch-tagged run/report output
-directories. The publisher excludes `*.pt`, `*.npy`, and `*.cbm`, commits only
-those paths on `main`, sources `$HOME/codes/proxy.sh`, and runs `git push origin main`.
-It never pulls or creates a pull request. Concurrent publishers serialize the
+directories. It excludes `*.pt`, `*.npy`, and `*.cbm`, commits only those paths
+on `main`, sources `$HOME/codes/proxy.sh`, and runs `git push origin main`. It
+never pulls or creates a pull request. Concurrent publishers serialize the
 complete add/commit/proxy/push transaction with a repository lock; the default
 wait is 600 seconds and may be changed with `PUBLISH_LOCK_TIMEOUT`. Set
 `PUBLISH_RESULTS=false` to disable automatic submission.
@@ -862,6 +872,7 @@ user-prepared project environment, lightweight checks are:
 ```bash
 python src/tests/smoke/check_extraction_manifest.py
 python src/tests/smoke/check_loads.py
+python src/tests/test_crossrag_model_contract.py
 python src/tests/smoke/check_baseline_oracles.py
 python src/tests/smoke/check_ts_ifa_training.py
 python src/tests/smoke/check_results_table.py

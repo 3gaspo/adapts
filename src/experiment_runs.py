@@ -561,11 +561,15 @@ def complete_launch(root: str | Path, launch_id: str) -> list[Path]:
     return changed
 
 
-def validate_completed(run_dir: str | Path) -> dict[str, Any]:
+def validate_completed(
+    run_dir: str | Path, *, allow_ready_launch_id: str | None = None
+) -> dict[str, Any]:
     root = Path(run_dir).expanduser().resolve()
     manifest = load_manifest(root)
-    if manifest["status"] != "completed":
-        raise ManifestError(f"run is not completed: {root}")
+    if not manifest_is_selectable(
+        manifest, allow_ready_launch_id=allow_ready_launch_id
+    ):
+        raise ManifestError(f"run is not completed or ready for this launch: {root}")
     return manifest
 
 
@@ -597,6 +601,21 @@ def _pipeline_matches(manifest: Mapping[str, Any], requested: Mapping[str, Any])
     return all(key in config and plain(config[key]) == plain(value) for key, value in requested.items())
 
 
+def manifest_is_selectable(
+    manifest: Mapping[str, Any], *, allow_ready_launch_id: str | None = None
+) -> bool:
+    """Accept completed runs, plus ready runs owned by one active workflow."""
+    if manifest["status"] == "completed":
+        return True
+    launch = manifest.get("launch", {})
+    return bool(
+        allow_ready_launch_id
+        and manifest["status"] == "running"
+        and str(launch.get("launch_id")) == str(allow_ready_launch_id)
+        and launch.get("ready_at_utc")
+    )
+
+
 def select_identity_runs(
     identity_root: str | Path,
     *,
@@ -604,13 +623,18 @@ def select_identity_runs(
     config_policy: str = "distinct",
     repeat_policy: str = "selected",
     purposes: Iterable[str] | None = None,
+    allow_ready_launch_id: str | None = None,
 ) -> list[SelectedRun]:
     if config_policy not in {"distinct", "latest", "average"}:
         raise ValueError(f"unknown config policy: {config_policy}")
     if repeat_policy not in {"distinct", "latest", "selected", "average"}:
         raise ValueError(f"unknown repeat policy: {repeat_policy}")
     root = Path(identity_root).expanduser().resolve()
-    candidates = [(path, manifest) for path, manifest in ((path, load_manifest(path)) for path in _run_dirs(root)) if manifest["status"] == "completed"]
+    candidates = [
+        (path, manifest)
+        for path, manifest in ((path, load_manifest(path)) for path in _run_dirs(root))
+        if manifest_is_selectable(manifest, allow_ready_launch_id=allow_ready_launch_id)
+    ]
     wanted_purposes = set(purposes or ())
     if wanted_purposes:
         candidates = [item for item in candidates if wanted_purposes & set(item[1].get("purposes", []))]
@@ -618,7 +642,7 @@ def select_identity_runs(
     if requested:
         candidates = [item for item in candidates if _pipeline_matches(item[1], requested)]
     if not candidates:
-        raise ManifestError(f"no completed run in {root} matches pipeline={requested or 'any'}")
+        raise ManifestError(f"no selectable run in {root} matches pipeline={requested or 'any'}")
 
     groups: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
     for item in candidates:
@@ -772,6 +796,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     validate = commands.add_parser("validate")
     validate.add_argument("--run-dir", required=True)
+    validate.add_argument("--allow-ready-launch-id")
 
     select = commands.add_parser("select")
     select.add_argument("--identity-root", required=True)
@@ -796,6 +821,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     resolve.add_argument("--config-policy", default="distinct")
     resolve.add_argument("--repeat-policy", default="selected")
     resolve.add_argument("--purpose", action="append", default=[])
+    resolve.add_argument("--allow-ready-launch-id")
 
     args = parser.parse_args(argv)
     if args.command == "allocate":
@@ -835,7 +861,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "prepare":
         print(prepare_run_output(args.run_dir))
     elif args.command == "validate":
-        validate_completed(args.run_dir)
+        validate_completed(
+            args.run_dir, allow_ready_launch_id=args.allow_ready_launch_id
+        )
         print(Path(args.run_dir).expanduser().resolve())
     elif args.command == "select":
         set_selected_run(args.identity_root, args.pipeline_signature, args.run, pinned=not args.auto)
@@ -855,6 +883,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             config_policy=args.config_policy,
             repeat_policy=args.repeat_policy,
             purposes=args.purpose,
+            allow_ready_launch_id=args.allow_ready_launch_id,
         ):
             print(f"{selected_run.run_dir}\t{selected_run.label}\t{selected_run.manifest['manifest_id']}")
 

@@ -5,12 +5,18 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
-from experiment_runs import SelectedRun, load_manifest, select_identity_runs
+from experiment_runs import (
+    SelectedRun,
+    load_manifest,
+    manifest_is_selectable,
+    select_identity_runs,
+)
 
 
 @dataclass(frozen=True)
@@ -66,13 +72,14 @@ def configure_run_selection(
 
 def selected_manifest_runs(root: str | Path) -> list[SelectedRun]:
     base = Path(root).expanduser().resolve()
+    active_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
     identity_roots = sorted(
         {path.parent.parent for path in base.rglob("manifest.json") if path.parent.name.startswith("run_") and "archive" not in path.relative_to(base).parts}
     )
     selected: list[SelectedRun] = []
     for identity_root in identity_roots:
         manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
-        if any(manifest["status"] == "completed" for manifest in manifests):
+        if any(manifest_is_selectable(manifest, allow_ready_launch_id=active_launch) for manifest in manifests):
             selected.extend(
                 select_identity_runs(
                     identity_root,
@@ -80,6 +87,7 @@ def selected_manifest_runs(root: str | Path) -> list[SelectedRun]:
                     config_policy=_RUN_SELECTION["config_policy"],
                     repeat_policy=_RUN_SELECTION["repeat_policy"],
                     purposes=_RUN_SELECTION["purposes"],
+                    allow_ready_launch_id=active_launch,
                 )
             )
     return selected

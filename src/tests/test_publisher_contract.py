@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class PublisherContractTest(unittest.TestCase):
-    def test_publisher_is_exact_afterok_and_proxy_aware(self):
+    def test_publisher_is_exact_afterany_and_proxy_aware(self):
         publisher = (ROOT / "src/slurm/publish_results.sh").read_text(encoding="utf-8")
         front = (ROOT / "publish.slurm").read_text(encoding="utf-8")
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
@@ -17,10 +17,12 @@ class PublisherContractTest(unittest.TestCase):
             for path in (ROOT / "src/slurm").glob("*.sh")
         )
 
-        self.assertIn('"--dependency=afterok:$producer_job_id"', publisher)
+        self.assertIn('"--dependency=afterany:$producer_job_id"', publisher)
+        self.assertNotIn('"--dependency=afterok:$producer_job_id"', publisher)
         self.assertIn("logs/%s_%s.out", publisher)
         self.assertIn("logs/%s_%s.err", publisher)
         self.assertIn("launch_id", publisher)
+        self.assertIn("PRODUCER_LAUNCH_ID", publisher)
         self.assertIn("git add -v -f --", publisher)
         self.assertIn("git commit --only", publisher)
         self.assertIn("git push origin main", publisher)
@@ -36,6 +38,7 @@ class PublisherContractTest(unittest.TestCase):
         self.assertIn("set -euo pipefail", front)
         self.assertIn("publish_results_main", front)
         self.assertIn("submit_publish_job", shells)
+        self.assertIn("ADAPTATION_PUBLISH_SUBMITTED", shells)
         self.assertIn(".secrets/", ignore)
         self.assertIn("experiment_runs complete-launch", shells)
         self.assertIn("mark_manifest_ready", shells)

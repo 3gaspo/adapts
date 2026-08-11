@@ -1,5 +1,5 @@
 #!/bin/bash
-# Commit and push only the artifacts handed off by one completed Slurm job.
+# Commit and push only the artifacts produced by one terminal Slurm job.
 
 publish_log() {
   printf '%s publish | %s\n' "$(date -Is)" "$*"
@@ -13,14 +13,14 @@ publish_enabled() {
 }
 
 publish_collect_paths() {
-  local project_root="$1" producer_job_id="$2" launch_id="$3" handoff="$4"
+  local project_root="$1" producer_job_id="$2" producer_job_name="$3" launch_id="$4" handoff="$5"
   local manifest directory relative_path extra
   local -a extra_paths=()
   mkdir -p "$(dirname "$handoff")"
   : > "$handoff"
 
-  printf 'logs/%s_%s.out\n' "${SLURM_JOB_NAME:-job}" "$producer_job_id" >> "$handoff"
-  printf 'logs/%s_%s.err\n' "${SLURM_JOB_NAME:-job}" "$producer_job_id" >> "$handoff"
+  printf 'logs/%s_%s.out\n' "$producer_job_name" "$producer_job_id" >> "$handoff"
+  printf 'logs/%s_%s.err\n' "$producer_job_name" "$producer_job_id" >> "$handoff"
 
   if [ -d "$project_root/outputs" ]; then
     while IFS= read -r -d '' manifest; do
@@ -45,7 +45,7 @@ publish_collect_paths() {
 }
 
 submit_publish_job() {
-  local project_root producer_job_id launch_id handoff partition submission
+  local project_root producer_job_id producer_job_name launch_id handoff partition submission
   local -a submit_args
   publish_enabled || return 0
   if [ -z "${SLURM_JOB_ID:-}" ]; then
@@ -54,18 +54,19 @@ submit_publish_job() {
   fi
   project_root="${PROJECT_ROOT:-${ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}}"
   producer_job_id="$SLURM_JOB_ID"
+  producer_job_name="${SLURM_JOB_NAME:-job}"
   launch_id="${EXPERIMENT_LAUNCH_ID:-$producer_job_id}"
   handoff="$project_root/logs/.publish/${producer_job_id}.paths"
-  if ! publish_collect_paths "$project_root" "$producer_job_id" "$launch_id" "$handoff"; then
+  if ! publish_collect_paths "$project_root" "$producer_job_id" "$producer_job_name" "$launch_id" "$handoff"; then
     publish_log "could not create $handoff; run the publisher manually"
     return 0
   fi
   submit_args=(
     --parsable
-    "--dependency=afterok:$producer_job_id"
+    "--dependency=afterany:$producer_job_id"
     "--chdir=$project_root"
-    "--job-name=${SLURM_JOB_NAME:-job}_publish"
-    "--export=ALL,PRODUCER_JOB_ID=$producer_job_id,PRODUCER_JOB_NAME=${SLURM_JOB_NAME:-job}"
+    "--job-name=${producer_job_name}_publish"
+    "--export=ALL,PRODUCER_JOB_ID=$producer_job_id,PRODUCER_JOB_NAME=$producer_job_name,PRODUCER_LAUNCH_ID=$launch_id"
   )
   partition="${PUBLISH_PARTITION:-${SLURM_JOB_PARTITION:-}}"
   [ -n "$partition" ] && submit_args+=("--partition=$partition")
@@ -73,7 +74,7 @@ submit_publish_job() {
     publish_log "publisher submission failed; retry manually with --job-id $producer_job_id"
     return 0
   fi
-  publish_log "submitted afterok publisher job=$submission producer=$producer_job_id"
+  publish_log "submitted afterany publisher job=$submission producer=$producer_job_id"
 }
 
 publish_valid_path() {
@@ -89,13 +90,15 @@ publish_valid_path() {
 }
 
 publish_results_main() {
-  local project_root producer_job_id paths_file message path proxy_status
+  local project_root producer_job_id producer_job_name producer_launch_id paths_file message path proxy_status
   local proxy_script credentials_file credential_mode had_xtrace=0
   local -a requested_paths=() paths=() exclusions
   declare -A seen=()
 
   project_root="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"
   producer_job_id="${PRODUCER_JOB_ID:-}"
+  producer_job_name="${PRODUCER_JOB_NAME:-job}"
+  producer_launch_id="${PRODUCER_LAUNCH_ID:-}"
   paths_file="${PUBLISH_PATHS_FILE:-}"
   message="${PUBLISH_COMMIT_MESSAGE:-}"
   while [ "$#" -gt 0 ]; do
@@ -111,6 +114,11 @@ publish_results_main() {
   project_root="$(cd "$project_root" && pwd)"
   if [ -z "$paths_file" ] && [ -n "$producer_job_id" ]; then
     paths_file="$project_root/logs/.publish/${producer_job_id}.paths"
+  fi
+  if [ -n "$producer_job_id" ] && [ -n "$producer_launch_id" ]; then
+    publish_collect_paths \
+      "$project_root" "$producer_job_id" "$producer_job_name" \
+      "$producer_launch_id" "$paths_file"
   fi
   if [ -n "$paths_file" ]; then
     [ -f "$paths_file" ] || { printf 'publisher paths file not found: %s\n' "$paths_file" >&2; return 1; }

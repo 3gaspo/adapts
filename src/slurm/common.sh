@@ -18,13 +18,19 @@ adaptation_on_exit() {
   if [ "$status" -ne 0 ] && [ -n "${PROJECT_ROOT:-}" ]; then
     python -m experiment_runs interrupt-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" || true
   elif python -m experiment_runs complete-launch --root "$PROJECT_ROOT/outputs" --launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null; then
-    submit_publish_job || true
+    :
   else
     status=$?
   fi
   exit "$status"
 }
 trap adaptation_on_exit EXIT
+
+if [ -z "${ADAPTATION_PUBLISH_SUBMITTED:-}" ]; then
+  submit_publish_job || true
+  ADAPTATION_PUBLISH_SUBMITTED=1
+  export ADAPTATION_PUBLISH_SUBMITTED
+fi
 
 log() {
   printf '%s %s\n' "$(date -Is)" "$*"
@@ -307,7 +313,11 @@ resolve_extraction_run() {
   local dataset="$1" lags="$2" horizon="$3" backbone="$4" space="$5" metric="$6" neighbors="$7" mode="$8"
   local identity_root="$PROJECT_ROOT/outputs/extraction/$dataset/${lags}_${horizon}/${backbone,,}/${space,,}/${metric,,}/$neighbors/${mode,,}"
   local label manifest_id extra pair
-  local -a resolve_args=(--config-policy distinct --repeat-policy selected)
+  local -a resolve_args=(
+    --config-policy distinct
+    --repeat-policy selected
+    --allow-ready-launch-id "$EXPERIMENT_LAUNCH_ID"
+  )
   if [ -n "${EXTRACTION_PIPELINE_CONFIGS:-}" ]; then
     for pair in ${EXTRACTION_PIPELINE_CONFIGS}; do resolve_args+=(--pipeline-config "$pair"); done
   fi
@@ -318,6 +328,8 @@ resolve_extraction_run() {
     log_error "expected exactly one extraction pipeline identity=$identity_root; set EXTRACTION_PIPELINE_CONFIGS='key=value ...' when multiple pipeline configs exist"
     return 1
   fi
-  python -m experiment_runs validate --run-dir "$EXTRACTION_RUN_DIR" >/dev/null
+  python -m experiment_runs validate \
+    --run-dir "$EXTRACTION_RUN_DIR" \
+    --allow-ready-launch-id "$EXPERIMENT_LAUNCH_ID" >/dev/null
   EXTRACTION_MANIFEST_ID="$manifest_id"
 }
