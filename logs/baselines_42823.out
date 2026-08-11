@@ -1,0 +1,96 @@
+
+2026-08-11T11:31:49+02:00 job start kind=baselines family=baselines experiment_mode=test skip_complete=true tasks=1 datasets=Electricity models=chronos2 settings=504:168 distance_spaces=raw distance_metrics=euclidean neighbors=3 methods=cov_forecast,avgy,y_mean,cov_ridge_shared,avgy_ridge_shared,y_ridge_shared,cov_y_ridge_shared,cov_avgy_ridge_shared,residual_ridge_shared,full_ridge_shared results_root=outputs/adaptation/baselines
+2026-08-11 11:31:53,253 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/3/online/run_0 status=complete
+
+2026-08-11T11:31:54+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=cov_forecast lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/cov_forecast/raw/euclidean/3/online/run_0 computation_signature=c001acd5ec5d478073e7f0c1aa248f9d32c142933f27b5b689627d1c2d3fbed0 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:31:58,484 INFO [__main__] ========================================================================
+2026-08-11 11:31:58,485 INFO [__main__] selected methods=('cov_forecast',)
+2026-08-11 11:32:05,445 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:05,786 INFO [__main__] baseline selection done
+2026-08-11 11:32:05,829 INFO [__main__] experiment done seconds=7.34
+2026-08-11 11:32:05,829 INFO [__main__] ========================================================================
+2026-08-11T11:32:06+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=cov_forecast lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:06+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=avgy lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/avgy/raw/euclidean/3/online/run_0 computation_signature=46249250611ff058842ed26bd24624b1094ba28bf74a49b7f42b5d4478f02b54 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:10,904 INFO [__main__] ========================================================================
+2026-08-11 11:32:10,904 INFO [__main__] selected methods=('avgy',)
+2026-08-11 11:32:14,204 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:15,334 INFO [__main__] baseline selection done
+2026-08-11 11:32:15,398 INFO [__main__] experiment done seconds=4.48
+2026-08-11 11:32:15,398 INFO [__main__] ========================================================================
+2026-08-11T11:32:16+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=avgy lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:16+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=y_mean lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/y_mean/raw/euclidean/3/online/run_0 computation_signature=214a28d4720c3837e3f31f61fe8d76d88e766980a41fd680667e55c17d929f09 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:20,643 INFO [__main__] ========================================================================
+2026-08-11 11:32:20,643 INFO [__main__] selected methods=('y_mean',)
+2026-08-11 11:32:24,204 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:24,574 INFO [__main__] baseline selection done
+2026-08-11 11:32:24,620 INFO [__main__] experiment done seconds=3.97
+2026-08-11 11:32:24,620 INFO [__main__] ========================================================================
+2026-08-11T11:32:25+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=y_mean lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:25+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=cov_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/cov_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=00e6319036dd87bdfb838337e73edfa7a2cb2db51581092d485c6c4b811c39af l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:29,591 INFO [__main__] ========================================================================
+2026-08-11 11:32:29,591 INFO [__main__] selected methods=('cov_ridge_shared',)
+2026-08-11 11:32:33,000 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:33,515 INFO [__main__] baseline selection done
+2026-08-11 11:32:33,569 INFO [__main__] experiment done seconds=3.97
+2026-08-11 11:32:33,569 INFO [__main__] ========================================================================
+2026-08-11T11:32:33+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=cov_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:34+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=avgy_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/avgy_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=b81c2e19a36e3ec63328f71bac25ccbd7a30dfd579d88e05eada68b635ab8342 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:38,463 INFO [__main__] ========================================================================
+2026-08-11 11:32:38,463 INFO [__main__] selected methods=('avgy_ridge_shared',)
+2026-08-11 11:32:41,678 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:42,466 INFO [__main__] baseline selection done
+2026-08-11 11:32:43,092 INFO [__main__] experiment done seconds=4.61
+2026-08-11 11:32:43,093 INFO [__main__] ========================================================================
+2026-08-11T11:32:43+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=avgy_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:43+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=y_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/y_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=8dcd404ff2d0c1ee7239b4393d4a0339f6ca01dc1b9a8bc3298a6fb39d37af3a l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:47,447 INFO [__main__] ========================================================================
+2026-08-11 11:32:47,448 INFO [__main__] selected methods=('y_ridge_shared',)
+2026-08-11 11:32:50,289 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:32:51,291 INFO [__main__] baseline selection done
+2026-08-11 11:32:51,363 INFO [__main__] experiment done seconds=3.91
+2026-08-11 11:32:51,363 INFO [__main__] ========================================================================
+2026-08-11T11:32:52+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=y_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:52+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=cov_y_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/cov_y_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=fce39f2dc098ed7208d7b61feb0eb8c4740858e796397c848c0a4add6de5c696 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:32:56,147 INFO [__main__] ========================================================================
+2026-08-11 11:32:56,148 INFO [__main__] selected methods=('cov_y_ridge_shared',)
+2026-08-11 11:32:59,490 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:33:00,041 INFO [__main__] baseline selection done
+2026-08-11 11:33:00,084 INFO [__main__] experiment done seconds=3.93
+2026-08-11 11:33:00,085 INFO [__main__] ========================================================================
+2026-08-11T11:33:00+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=cov_y_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:00+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=cov_avgy_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/cov_avgy_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=b35d29ad0c3a5baf3f7df14aabcc8d8418a284957a8e520a7abf3ee6e5464552 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:33:04,805 INFO [__main__] ========================================================================
+2026-08-11 11:33:04,806 INFO [__main__] selected methods=('cov_avgy_ridge_shared',)
+2026-08-11 11:33:07,799 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:33:08,400 INFO [__main__] baseline selection done
+2026-08-11 11:33:08,462 INFO [__main__] experiment done seconds=3.63
+2026-08-11 11:33:08,462 INFO [__main__] ========================================================================
+2026-08-11T11:33:09+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=cov_avgy_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:09+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=residual_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/residual_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=ea4ee85ac56665d53466231e7a508eb217405df781b42647663673cb618ede15 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:33:13,363 INFO [__main__] ========================================================================
+2026-08-11 11:33:13,363 INFO [__main__] selected methods=('residual_ridge_shared',)
+2026-08-11 11:33:16,336 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:33:16,989 INFO [__main__] baseline selection done
+2026-08-11 11:33:17,034 INFO [__main__] experiment done seconds=3.67
+2026-08-11 11:33:17,034 INFO [__main__] ========================================================================
+2026-08-11T11:33:17+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=residual_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:17+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos2 formula=full_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/baselines/Electricity/504_168/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0 computation_signature=d567d03519d119442e9e67b8631d784483e4f2b864ba987d335fbbd2eb8be38e l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-11 11:33:21,617 INFO [__main__] ========================================================================
+2026-08-11 11:33:21,617 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-11 11:33:24,764 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-11 11:33:25,602 INFO [__main__] baseline selection done
+2026-08-11 11:33:25,671 INFO [__main__] experiment done seconds=4.04
+2026-08-11 11:33:25,671 INFO [__main__] ========================================================================
+2026-08-11T11:33:26+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos2 formula=full_ridge_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:26+02:00 job done kind=baselines output=outputs/adaptation/baselines
+2026-08-11T11:33:28+02:00 publish | submitted afterok publisher job=42828 producer=42823
