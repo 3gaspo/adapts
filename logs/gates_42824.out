@@ -1,0 +1,74 @@
+
+2026-08-11T11:31:49+02:00 job start kind=gates family=gates experiment_mode=test skip_complete=true tasks=1 datasets=Electricity models=chronos2 settings=504:168 distance_spaces=raw distance_metrics=euclidean neighbors=3 methods=cov_forecast,avgy,bayes_cov_shared,bayes_avgy_shared,catboost_cov_regressor_shared,catboost_avgy_regressor_shared,oracle_cov_shared,oracle_avgy_shared task_type=CPU thread_count=2 horizon_fits=serial allocated_cpus=16 results_root=outputs/adaptation/gates
+2026-08-11 11:31:53,259 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/3/online/run_0 status=complete
+
+2026-08-11T11:31:54+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=cov_forecast lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/cov_forecast/raw/euclidean/3/online/run_0 computation_signature=29a9a4ec00c8e4c8cba2a67089232148b145b138d5bf374b023d55b67d6a309c iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:31:58,484 INFO [__main__] ========================================================================
+2026-08-11 11:31:58,485 INFO [__main__] selected methods=('cov_forecast',)
+2026-08-11 11:32:05,818 INFO [__main__] experiment done seconds=7.33
+2026-08-11 11:32:05,819 INFO [__main__] ========================================================================
+2026-08-11T11:32:06+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=cov_forecast lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:06+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=avgy lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/avgy/raw/euclidean/3/online/run_0 computation_signature=576cd0518f598c3dc78525a722179937a7a0dc703ebafd9db39b839f399a1f01 iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:32:10,904 INFO [__main__] ========================================================================
+2026-08-11 11:32:10,904 INFO [__main__] selected methods=('avgy',)
+2026-08-11 11:32:15,409 INFO [__main__] experiment done seconds=4.50
+2026-08-11 11:32:15,409 INFO [__main__] ========================================================================
+2026-08-11T11:32:15+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=avgy lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:16+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/bayes_cov_shared/raw/euclidean/3/online/run_0 computation_signature=d349d3f5c8efc1564d9230cff9926b9a5f53c832674b06590cffc15b7a7c67db iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:32:20,643 INFO [__main__] ========================================================================
+2026-08-11 11:32:20,643 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-11 11:32:24,612 INFO [__main__] gate fitting start candidate=cov
+2026-08-11 11:32:24,832 INFO [__main__] gate fitting done candidate=cov
+2026-08-11 11:32:24,894 INFO [__main__] experiment done seconds=4.25
+2026-08-11 11:32:24,895 INFO [__main__] ========================================================================
+2026-08-11T11:32:25+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:25+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=bayes_avgy_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/bayes_avgy_shared/raw/euclidean/3/online/run_0 computation_signature=f5a1f489b19370e44c6c11b96928b3033e8bb14ffc13bcbbf2c0552c80bda317 iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:32:29,633 INFO [__main__] ========================================================================
+2026-08-11 11:32:29,634 INFO [__main__] selected methods=('bayes_avgy_shared',)
+2026-08-11 11:32:33,404 INFO [__main__] gate fitting start candidate=avgy
+2026-08-11 11:32:33,633 INFO [__main__] gate fitting done candidate=avgy
+2026-08-11 11:32:33,670 INFO [__main__] experiment done seconds=4.03
+2026-08-11 11:32:33,671 INFO [__main__] ========================================================================
+2026-08-11T11:32:34+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=bayes_avgy_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:34+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/3/online/run_0 computation_signature=429011e31eb2fe5d08e6e8d8d1bba8108b2c493626678986a300769c1dd7fae8 iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:32:38,463 INFO [__main__] ========================================================================
+2026-08-11 11:32:38,463 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-11 11:32:42,163 INFO [__main__] gate fitting start candidate=cov
+2026-08-11 11:32:56,604 INFO [__main__] gate fitting done candidate=cov
+2026-08-11 11:32:58,071 INFO [__main__] experiment done seconds=19.60
+2026-08-11 11:32:58,071 INFO [__main__] ========================================================================
+2026-08-11T11:32:58+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:32:58+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=catboost_avgy_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/catboost_avgy_regressor_shared/raw/euclidean/3/online/run_0 computation_signature=67c2a38876a72c8e411cc28ac8a236e76af76c46e6f380b9a6f079d6150c8768 iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:33:02,804 INFO [__main__] ========================================================================
+2026-08-11 11:33:02,804 INFO [__main__] selected methods=('catboost_avgy_regressor_shared',)
+2026-08-11 11:33:06,850 INFO [__main__] gate fitting start candidate=avgy
+2026-08-11 11:33:09,205 INFO [__main__] gate fitting done candidate=avgy
+2026-08-11 11:33:09,986 INFO [__main__] experiment done seconds=7.18
+2026-08-11 11:33:09,986 INFO [__main__] ========================================================================
+2026-08-11T11:33:10+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=catboost_avgy_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:10+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=oracle_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/oracle_cov_shared/raw/euclidean/3/online/run_0 computation_signature=b8a50fb78e045023c7dc2a142ecef715b18afeb3a092822eedb2f25d1722a08e iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:33:14,897 INFO [__main__] ========================================================================
+2026-08-11 11:33:14,897 INFO [__main__] selected methods=('oracle_cov_shared',)
+2026-08-11 11:33:18,115 INFO [__main__] gate fitting start candidate=cov
+2026-08-11 11:33:18,396 INFO [__main__] gate fitting done candidate=cov
+2026-08-11 11:33:18,483 INFO [__main__] experiment done seconds=3.57
+2026-08-11 11:33:18,483 INFO [__main__] ========================================================================
+2026-08-11T11:33:19+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=oracle_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:19+02:00 gates start configuration=1/1 dataset=Electricity model=chronos2 formula=oracle_avgy_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/adaptation/gates/Electricity/504_168/chronos2/oracle_avgy_shared/raw/euclidean/3/online/run_0 computation_signature=8445fa022a62933bea1df139e05b210499d39c58c3417beea2d2d257f073d921 iterations=2 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-11 11:33:23,542 INFO [__main__] ========================================================================
+2026-08-11 11:33:23,542 INFO [__main__] selected methods=('oracle_avgy_shared',)
+2026-08-11 11:33:27,083 INFO [__main__] gate fitting start candidate=avgy
+2026-08-11 11:33:27,317 INFO [__main__] gate fitting done candidate=avgy
+2026-08-11 11:33:27,383 INFO [__main__] experiment done seconds=3.83
+2026-08-11 11:33:27,383 INFO [__main__] ========================================================================
+2026-08-11T11:33:27+02:00 gates done configuration=1/1 dataset=Electricity model=chronos2 formula=oracle_avgy_shared lags=504 horizon=168 retrieval=raw_euclidean_3_online
+
+2026-08-11T11:33:27+02:00 job done kind=gates output=outputs/adaptation/gates
+2026-08-11T11:33:28+02:00 publish | submitted afterok publisher job=42829 producer=42824
