@@ -1,0 +1,152 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "adapt_prediction_payload.pt",
+        "size": 2353594
+      },
+      {
+        "path": "adapt_features_payload.pt",
+        "size": 16317
+      },
+      {
+        "path": "eval_prediction_payload.pt",
+        "size": 193382
+      },
+      {
+        "path": "eval_features_payload.pt",
+        "size": 2998
+      },
+      {
+        "path": "extraction_timing.json",
+        "size": 294
+      },
+      {
+        "path": "extraction_manifest.json",
+        "size": 1381
+      },
+      {
+        "path": "vanilla_metrics.json",
+        "size": 313
+      }
+    ],
+    "required": [
+      "adapt_prediction_payload.pt",
+      "adapt_features_payload.pt",
+      "eval_prediction_payload.pt",
+      "eval_features_payload.pt",
+      "extraction_timing.json",
+      "extraction_manifest.json",
+      "vanilla_metrics.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "k": 0,
+      "metric": null,
+      "mode": null,
+      "space": null
+    },
+    "pipeline": {
+      "data.adapt_query_stride": 25,
+      "data.align_period": false,
+      "data.datastore_stride": 25,
+      "data.eval_query_stride": 127,
+      "data.max_store_windows": 30000,
+      "data.period": 24,
+      "data.splits": "0.3,0.5,0.2",
+      "normalization": "instance"
+    },
+    "runtime": {
+      "slurm.job_id": 42837
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "exchange_rate",
+    "horizon": 48,
+    "lookback": 336,
+    "model_config": {
+      "k": 0,
+      "metric": null,
+      "mode": null,
+      "space": null
+    },
+    "model_config_order": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/datasets/exchange_rate/config.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "42837",
+        "launched_at_utc": "2026-08-11T20:03:05.158498+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "42837"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "42837",
+    "launched_at_utc": "2026-08-11T20:03:05.158498+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-11T20:03:21.411794+00:00",
+    "started_at_utc": "2026-08-11T20:03:05.262017+00:00"
+  },
+  "manifest_id": "902483ac-5d6f-4ea4-98b1-5c07f175757d",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "adapt_prediction_payload.pt",
+        "adapt_features_payload.pt",
+        "eval_prediction_payload.pt",
+        "eval_features_payload.pt",
+        "extraction_timing.json",
+        "extraction_manifest.json",
+        "vanilla_metrics.json"
+      ],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "b836f478d5f5f78eee895b2c40e8392297883de9ffa6849729e3d992431d81e8",
+    "path": "565f83028e0d3b3a8038752319bb9772da49c0b01f58918da3c10c96e23305fa",
+    "pipeline": "ea11a46dc88c4f9f2092867a237694163b2001b596fdbdff57bceb908ac4bbc5"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "chronos2/vanilla",
+    "row_config": [
+      "space"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "extraction"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 863, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 852, in main
+    for selected_run in select_identity_runs(
+                        ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 621, in select_identity_runs
+    raise ManifestError(f"no completed run in {root} matches pipeline={requested or 'any'}")
+ManifestError: no completed run in /home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/1/online matches pipeline=any
+/home/h61084/codes/adapts/src/slurm/run_baselines.sh: line 165: pop_var_context: head of shell_variables not a function context
