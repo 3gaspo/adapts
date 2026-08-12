@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 280
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 496
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1164
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 513
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 158
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1167
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "cov_forecast",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 42887
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Traffic",
+    "horizon": 24,
+    "lookback": 168,
+    "model_config": {
+      "formula": "cov_forecast",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/instance/euclidean/3/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/none/none/0/none/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "42887",
+        "launched_at_utc": "2026-08-12T05:02:46.150026+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "42887"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "42887",
+    "launched_at_utc": "2026-08-12T05:02:46.150026+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-12T05:02:58.018823+00:00",
+    "started_at_utc": "2026-08-12T05:02:46.253624+00:00"
+  },
+  "manifest_id": "595037ed-3883-49e1-8c31-1de0f66e02b7",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "51c688b984d1938e71bc300722be8f14f1aba4902824c538396b8bada2d678b3",
+    "path": "6b19fd89836738828d3e925e0fe8a496ee7ad55b5a6848cdfb932d198f369fa2",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "cov_forecast",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "screen",
+      "baselines"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "avgy": "predictions/adapt/predictions/avgy.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "avgy": "predictions/eval/predictions/avgy.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

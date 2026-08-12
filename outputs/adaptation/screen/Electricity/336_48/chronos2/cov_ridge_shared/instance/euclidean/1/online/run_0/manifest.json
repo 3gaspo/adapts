@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 270
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 486
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1676
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 529
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 162
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1172
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "cov_ridge_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 42887
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Electricity",
+    "horizon": 48,
+    "lookback": 336,
+    "model_config": {
+      "formula": "cov_ridge_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/instance/euclidean/1/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "42887",
+        "launched_at_utc": "2026-08-12T04:51:40.326543+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "42887"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "42887",
+    "launched_at_utc": "2026-08-12T04:51:40.326543+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-12T04:51:46.005929+00:00",
+    "started_at_utc": "2026-08-12T04:51:40.430041+00:00"
+  },
+  "manifest_id": "41042e65-d4ba-4714-a1a1-24400411f109",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "eba0726490029bc9af68c18948c6fca6771e6e282f6653c7b3bf69afb5ce5193",
+    "path": "6fa7f1869ae6dd3668a834371d4e99f3a90eea62e498c3829b7a6b1853be8a1e",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "cov_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "screen",
+      "baselines"
+    ]
+  }
+}

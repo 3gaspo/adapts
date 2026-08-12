@@ -1,0 +1,21 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "oracle_avgy_shared": "predictions/adapt/predictions/oracle_avgy_shared.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "oracle_avgy_shared": "predictions/eval/predictions/oracle_avgy_shared.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

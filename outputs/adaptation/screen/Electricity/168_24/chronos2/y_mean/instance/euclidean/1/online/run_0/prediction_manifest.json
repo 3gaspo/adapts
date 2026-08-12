@@ -1,0 +1,21 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "y_mean": "predictions/adapt/predictions/y_mean.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "y_mean": "predictions/eval/predictions/y_mean.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "baselines",
+    "fit_on_eval": false
+  }
+}

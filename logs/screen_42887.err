@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/visu/sweep_results_table.py", line 1287, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/visu/sweep_results_table.py", line 1232, in main
+    outputs = generator(
+              ^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/visu/sweep_results_table.py", line 1004, in generate_full_results_tables
+    _require_complete_inputs(
+  File "/home/h61084/codes/adapts/src/visu/sweep_results_table.py", line 429, in _require_complete_inputs
+    raise ValueError(f"incomplete table inputs: {preview}{suffix}")
+ValueError: incomplete table inputs: baselines/Electricity/168_24/chronos2/raw_euclidean_1_online/cov_forecast, baselines/Electricity/168_24/chronos2/raw_euclidean_1_online/avgy, baselines/Electricity/168_24/chronos2/raw_euclidean_3_online/cov_forecast, baselines/Electricity/168_24/chronos2/raw_euclidean_3_online/avgy, baselines/Electricity/168_24/chronos2/instance_euclidean_1_online/cov_forecast, baselines/Electricity/168_24/chronos2/instance_euclidean_1_online/avgy, baselines/Electricity/168_24/chronos2/instance_euclidean_3_online/cov_forecast, baselines/Electricity/168_24/chronos2/instance_euclidean_3_online/avgy, ... (192 missing)
+srun: error: dgx-h100: task 0: Exited with exit code 1
+/home/h61084/codes/adapts/src/slurm/run_profile_experiment.sh: line 165: pop_var_context: head of shell_variables not a function context
