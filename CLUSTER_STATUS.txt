@@ -17,18 +17,19 @@ SCHEMA V1 CUTOVER (CURRENT HANDOFF)
   allocated `run_0/manifest.json` before the completion update. Their
   manifest-less result folders are invalid partial runs. Run allocation now
   reclaims such folders, and every writer preserves schema-owned metadata.
-- Screen job 42837 failed after all 60 extraction configurations finished. The
-  baseline stage then rejected the extraction manifests because they were
-  correctly still ready rather than completed before the complete multi-stage
-  workflow exited. The failure trap marked the launch interrupted. Its logs and
-  lightweight outputs were synchronized manually; no automatic publisher ran
-  because the prior publisher was submitted only from the successful exit path.
-- The recovery accepts ready inputs only from the same active launch while
-  keeping independent reuse completed-only. It also pre-submits one `afterany`
-  publisher so every terminal outcome publishes exact logs and launch-tagged
-  lightweight outputs. Next cluster action: deploy this recovery and resubmit
-  screen.slurm. Job 42837 is interrupted and the screen must rerun under the
-  corrected workflow.
+- Screen job 42887 completed all 60 extractions, 48 baseline configurations,
+  and 48 gate configurations, then failed when table discovery renamed the
+  shared direct formulas `cov_forecast` and `avgy` with pipeline-config suffixes.
+  Their metric artifacts exist, but the completeness check consequently
+  reported 192 missing canonical rows. The failure trap correctly marked the
+  launch interrupted. Logs and lightweight outputs were synchronized manually.
+- Automatic publication has been removed from every Slurm workflow. After a
+  terminal job, run `bash publish_job.sh <job-id>` manually from the
+  project root; it commits the exact logs and launch-tagged lightweight outputs,
+  authenticates the proxy from `$HOME/codes/.secrets/proxy.credentials`, and
+  pushes without pulling. Omitting the ID publishes all logs and lightweight
+  outputs. Next cluster action: deploy the canonical table-name fix and rerun
+  `screen.slurm`, then run the manual publisher with its job ID.
 - The scientific findings below remain recorded, but no archived run may enter
   a current table.
 

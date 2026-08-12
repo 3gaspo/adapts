@@ -10,7 +10,6 @@ FORCE_RUN="${FORCE_RUN:-false}"
 SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
 EXPERIMENT_LAUNCH_ID="${EXPERIMENT_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
 export EXPERIMENT_LAUNCH_ID
-source "${PROJECT_ROOT:-$(pwd)}/src/slurm/publish_results.sh"
 
 adaptation_on_exit() {
   local status=$?
@@ -25,12 +24,6 @@ adaptation_on_exit() {
   exit "$status"
 }
 trap adaptation_on_exit EXIT
-
-if [ -z "${ADAPTATION_PUBLISH_SUBMITTED:-}" ]; then
-  submit_publish_job || true
-  ADAPTATION_PUBLISH_SUBMITTED=1
-  export ADAPTATION_PUBLISH_SUBMITTED
-fi
 
 log() {
   printf '%s %s\n' "$(date -Is)" "$*"

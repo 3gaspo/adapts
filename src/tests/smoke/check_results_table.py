@@ -29,6 +29,7 @@ def _evaluation_run(
     dataset: str = "electricity",
     setting: str = "168_24",
     model: str = "chronos2",
+    pipeline_config: dict | None = None,
 ) -> None:
     space, metric, neighbors, mode = retrieval
     config = {
@@ -53,7 +54,7 @@ def _evaluation_run(
         backbone=model,
         model_config_order=list(config),
         model_config=config,
-        pipeline_config={"iterations": 30_000},
+        pipeline_config=pipeline_config or {"iterations": 30_000},
         display_name=formula,
     )
     complete = {
@@ -207,12 +208,38 @@ def main() -> None:
         method = _ts_ifa_run(root)
         retrieval = "instance_euclidean_3_online"
 
-        methods = {record.method for record in discover_results(root) if record.metric == "mse"}
+        # Direct formulas occur in both workflows with different pipeline
+        # configurations. Their metric rows must retain the canonical formula
+        # rather than a configuration-disambiguated manifest label.
+        _evaluation_run(
+            root,
+            family="baselines",
+            formula="cov_forecast",
+            row={"split": "eval", "mse": 0.0008, "mae": 0.02, "nmse": 0.27},
+            pipeline_config={"l2_grid": "0,1e-6"},
+        )
+        _evaluation_run(
+            root,
+            family="gates",
+            formula="cov_forecast",
+            row={"split": "eval", "mse": 0.0008, "mae": 0.02, "nmse": 0.27},
+            pipeline_config={"gate.iterations": 300},
+        )
+
+        records = discover_results(root)
+        methods = {record.method for record in records if record.metric == "mse"}
         assert "vanilla" in methods
         assert f"{retrieval}/avgy_ridge_shared" in methods
+        assert f"{retrieval}/cov_forecast" in methods
         assert f"{retrieval}/oracle_cov_shared" in methods
         assert f"{retrieval}/{method}" in methods
         assert f"{retrieval}/{method}_memory_branch" in methods
+        direct_sources = {
+            record.path.name
+            for record in records
+            if record.metric == "mse" and record.method == f"{retrieval}/cov_forecast"
+        }
+        assert direct_sources == {"baseline_metrics.json", "gate_metrics.json"}
 
         output = generate_results_table(
             root,

@@ -292,7 +292,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
                 results.append(Result(dataset, setting, method, "eval", metric, float(value), path, model))
             continue
         for row in payload:
-            formula = "vanilla" if row["baseline"] == "vanilla" else choice.label
+            formula = str(row["baseline"])
             method = formula if formula == "vanilla" else f"{run}/{formula}"
             for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:

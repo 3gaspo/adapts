@@ -800,6 +800,9 @@ Implementation shells:
   full and equal-configuration-average tables.
 - `common.sh` provides resource lookup, setting parsing, manifest checks, and
   timestamped shell logging; it is sourced, not submitted.
+- `publish_job.sh` is run manually after Slurm jobs terminate; with a job ID it
+  publishes only that job, and without one it publishes all logs and lightweight
+  outputs.
 
 The runnable Python modules are:
 
@@ -839,30 +842,37 @@ for every affected configuration.
 
 ## Publishing terminal Slurm artifacts
 
-At startup, every root workflow submits `publish.slurm` with an `afterany`
-dependency. Once the producer reaches any terminal state, including failure,
-cancellation, or timeout, the publisher refreshes its handoff with the exact
-`logs/<job-name>_<job-id>.out`, `.err`, and launch-tagged run/report output
-directories. It excludes `*.pt`, `*.npy`, and `*.cbm`, commits only those paths
-on `main`, sources `$HOME/codes/proxy.sh`, and runs `git push origin main`. It
-never pulls or creates a pull request. Concurrent publishers serialize the
-complete add/commit/proxy/push transaction with a repository lock; the default
-wait is 600 seconds and may be changed with `PUBLISH_LOCK_TIMEOUT`. Set
-`PUBLISH_RESULTS=false` to disable automatic submission.
+Slurm jobs never submit a publisher or run Git commands. After any job reaches
+a terminal state, including failure, cancellation, or timeout, run the manual
+publisher from that project's Git root:
+
+```bash
+bash publish_job.sh <job-id>
+```
+
+The script selects exactly one `logs/*_<job-id>.out`/`.err` pair and every
+run/report directory whose manifest records that launch ID. It force-adds only
+those paths while excluding `*.pt`, `*.npy`, and `*.cbm`, commits them on
+`main`, sources `$HOME/codes/proxy.sh`, and pushes `origin main`. It never pulls
+or creates a pull request. Existing unrelated staged paths are excluded from
+the commit.
+
+Omit the job ID to force-add, commit, and push the complete `logs/` and
+lightweight `outputs/` trees:
+
+```bash
+bash publish_job.sh
+```
 
 The shared credential file is `$HOME/codes/.secrets/proxy.credentials`, with
 the NNI on the first line and password on the second. Create it only on the
-cluster and run `chmod 600 "$HOME/codes/.secrets/proxy.credentials"`. Override
-`PROXY_SCRIPT_PATH`, `PROXY_CREDENTIALS_FILE`, `PUBLISH_PARTITION`, or
-`PUBLISH_LOCK_TIMEOUT` when needed. Retry a failed publication manually with:
-
-```bash
-bash src/slurm/publish_results.sh --job-id <producer-job-id>
-```
-
-The external proxy script must accept
-`--credentials-file <path>`, export `https_proxy` when authentication succeeds,
-set `NOEXPORT=0`, and return nonzero on failure.
+cluster and run `chmod 600 "$HOME/codes/.secrets/proxy.credentials"`.
+`PROXY_SCRIPT_PATH` and `PROXY_CREDENTIALS_FILE` override the defaults. The
+external proxy script must accept `--credentials-file <path>`, export
+`https_proxy` when authentication succeeds, set `NOEXPORT=0`, and return
+nonzero on failure. GitHub authentication remains separate: the script clears
+stale VS Code askpass variables so Git can use its configured credential helper
+or ask for GitHub credentials in the terminal.
 
 ## Local checks
 

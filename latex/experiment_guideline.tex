@@ -133,9 +133,9 @@ deliberately rejected by the current launcher because no wrapper is registered.
 univariate and ignores retrieved covariates; neighbour targets and forecasts
 remain available to the adapter \citep{chronos,chronoscode}. Source-faithful
 local model modules load the released base weights from
-\code{weights/chronos-bolt-base} and the sole recursive \code{best.pth} below
-\code{weights/cross-rag}; \code{CHRONOS_BOLT_WEIGHTS_PATH} and
-\code{CROSSRAG_WEIGHTS_PATH} are explicit overrides. No external code checkout
+\path{weights/chronos-bolt-base} and the sole recursive \code{best.pth} below
+\path{weights/cross-rag}; \path{CHRONOS_BOLT_WEIGHTS_PATH} and
+\path{CROSSRAG_WEIGHTS_PATH} are explicit overrides. No external code checkout
 or Cross-RAG retraining is part of the workflow.
 
 \begin{table}[H]
@@ -1271,17 +1271,18 @@ material is isolated under
 \code{archive/legacy_pre_schema_v1_2026-08-07} and is never read by
 current tables.
 
-At root-workflow startup, the launcher submits \code{publish.slurm} with an
-\code{afterany} dependency. After any terminal producer state, including
-failure, cancellation, or timeout, the publisher refreshes a handoff containing
-only the producer's exact stdout/stderr and launch-tagged run/report roots. It excludes
-\code{*.pt}, \code{*.npy}, and \code{*.cbm}, commits only those paths on
-\code{main}, sources \code{$HOME/codes/proxy.sh} using the shared two-line
-\code{$HOME/codes/.secrets/proxy.credentials}, and pushes \code{origin/main} without pulling
-or creating a pull request. A repository lock serializes the complete
-add/commit/proxy/push transaction and waits up to ten minutes. Set
-\code{PUBLISH_RESULTS=false} to disable it; the same script accepts
-\code{--job-id} for a manual retry.
+Slurm workflows never submit a publisher or execute Git commands. After any
+terminal state, including failure, cancellation, or timeout, the user runs
+\code{bash publish_job.sh <job-id>} from the project root. The
+script selects only the exact stdout/stderr pair and run/report roots whose
+manifests record that launch ID, excludes \code{*.pt}, \code{*.npy}, and
+\code{*.cbm}, and commits those paths on \code{main}. It then sources
+\code{proxy.sh} with \code{.secrets/proxy.credentials} from
+\code{$HOME/codes/} and pushes \code{origin/main}
+without pulling. Omitting the job ID instead publishes the complete log and
+lightweight output trees. GitHub authentication remains separate from proxy
+authentication and is handled by the configured credential helper or the
+interactive terminal prompt.
 
 Table construction accepts only current result manifests, keeps selected
 pipelines family-qualified, and requires complete dataset--setting--model
@@ -1327,6 +1328,6 @@ retrieval choice, and validation protocol explicit rather than conflating them
 with backbone quality.
 
 \bibliographystyle{plainnat}
-\bibliography{latex/adaptation_references}
+\bibliography{adaptation_references}
 
 \end{document}
