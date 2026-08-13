@@ -30,3 +30,88 @@
 2026-08-13 10:26:10,416 INFO [__main__] model load start
 2026-08-13 10:26:22,719 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
 2026-08-13 10:26:22,722 INFO [__main__] extraction start split=adapt queries=526
+2026-08-13 10:31:50,489 INFO [__main__] extraction done split=adapt
+2026-08-13 10:31:50,489 INFO [__main__] extraction start split=eval queries=42
+2026-08-13 10:32:16,310 INFO [__main__] extraction done split=eval
+2026-08-13 10:32:17,273 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-13 10:32:17,273 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/1/online/run_0
+2026-08-13 10:32:17,273 INFO [__main__] experiment done seconds=367.86
+2026-08-13 10:32:17,273 INFO [__main__] ========================================================================
+2026-08-13 10:32:21,058 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-13T10:32:21+02:00 extraction done configuration=2/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-08-13T10:32:21+02:00 extraction start configuration=3/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/3/online/run_0 computation_signature=7dc9833fa4cdd45921fbfe64b6eef107b1348714d90683aa87d260aaeb4b029c period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-13 10:32:24,066 INFO [__main__] ========================================================================
+2026-08-13 10:32:24,066 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=168 horizon=24 neighbors=3 distance=raw/euclidean
+2026-08-13 10:32:24,402 INFO [__main__] dataset load start
+2026-08-13 10:32:24,404 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-13 10:32:25,136 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-13 10:32:25,137 INFO [__main__] model load start
+2026-08-13 10:32:37,127 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-13 10:32:37,129 INFO [__main__] extraction start split=adapt queries=526
+2026-08-13 10:41:23,159 INFO [__main__] extraction done split=adapt
+2026-08-13 10:41:23,159 INFO [__main__] extraction start split=eval queries=42
+2026-08-13 10:42:05,882 INFO [__main__] extraction done split=eval
+2026-08-13 10:42:06,893 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/3/online/run_0/extraction_manifest.json
+2026-08-13 10:42:06,894 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/3/online/run_0
+2026-08-13 10:42:06,894 INFO [__main__] experiment done seconds=582.82
+2026-08-13 10:42:06,894 INFO [__main__] ========================================================================
+2026-08-13 10:42:10,957 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/raw/euclidean/3/online/run_0 status=complete
+2026-08-13T10:42:11+02:00 extraction done configuration=3/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=raw_euclidean_3_online
+
+2026-08-13T10:42:11+02:00 extraction start configuration=4/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/1/online/run_0 computation_signature=85c72cfca6718e6033ccd07c11b29978ed2cfde5fd7aeb52719885b09d59f3a1 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-13 10:42:14,284 INFO [__main__] ========================================================================
+2026-08-13 10:42:14,284 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=168 horizon=24 neighbors=1 distance=instance/euclidean
+2026-08-13 10:42:14,661 INFO [__main__] dataset load start
+2026-08-13 10:42:14,663 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-13 10:42:15,450 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-13 10:42:15,450 INFO [__main__] model load start
+2026-08-13 10:42:29,801 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-13 10:42:29,803 INFO [__main__] extraction start split=adapt queries=526
+2026-08-13 10:48:02,087 INFO [__main__] extraction done split=adapt
+2026-08-13 10:48:02,087 INFO [__main__] extraction start split=eval queries=42
+2026-08-13 10:48:27,422 INFO [__main__] extraction done split=eval
+2026-08-13 10:48:28,264 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-13 10:48:28,264 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/1/online/run_0
+2026-08-13 10:48:28,264 INFO [__main__] experiment done seconds=373.97
+2026-08-13 10:48:28,264 INFO [__main__] ========================================================================
+2026-08-13 10:48:31,954 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/1/online/run_0 status=complete
+2026-08-13T10:48:32+02:00 extraction done configuration=4/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_1_online
+
+2026-08-13T10:48:32+02:00 extraction start configuration=5/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_3_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/3/online/run_0 computation_signature=227f3d326bf1efe06a87064238cc42162f82d34ace8a990757d29ac8b8dca8c3 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-13 10:48:35,072 INFO [__main__] ========================================================================
+2026-08-13 10:48:35,072 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=168 horizon=24 neighbors=3 distance=instance/euclidean
+2026-08-13 10:48:35,427 INFO [__main__] dataset load start
+2026-08-13 10:48:35,429 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-13 10:48:36,134 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-13 10:48:36,134 INFO [__main__] model load start
+2026-08-13 10:48:49,353 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-13 10:48:49,356 INFO [__main__] extraction start split=adapt queries=526
+2026-08-13 10:57:40,483 INFO [__main__] extraction done split=adapt
+2026-08-13 10:57:40,483 INFO [__main__] extraction start split=eval queries=42
+2026-08-13 10:58:23,688 INFO [__main__] extraction done split=eval
+2026-08-13 10:58:24,583 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/3/online/run_0/extraction_manifest.json
+2026-08-13 10:58:24,584 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/3/online/run_0
+2026-08-13 10:58:24,584 INFO [__main__] experiment done seconds=589.50
+2026-08-13 10:58:24,584 INFO [__main__] ========================================================================
+2026-08-13 10:58:28,440 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/3/online/run_0 status=complete
+2026-08-13T10:58:28+02:00 extraction done configuration=5/60 dataset=Electricity model=chronos2 lags=168 horizon=24 retrieval=instance_euclidean_3_online
+
+2026-08-13T10:58:29+02:00 extraction start configuration=6/60 dataset=Electricity model=chronos2 lags=336 horizon=48 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0 computation_signature=bef89ec284612ac8e001c896a5c0de0bd427a3f7f2bfce1271239ae6359b585a period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-13 10:58:31,751 INFO [__main__] ========================================================================
+2026-08-13 10:58:31,751 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=336 horizon=48 neighbors=0 distance=raw/euclidean
+2026-08-13 10:58:32,047 INFO [__main__] dataset load start
+2026-08-13 10:58:32,049 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-13 10:58:32,771 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-13 10:58:32,772 INFO [__main__] model load start
+2026-08-13 10:58:46,410 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-13 10:58:46,413 INFO [__main__] extraction start split=adapt queries=525
+2026-08-13 11:00:19,992 INFO [__main__] extraction done split=adapt
+2026-08-13 11:00:19,993 INFO [__main__] extraction start split=eval queries=42
+2026-08-13 11:00:28,637 INFO [__main__] extraction done split=eval
+2026-08-13 11:00:28,830 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-13 11:00:28,835 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-13 11:00:28,835 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0
+2026-08-13 11:00:28,836 INFO [__main__] experiment done seconds=117.08
+2026-08-13 11:00:28,836 INFO [__main__] ========================================================================
+2026-08-13 11:00:32,678 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0 status=complete

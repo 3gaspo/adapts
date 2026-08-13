@@ -1,7 +1,39 @@
 {
   "artifacts": {
-    "files": [],
-    "required": []
+    "files": [
+      {
+        "path": "adapt_prediction_payload.pt",
+        "size": 307899258
+      },
+      {
+        "path": "adapt_features_payload.pt",
+        "size": 5911679
+      },
+      {
+        "path": "eval_prediction_payload.pt",
+        "size": 24590438
+      },
+      {
+        "path": "eval_features_payload.pt",
+        "size": 475314
+      },
+      {
+        "path": "extraction_timing.json",
+        "size": 301
+      },
+      {
+        "path": "extraction_manifest.json",
+        "size": 1354
+      }
+    ],
+    "required": [
+      "adapt_prediction_payload.pt",
+      "adapt_features_payload.pt",
+      "eval_prediction_payload.pt",
+      "eval_features_payload.pt",
+      "extraction_timing.json",
+      "extraction_manifest.json"
+    ]
   },
   "config": {
     "experiment": {},
@@ -75,11 +107,11 @@
         "slurm_job_id": "43124"
       }
     ],
-    "finished_at_utc": null,
+    "finished_at_utc": "2026-08-13T09:00:42.921302+00:00",
     "launch_id": "43124",
     "launched_at_utc": "2026-08-13T08:26:06.783924+00:00",
     "mode": "full",
-    "ready_at_utc": null,
+    "ready_at_utc": "2026-08-13T08:32:21.463271+00:00",
     "started_at_utc": "2026-08-13T08:26:06.901454+00:00"
   },
   "manifest_id": "d6376559-2ddd-4694-aee3-ac807cccdb51",
@@ -91,8 +123,15 @@
   "schema_version": 1,
   "seed_status": {
     "1": {
-      "artifacts": [],
-      "status": "running"
+      "artifacts": [
+        "adapt_prediction_payload.pt",
+        "adapt_features_payload.pt",
+        "eval_prediction_payload.pt",
+        "eval_features_payload.pt",
+        "extraction_timing.json",
+        "extraction_manifest.json"
+      ],
+      "status": "completed"
     }
   },
   "seeds": [
@@ -103,7 +142,7 @@
     "path": "57f473ebdcf7c74b8cc449b43d7e36d91838eb5ea4ec7ef50bcb61ddd548fde3",
     "pipeline": "ea11a46dc88c4f9f2092867a237694163b2001b596fdbdff57bceb908ac4bbc5"
   },
-  "status": "running",
+  "status": "completed",
   "table": {
     "column_config": [
       "metric",

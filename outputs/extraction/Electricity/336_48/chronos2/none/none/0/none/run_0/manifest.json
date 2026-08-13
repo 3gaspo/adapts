@@ -1,44 +1,7 @@
 {
   "artifacts": {
-    "files": [
-      {
-        "path": "adapt_prediction_payload.pt",
-        "size": 319762682
-      },
-      {
-        "path": "adapt_features_payload.pt",
-        "size": 1967421
-      },
-      {
-        "path": "eval_prediction_payload.pt",
-        "size": 25586086
-      },
-      {
-        "path": "eval_features_payload.pt",
-        "size": 159094
-      },
-      {
-        "path": "extraction_timing.json",
-        "size": 301
-      },
-      {
-        "path": "extraction_manifest.json",
-        "size": 1387
-      },
-      {
-        "path": "vanilla_metrics.json",
-        "size": 288
-      }
-    ],
-    "required": [
-      "adapt_prediction_payload.pt",
-      "adapt_features_payload.pt",
-      "eval_prediction_payload.pt",
-      "eval_features_payload.pt",
-      "extraction_timing.json",
-      "extraction_manifest.json",
-      "vanilla_metrics.json"
-    ]
+    "files": [],
+    "required": []
   },
   "config": {
     "experiment": {},
@@ -59,7 +22,7 @@
       "normalization": "instance"
     },
     "runtime": {
-      "slurm.job_id": 42887
+      "slurm.job_id": 43124
     }
   },
   "identity": {
@@ -102,16 +65,24 @@
         "purpose": "publication",
         "slurm_array_task_id": null,
         "slurm_job_id": "42887"
+      },
+      {
+        "launch_id": "43124",
+        "launched_at_utc": "2026-08-13T08:58:28.947094+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43124"
       }
     ],
     "finished_at_utc": null,
-    "launch_id": "42887",
-    "launched_at_utc": "2026-08-11T22:33:30.011039+00:00",
+    "launch_id": "43124",
+    "launched_at_utc": "2026-08-13T08:58:28.947094+00:00",
     "mode": "full",
-    "ready_at_utc": "2026-08-11T22:35:21.931296+00:00",
-    "started_at_utc": "2026-08-11T22:33:30.137122+00:00"
+    "ready_at_utc": null,
+    "started_at_utc": "2026-08-13T08:58:29.066908+00:00"
   },
-  "manifest_id": "52156511-5641-4287-b075-f46c280ef487",
+  "manifest_id": "9af8e177-6210-4da1-8393-bb10eb1a2e9c",
   "project": "adaptation",
   "purposes": [
     "publication"
@@ -120,16 +91,8 @@
   "schema_version": 1,
   "seed_status": {
     "1": {
-      "artifacts": [
-        "adapt_prediction_payload.pt",
-        "adapt_features_payload.pt",
-        "eval_prediction_payload.pt",
-        "eval_features_payload.pt",
-        "extraction_timing.json",
-        "extraction_manifest.json",
-        "vanilla_metrics.json"
-      ],
-      "status": "interrupted"
+      "artifacts": [],
+      "status": "running"
     }
   },
   "seeds": [
@@ -140,7 +103,7 @@
     "path": "996218dccb6e3a8cdce7998d1702236f2ca066c7bdb20547d91680ea6044c1df",
     "pipeline": "ea11a46dc88c4f9f2092867a237694163b2001b596fdbdff57bceb908ac4bbc5"
   },
-  "status": "interrupted",
+  "status": "running",
   "table": {
     "column_config": [
       "metric",
