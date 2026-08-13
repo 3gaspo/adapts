@@ -26,6 +26,7 @@ from ..data.neighbors import (
     neighbor_to_query_scale,
     period_eval_dates,
     search_neighbors,
+    search_neighbors_same_user,
 )
 from ..models.models import load_pretrained_model, parameter_counts, resolve_device
 from ..visu import plot_series
@@ -56,6 +57,8 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
         "lags",
         "horizon",
         "splits",
+        "split_bounds",
+        "standardize_train_boundary",
         "datastore_stride",
         "adapt_stride",
         "eval_stride",
@@ -63,6 +66,7 @@ def extraction_signature(args: argparse.Namespace, dataset_name: str) -> dict[st
         "neighbors",
         "distance_space",
         "distance_metric",
+        "retrieval_scope",
         "retrieval_mode",
         "min_store_dates",
         "max_store_dates",
@@ -237,6 +241,7 @@ def extract_period(
     *,
     dataset,
     model,
+    representation_model,
     prefix: str,
     eval_dates: np.ndarray,
     store_start: int,
@@ -275,6 +280,28 @@ def extract_period(
     store_date_count = torch.zeros((n_eval, n_users), dtype=torch.long)
     store_window_count = torch.zeros((n_eval, n_users), dtype=torch.long)
 
+    fixed_store = None
+    if k > 0 and n_eval > 0 and args.retrieval_mode == "fixed" and args.no_align_period:
+        fixed_dates = store_dates_for_query(
+            int(eval_dates[0]),
+            args=args,
+            n_users=n_users,
+            fixed_store_start=store_start,
+            fixed_store_end=store_end,
+        )
+        fixed_store = build_window_batch(
+            dataset,
+            fixed_dates,
+            lags=lags,
+            horizon=horizon,
+            distance_space=args.distance_space,
+            model=model,
+            representation_model=representation_model,
+            device=device,
+            pool_representation=args.pool_representation,
+            representation_batch_size=args.representation_batch_size,
+        )
+
     for i, t_raw in enumerate(eval_dates):
         t = int(t_raw)
         query = build_window_batch(
@@ -284,8 +311,10 @@ def extract_period(
             horizon=horizon,
             distance_space=args.distance_space,
             model=model,
+            representation_model=representation_model,
             device=device,
             pool_representation=args.pool_representation,
+            representation_batch_size=args.representation_batch_size,
         )
         x = rearrange(query.windows[:, :lags], "user lags -> user 1 lags").to(device)
         y = query.windows[:, lags:]
@@ -321,32 +350,49 @@ def extract_period(
             neighbor_user_idx[i] = empty["neighbor_user"]
             continue
 
-        store_dates = store_dates_for_query(
-            t,
-            args=args,
-            n_users=n_users,
-            fixed_store_start=store_start,
-            fixed_store_end=store_end,
-        )
-        store = build_window_batch(
-            dataset,
-            store_dates,
-            lags=lags,
-            horizon=horizon,
-            distance_space=args.distance_space,
-            model=model,
-            device=device,
-            pool_representation=args.pool_representation,
-        )
+        if fixed_store is None:
+            store_dates = store_dates_for_query(
+                t,
+                args=args,
+                n_users=n_users,
+                fixed_store_start=store_start,
+                fixed_store_end=store_end,
+            )
+            store = build_window_batch(
+                dataset,
+                store_dates,
+                lags=lags,
+                horizon=horizon,
+                distance_space=args.distance_space,
+                model=model,
+                representation_model=representation_model,
+                device=device,
+                pool_representation=args.pool_representation,
+                representation_batch_size=args.representation_batch_size,
+            )
+        else:
+            store = fixed_store
+            store_dates = store.dates
         store_date_count[i] = len(store_dates)
         store_window_count[i] = len(store_dates) * n_users
-        distances, indices = search_neighbors(
-            query.features,
-            store.features,
-            k=k,
-            metric=args.distance_metric,
-            chunk_size=args.search_chunk_size,
-        )
+        if args.retrieval_scope == "same_user":
+            distances, indices = search_neighbors_same_user(
+                query.features,
+                store.features,
+                n_users=n_users,
+                store_dates=store.n_dates,
+                k=k,
+                metric=args.distance_metric,
+                chunk_size=args.search_chunk_size,
+            )
+        else:
+            distances, indices = search_neighbors(
+                query.features,
+                store.features,
+                k=k,
+                metric=args.distance_metric,
+                chunk_size=args.search_chunk_size,
+            )
         xy_c = store.select_windows(indices)
         x_c = xy_c[:, :, :lags]
         y_c = xy_c[:, :, lags:]
@@ -486,6 +532,7 @@ def plot_neighbor_example(
     *,
     dataset,
     model,
+    representation_model,
     eval_dates: np.ndarray,
     store_start: int,
     store_end: int,
@@ -505,8 +552,10 @@ def plot_neighbor_example(
         horizon=args.horizon,
         distance_space=args.distance_space,
         model=model,
+        representation_model=representation_model,
         device=device,
         pool_representation=args.pool_representation,
+        representation_batch_size=args.representation_batch_size,
     )
     store_dates = store_dates_for_query(
         t,
@@ -522,16 +571,29 @@ def plot_neighbor_example(
         horizon=args.horizon,
         distance_space=args.distance_space,
         model=model,
+        representation_model=representation_model,
         device=device,
         pool_representation=args.pool_representation,
+        representation_batch_size=args.representation_batch_size,
     )
-    _, indices = search_neighbors(
-        query.features,
-        store.features,
-        k=args.neighbors,
-        metric=args.distance_metric,
-        chunk_size=args.search_chunk_size,
-    )
+    if args.retrieval_scope == "same_user":
+        _, indices = search_neighbors_same_user(
+            query.features,
+            store.features,
+            n_users=dataset.n_users,
+            store_dates=store.n_dates,
+            k=args.neighbors,
+            metric=args.distance_metric,
+            chunk_size=args.search_chunk_size,
+        )
+    else:
+        _, indices = search_neighbors(
+            query.features,
+            store.features,
+            k=args.neighbors,
+            metric=args.distance_metric,
+            chunk_size=args.search_chunk_size,
+        )
     xy_c = store.select_windows(indices)
     series = {"target": query.windows[user_idx, : args.lags].numpy()}
     for neighbor_idx in range(args.neighbors):
@@ -568,6 +630,16 @@ def parse_args() -> argparse.Namespace:
         help="Chronological ratios T0,T1+T2,T3; downstream models resplit T1+T2",
     )
     parser.add_argument(
+        "--split-bounds",
+        default=None,
+        help="Explicit exclusive T0,T1+T2,T3 boundaries; overrides --splits",
+    )
+    parser.add_argument(
+        "--standardize-train-boundary",
+        default=None,
+        help="Fit per-channel standardization on [0,boundary); accepts an index or fraction",
+    )
+    parser.add_argument(
         "--datastore-stride",
         type=int,
         default=None,
@@ -587,10 +659,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--distance-space",
         default="instance",
-        choices=["raw", "instance", "minmax", "fourier", "encoder"],
+        choices=["raw", "instance", "minmax", "fourier", "encoder", "tsrag"],
         help="Lookback space used by neighbor search",
     )
     parser.add_argument("--distance-metric", default="euclidean", choices=["euclidean", "cosine", "pearson"])
+    parser.add_argument("--retrieval-scope", default="all", choices=["all", "same_user"])
+    parser.add_argument("--retrieval-model-kwargs", default=None, help="JSON options for the TS-RAG Chronos-T5 retriever")
     parser.add_argument("--retrieval-mode", default="online", choices=["online", "fixed"])
     parser.add_argument("--min-store-dates", type=int, default=None)
     parser.add_argument("--max-store-dates", type=int, default=None)
@@ -606,6 +680,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--store-end-date", type=int, default=None)
     parser.add_argument("--no-align-period", action="store_true")
     parser.add_argument("--pool-representation", action="store_true")
+    parser.add_argument("--representation-batch-size", type=int, default=512)
     parser.add_argument("--compute-ec", action="store_true", help="Also save neighbor-context residuals Ec")
     parser.add_argument("--search-chunk-size", type=int, default=512)
     parser.add_argument("--output-dir", default="outputs/extraction")
@@ -665,6 +740,20 @@ def main() -> dict[str, Path]:
         aggr_period=args.aggr_period,
         dataset_config=args.dataset_config,
     )
+    if args.standardize_train_boundary is not None:
+        boundary_value = float(args.standardize_train_boundary)
+        boundary = (
+            int(dataset.n_dates * boundary_value)
+            if 0.0 < boundary_value < 1.0
+            else int(boundary_value)
+        )
+        if boundary <= 0 or boundary > dataset.n_dates:
+            raise ValueError("invalid --standardize-train-boundary")
+        train = dataset.frame.iloc[:boundary]
+        mean = train.mean(axis=0)
+        scale = train.std(axis=0, ddof=0).replace(0.0, 1.0)
+        dataset.frame = (dataset.frame - mean) / scale
+        LOGGER.info("dataset standardized train_boundary=%s", boundary)
     LOGGER.info("dataset load done dates=%s users=%s", dataset.n_dates, dataset.n_users)
     device = resolve_device(args.device)
     LOGGER.info("model load start")
@@ -678,6 +767,12 @@ def main() -> dict[str, Path]:
         device=device,
         model_kwargs=load_json_kwargs(args.model_kwargs),
     )
+    representation_model = None
+    if args.distance_space == "tsrag":
+        from ..models.tsrag_retriever import TSRAGRetriever
+
+        retrieval_options = load_json_kwargs(args.retrieval_model_kwargs)
+        representation_model = TSRAGRetriever(**retrieval_options)
     total_parameters, trainable_parameters = parameter_counts(model)
     LOGGER.info(
         "model load done name=%s device=%s parameters_total=%s parameters_trainable=%s",
@@ -715,7 +810,13 @@ def main() -> dict[str, Path]:
         if int(args.datastore_stride) % int(args.period) != 0:
             raise ValueError("--datastore-stride must be a multiple of --period when aligned retrieval is enabled")
 
-    t0_end, t12_end, t3_end = split_bounds(dataset.n_dates, args.splits)
+    if args.split_bounds:
+        bounds = [int(value.strip()) for value in args.split_bounds.replace(";", ",").split(",")]
+        if len(bounds) != 3 or not (0 < bounds[0] < bounds[1] < bounds[2] <= dataset.n_dates):
+            raise ValueError("--split-bounds must be increasing T0,T1+T2,T3 boundaries")
+        t0_end, t12_end, t3_end = bounds
+    else:
+        t0_end, t12_end, t3_end = split_bounds(dataset.n_dates, args.splits)
     adapt_eval_dates = period_eval_dates(
         t0_end,
         t12_end,
@@ -765,6 +866,7 @@ def main() -> dict[str, Path]:
     adapt_payload, _ = extract_period(
         dataset=dataset,
         model=model,
+        representation_model=representation_model,
         prefix="adapt",
         eval_dates=adapt_eval_dates,
         store_start=0,
@@ -779,6 +881,7 @@ def main() -> dict[str, Path]:
     eval_payload, _ = extract_period(
         dataset=dataset,
         model=model,
+        representation_model=representation_model,
         prefix="eval",
         eval_dates=eval_eval_dates,
         store_start=0,
@@ -799,6 +902,7 @@ def main() -> dict[str, Path]:
     plot_neighbor_example(
         dataset=dataset,
         model=model,
+        representation_model=representation_model,
         eval_dates=eval_eval_dates,
         store_start=0,
         store_end=t0_end,

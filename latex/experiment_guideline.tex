@@ -1257,8 +1257,10 @@ manifest history, and completed \code{seed_n} leaves. Computation entry points
 never delete the allocated \code{run_n} root. A manifest-less \code{run_n} is
 an invalid partial directory and is reclaimed by the next allocation at that
 index.
-Finished work remains \code{ready}; completion is recorded only by the owning
-Slurm workflow's final successful exit. Completed manifests are
+The overall run remains \code{running} with \code{ready_at_utc} while finished
+seed state is \code{ready}; completion is recorded immediately after that
+producer's \code{srun} returns successfully. A later configuration or table
+failure preserves completed producers and interrupts only unfinished work. Completed manifests are
 authoritative and are not followed by file hashing or synchronization checks.
 Within that active workflow, later stages may select ready manifests only when
 their launch ID matches; independent reuse remains completed-only.

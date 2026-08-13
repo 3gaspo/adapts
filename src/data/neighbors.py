@@ -221,8 +221,10 @@ def build_window_batch(
     horizon: int,
     distance_space: str = "instance",
     model: torch.nn.Module | None = None,
+    representation_model: torch.nn.Module | None = None,
     device: str | torch.device | None = None,
     pool_representation: bool = False,
+    representation_batch_size: int = 512,
 ) -> WindowBatch:
     """Build windows with ``X=(s-L,s]`` and ``Y=(s,s+H]`` for query dates."""
     query_dates = np.asarray(query_dates, dtype=np.int64)
@@ -255,19 +257,28 @@ def build_window_batch(
         features = minmax_windows(lookbacks)
     elif space == "fourier":
         features = fourier_features(lookbacks)
-    elif space == "encoder":
-        if model is None:
+    elif space in {"encoder", "tsrag"}:
+        encoder = representation_model if space == "tsrag" else model
+        if encoder is None:
             raise ValueError(f"distance_space={distance_space!r} requires a model")
-        if not hasattr(model, "representation"):
+        if not hasattr(encoder, "representation"):
             raise AttributeError("model does not expose representation()")
-        x = torch.as_tensor(
-            rearrange(lookbacks, "sample time -> sample 1 time"),
-            dtype=torch.float32,
-            device=device,
-        )
+        if representation_batch_size <= 0:
+            raise ValueError("representation_batch_size must be positive")
+        feature_batches = []
         with torch.inference_mode():
-            reps = model.representation(x, pool=pool_representation)
-        features = reps.detach().cpu().numpy().astype(np.float32)
+            for start in range(0, len(lookbacks), int(representation_batch_size)):
+                x = torch.as_tensor(
+                    rearrange(
+                        lookbacks[start : start + int(representation_batch_size)],
+                        "sample time -> sample 1 time",
+                    ),
+                    dtype=torch.float32,
+                    device=device,
+                )
+                reps = encoder.representation(x, pool=pool_representation)
+                feature_batches.append(reps.detach().cpu().numpy().astype(np.float32))
+        features = np.concatenate(feature_batches, axis=0)
     else:
         raise ValueError(f"unknown distance_space={distance_space!r}")
 
@@ -345,3 +356,35 @@ def search_neighbors(
         all_distances[start:stop] = np.take_along_axis(top_dist, order, axis=1)
         all_indices[start:stop] = np.take_along_axis(top, order, axis=1)
     return all_distances, all_indices
+
+
+def search_neighbors_same_user(
+    query_features: np.ndarray,
+    store_features: np.ndarray,
+    *,
+    n_users: int,
+    store_dates: int,
+    k: int,
+    metric: DistanceMetric = "euclidean",
+    chunk_size: int = 512,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Search each user's query only inside that user's datastore slice."""
+    if query_features.shape[0] != int(n_users):
+        raise ValueError("same-user retrieval expects one query per user")
+    if store_features.shape[0] != int(n_users) * int(store_dates):
+        raise ValueError("same-user datastore does not match user/date dimensions")
+    distances = np.empty((int(n_users), int(k)), dtype=np.float32)
+    indices = np.empty((int(n_users), int(k)), dtype=np.int64)
+    for user_idx in range(int(n_users)):
+        start = user_idx * int(store_dates)
+        stop = start + int(store_dates)
+        user_distances, user_indices = search_neighbors(
+            query_features[user_idx : user_idx + 1],
+            store_features[start:stop],
+            k=k,
+            metric=metric,
+            chunk_size=chunk_size,
+        )
+        distances[user_idx] = user_distances[0]
+        indices[user_idx] = user_indices[0] + start
+    return distances, indices

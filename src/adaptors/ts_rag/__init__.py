@@ -1,0 +1,1 @@
+"""TS-RAG inference adapter."""

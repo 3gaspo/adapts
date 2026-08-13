@@ -28,14 +28,15 @@ class PublisherContractTest(unittest.TestCase):
         self.assertIn("**/*.pt", publisher)
         self.assertIn("**/*.npy", publisher)
         self.assertIn("**/*.cbm", publisher)
-        self.assertIn('. "$proxy_script" --credentials-file "$credentials_file"', publisher)
+        self.assertIn('. "$proxy_script"', publisher)
         self.assertIn("$HOME/codes/proxy.sh", publisher)
-        self.assertIn("$HOME/codes/.secrets/proxy.credentials", publisher)
-        self.assertIn("unset GIT_ASKPASS", publisher)
+        self.assertNotIn("PROXY_CREDENTIALS_FILE", publisher)
+        self.assertNotIn("unset GIT_ASKPASS", publisher)
         self.assertNotIn("submit_publish_job", common)
         self.assertNotIn("ADAPTATION_PUBLISH_SUBMITTED", common)
         self.assertIn(".secrets/", ignore)
         self.assertIn("experiment_runs complete-launch", common)
+        self.assertIn("experiment_runs complete --run-dir", common)
 
 
 if __name__ == "__main__":

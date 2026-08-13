@@ -96,25 +96,8 @@ else
 fi
 
 proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
-credentials_file="${PROXY_CREDENTIALS_FILE:-$HOME/codes/.secrets/proxy.credentials}"
 [ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; exit 1; }
-[ -f "$credentials_file" ] || { printf 'proxy credentials not found: %s\n' "$credentials_file" >&2; exit 1; }
-credential_mode="$(stat -c '%a' "$credentials_file")"
-case "$credential_mode" in
-  400|600) ;;
-  *) printf 'proxy credentials must use chmod 600 (or 400): %s\n' "$credentials_file" >&2; exit 1 ;;
-esac
 
 # shellcheck disable=SC1090
-. "$proxy_script" --credentials-file "$credentials_file"
-unset PASS NNI
-if [ "${NOEXPORT:-1}" -ne 0 ] || [ -z "${https_proxy:-}" ]; then
-  printf 'proxy authentication failed\n' >&2
-  exit 1
-fi
-
-# A stale remote VS Code askpass socket cannot answer from a normal shell.
-# Let Git use its configured credential helper or prompt in this terminal.
-unset GIT_ASKPASS SSH_ASKPASS GIT_TERMINAL_PROMPT VSCODE_GIT_ASKPASS_MAIN \
-  VSCODE_GIT_ASKPASS_NODE VSCODE_GIT_ASKPASS_EXTRA_ARGS
+. "$proxy_script"
 git push origin main

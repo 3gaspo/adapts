@@ -50,6 +50,11 @@ class CrossRAGModelContractTest(unittest.TestCase):
         ):
             self.assertIn(f"self.{module}", model_text)
         self.assertIn('self.augment == "moe"', model_text)
+        self.assertGreaterEqual(
+            model_text.count("scale == 1"),
+            2,
+            "retain the normalization sentinel from pinned upstream Cross-RAG",
+        )
         self.assertNotIn("BaseChronosPipeline", model_text)
 
     def test_evaluator_uses_only_local_code_and_weight_paths(self):

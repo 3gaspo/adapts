@@ -225,12 +225,32 @@ def main() -> None:
             row={"split": "eval", "mse": 0.0008, "mae": 0.02, "nmse": 0.27},
             pipeline_config={"gate.iterations": 300},
         )
+        _evaluation_run(
+            root,
+            family="baselines",
+            formula="full_ridge_shared",
+            row={"split": "eval", "mse": 0.0007, "mae": 0.018, "nmse": 0.24},
+            pipeline_config={"max_t1_fit_samples": 100},
+        )
+        _evaluation_run(
+            root,
+            family="baselines",
+            formula="full_ridge_shared",
+            row={"split": "eval", "mse": 0.0006, "mae": 0.017, "nmse": 0.22},
+            pipeline_config={"max_t1_fit_samples": 200},
+        )
 
         records = discover_results(root)
         methods = {record.method for record in records if record.metric == "mse"}
         assert "vanilla" in methods
         assert f"{retrieval}/avgy_ridge_shared" in methods
         assert f"{retrieval}/cov_forecast" in methods
+        assert (
+            f"{retrieval}/full_ridge_shared__max_t1_fit_samples-100" in methods
+        )
+        assert (
+            f"{retrieval}/full_ridge_shared__max_t1_fit_samples-200" in methods
+        )
         assert f"{retrieval}/oracle_cov_shared" in methods
         assert f"{retrieval}/{method}" in methods
         assert f"{retrieval}/{method}_memory_branch" in methods

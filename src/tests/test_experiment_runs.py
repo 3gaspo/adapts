@@ -10,6 +10,7 @@ from experiment_runs import (
     ManifestError,
     allocate_run,
     complete_launch,
+    complete_run,
     load_manifest,
     interrupt_launch,
     mark_ready,
@@ -114,6 +115,12 @@ class ExperimentRunsTest(unittest.TestCase):
             with self.assertRaises(ManifestError):
                 load_manifest(run)
 
+    def test_ready_is_not_a_valid_overall_status(self):
+        with tempfile.TemporaryDirectory() as folder:
+            allocation = self._allocate(Path(folder) / "identity", 10)
+            with self.assertRaises(ValueError):
+                mark_status(allocation.run_dir, "ready")
+
     def test_provenance_does_not_define_computation(self):
         with tempfile.TemporaryDirectory() as folder:
             identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
@@ -177,7 +184,7 @@ class ExperimentRunsTest(unittest.TestCase):
             self.assertTrue(completed.is_file())
             self.assertFalse(stale.exists())
 
-    def test_ready_run_completes_only_after_slurm_workflow_success(self):
+    def test_ready_run_completes_after_its_producer_succeeds(self):
         with tempfile.TemporaryDirectory() as folder:
             identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
             allocation = self._allocate(identity, 10)
@@ -189,11 +196,67 @@ class ExperimentRunsTest(unittest.TestCase):
             ready = load_manifest(allocation.run_dir)
             self.assertEqual(ready["status"], "running")
             self.assertEqual(ready["seed_status"]["1"]["status"], "ready")
-            self.assertEqual(complete_launch(folder, "launch_10_default"), [allocation.run_dir])
+            complete_run(allocation.run_dir, launch_id="launch_10_default")
             self.assertEqual(load_manifest(allocation.run_dir)["status"], "completed")
 
             artifact.unlink()
             self.assertEqual(validate_completed(allocation.run_dir)["status"], "completed")
+
+    def test_later_failure_preserves_ready_producers_and_interrupts_unfinished_work(self):
+        with tempfile.TemporaryDirectory() as folder:
+            first_identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            first = self._allocate(first_identity, 10)
+            mark_status(first.run_dir, "running")
+            artifact = first.run_dir / "result.json"
+            artifact.write_text('{"mse": 1.0}\n', encoding="utf-8")
+            mark_ready(first.run_dir, required_artifacts=["result.json"])
+
+            second_identity = Path(folder) / "electricity/504_168/patchtst/ridge/raw"
+            second = self._allocate(second_identity, 10)
+            mark_status(second.run_dir, "running")
+
+            self.assertEqual(
+                interrupt_launch(folder, "launch_10_default"), [second.run_dir]
+            )
+            self.assertEqual(load_manifest(first.run_dir)["status"], "completed")
+            self.assertEqual(load_manifest(second.run_dir)["status"], "interrupted")
+
+    def test_run_readiness_preserves_each_seed_artifact_list(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            allocation = allocate_run(
+                identity,
+                project="contract_test",
+                workflow="family",
+                dataset="electricity",
+                lookback=504,
+                horizon=168,
+                backbone="patchtst",
+                model_config_order=["formula", "space"],
+                model_config={"formula": "ridge", "space": "instance"},
+                pipeline_config={"steps": 10},
+                seeds=[1, 2],
+                launch_id="seed_artifacts",
+            )
+            mark_status(allocation.run_dir, "running")
+            required = []
+            for seed in (1, 2):
+                relative = f"seed_{seed}/result.json"
+                artifact = allocation.run_dir / relative
+                artifact.parent.mkdir(parents=True, exist_ok=True)
+                artifact.write_text('{"mse": 1.0}\n', encoding="utf-8")
+                mark_status(
+                    allocation.run_dir,
+                    "ready",
+                    seed=seed,
+                    required_artifacts=[relative],
+                )
+                required.append(relative)
+
+            mark_ready(allocation.run_dir, required_artifacts=required)
+            seed_status = load_manifest(allocation.run_dir)["seed_status"]
+            self.assertEqual(seed_status["1"]["artifacts"], ["seed_1/result.json"])
+            self.assertEqual(seed_status["2"]["artifacts"], ["seed_2/result.json"])
 
     def test_ready_run_is_selectable_only_inside_its_own_active_launch(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -225,10 +288,9 @@ class ExperimentRunsTest(unittest.TestCase):
                 )
 
             interrupt_launch(folder, "launch_10_default")
-            with self.assertRaises(ManifestError):
-                select_identity_runs(
-                    identity, allow_ready_launch_id="launch_10_default"
-                )
+            self.assertEqual(load_manifest(allocation.run_dir)["status"], "completed")
+            selected = select_identity_runs(identity)
+            self.assertEqual([choice.run_dir for choice in selected], [allocation.run_dir])
 
     def test_report_manifest_records_requested_and_obtained(self):
         with tempfile.TemporaryDirectory() as folder:

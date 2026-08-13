@@ -65,7 +65,8 @@ only when it carries that same launch ID.
 
 Every independently submitted comparison or ablation owns a workflow root
 below `outputs/adaptation/`, for example `baselines`, `gates`, `benchmark`,
-`screen`, `k_ablation`, or `crossrag`. Baseline, gate, and Cross-RAG identities
+`screen`, `k_ablation`, `crossrag`, or `tsrag`. Baseline, gate, Cross-RAG, and
+TS-RAG identities
 are
 
 ```text
@@ -129,12 +130,14 @@ readers, and may be consulted only for legacy analysis.
 Baseline, gate, and TS-IFA predictions use the sole current disk-backed
 `prediction_manifest.json` contract. Each array is a separate `.npy` file below
 `predictions/`; the dashboard reads only this contract. `result_manifest.json`
-is written last as a family-specific scientific artifact. Runs remain `ready`
-until the owning Slurm workflow exits successfully; only that final exit path
-records overall completion after all launched work and required files are done.
-Ready runs can feed later stages of that same active workflow, but are not
-eligible for external reuse. Obsolete or partial result folders are not
-accepted.
+is written last as a family-specific scientific artifact. The overall run
+briefly remains `running` with `ready_at_utc` while its finished seed state is
+`ready`; immediately after that producer's `srun` returns successfully, the
+launcher records overall completion. A later configuration or table failure
+therefore preserves completed producers and interrupts only unfinished work.
+Ready runs can feed later stages of that same active workflow during the brief
+handoff, but are not eligible for external reuse. Obsolete or partial result
+folders are not accepted.
 Gate runs also index their per-model CatBoost feature-importance CSV/PNG files
 from `gate_artifacts.json`. Every TS-IFA variant stores its T3 active-rooter
 coefficients under the prediction store's `gate_diagnostics` kind and its
@@ -203,10 +206,18 @@ sbatch extraction.slurm
 
 The standard model folders are `weights/chronos2/`,
 `weights/chronos-bolt-base/`, and `weights/tabpfnts/`. Cross-RAG additionally
-expects `weights/cross-rag/` to contain exactly one released `best.pth`
-recursively. `CHRONOS2_WEIGHTS_PATH`, `CHRONOS_BOLT_WEIGHTS_PATH`,
-`CROSSRAG_WEIGHTS_PATH`, and `TABPFN_WEIGHTS_PATH` override the corresponding
-locations. The model names are `chronos2`, `chronos-bolt`, and `tabpfnts`.
+expects `weights/cross-rag/` to contain exactly one Cross-RAG-trained
+`best.pth` recursively. The official repository's linked Drive currently
+contains the released TS-RAG `checkpoints/chronos-bolt/best.pth` (about 801.5
+MB). Put that file below `weights/ts-rag/` for `tsrag.slurm`; its retrieval head
+is strict-loaded by the local TS-RAG source and must never be used as Cross-RAG
+weights. Cross-RAG is now represented only by the paper values recorded in
+`SOTA_BENCHMARK.json`; no Cross-RAG checkpoint is required by a Slurm front.
+`CHRONOS2_WEIGHTS_PATH`,
+`CHRONOS_BOLT_WEIGHTS_PATH`,
+`CROSSRAG_WEIGHTS_PATH`, `TSRAG_WEIGHTS_PATH`, and `TABPFN_WEIGHTS_PATH`
+override the corresponding locations. The model names are `chronos2`,
+`chronos-bolt`, and `tabpfnts`.
 TS-ICL is documented as a later extension and is rejected by the launcher until
 it is implemented and registered.
 
@@ -270,11 +281,16 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   `H in {24,168,504}`.
 - `l_ablation`: manually named pipelines with `H=24` and
   `L in {24,168,504}`.
-- `crossrag`: a three-pipeline study at exactly `L=512`, `H=64`. It runs the
-  selected winner on Chronos-2 with its selected retrieval pipeline, reruns the
-  same formula and normalization on Chronos-Bolt at `K=15`, and evaluates
-  released Cross-RAG on Chronos-Bolt with its prescribed per-window min-max,
-  cosine, `K=15` retrieval. It is not crossed with `S`.
+- `sota_benchmark`: evaluates one selected project method with Chronos-Bolt at
+  `L=512`, `H=64` on the seven exact Cross-RAG paper test splits, then combines
+  the computed MSE with the published Cross-RAG and TS-RAG rows from
+  `SOTA_BENCHMARK.json`. The selected method keeps its own training/retrieval
+  protocol; only evaluation is aligned.
+- `tsrag`: source-faithful inference with the released TS-RAG ARM checkpoint at
+  `L=512`, `H=64`, using its default Chronos-T5 EOS embeddings, Euclidean
+  same-channel retrieval, and `K=10`. The selected project method is evaluated
+  on the same neighbors with both Chronos-Bolt and Chronos-2; TS-RAG itself is
+  Chronos-Bolt-only because that is the checkpoint architecture.
 
 The publication screen uses `K in {1,3}`; the smoke-only `test` profile fixes
 `K=3`. The only wider grids are the selected-winner `k_ablation` and
@@ -300,7 +316,8 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20,100` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
-| `crossrag` | `D_primary` | `512:64` | Chronos-2, Chronos-Bolt | Winner's selected retrieval on Chronos-2; winner's space/metric with `K=15` on Chronos-Bolt; Cross-RAG min-max cosine / `15` | Selected winner on both backbones plus released Cross-RAG |
+| `sota_benchmark` | Seven paper datasets | `512:64` | Chronos-Bolt | Selected method's own retrieval | Computed selected method plus published TS-RAG/Cross-RAG MSE |
+| `tsrag` | `D_primary` | `512:64` | Chronos-2, Chronos-Bolt | Chronos-T5 Euclidean same-channel / `10` | Selected method on both backbones; released TS-RAG ARM on Bolt |
 
 For the primary methods, let `V` be the vanilla forecast, `C` the
 covariate-conditioned forecast, `Y_j` the observed future of neighbor `j`,
@@ -412,7 +429,8 @@ The intended submission interface is:
 | `k_ablation.slurm` | `full` | `k_ablation` family over the K grid |
 | `h_ablation.slurm` | `full` | `h_ablation` family over the H grid |
 | `l_ablation.slurm` | `full` | `l_ablation` family over the L grid |
-| `crossrag.slurm` | `full` | `crossrag` family: selected winner on Chronos-2 at its own K, then winner and Cross-RAG on Chronos-Bolt at K=15 |
+| `sota_benchmark.slurm` | `full` | exact paper test splits: selected project method on Chronos-Bolt plus static published TS-RAG/Cross-RAG MSE rows |
+| `tsrag.slurm` | `full` | released TS-RAG defaults at K=10, plus the selected project method on Chronos-Bolt and Chronos-2 |
 
 There is no aggregate smoke submitter. If needed, submit the `test` extraction,
 then the baseline and gate smoke jobs, then tables after both complete. Final
@@ -559,29 +577,63 @@ retain each full winning pipeline, including its K and normalization, while
 changing only the requested lookback/horizon axis. Dataset–`L:H` pairs remain
 evaluation settings.
 
-The Cross-RAG comparison is also one job. The launcher defaults to the selected
-full-ridge winner at `K=10`; override `WINNERS_CSV` with one complete pipeline
-when the selection changes. Place the downloaded Chronos-Bolt and Cross-RAG
-weights under the standard `weights/` locations above and submit it:
+The SOTA benchmark evaluates one selected project method and then appends the
+paper values without executing Cross-RAG or TS-RAG:
 
 ```bash
 WINNERS_CSV=baselines/instance_euclidean_10_online/full_ridge_shared \
-sbatch crossrag.slurm
+sbatch sota_benchmark.slurm
 ```
 
-`src/models/chronos_bolt.py` and `src/models/cross_rag.py` retain the released
-model architectures locally, while deleting the upstream training, dataset,
-and generic pipeline code that this experiment does not use. The launcher
-loads only the downloaded base and adapter weights and does not retrain
-Cross-RAG. First, the winner runs with Chronos-2 and the K encoded in
-`WINNERS_CSV`. Then its same formula, normalization, metric, and retrieval mode
-run with Chronos-Bolt at `K=15`; released Cross-RAG uses Chronos-Bolt and its
-prescribed min-max/cosine retrieval at `K=15`. Reports are separated by
-backbone, so the Chronos-2 table contains only the original winner and the
-Chronos-Bolt table contains the matched winner and Cross-RAG. The comparison
-tables include accuracy, and
-`timing_comparison.tex` reports wall-clock vanilla, retrieval, adaptation, and
-Cross-RAG totals, including each pipeline's own retrieval pass.
+`SOTA_BENCHMARK.json` is the sole static source for the published rows and the
+exact dataset protocol. The launcher uses the ETT repositories' fixed
+12/4/4-month boundaries, the custom datasets' 70/10/20 boundaries, every
+eligible test origin, and per-channel standardization fitted on the official
+training segment. Our selected method retains its own fitting and retrieval
+protocol. The generated `sota_benchmark_mse.csv/.tex` therefore answers the
+intended question: how our trained method scores on the same evaluation data
+and metric, without claiming that it used Cross-RAG's training recipe.
+
+The released TS-RAG ARM is re-evaluated separately on the project datasets:
+
+```bash
+sbatch tsrag.slurm
+```
+
+The front fixes `L=512`, `H=64` because those shapes are embedded in the public
+ARM checkpoint. It uses the TS-RAG repository defaults: locally downloaded
+`amazon/chronos-t5-base` EOS embeddings, Euclidean distance, same-channel fixed
+retrieval, and `K=10`. It evaluates released TS-RAG on Chronos-Bolt and the
+selected project method on the identical neighbors with both Chronos-Bolt and
+Chronos-2. A Chronos-2 TS-RAG row is intentionally absent: the public ARM
+checkpoint contains Chronos-Bolt decoder/head parameters and cannot be loaded
+into Chronos-2.
+
+## Fair comparison with the Cross-RAG paper
+
+Current `D_primary` T3 results cannot be placed directly beside the paper's
+table. Training may differ, provided it is disclosed; direct numerical
+comparison requires the following evaluation contract:
+
+- the seven original multivariate panels `ETTh1`, `ETTh2`, `ETTm1`, `ETTm2`,
+  `Weather`, `Electricity`, and `Exchange`, retaining every channel;
+- the official fixed ETT boundaries (12 months train, 4 validation, 4 test)
+  and `7:1:2` for Weather, Electricity, and Exchange;
+- every eligible rolling test origin, without evaluation stride subsampling;
+- `L=512`, `H=64`, the same released Chronos-Bolt backbone, its median (`0.5`)
+  quantile forecast, and the repository's train-fitted standardization;
+- pooled element-wise MSE on the standardized repository test windows; project
+  nMSE and positive-window metrics may be supplementary only.
+
+The Cross-RAG paper reports an equal-dataset mean MSE of `0.191` for Cross-RAG,
+`0.197` for its TS-RAG comparator, and `0.201` for standalone Chronos-Bolt.
+Those numbers become a fair external evaluation comparison after the contract
+above is reproduced; method-specific training differences remain visible in
+the row labels and accompanying text. Its paper and the two source repositories are
+the authoritative references:
+[Cross-RAG paper](https://arxiv.org/pdf/2603.14709),
+[Cross-RAG source](https://github.com/seunghan96/cross-rag), and
+[TS-RAG source](https://github.com/UConn-DSIS/TS-RAG).
 
 Extraction defaults to `SKIP_COMPLETE=true` and validates an atomic manifest
 with the exact signature and timing artifact. The final benchmark also skips
@@ -811,8 +863,16 @@ The runnable Python modules are:
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
   with `--family baselines` or `--family gates`.
-- `src.adaptors.cross_rag.evaluate`: released Cross-RAG inference on the fixed
-  Chronos-Bolt `512:64`, min-max/cosine, `K=15` extraction payload.
+- `src.adaptors.cross_rag.evaluate`: Cross-RAG checkpoint inference on the fixed
+  Chronos-Bolt `512:64`, min-max/cosine, `K=15` extraction payload. This source
+  remains for architecture inspection but has no current Slurm front.
+- `src.adaptors.ts_rag.evaluate`: strict TS-RAG checkpoint inference on a
+  declared-`K` Chronos-Bolt `512:64` extraction payload; `tsrag.slurm` fixes
+  Chronos-T5/Euclidean/same-channel retrieval to the repository default `K=10`.
+- `src.visu.sota_benchmark_table`: combines computed exact-test-split MSE with
+  immutable published rows from `SOTA_BENCHMARK.json`.
+- `src.visu.tsrag_comparison_table`: tabulates the project-dataset TS-RAG run
+  and its Chronos-Bolt/Chronos-2 controls.
 - `src.adaptors.ts_ifa.train`: joint T1 training with T2 checkpoint selection or
   chronological T1 support/query meta-training with a frozen-branch T2 rooter fit.
 - `src.visu.sweep_results_table`: full and averaged publication tables.
@@ -864,15 +924,10 @@ lightweight `outputs/` trees:
 bash publish_job.sh
 ```
 
-The shared credential file is `$HOME/codes/.secrets/proxy.credentials`, with
-the NNI on the first line and password on the second. Create it only on the
-cluster and run `chmod 600 "$HOME/codes/.secrets/proxy.credentials"`.
-`PROXY_SCRIPT_PATH` and `PROXY_CREDENTIALS_FILE` override the defaults. The
-external proxy script must accept `--credentials-file <path>`, export
-`https_proxy` when authentication succeeds, set `NOEXPORT=0`, and return
-nonzero on failure. GitHub authentication remains separate: the script clears
-stale VS Code askpass variables so Git can use its configured credential helper
-or ask for GitHub credentials in the terminal.
+`PROXY_SCRIPT_PATH` overrides the default `$HOME/codes/proxy.sh`. The publisher
+simply sources that script in the current interactive shell and then runs
+`git push origin main`; it leaves the shell's existing GitHub credential and
+askpass context untouched.
 
 ## Local checks
 
@@ -883,6 +938,7 @@ user-prepared project environment, lightweight checks are:
 python src/tests/smoke/check_extraction_manifest.py
 python src/tests/smoke/check_loads.py
 python src/tests/test_crossrag_model_contract.py
+python src/tests/test_tsrag_model_contract.py
 python src/tests/smoke/check_baseline_oracles.py
 python src/tests/smoke/check_ts_ifa_training.py
 python src/tests/smoke/check_results_table.py

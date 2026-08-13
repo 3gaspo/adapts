@@ -1,0 +1,78 @@
+{
+  "source": "https://arxiv.org/pdf/2603.14709",
+  "source_table": "Table 4",
+  "metric": "mse",
+  "protocol": {
+    "lags": 512,
+    "horizon": 64,
+    "backbone": "chronos-bolt",
+    "evaluation": "all eligible official test windows",
+    "scaling": "per-channel StandardScaler fitted on the official training segment"
+  },
+  "datasets": {
+    "ETTh1": {
+      "project_name": "ETTh1",
+      "official_boundaries": [8640, 11520, 14400],
+      "project_split_bounds": [4320, 11520, 14400],
+      "standardize_train_boundary": 8640
+    },
+    "ETTh2": {
+      "project_name": "ETTh2",
+      "official_boundaries": [8640, 11520, 14400],
+      "project_split_bounds": [4320, 11520, 14400],
+      "standardize_train_boundary": 8640
+    },
+    "ETTm1": {
+      "project_name": "ETTm1",
+      "official_boundaries": [34560, 46080, 57600],
+      "project_split_bounds": [17280, 46080, 57600],
+      "standardize_train_boundary": 34560
+    },
+    "ETTm2": {
+      "project_name": "ETTm2",
+      "official_boundaries": [34560, 46080, 57600],
+      "project_split_bounds": [17280, 46080, 57600],
+      "standardize_train_boundary": 34560
+    },
+    "Weather": {
+      "project_name": "Weather",
+      "official_ratios": [0.7, 0.1, 0.2],
+      "project_split_ratios": [0.3, 0.5, 0.2],
+      "standardize_train_boundary": 0.7
+    },
+    "Electricity": {
+      "project_name": "Electricity",
+      "official_ratios": [0.7, 0.1, 0.2],
+      "project_split_ratios": [0.3, 0.5, 0.2],
+      "standardize_train_boundary": 0.7
+    },
+    "Exchange": {
+      "project_name": "exchange_rate",
+      "official_ratios": [0.7, 0.1, 0.2],
+      "project_split_ratios": [0.3, 0.5, 0.2],
+      "standardize_train_boundary": 0.7
+    }
+  },
+  "published_results": {
+    "TS-RAG": {
+      "ETTh1": 0.357,
+      "ETTh2": 0.246,
+      "ETTm1": 0.298,
+      "ETTm2": 0.147,
+      "Weather": 0.151,
+      "Electricity": 0.112,
+      "Exchange": 0.071,
+      "Average": 0.197
+    },
+    "Cross-RAG": {
+      "ETTh1": 0.341,
+      "ETTh2": 0.243,
+      "ETTm1": 0.290,
+      "ETTm2": 0.143,
+      "Weather": 0.144,
+      "Electricity": 0.112,
+      "Exchange": 0.064,
+      "Average": 0.191
+    }
+  }
+}

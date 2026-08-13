@@ -31,7 +31,7 @@ DATASTORE_STRIDE="${DATASTORE_STRIDE:-$DEFAULT_DATASTORE_STRIDE}"
 ADAPT_QUERY_STRIDE="${ADAPT_QUERY_STRIDE:-$DEFAULT_ADAPT_QUERY_STRIDE}"
 EVAL_QUERY_STRIDE="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
 ALIGN_PERIOD="${ALIGN_PERIOD:-$DEFAULT_ALIGN_PERIOD}"
-MAX_STORE_WINDOWS="${MAX_STORE_WINDOWS:-$DEFAULT_MAX_STORE_WINDOWS}"
+MAX_STORE_WINDOWS="${MAX_STORE_WINDOWS-$DEFAULT_MAX_STORE_WINDOWS}"
 require_resolved_profile_grid
 require_profile_neighbors "$NEIGHBORS_CSV"
 case "$ALIGN_PERIOD" in
@@ -47,7 +47,10 @@ csv_to_array "$DISTANCE_METRICS_CSV" DISTANCE_METRICS
 csv_to_array "$NEIGHBORS_CSV" NEIGHBORS
 
 SPLITS="${SPLITS:-0.3,0.5,0.2}"
+SPLIT_BOUNDS="${SPLIT_BOUNDS:-}"
+STANDARDIZE_TRAIN_BOUNDARY="${STANDARDIZE_TRAIN_BOUNDARY:-}"
 RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
+RETRIEVAL_SCOPE="${RETRIEVAL_SCOPE:-all}"
 PERIOD_OVERRIDE="${PERIOD:-}"
 SEED="${SEED:-1}"
 
@@ -84,14 +87,23 @@ model_kwargs() {
 run_extraction() {
   local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
   local dataset_dir config model_options retrieval_period datastore_stride
-  local data_args=() alignment_args=()
+  local data_args=() alignment_args=() protocol_args=() retrieval_args=() limit_args=()
   dataset_dir="$(find_dataset_dir "$dataset")"
   config="$dataset_dir/config.json"
   [ ! -f "$config" ] || data_args+=(--dataset-config "$config")
+  [ -z "$SPLIT_BOUNDS" ] || protocol_args+=(--split-bounds "$SPLIT_BOUNDS")
+  [ -z "$STANDARDIZE_TRAIN_BOUNDARY" ] || protocol_args+=(--standardize-train-boundary "$STANDARDIZE_TRAIN_BOUNDARY")
+  if [ "$space" = tsrag ]; then
+    local retriever_path
+    retriever_path="${TSRAG_RETRIEVER_WEIGHTS_PATH:-}"
+    [ -n "$retriever_path" ] || retriever_path="$(find_weight_path chronos-t5-base)"
+    retrieval_args+=(--retrieval-model-kwargs "{\"weights_path\":\"$retriever_path\",\"device_map\":\"cuda\"}")
+  fi
   model_options="$(model_kwargs "$model")"
   retrieval_period="${PERIOD_OVERRIDE:-$(dataset_period "$dataset")}"
   datastore_stride="$DATASTORE_STRIDE"
   [ "$ALIGN_PERIOD" = true ] || alignment_args+=(--no-align-period)
+  [ -z "$MAX_STORE_WINDOWS" ] || limit_args+=(--max-store-windows "$MAX_STORE_WINDOWS")
   srun --ntasks=1 python -m src.experiments.extraction \
     --csv "$dataset_dir" \
     --dataset-name "$dataset" \
@@ -99,6 +111,7 @@ run_extraction() {
     --lags "$lags" \
     --horizon "$horizon" \
     --splits "$SPLITS" \
+    "${protocol_args[@]}" \
     --datastore-stride "$datastore_stride" \
     --adapt-stride "$ADAPT_QUERY_STRIDE" \
     --eval-stride "$EVAL_QUERY_STRIDE" \
@@ -107,8 +120,10 @@ run_extraction() {
     --neighbors "$neighbors" \
     --distance-space "$space" \
     --distance-metric "$metric" \
-    --max-store-windows "$MAX_STORE_WINDOWS" \
+    "${limit_args[@]}" \
     --retrieval-mode "$RETRIEVAL_MODE" \
+    --retrieval-scope "$RETRIEVAL_SCOPE" \
+    "${retrieval_args[@]}" \
     --model "$model" \
     --model-kwargs "$model_options" \
     --normalization instance \
@@ -187,10 +202,12 @@ run_task() {
   model_values=("space=$path_space" "metric=$path_metric" "k=$path_neighbors" "mode=$path_mode")
   pipeline_values=(
     "data.splits=$SPLITS" "data.datastore_stride=$datastore_stride"
+    "data.split_bounds=${SPLIT_BOUNDS:-ratios}" "data.standardize_train_boundary=${STANDARDIZE_TRAIN_BOUNDARY:-none}"
     "data.adapt_query_stride=$ADAPT_QUERY_STRIDE" "data.eval_query_stride=$EVAL_QUERY_STRIDE"
     "data.period=$retrieval_period" "data.align_period=$ALIGN_PERIOD"
-    "data.max_store_windows=$MAX_STORE_WINDOWS"
+    "data.max_store_windows=${MAX_STORE_WINDOWS:-none}"
     "normalization=instance"
+    "retrieval.scope=$RETRIEVAL_SCOPE"
   )
   dataset_dir="$(find_dataset_dir "$dataset")"
   dataset_config="$dataset_dir/config.json"

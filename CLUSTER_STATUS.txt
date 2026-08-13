@@ -1,10 +1,16 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-12
+Updated: 2026-08-13
 
 SCHEMA V1 CUTOVER (CURRENT HANDOFF)
-- Current table-eligible runs: none. The synchronized extraction copy omits the
-  required tensor payloads, and the result trees bundle formulas without all
-  pipeline/launch identity fields. They could not be migrated without guessing.
+- Current table-eligible producers include the schema-1 work from screen job
+  42887. A one-time local repair promoted 918 manifests that still belonged to
+  that launch, had reached `ready_at_utc`, and retained their declared positive-
+  size artifacts. Job 43124 has since completed five recomputed extractions and
+  still owns one genuinely running extraction identity, which was left
+  untouched. A
+  second audit promoted 28 ready prerequisite/control manifests from failed
+  Cross-RAG job 43060. Older pre-schema material still cannot be migrated
+  without guessing.
 - All prior outputs are preserved under
   archive/legacy_pre_schema_v1_2026-08-07/ and are historical analysis
   only. Every older statement below that a configuration "remains reusable"
@@ -21,15 +27,70 @@ SCHEMA V1 CUTOVER (CURRENT HANDOFF)
   and 48 gate configurations, then failed when table discovery renamed the
   shared direct formulas `cov_forecast` and `avgy` with pipeline-config suffixes.
   Their metric artifacts exist, but the completeness check consequently
-  reported 192 missing canonical rows. The failure trap correctly marked the
-  launch interrupted. Logs and lightweight outputs were synchronized manually.
+  reported 192 missing canonical rows. The old failure trap incorrectly marked
+  the whole launch interrupted. The table reader now keeps canonical names only
+  for pipeline-independent direct formulas and preserves pipeline-qualified
+  labels for fitted methods. Logs and lightweight outputs were synchronized
+  manually.
+- Cross-RAG job 43060 completed its Chronos-2 and Chronos-Bolt extraction and
+  full-ridge control stages, but Cross-RAG inference failed on the
+  first dataset before producing any Cross-RAG metric. Strict checkpoint loading
+  found a different retrieval-head architecture: the checkpoint has
+  `encode_mlp`, `mha`, `ffn`, and `gate_layer`, whereas the pinned local source
+  expects separate X/Y encoders, cross/self attention, and cross/self FFNs.
+  Consequently there is no valid Cross-RAG comparison to report. Preliminary
+  control-only evidence gives equal-dataset mean T3 nMSE gains of +2.22% for
+  full ridge on Chronos-2 (4/4 positive) and +0.04% on Chronos-Bolt (2/4
+  positive); these controls are not a Cross-RAG result. The 28 ready
+  prerequisite/control manifests are now completed; only the failed Cross-RAG
+  inference remains interrupted. It also repeated the four Chronos-Bolt vanilla
+  extractions when the second retrieval group requested the same ready runs.
+  Inspection of the official repository and its linked Drive found no released
+  Cross-RAG adapter checkpoint: the Drive's `checkpoints/chronos-bolt/best.pth`
+  is the older TS-RAG model and is the incompatible file used by this launch.
+  Cross-RAG installation does not download weights; its zero-shot script expects
+  a `best.pth` produced by the separate 20,000-step pretraining workflow.
+- Cross-RAG no longer has an execution front. `sota_benchmark.slurm` evaluates
+  one selected project baseline with Chronos-Bolt on the seven exact paper test
+  splits and appends immutable published TS-RAG/Cross-RAG Table-4 MSE values
+  from `SOTA_BENCHMARK.json`; it does not execute either published method.
+  Training and retrieval may remain ours, while evaluation fixes official ETT
+  12/4/4-month or custom 70/10/20 boundaries, every test origin, `512:64`, and
+  train-fitted per-channel standardization.
+- The repository-linked Drive publicly provides TS-RAG's 801.5 MB
+  `checkpoints/chronos-bolt/best.pth`. `tsrag.slurm` now uses the repository
+  defaults on Electricity, Traffic, Solar, and Exchange: Chronos-T5-base EOS
+  retrieval embeddings, same-channel Euclidean search over all T0 windows,
+  K=10, and fixed retrieval. Released TS-RAG runs only with Chronos-Bolt; the
+  selected project baseline runs on identical neighbors with both Chronos-Bolt
+  and Chronos-2. Required weights are `weights/ts-rag/best.pth`,
+  `weights/chronos-t5-base/`, both forecast backbones, and the four datasets.
+- Screen job 43124 began recomputing because job 42887 had left every producer
+  manifest interrupted. The lifecycle now completes each configuration as soon
+  as its owning `srun` succeeds; later configuration or table failures preserve
+  those completed producers and interrupt only unfinished work. The one-time
+  repair recovered 918 still-current job-42887 producers without changing
+  scientific artifacts. Four job-43124 recomputations completed before the
+  correction arrived, and one artifact-complete `ready` extraction was promoted
+  directly; one extraction identity remains genuinely running. Once it
+  finishes, the producer stages will skip completed work and the unconditional
+  table stage will rebuild the screen tables.
+- Publisher job 43063 was the obsolete automatic publisher submitted by job
+  43060 before commit dcb4d248 removed Slurm publication. It failed GitHub
+  authentication through a stale VS Code askpass socket. This does not exercise
+  the current standalone `publish_job.sh`; manual shell pushes work because they
+  run in the live interactive credential context. All stale publisher logs and
+  saved path lists have now been removed.
 - Automatic publication has been removed from every Slurm workflow. After a
   terminal job, run `bash publish_job.sh <job-id>` manually from the
   project root; it commits the exact logs and launch-tagged lightweight outputs,
-  authenticates the proxy from `$HOME/codes/.secrets/proxy.credentials`, and
-  pushes without pulling. Omitting the ID publishes all logs and lightweight
-  outputs. Next cluster action: deploy the canonical table-name fix and rerun
-  `screen.slurm`, then run the manual publisher with its job ID.
+  sources `$HOME/codes/proxy.sh`, and pushes without pulling or replacing the
+  interactive credential/askpass context. Omitting the ID publishes all logs
+  and lightweight outputs. Next cluster action: deploy the lifecycle/table
+  fixes, let the remaining job-43124 identity finish, rebuild the screen
+  tables, and run the manual publisher with the resulting job ID. Cross-RAG
+  remains blocked until a genuine Cross-RAG-trained checkpoint is obtained or
+  produced.
 - The scientific findings below remain recorded, but no archived run may enter
   a current table.
 

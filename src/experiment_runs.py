@@ -18,7 +18,8 @@ from typing import Any, Iterable, Mapping, Sequence
 SCHEMA_VERSION = 1
 MANIFEST_NAME = "manifest.json"
 SELECTION_NAME = "SELECTED_RUNS.txt"
-VALID_STATUSES = {"not_run", "running", "ready", "interrupted", "completed"}
+VALID_STATUSES = {"not_run", "running", "interrupted", "completed"}
+VALID_SEED_STATUSES = VALID_STATUSES | {"ready"}
 RUN_PATTERN = re.compile(r"run_(\d+)$")
 
 
@@ -474,7 +475,8 @@ def mark_status(
     required_artifacts: Sequence[str] = (),
     seed: int | None = None,
 ) -> dict[str, Any]:
-    if status not in VALID_STATUSES:
+    allowed_statuses = VALID_STATUSES if seed is None else VALID_SEED_STATUSES
+    if status not in allowed_statuses:
         raise ValueError(f"invalid status: {status}")
     root = Path(run_dir).expanduser().resolve()
     manifest = load_manifest(root)
@@ -513,7 +515,7 @@ def mark_status(
 
 
 def mark_ready(run_dir: str | Path, *, required_artifacts: Sequence[str]) -> dict[str, Any]:
-    """Record finished artifacts without completing the run before its process exits."""
+    """Record finished artifacts after preserving per-seed provenance."""
     root = Path(run_dir).expanduser().resolve()
     manifest = load_manifest(root)
     if manifest["status"] != "running":
@@ -527,11 +529,54 @@ def mark_ready(run_dir: str | Path, *, required_artifacts: Sequence[str]) -> dic
         "files": [{"path": name, "size": (root / name).stat().st_size} for name in required_artifacts],
     }
     manifest["launch"]["ready_at_utc"] = utc_now()
-    for item in manifest.get("seed_status", {}).values():
+    seed_states = manifest.get("seed_status", {})
+    if len(seed_states) == 1:
+        item = next(iter(seed_states.values()))
         if item.get("status") != "completed":
             item["status"] = "ready"
-        item["artifacts"] = list(required_artifacts)
+            if not item.get("artifacts"):
+                item["artifacts"] = list(required_artifacts)
+    else:
+        unfinished = [
+            seed
+            for seed, item in seed_states.items()
+            if item.get("status") not in {"ready", "completed"}
+        ]
+        if unfinished:
+            raise ManifestError(
+                f"cannot mark ready {root}: seeds not ready={unfinished}"
+            )
     _atomic_json(root / MANIFEST_NAME, manifest)
+    return manifest
+
+
+def complete_run(run_dir: str | Path, *, launch_id: str | None = None) -> dict[str, Any]:
+    """Complete one ready run after its producer process returns successfully."""
+    root = Path(run_dir).expanduser().resolve()
+    manifest = load_manifest(root)
+    if manifest["status"] == "completed":
+        return manifest
+    launch = manifest.get("launch", {})
+    if manifest["status"] != "running" or not launch.get("ready_at_utc"):
+        raise ManifestError(f"run is not ready for completion: {root}")
+    if launch_id is not None and str(launch.get("launch_id")) != str(launch_id):
+        raise ManifestError(
+            f"run belongs to launch {launch.get('launch_id')!r}, not {launch_id!r}: {root}"
+        )
+    unfinished = [
+        seed
+        for seed, item in manifest.get("seed_status", {}).items()
+        if item.get("status") not in {"ready", "completed"}
+    ]
+    if unfinished:
+        raise ManifestError(f"cannot complete {root}: seeds not ready={unfinished}")
+    manifest["status"] = "completed"
+    manifest["launch"]["finished_at_utc"] = utc_now()
+    for item in manifest.get("seed_status", {}).values():
+        if item.get("status") == "ready":
+            item["status"] = "completed"
+    _atomic_json(root / MANIFEST_NAME, manifest)
+    _update_auto_selection(root, manifest)
     return manifest
 
 
@@ -551,12 +596,7 @@ def complete_launch(root: str | Path, launch_id: str) -> list[Path]:
             and str(launch.get("launch_id")) == str(launch_id)
             and launch.get("ready_at_utc")
         ):
-            manifest["status"] = "completed"
-            manifest["launch"]["finished_at_utc"] = utc_now()
-            for item in manifest.get("seed_status", {}).values():
-                item["status"] = "completed"
-            _atomic_json(manifest_path, manifest)
-            _update_auto_selection(manifest_path.parent, manifest)
+            complete_run(manifest_path.parent, launch_id=launch_id)
             changed.append(manifest_path.parent)
     return changed
 
@@ -583,9 +623,13 @@ def interrupt_launch(root: str | Path, launch_id: str) -> list[Path]:
         if "archive" in manifest_path.relative_to(base).parts:
             continue
         manifest = load_manifest(manifest_path)
-        if manifest["status"] == "running" and str(manifest.get("launch", {}).get("launch_id")) == str(launch_id):
-            mark_status(manifest_path.parent, "interrupted")
-            changed.append(manifest_path.parent)
+        launch = manifest.get("launch", {})
+        if manifest["status"] == "running" and str(launch.get("launch_id")) == str(launch_id):
+            if launch.get("ready_at_utc"):
+                complete_run(manifest_path.parent, launch_id=launch_id)
+            else:
+                mark_status(manifest_path.parent, "interrupted")
+                changed.append(manifest_path.parent)
     return changed
 
 
@@ -783,7 +827,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     status = commands.add_parser("status")
     status.add_argument("--run-dir", required=True)
-    status.add_argument("--status", required=True, choices=sorted(VALID_STATUSES))
+    status.add_argument("--status", required=True, choices=sorted(VALID_SEED_STATUSES))
     status.add_argument("--artifact", action="append", default=[])
     status.add_argument("--seed", type=int)
 
@@ -811,6 +855,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     complete = commands.add_parser("complete-launch")
     complete.add_argument("--root", required=True)
     complete.add_argument("--launch-id", required=True)
+
+    complete_one = commands.add_parser("complete")
+    complete_one.add_argument("--run-dir", required=True)
+    complete_one.add_argument("--launch-id")
 
     pending = commands.add_parser("pending-seeds")
     pending.add_argument("--run-dir", required=True)
@@ -873,6 +921,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "complete-launch":
         for run_dir in complete_launch(args.root, args.launch_id):
             print(run_dir)
+    elif args.command == "complete":
+        complete_run(args.run_dir, launch_id=args.launch_id)
     elif args.command == "pending-seeds":
         manifest = load_manifest(args.run_dir)
         print(",".join(seed for seed, state in manifest.get("seed_status", {}).items() if state.get("status") != "completed"))

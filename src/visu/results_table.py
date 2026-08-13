@@ -47,6 +47,7 @@ _REQUIRED_METRIC_FIELDS = {
     "nmse",
     "positive_window_pct",
 }
+_PIPELINE_INDEPENDENT_METHODS = {"cov_forecast", "avgy", "y_mean"}
 _RUN_SELECTION = {
     "pipeline_config": {},
     "config_policy": "distinct",
@@ -293,7 +294,12 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             continue
         for row in payload:
             formula = str(row["baseline"])
-            method = formula if formula == "vanilla" else f"{run}/{formula}"
+            if formula == "vanilla":
+                method = formula
+            elif formula in _PIPELINE_INDEPENDENT_METHODS:
+                method = f"{run}/{formula}"
+            else:
+                method = f"{run}/{choice.label}"
             for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
                     results.append(

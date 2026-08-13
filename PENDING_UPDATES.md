@@ -4,6 +4,39 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-13: Replaced the obsolete Cross-RAG execution front with
+  `sota_benchmark.slurm`. `SOTA_BENCHMARK.json` now records the immutable
+  published TS-RAG/Cross-RAG Table-4 MSE values and exact evaluation protocol.
+  The new benchmark evaluates one selected project baseline with Chronos-Bolt
+  on every official test origin: fixed 12/4/4-month ETT boundaries, 70/10/20
+  custom-dataset boundaries, `L=512`, `H=64`, and per-channel standardization
+  fitted on the official train segment. Our training/retrieval remains our own
+  and is disclosed as such. The table builder combines computed MSE with static
+  published rows; Cross-RAG and TS-RAG are not executed by this front.
+  Separately, `tsrag.slurm` now uses TS-RAG's actual repository defaults on the
+  four project datasets: Chronos-T5-base EOS embeddings, Euclidean same-channel
+  fixed retrieval, all available T0 windows, and `K=10`. It strict-loads the
+  released ARM only into Chronos-Bolt and evaluates the selected project
+  baseline on identical neighbors with both Chronos-Bolt and Chronos-2; a
+  Chronos-2 TS-RAG row is impossible with the released state dict. Extraction
+  gained explicit split bounds, train-segment standardization, separately
+  batched retrieval representations, same-user search, and fixed-store reuse.
+  Affected contracts: the two root fronts and runners, extraction signatures,
+  TS-RAG model/retriever/evaluator, both focused table builders, shared profiles,
+  README, tests, and cluster handoff. Focused checks passed so far: Python
+  compilation of all new/changed Python modules; six TS-RAG, four SOTA, and
+  three retained Cross-RAG static/protocol tests; the sweep/profile smoke; Git
+  Bash syntax for both fronts and all touched shell helpers; and targeted
+  `git diff --check`. The generic import smoke is deferred because the available
+  local runtime lacks `einops`; no environment changes were made. Deferred
+  integration: strict-load
+  both public checkpoints and execute one Chronos-T5 retrieval plus TS-RAG
+  inference batch on cluster; then verify both generated tables. Documentation
+  reconciliation in the experiment guideline remains for daily maintenance.
+  Required runs: place `amazon/chronos-t5-base` below
+  `weights/chronos-t5-base/`, TS-RAG `best.pth` below `weights/ts-rag/`, then
+  submit `sota_benchmark.slurm` and `tsrag.slurm` independently.
+
 - 2026-08-11: Split Chronos-Bolt and Cross-RAG into source-faithful local model
   modules adapted from the official Chronos commit `7dc4435` and Cross-RAG
   commit `b9a5428`. Chronos-Bolt extraction now uses the local released
@@ -73,3 +106,90 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
   publisher once from the cluster and rebuild the screen tables. Required
   rerun: screen job 42887 is interrupted; rerun `screen.slurm` after deploying
   this fix. No scientific formula or artifact schema changed.
+
+- 2026-08-12: Tighten the shared manifest lifecycle so `ready` is seed-only
+  and can never become an overall run status. Preserve Cross-RAG's two
+  `scale == 1` normalization sentinels after verifying them in the pinned
+  upstream commit `b9a5428`, and guard that source-faithful behavior in the
+  model contract test. Affected files/contracts: `src/experiment_runs.py`,
+  lifecycle tests, and the Cross-RAG source contract. Checks passed: 9 manifest
+  tests, 1 publisher contract test, 3 Cross-RAG model-contract tests, and Bash
+  syntax for `publish_job.sh`. No scientific rerun, artifact migration,
+  README, or LaTeX change is required. Deferred integration: exercise one
+  failed/cancelled and one successful live launch as already queued.
+  Maintenance 2026-08-13: direct inspection reconfirmed the shared four-state
+  run lifecycle and same-launch ready selection. The extraction-manifest and
+  sweep-table integration checks passed in the shared thesis runtime. The
+  README and guideline now state precisely that the overall run stays
+  `running` with `ready_at_utc` while seed state is `ready`. BibTeX plus three
+  pdfLaTeX passes completed without unresolved references or overfull boxes;
+  all 15 rendered pages passed visual inspection. The focused manifest,
+  publisher, Cross-RAG source, and shell-syntax checks were not repeated
+  because their recorded successful coverage is unchanged. Remaining blockers:
+  strict on-cluster Chronos-Bolt/Cross-RAG weight loading and the fixed
+  `512:64` smoke, rerun `screen.slurm`, observe successful and failed/cancelled
+  lifecycle paths, and run the manual publisher once.
+
+- 2026-08-13: Analyze synchronized Cross-RAG job 43060, screen rerun 43124,
+  and obsolete publisher job 43063. Cross-RAG strict loading failed before its
+  first inference because the supplied `best.pth` retrieval-head keys do not
+  match the pinned local dual-attention architecture; only eight full-ridge
+  controls completed, with equal-dataset mean T3 nMSE gains of +2.22% on
+  Chronos-2 and +0.04% on Chronos-Bolt. The screen reruns because the previous
+  table failure marked every ready producer interrupted, while allocation skips
+  only completed runs and clears interrupted artifacts on resume. The same
+  ready-run handling duplicated four Chronos-Bolt vanilla extractions within
+  job 43060. Publisher 43063 came from the removed automatic publisher and
+  failed through a stale VS Code askpass socket, so it does not validate the
+  current manual publisher. Affected handoff: `CLUSTER_STATUS.txt` and this
+  queue entry; no code or scientific artifact contract was changed. Checks:
+  inspected all three exact log pairs, all nine Cross-RAG-family manifests,
+  the eight control metric files, allocation/exit code, and the current versus
+  historical publisher code. No executable test was needed for this read-only
+  diagnosis. Documentation implication: defer the executive summary until an
+  actual Cross-RAG metric exists. Required work: align the checkpoint and model
+  architecture, correct or explicitly recover producer lifecycle state before
+  resubmission, then rerun Cross-RAG inference/tables and exercise the current
+  `publish_job.sh` once in its intended interactive shell.
+
+- 2026-08-13: Complete each successful producer configuration immediately so a
+  later configuration or table failure preserves reusable work, interrupt only
+  unfinished runs, and retain each seed's own artifact list. Preserve distinct
+  pipeline-qualified labels for fitted baseline/gate rows while keeping the
+  pipeline-independent direct formulas canonical. A one-time repair promoted
+  918 still-current job-42887 ready manifests to completed. A post-pull audit
+  also promoted 28 ready prerequisite/control manifests from failed Cross-RAG
+  job 43060; its genuinely failed inference remains interrupted. Launch 43124
+  has completed four recomputed extractions; a fifth artifact-complete `ready`
+  extraction was promoted directly, leaving one genuinely running extraction
+  identity untouched. Affected contracts: shared
+  manifest helper, Adaptation Slurm completion, table discovery, schema-1
+  manifests, README, guideline, and `CLUSTER_STATUS.txt`. Checks passed: 11
+  manifest tests, publisher and Slurm contracts, the table smoke with two
+  pipeline variants, Python AST parsing, Bash syntax, and all 15 rendered PDF
+  pages; the LaTeX log has no unresolved references or overfull boxes. No
+  scientific recomputation or schema bump is required. Remaining cluster work:
+  finish the remaining launch-43124 identity, rebuild tables, exercise one
+  successful and one failed/cancelled launch, and run `publish_job.sh` once.
+
+- 2026-08-13: Simplify manual publication and correct the Cross-RAG weight
+  handoff. `publish_job.sh` retains its optional single-job/all-artifact
+  selection and intentional commit, then only sources `PROXY_SCRIPT_PATH`
+  (default `$HOME/codes/proxy.sh`) and pushes `origin/main`; it no longer reads
+  a separate proxy credential file or rewrites Git askpass variables. Removed
+  all six obsolete `.publish/*.paths` files and twelve `publish_*.out/.err`
+  logs. Inspection of the official Cross-RAG README, shell scripts, linked
+  Drive, and open artifact-release issue found that installation downloads no
+  adapter checkpoint; the Drive's 801.5 MB
+  `checkpoints/chronos-bolt/best.pth` is the older TS-RAG model and is
+  incompatible with Cross-RAG. The official zero-shot script expects a
+  `best.pth` produced by its separate 20,000-step pretraining workflow. Affected
+  files/contracts: `publish_job.sh`, its static contract test, README, local
+  project guidance, cluster handoff, and publisher logs. Focused checks passed:
+  11 manifest lifecycle tests, the publisher contract test, Git Bash syntax for
+  `publish_job.sh`, `src/slurm/common.sh`, and `screen.slurm`, `git diff
+  --check`, and an exact audit of all 947 repaired manifests (each changes only
+  the two status fields and completion timestamp). Deferred integration: execute
+  the publisher once in the intended cluster shell. Required experiment work:
+  obtain an author-supplied Cross-RAG checkpoint or run the official pretraining
+  workflow before rerunning Cross-RAG inference and tables.

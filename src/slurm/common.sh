@@ -56,7 +56,7 @@ require_experiment_mode() {
 
 require_experiment_family() {
   case "${EXPERIMENT_FAMILY:-}" in
-    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|tables) ;;
+    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|sota_benchmark|tsrag|tables) ;;
     *) log_error "unknown EXPERIMENT_FAMILY=${EXPERIMENT_FAMILY:-}"; return 2 ;;
   esac
 }
@@ -300,6 +300,7 @@ mark_manifest_ready() {
   local -a args=()
   for artifact in "$@"; do args+=(--artifact "$artifact"); done
   python -m experiment_runs ready --run-dir "$run_dir" "${args[@]}"
+  python -m experiment_runs complete --run-dir "$run_dir" --launch-id "$EXPERIMENT_LAUNCH_ID"
 }
 
 resolve_extraction_run() {

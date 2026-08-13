@@ -62,6 +62,7 @@ def main() -> None:
         "3",
         "1,3",
         "1,3,5,10,15,20,100",
+        "10",
         "15",
     }
     assert neighbor_defaults.count("1,3") == 6
@@ -163,13 +164,15 @@ def main() -> None:
         assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in (
             ROOT / selected_front
         ).read_text(encoding="utf-8")
-    crossrag_front = (ROOT / "crossrag.slurm").read_text(encoding="utf-8")
+    sota_front = (ROOT / "sota_benchmark.slurm").read_text(encoding="utf-8")
     assert (
         'WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/'
         'full_ridge_shared}"'
-    ) in crossrag_front
-    assert 'same method then runs on Chronos-Bolt at K=15' in crossrag_front
-    assert 'DEFAULT_MODELS_CSV="chronos2,chronos-bolt"' in text
+    ) in sota_front
+    assert 'source "$PROJECT_ROOT/src/slurm/run_sota_benchmark.sh"' in sota_front
+    assert 'DEFAULT_MODELS_CSV="chronos-bolt"' in text
+    tsrag_front = (ROOT / "tsrag.slurm").read_text(encoding="utf-8")
+    assert 'source "$PROJECT_ROOT/src/slurm/run_tsrag_experiment.sh"' in tsrag_front
     for family_front in (
         "horizon_baselines_ablation.slurm",
         "convex_baselines_ablation.slurm",

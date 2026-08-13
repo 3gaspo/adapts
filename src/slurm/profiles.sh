@@ -109,6 +109,22 @@ adaptation_profile_defaults() {
       DEFAULT_DISTANCE_METRICS_CSV="cosine"
       DEFAULT_NEIGHBORS_CSV="15"
       ;;
+    sota_benchmark)
+      DEFAULT_DATASETS_CSV="ETTh1,ETTh2,ETTm1,ETTm2,Weather,Electricity,exchange_rate"
+      DEFAULT_MODELS_CSV="chronos-bolt"
+      DEFAULT_SETTINGS_CSV="512:64"
+      DEFAULT_DISTANCE_SPACES_CSV="instance"
+      DEFAULT_DISTANCE_METRICS_CSV="euclidean"
+      DEFAULT_NEIGHBORS_CSV="10"
+      ;;
+    tsrag)
+      DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
+      DEFAULT_MODELS_CSV="chronos-bolt"
+      DEFAULT_SETTINGS_CSV="512:64"
+      DEFAULT_DISTANCE_SPACES_CSV="tsrag"
+      DEFAULT_DISTANCE_METRICS_CSV="euclidean"
+      DEFAULT_NEIGHBORS_CSV="10"
+      ;;
     full)
       DEFAULT_DATASETS_CSV="$FULL_DATASETS_CSV"
       DEFAULT_MODELS_CSV="chronos2"
@@ -145,7 +161,7 @@ require_profile_neighbors() {
   local raw="$1" value
   local requested_neighbors=()
   case "${EXPERIMENT_FAMILY:-}" in
-    k_ablation|crossrag) return 0 ;;
+    k_ablation|crossrag|sota_benchmark|tsrag) return 0 ;;
   esac
   csv_to_array "$raw" requested_neighbors
   for value in "${requested_neighbors[@]}"; do
@@ -169,7 +185,7 @@ require_profile_neighbors() {
 
 requires_selected_methods() {
   case "${EXPERIMENT_FAMILY:-}" in
-    benchmark|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag) return 0 ;;
+    benchmark|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag|sota_benchmark) return 0 ;;
     *) return 1 ;;
   esac
 }
