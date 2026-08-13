@@ -1,0 +1,146 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "adapt_prediction_payload.pt",
+        "size": 12470235230
+      },
+      {
+        "path": "adapt_features_payload.pt",
+        "size": 10808255
+      },
+      {
+        "path": "eval_prediction_payload.pt",
+        "size": 1000482726
+      },
+      {
+        "path": "eval_features_payload.pt",
+        "size": 870450
+      },
+      {
+        "path": "extraction_timing.json",
+        "size": 306
+      },
+      {
+        "path": "extraction_manifest.json",
+        "size": 1325
+      }
+    ],
+    "required": [
+      "adapt_prediction_payload.pt",
+      "adapt_features_payload.pt",
+      "eval_prediction_payload.pt",
+      "eval_features_payload.pt",
+      "extraction_timing.json",
+      "extraction_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "k": 15,
+      "metric": "cosine",
+      "mode": "online",
+      "space": "minmax"
+    },
+    "pipeline": {
+      "data.adapt_query_stride": 25,
+      "data.align_period": false,
+      "data.datastore_stride": 25,
+      "data.eval_query_stride": 127,
+      "data.max_store_windows": 30000,
+      "data.period": 24,
+      "data.splits": "0.3,0.5,0.2",
+      "normalization": "instance"
+    },
+    "runtime": {
+      "slurm.job_id": 43060
+    }
+  },
+  "identity": {
+    "backbone": "chronos-bolt",
+    "dataset": "Traffic",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "k": 15,
+      "metric": "cosine",
+      "mode": "online",
+      "space": "minmax"
+    },
+    "model_config_order": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/datasets/traffic/config.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43060",
+        "launched_at_utc": "2026-08-12T22:07:39.769705+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43060"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "43060",
+    "launched_at_utc": "2026-08-12T22:07:39.769705+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-12T22:45:46.265136+00:00",
+    "started_at_utc": "2026-08-12T22:07:39.880874+00:00"
+  },
+  "manifest_id": "98b8a04a-9b82-4603-9fd3-cba93f7e8393",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "adapt_prediction_payload.pt",
+        "adapt_features_payload.pt",
+        "eval_prediction_payload.pt",
+        "eval_features_payload.pt",
+        "extraction_timing.json",
+        "extraction_manifest.json"
+      ],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "07b60c45f2d8bf9a11d86aa4a10f6bd6ed2e1fb1b06c5df4c4fc85bdde14669a",
+    "path": "5176abe2de240dbeffd2acabdb12d7a7c58417712c73ae772bb9d1184f561cd1",
+    "pipeline": "ea11a46dc88c4f9f2092867a237694163b2001b596fdbdff57bceb908ac4bbc5"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "chronos-bolt/minmax_cosine_15_online",
+    "row_config": [
+      "space"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "extraction"
+    ]
+  }
+}

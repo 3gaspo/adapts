@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/adaptors/cross_rag/evaluate.py", line 281, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/adaptors/cross_rag/evaluate.py", line 188, in main
+    model = _load_model(base_checkpoint, checkpoint, device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/adaptors/cross_rag/evaluate.py", line 73, in _load_model
+    model.load_state_dict(cleaned, strict=True)
+  File "/home/h61084/venvs/adapts/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2584, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for ChronosBoltModelForForecastingWithRetrieval:
+	Missing key(s) in state_dict: "encode_mlp_x.0.weight", "encode_mlp_x.0.bias", "encode_mlp_x.2.weight", "encode_mlp_x.2.bias", "encode_mlp_y.0.weight", "encode_mlp_y.0.bias", "encode_mlp_y.2.weight", "encode_mlp_y.2.bias", "cross_mha.in_proj_weight", "cross_mha.in_proj_bias", "cross_mha.out_proj.weight", "cross_mha.out_proj.bias", "self_mha.in_proj_weight", "self_mha.in_proj_bias", "self_mha.out_proj.weight", "self_mha.out_proj.bias", "ffn_cross.0.weight", "ffn_cross.0.bias", "ffn_cross.2.weight", "ffn_cross.2.bias", "ffn_self.0.weight", "ffn_self.0.bias", "ffn_self.2.weight", "ffn_self.2.bias". 
+	Unexpected key(s) in state_dict: "encode_mlp.0.weight", "encode_mlp.0.bias", "encode_mlp.2.weight", "encode_mlp.2.bias", "mha.in_proj_weight", "mha.in_proj_bias", "mha.out_proj.weight", "mha.out_proj.bias", "ffn.0.weight", "ffn.0.bias", "ffn.2.weight", "ffn.2.bias", "gate_layer.0.weight", "gate_layer.0.bias", "gate_layer.2.weight", "gate_layer.2.bias". 
+srun: error: dgx-h100: task 0: Exited with exit code 1

@@ -1,0 +1,114 @@
+{
+  "artifacts": {
+    "files": [],
+    "required": []
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "crossrag",
+      "k": 15,
+      "metric": "cosine",
+      "mode": "online",
+      "space": "minmax"
+    },
+    "pipeline": {
+      "batch_size": 256
+    },
+    "runtime": {
+      "slurm.job_id": 43060
+    }
+  },
+  "identity": {
+    "backbone": "chronos-bolt",
+    "dataset": "Electricity",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "formula": "crossrag",
+      "k": 15,
+      "metric": "cosine",
+      "mode": "online",
+      "space": "minmax"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "chronos_bolt_weights": {
+      "path": "/home/h61084/codes/weights/chronos-bolt-base"
+    },
+    "crossrag_weights": {
+      "path": "/home/h61084/codes/weights/cross-rag"
+    },
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/minmax/cosine/15/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/none/none/0/none/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43060",
+        "launched_at_utc": "2026-08-12T22:50:35.037319+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43060"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "43060",
+    "launched_at_utc": "2026-08-12T22:50:35.037319+00:00",
+    "mode": "full",
+    "ready_at_utc": null,
+    "started_at_utc": "2026-08-12T22:50:35.145743+00:00"
+  },
+  "manifest_id": "2c87c8f1-a727-4436-9338-508c231cafbd",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "eb992b2070c213e8e53ce229b0aee8cdba02394746859185dcfb854649404cf6",
+    "path": "c98bd21f2639fa75ac5b41ad2d560a03bd387e10a9ded79d22dfb5a1dd4315a0",
+    "pipeline": "c1d32a6055fea9bdbfdcb167520ef79f95fc87a15758d550d9d2e296e2baa428"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "crossrag",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "crossrag"
+    ]
+  }
+}
