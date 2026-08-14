@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 892, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 830, in main
+    result = allocate_run(
+             ^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 465, in allocate_run
+    return _allocate_run_unlocked(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 367, in _allocate_run_unlocked
+    raise ManifestError(f"matching run is already running: {target}")
+ManifestError: matching run is already running: /home/h61084/codes/adapts/outputs/extraction/Electricity/336_48/chronos2/none/none/0/none/run_0
+/home/h61084/codes/adapts/src/slurm/extract_adaptation.sh: line 165: pop_var_context: head of shell_variables not a function context

@@ -1,0 +1,110 @@
+{
+  "artifacts": {
+    "files": [],
+    "required": []
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "fixed",
+      "space": "tsrag"
+    },
+    "pipeline": {
+      "data.adapt_query_stride": 25,
+      "data.align_period": false,
+      "data.datastore_stride": 1,
+      "data.eval_query_stride": 127,
+      "data.max_store_windows": null,
+      "data.period": 24,
+      "data.split_bounds": "ratios",
+      "data.splits": "0.3,0.5,0.2",
+      "data.standardize_train_boundary": null,
+      "normalization": "instance",
+      "retrieval.scope": "same_user"
+    },
+    "runtime": {
+      "slurm.job_id": 43308
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Traffic",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "fixed",
+      "space": "tsrag"
+    },
+    "model_config_order": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/datasets/traffic/config.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43308",
+        "launched_at_utc": "2026-08-14T03:24:08.973444+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43308"
+      }
+    ],
+    "finished_at_utc": null,
+    "launch_id": "43308",
+    "launched_at_utc": "2026-08-14T03:24:08.973444+00:00",
+    "mode": "full",
+    "ready_at_utc": null,
+    "started_at_utc": "2026-08-14T03:24:09.077154+00:00"
+  },
+  "manifest_id": "bb91cb36-6168-40cf-b04f-d65c770c0bf7",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [],
+      "status": "interrupted"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "56a7c5f2ab6c11a58d7bd4917dd2cd287d41256f7dd622c9ba393b9667b12698",
+    "path": "88078508f000599b31df1544427997b4a8c45c204e503f69ba4be945a0f2ceb3",
+    "pipeline": "ca15c4b5a1290b203d5cf0e7838489a996041ebee22add7155a277a02225588f"
+  },
+  "status": "interrupted",
+  "table": {
+    "column_config": [
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "chronos2/tsrag_euclidean_10_fixed",
+    "row_config": [
+      "space"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "extraction"
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+
+2026-08-14T04:14:09+02:00 job start kind=adaptation_extraction family=tsrag experiment_mode=full skip_complete=true tasks=8 datasets=Electricity,Traffic,Solar,exchange_rate models=chronos2 settings=512:64 distance_spaces=tsrag distance_metrics=euclidean neighbors=10
+
+2026-08-14T04:14:09+02:00 extraction start configuration=1/8 dataset=Electricity model=chronos2 lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/none/none/0/none/run_1 computation_signature=af09b2f97e5e1fc09d814074aec0e2118e738f76f47da98899e30d68b00f3bc5 period=24 align_period=false datastore_stride=1 adapt_stride=25 eval_stride=127 max_store_windows= seed=1
+2026-08-14 04:14:12,150 INFO [__main__] ========================================================================
+2026-08-14 04:14:12,150 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=512 horizon=64 neighbors=0 distance=raw/euclidean
+2026-08-14 04:14:12,380 INFO [__main__] dataset load start
+2026-08-14 04:14:12,382 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 04:14:13,114 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 04:14:13,114 INFO [__main__] model load start
+2026-08-14 04:14:24,214 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 04:14:24,219 INFO [__main__] extraction start split=adapt queries=524
+2026-08-14 04:15:36,383 INFO [__main__] extraction done split=adapt
+2026-08-14 04:15:36,383 INFO [__main__] extraction start split=eval queries=41
+2026-08-14 04:15:41,997 INFO [__main__] extraction done split=eval
+2026-08-14 04:15:42,068 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/none/none/0/none/run_1/vanilla_metrics.json
+2026-08-14 04:15:42,074 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/none/none/0/none/run_1/extraction_manifest.json
+2026-08-14 04:15:42,074 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/none/none/0/none/run_1
+2026-08-14 04:15:42,074 INFO [__main__] experiment done seconds=89.92
+2026-08-14 04:15:42,074 INFO [__main__] ========================================================================
+2026-08-14 04:15:45,449 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/none/none/0/none/run_1 status=complete
+2026-08-14T04:15:45+02:00 extraction done configuration=1/8 dataset=Electricity model=chronos2 lags=512 horizon=64 retrieval=vanilla
+
+2026-08-14T04:15:46+02:00 extraction start configuration=2/8 dataset=Electricity model=chronos2 lags=512 horizon=64 retrieval=tsrag_euclidean_10_fixed run=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/tsrag/euclidean/10/fixed/run_0 computation_signature=775f7e0ee522b21fb06e752556d4de6767458613e320d151fa05614bb3d785d4 period=24 align_period=false datastore_stride=1 adapt_stride=25 eval_stride=127 max_store_windows= seed=1
+2026-08-14 04:15:48,911 INFO [__main__] ========================================================================
+2026-08-14 04:15:48,912 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=512 horizon=64 neighbors=10 distance=tsrag/euclidean
+2026-08-14 04:15:49,263 INFO [__main__] dataset load start
+2026-08-14 04:15:49,264 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 04:15:49,962 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 04:15:49,963 INFO [__main__] model load start
+2026-08-14 04:15:58,366 WARNING [/home/h61084/venvs/adapts/lib/python3.12/site-packages/chronos/chronos_bolt.py] Unknown architecture: T5Model, defaulting to ChronosBoltModelForForecasting
+2026-08-14 04:16:06,219 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 04:16:06,224 INFO [__main__] extraction start split=adapt queries=524
+2026-08-14 05:03:12,995 INFO [__main__] extraction done split=adapt
+2026-08-14 05:03:12,995 INFO [__main__] extraction start split=eval queries=41
+2026-08-14 05:13:52,939 INFO [__main__] extraction done split=eval
+2026-08-14 05:21:37,894 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/tsrag/euclidean/10/fixed/run_0/extraction_manifest.json
+2026-08-14 05:21:37,894 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/tsrag/euclidean/10/fixed/run_0
+2026-08-14 05:21:37,894 INFO [__main__] experiment done seconds=3948.98
+2026-08-14 05:21:37,894 INFO [__main__] ========================================================================
+2026-08-14 05:21:41,454 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos2/tsrag/euclidean/10/fixed/run_0 status=complete
+2026-08-14T05:21:41+02:00 extraction done configuration=2/8 dataset=Electricity model=chronos2 lags=512 horizon=64 retrieval=tsrag_euclidean_10_fixed
+
+2026-08-14T05:21:42+02:00 extraction start configuration=3/8 dataset=Traffic model=chronos2 lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/none/none/0/none/run_1 computation_signature=7ba89858ffc3b1ff55727b573d0ea547f7a2eaf56408e93fed23f9d00cf2e2ec period=24 align_period=false datastore_stride=1 adapt_stride=25 eval_stride=127 max_store_windows= seed=1
+2026-08-14 05:21:44,419 INFO [__main__] ========================================================================
+2026-08-14 05:21:44,419 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=512 horizon=64 neighbors=0 distance=raw/euclidean
+2026-08-14 05:21:44,640 INFO [__main__] dataset load start
+2026-08-14 05:21:44,642 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 05:21:45,849 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 05:21:45,849 INFO [__main__] model load start
+2026-08-14 05:21:57,002 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 05:21:57,005 INFO [__main__] extraction start split=adapt queries=349
+2026-08-14 05:23:55,342 INFO [__main__] extraction done split=adapt
+2026-08-14 05:23:55,342 INFO [__main__] extraction start split=eval queries=28
+2026-08-14 05:24:04,952 INFO [__main__] extraction done split=eval
+2026-08-14 05:24:05,109 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/none/none/0/none/run_1/vanilla_metrics.json
+2026-08-14 05:24:05,115 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/none/none/0/none/run_1/extraction_manifest.json
+2026-08-14 05:24:05,115 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/none/none/0/none/run_1
+2026-08-14 05:24:05,115 INFO [__main__] experiment done seconds=140.69
+2026-08-14 05:24:05,115 INFO [__main__] ========================================================================
+2026-08-14 05:24:08,439 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/none/none/0/none/run_1 status=complete
+2026-08-14T05:24:08+02:00 extraction done configuration=3/8 dataset=Traffic model=chronos2 lags=512 horizon=64 retrieval=vanilla
+
+2026-08-14T05:24:09+02:00 extraction start configuration=4/8 dataset=Traffic model=chronos2 lags=512 horizon=64 retrieval=tsrag_euclidean_10_fixed run=/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/tsrag/euclidean/10/fixed/run_0 computation_signature=56a7c5f2ab6c11a58d7bd4917dd2cd287d41256f7dd622c9ba393b9667b12698 period=24 align_period=false datastore_stride=1 adapt_stride=25 eval_stride=127 max_store_windows= seed=1
+2026-08-14 05:24:11,427 INFO [__main__] ========================================================================
+2026-08-14 05:24:11,427 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=512 horizon=64 neighbors=10 distance=tsrag/euclidean
+2026-08-14 05:24:11,663 INFO [__main__] dataset load start
+2026-08-14 05:24:11,665 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 05:24:12,785 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 05:24:12,785 INFO [__main__] model load start
+2026-08-14 05:24:24,117 WARNING [/home/h61084/venvs/adapts/lib/python3.12/site-packages/chronos/chronos_bolt.py] Unknown architecture: T5Model, defaulting to ChronosBoltModelForForecasting
+2026-08-14 05:24:24,368 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 05:24:24,371 INFO [__main__] extraction start split=adapt queries=349
+/home/h61084/codes/adapts/outputs/extraction/Traffic/512_64/chronos2/tsrag/euclidean/10/fixed/run_0
