@@ -8,7 +8,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=40000
+#SBATCH --mem=80000
 
 # Re-evaluate released TS-RAG on the four project datasets with its default
 # Chronos-T5/Euclidean/same-user K=10 retrieval. The released ARM runs only on

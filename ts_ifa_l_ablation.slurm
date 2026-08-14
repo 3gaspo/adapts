@@ -10,12 +10,14 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Lookback ablation at H=24 for manually selected joint candidates.
-: "${TS_IFA_CANDIDATES_CSV:?copy candidates from TS_IFA_CANDIDATES.txt into TS_IFA_CANDIDATES_CSV}"
+# Lookback ablation at H=24 for selected joint candidates.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY=ts_ifa_l_ablation
 TS_IFA_GRID=selected
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
+source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"
+TS_IFA_CANDIDATES_CSV="${TS_IFA_CANDIDATES_CSV:-$(selected_candidates_csv ts_ifa)}"
+: "${TS_IFA_CANDIDATES_CSV:?add TS-IFA entries to SWEEP_CANDIDATES.txt or set TS_IFA_CANDIDATES_CSV}"
 export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY TS_IFA_GRID TS_IFA_CANDIDATES_CSV
 source "$PROJECT_ROOT/src/slurm/run_ts_ifa.sh"

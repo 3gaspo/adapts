@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=h_ablation
+#SBATCH --job-name=fourier_retrieval_ablation
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -10,10 +10,11 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Preserve each selected pipeline while varying the forecast horizon.
+# Compare every selected pipeline with the same method, metric, K, and mode
+# using standardized Fourier-amplitude retrieval.
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
-EXPERIMENT_FAMILY=h_ablation
+EXPERIMENT_FAMILY=fourier_retrieval_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"

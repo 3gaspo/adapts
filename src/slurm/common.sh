@@ -56,7 +56,7 @@ require_experiment_mode() {
 
 require_experiment_family() {
   case "${EXPERIMENT_FAMILY:-}" in
-    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|sota_benchmark|tsrag|tables) ;;
+    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|fourier_retrieval_ablation|offline_datastore_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|sota_benchmark|tsrag|tables) ;;
     *) log_error "unknown EXPERIMENT_FAMILY=${EXPERIMENT_FAMILY:-}"; return 2 ;;
   esac
 }

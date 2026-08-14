@@ -1,45 +1,10 @@
-ADAPTATION SCREEN CANDIDATES
-
-Source profiles: screen plus convex, delta-ridge, and CatBoost formulation ablations
-Selection date: 2026-08-05
-Backbone: chronos2
-
-SELECTED PIPELINES
-
-1. baselines/instance_euclidean_3_online/full_ridge_shared
-2. baselines/instance_euclidean_3_online/y_ridge_shared
-3. gates/instance_euclidean_3_online/catboost_avgy_regressor_shared
-4. baselines/instance_euclidean_3_online/cov_y_ridge_shared
-5. baselines/instance_euclidean_3_online/residual_ridge_shared
-6. baselines/raw_euclidean_3_online/cov_avgy_ridge_shared
-7. baselines/raw_euclidean_3_online/cov_ridge_shared
-8. gates/instance_euclidean_1_online/catboost_cov_regressor_shared
-9. gates/instance_euclidean_1_online/bayes_cov_shared
-
-WINNERS_CSV
-
-baselines/instance_euclidean_3_online/full_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared,gates/instance_euclidean_3_online/catboost_avgy_regressor_shared,baselines/instance_euclidean_3_online/cov_y_ridge_shared,baselines/instance_euclidean_3_online/residual_ridge_shared,baselines/raw_euclidean_3_online/cov_avgy_ridge_shared,baselines/raw_euclidean_3_online/cov_ridge_shared,gates/instance_euclidean_1_online/catboost_cov_regressor_shared,gates/instance_euclidean_1_online/bayes_cov_shared
-
-NOTES
-
-- Retrieval names encode distance space, Euclidean distance, K, and online retrieval.
-- bayes_cov_shared is the selected Bayes candidate. The bayes_avgy_shared screen gate selected vanilla and produced approximately zero improvement.
-- No convex or delta-ridge baseline entered the selected nine. All six selected baseline pipelines are shared ridge models.
-- Both selected learned CatBoost pipelines are hard shared regressors; no classifier, soft-mixture, or horizon CatBoost variant entered this screen.
-- The completed formulation ablations retained all six shared-ridge controls and both hard shared CatBoost regressors. No convex, delta-ridge, classifier, soft-mixture, or horizon variant earned promotion.
-- The shared Bayes cov gate remains as an inexpensive constant-decision control.
-
-NEXT STAGE: K ABLATION, THEN FURTHER SELECTED-CANDIDATE ABLATIONS
-
-The formulation ablations are complete and the final K-ablation input remains
-the nine pipelines above. Pass the WINNERS_CSV value explicitly to
-k_ablation.slurm; the front does not read this file automatically.
-
-K grid: 1, 3, 5, 10, 15, 20, 100
-K selection rule: choose one K per expanded candidate by its equal-configuration
-mean held-out eval nMSE improvement over vanilla across the 12 primary settings.
-
-Job 42332 completed the corrected K=1,3,5,10,15,20 study, including 300-tree
-ceiling gate fits and final tables. Resubmitting the same nine winners reuses
-those current configurations and computes the newly added K=100 configurations
-before rebuilding tables and the combined improvement-versus-K plot.
+# Top 5 baselines plus the best shared CatBoost regressor and matching shared Bayes gate for cov and avgY.
+baselines/instance_euclidean_3_online/full_ridge_shared
+baselines/raw_euclidean_1_online/full_ridge_shared
+baselines/instance_euclidean_3_online/cov_y_ridge_shared
+baselines/raw_euclidean_3_online/full_ridge_shared
+baselines/instance_euclidean_3_online/cov_avgy_ridge_shared
+gates/raw_euclidean_1_online/catboost_cov_regressor_shared
+gates/instance_euclidean_1_online/catboost_avgy_regressor_shared
+gates/raw_euclidean_1_online/bayes_cov_shared
+gates/instance_euclidean_1_online/bayes_avgy_shared

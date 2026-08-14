@@ -92,6 +92,39 @@ parse_winners() {
       for k in "${k_values[@]}"; do
         PIPELINES+=("$family/${space}_${metric}_${k}_${retrieval}/$method")
       done
+    elif [ "$EXPERIMENT_FAMILY" = fourier_retrieval_ablation ]; then
+      group_neighbors="$neighbors"
+      key="$family|$space|$metric|$neighbors|$retrieval"
+      append_method "$key" "$method"
+      key="$family|fourier|$metric|$neighbors|$retrieval"
+      append_method "$key" "$method"
+      append_unique PIPELINES "$family/$run/$method"
+      append_unique PIPELINES \
+        "$family/fourier_${metric}_${neighbors}_${retrieval}/$method"
+      append_unique SPACES "$space"
+      append_unique SPACES fourier
+      append_unique METRICS "$metric"
+      append_unique FAMILIES "$family"
+      append_unique METHODS "$method"
+      append_unique SELECTED_NEIGHBORS "$neighbors"
+      RETRIEVAL_MODE_SELECTED="$retrieval"
+      continue
+    elif [ "$EXPERIMENT_FAMILY" = offline_datastore_ablation ]; then
+      group_neighbors="$neighbors"
+      key="$family|$space|$metric|$neighbors|$retrieval"
+      append_method "$key" "$method"
+      key="$family|$space|$metric|$neighbors|fixed"
+      append_method "$key" "$method"
+      append_unique PIPELINES "$family/$run/$method"
+      append_unique PIPELINES \
+        "$family/${space}_${metric}_${neighbors}_fixed/$method"
+      append_unique SPACES "$space"
+      append_unique METRICS "$metric"
+      append_unique FAMILIES "$family"
+      append_unique METHODS "$method"
+      append_unique SELECTED_NEIGHBORS "$neighbors"
+      RETRIEVAL_MODE_SELECTED="$retrieval"
+      continue
     elif [ "$EXPERIMENT_FAMILY" = crossrag ]; then
       group_neighbors="$neighbors"
       PIPELINES+=("$family/$run/$method")

@@ -10,13 +10,12 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Selected shared-ridge winners from the completed primary screen. The runner
-# compares each ridge control with the simplex-constrained convex family using
-# the same variables, shared coefficients, and retrieval pipeline.
-BASELINE_WINNERS_CSV="${BASELINE_WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,baselines/instance_euclidean_3_online/y_ridge_shared,baselines/instance_euclidean_3_online/cov_y_ridge_shared,baselines/instance_euclidean_3_online/residual_ridge_shared,baselines/raw_euclidean_3_online/cov_avgy_ridge_shared,baselines/raw_euclidean_3_online/cov_ridge_shared}"
+# Compare every selected shared-ridge baseline with its convex form.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY=convex_baselines_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
+source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"
+BASELINE_WINNERS_CSV="${BASELINE_WINNERS_CSV:-$(selected_candidates_csv baseline_shared)}"
 export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY BASELINE_WINNERS_CSV
 source "$PROJECT_ROOT/src/slurm/run_baseline_family_ablation.sh"

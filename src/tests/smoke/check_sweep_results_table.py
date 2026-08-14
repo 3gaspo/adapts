@@ -1,6 +1,7 @@
 """Smoke-check sweep tables over current manifest-backed adaptation runs."""
 
 import json
+import math
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -21,11 +22,13 @@ def main() -> None:
         root = Path(tmp)
         retrievals = {
             "raw_euclidean_1_online": ("raw", "euclidean", 1, "online"),
+            "raw_euclidean_1_fixed": ("raw", "euclidean", 1, "fixed"),
             "instance_euclidean_3_online": ("instance", "euclidean", 3, "online"),
         }
         for dataset, offset in (("electricity", 0.0), ("solar", 0.2)):
             for run, retrieval in retrievals.items():
                 better = 0.2 if run.startswith("instance") else 0.0
+                vanilla_nmse = (2.0 if run.startswith("instance") else 1.0) + offset
                 for index, (formula, nmse) in enumerate(
                     (
                         ("cov_forecast", 0.95 + offset),
@@ -47,6 +50,7 @@ def main() -> None:
                         include_vanilla=index == 0,
                         retrieval=retrieval,
                         dataset=dataset,
+                        vanilla_nmse=vanilla_nmse,
                     )
                 for formula, nmse in (
                     ("bayes_cov_shared", 0.88 + offset - better),
@@ -109,6 +113,7 @@ def main() -> None:
         full = (root / "tables/full/full_results.tex").read_text(encoding="utf-8")
         assert "vanilla" in full
         assert r"raw\_L2\_1/Y-ridge-s" in full
+        assert r"raw\_L2\_1\_fixed/Y-ridge-s" in full
         assert r"IN\_L2\_3/TS-IFA JR-H-U-full" in full
 
         average_outputs = generate_average_results_tables(
@@ -131,8 +136,25 @@ def main() -> None:
         ranking = json.loads(
             (root / "tables/average/pipeline_ranking.json").read_text(encoding="utf-8")
         )
+        for generated in average_outputs + [
+            root / "tables/average/pipeline_ranking.json",
+            root / "tables/average/pipeline_ranking.csv",
+        ]:
+            assert b"\r\n" not in generated.read_bytes()
         assert ranking
         assert ranking[0]["winner_name"].count("/") == 2
+        by_name = {row["winner_name"]: row for row in ranking}
+        assert math.isclose(
+            by_name["baselines/raw_euclidean_1_online/y_ridge_shared"]
+            ["average_improvement_pct"],
+            (8.0 + (1.2 - 1.12) / 1.2 * 100.0) / 2.0,
+        )
+        assert math.isclose(
+            by_name["baselines/instance_euclidean_3_online/y_ridge_shared"]
+            ["average_improvement_pct"],
+            ((2.0 - 0.72) / 2.0 * 100.0 + (2.2 - 0.92) / 2.2 * 100.0)
+            / 2.0,
+        )
 
         try:
             generate_average_results_tables(

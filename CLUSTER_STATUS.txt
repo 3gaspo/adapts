@@ -1,7 +1,19 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-13
+Updated: 2026-08-14
 
 SCHEMA V1 CUTOVER (CURRENT HANDOFF)
+- TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic
+  retrieval datastore. The front now requests 80 GB instead of 40 GB; exact
+  completed configurations remain reusable. Resume with `sbatch tsrag.slurm`
+  and verify that Traffic plus the remaining workflow finish in the new
+  allocation.
+- `SWEEP_CANDIDATES.txt` is now the sole manual adaptation/TS-IFA follow-up
+  selection. It contains five baseline pipelines, the best shared CatBoost
+  cov/avgY gates, and matching shared Bayes gates; no TS-IFA entry is currently
+  selected. New Fourier-space and fixed-T0 datastore fronts are ready for first
+  cluster execution. The corrected local screen ranking now compares every
+  method with vanilla from the same retrieval run and requires no scientific
+  rerun.
 - Current table-eligible producers include the schema-1 work from screen job
   42887. A one-time local repair promoted 918 manifests that still belonged to
   that launch, had reached `ready_at_utc`, and retained their declared positive-
@@ -126,8 +138,9 @@ CURRENT TS-IFA CONTRACT / NEXT RUN
 - Every branch/rooter training stage is fixed at 20,000 steps.
 - Submit ts_ifa.slurm in pilot mode first: Electricity, 336:48, raw/instance,
   K=3, and the complete 32-model routing/branch grid (64 retrieval/model runs).
-- Record selected winners textually using TS_IFA_CANDIDATES.txt, then submit the
-  dedicated H/L ablations and matching ridge/neural meta-learning fronts.
+- Add selected `ts_ifa/<retrieval>/<method>` winners to
+  `SWEEP_CANDIDATES.txt`, then submit the dedicated H/L ablations and matching
+  ridge/neural meta-learning fronts.
 - All pre-v4 TS-IFA result directories and logs are obsolete and were removed
   locally after the historical findings above were preserved.
 

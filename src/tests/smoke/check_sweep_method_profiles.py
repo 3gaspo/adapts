@@ -65,10 +65,10 @@ def main() -> None:
         "10",
         "15",
     }
-    assert neighbor_defaults.count("1,3") == 6
+    assert neighbor_defaults.count("1,3") == 8
     assert neighbor_defaults.count("3") == 3
     assert 'DEFAULT_SETTINGS_CSV="504:168"' in text
-    assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 5
+    assert text.count('DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"') == 7
     assert "DEFAULT_DATASTORE_STRIDE=25" in text
     assert "DEFAULT_ADAPT_QUERY_STRIDE=25" in text
     assert "DEFAULT_EVAL_QUERY_STRIDE=127" in text
@@ -142,6 +142,8 @@ def main() -> None:
 
     for front, implementation in (
         ("mixed_quantity_ablation.slurm", "run_profile_experiment.sh"),
+        ("fourier_retrieval_ablation.slurm", "run_profile_experiment.sh"),
+        ("offline_datastore_ablation.slurm", "run_profile_experiment.sh"),
         ("horizon_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
         ("convex_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
         ("delta_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
@@ -152,16 +154,28 @@ def main() -> None:
         assert f'source "$PROJECT_ROOT/src/slurm/{implementation}"' in front_text
 
     mixed_front = (ROOT / "mixed_quantity_ablation.slurm").read_text(encoding="utf-8")
-    assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in mixed_front
+    assert (
+        'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidates_csv adaptation)}"'
+        in mixed_front
+    )
+    fourier_front = (ROOT / "fourier_retrieval_ablation.slurm").read_text(
+        encoding="utf-8"
+    )
+    assert "EXPERIMENT_FAMILY=fourier_retrieval_ablation" in fourier_front
+    assert "selected_candidates_csv adaptation" in fourier_front
+    offline_front = (ROOT / "offline_datastore_ablation.slurm").read_text(
+        encoding="utf-8"
+    )
+    assert "EXPERIMENT_FAMILY=offline_datastore_ablation" in offline_front
+    assert "selected_candidates_csv adaptation" in offline_front
     catboost_front = (ROOT / "catboost_ablation.slurm").read_text(encoding="utf-8")
-    assert "catboost_avgy_regressor_shared" in catboost_front
-    assert "catboost_cov_regressor_shared" in catboost_front
+    assert "selected_candidates_csv catboost_shared" in catboost_front
     for selected_front in (
         "k_ablation.slurm",
         "h_ablation.slurm",
         "l_ablation.slurm",
     ):
-        assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in (
+        assert 'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidates_csv adaptation)}"' in (
             ROOT / selected_front
         ).read_text(encoding="utf-8")
     sota_front = (ROOT / "sota_benchmark.slurm").read_text(encoding="utf-8")
@@ -180,26 +194,18 @@ def main() -> None:
     ):
         front_text = (ROOT / family_front).read_text(encoding="utf-8")
         assert "BASELINE_WINNERS_CSV" in front_text
-        assert "full_ridge_shared" in front_text
+        assert "selected_candidates_csv baseline_shared" in front_text
         assert "euclidean_10" not in front_text
-
-    family_defaults = {
-        re.search(
-            r'BASELINE_WINNERS_CSV="\$\{BASELINE_WINNERS_CSV:-([^}]*)\}"',
-            (ROOT / front).read_text(encoding="utf-8"),
-        ).group(1)
-        for front in (
-            "horizon_baselines_ablation.slurm",
-            "convex_baselines_ablation.slurm",
-            "delta_baselines_ablation.slurm",
-        )
-    }
-    assert len(family_defaults) == 1
 
     profile_runner = (ROOT / "src" / "slurm" / "run_profile_experiment.sh").read_text(
         encoding="utf-8"
     )
     assert 'if [ "$EXPERIMENT_FAMILY" = k_ablation ]; then' in profile_runner
+    assert 'elif [ "$EXPERIMENT_FAMILY" = fourier_retrieval_ablation ]; then' in profile_runner
+    assert 'append_unique SPACES fourier' in profile_runner
+    assert '"$family/fourier_${metric}_${neighbors}_${retrieval}/$method"' in profile_runner
+    assert 'elif [ "$EXPERIMENT_FAMILY" = offline_datastore_ablation ]; then' in profile_runner
+    assert '"$family/${space}_${metric}_${neighbors}_fixed/$method"' in profile_runner
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
     assert 'RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"' in profile_runner

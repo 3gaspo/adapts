@@ -30,6 +30,7 @@ def _evaluation_run(
     setting: str = "168_24",
     model: str = "chronos2",
     pipeline_config: dict | None = None,
+    vanilla_nmse: float = 0.4,
 ) -> None:
     space, metric, neighbors, mode = retrieval
     config = {
@@ -72,7 +73,7 @@ def _evaluation_run(
                 "baseline": "vanilla",
                 "mse": 0.0012,
                 "mae": 0.03,
-                "nmse": 0.4,
+                "nmse": vanilla_nmse,
                 "positive_window_pct": 50.0,
                 "relative_nmse_improvement_pct": 0.0,
             },

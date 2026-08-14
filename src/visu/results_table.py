@@ -29,6 +29,7 @@ class Result:
     value: float
     path: Path
     model: str = ""
+    run: str = ""
 
 
 _RUN_NAME_RE = re.compile(
@@ -290,7 +291,19 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
                     continue
                 variant, metric = match.groups()
                 method = f"{run}/{choice.label}" if variant == "adapted" else f"{run}/{choice.label}_{variant}"
-                results.append(Result(dataset, setting, method, "eval", metric, float(value), path, model))
+                results.append(
+                    Result(
+                        dataset,
+                        setting,
+                        method,
+                        "eval",
+                        metric,
+                        float(value),
+                        path,
+                        model,
+                        run,
+                    )
+                )
             continue
         for row in payload:
             formula = str(row["baseline"])
@@ -303,7 +316,17 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             for metric in ("mse", "mae", "nmse", "positive_window_pct"):
                 if metric in row:
                     results.append(
-                        Result(dataset, setting, method, str(row.get("split", "eval")), metric, float(row[metric]), path, model)
+                        Result(
+                            dataset,
+                            setting,
+                            method,
+                            str(row.get("split", "eval")),
+                            metric,
+                            float(row[metric]),
+                            path,
+                            model,
+                            run,
+                        )
                     )
     return results
 
@@ -688,7 +711,9 @@ def generate_results_table(experiment_dir: str | Path, output: str | Path | None
     default_name = f"results_{str(kwargs.get('metric', 'mse')).lower()}.tex"
     destination = Path(output).expanduser().resolve() if output else root / default_name
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(build_table(discover_results(root), **kwargs), encoding="utf-8")
+    destination.write_text(
+        build_table(discover_results(root), **kwargs), encoding="utf-8", newline="\n"
+    )
     return destination
 
 

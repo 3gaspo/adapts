@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=h_ablation
+#SBATCH --job-name=offline_datastore_ablation
 #SBATCH --gres=gpu:1
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -10,10 +10,11 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40000
 
-# Preserve each selected pipeline while varying the forecast horizon.
+# Compare every selected pipeline with the same family, method, space, metric,
+# and K using a fixed T0-only datastore instead of online retrieval.
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
-EXPERIMENT_FAMILY=h_ablation
+EXPERIMENT_FAMILY=offline_datastore_ablation
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
 source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"

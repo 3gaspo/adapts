@@ -296,12 +296,7 @@ def _selected_runs(
 ) -> list[str]:
     if not pipelines:
         return list(runs)
-    requested = {_pipeline_parts(pipeline)[1] for pipeline in pipelines}
-    selected = [run for run in runs if run in requested]
-    missing = sorted(requested - set(selected))
-    if missing:
-        raise ValueError(f"selected pipelines are outside the requested retrieval grid: {missing}")
-    return selected
+    return list(dict.fromkeys(_pipeline_parts(pipeline)[1] for pipeline in pipelines))
 
 
 def _result_family(result: Result) -> str:
@@ -485,7 +480,7 @@ def _average_method_statistics(
     dataset_order = list(datasets) if datasets else None
     setting_filter = set(settings or ())
     references = {
-        (result.dataset, result.setting, result.model): result.value
+        (result.dataset, result.setting, result.model, result.run): result.value
         for result in results
         if result.method == REFERENCE_METHOD
         and result.metric.casefold() == metric.casefold()
@@ -504,7 +499,9 @@ def _average_method_statistics(
             or not math.isfinite(result.value)
         ):
             continue
-        reference = references.get((result.dataset, result.setting, result.model))
+        reference = references.get(
+            (result.dataset, result.setting, result.model, result.run)
+        )
         if reference is None:
             continue
         values.append(result.value)
@@ -791,7 +788,7 @@ def _write_full_family_table(
         label=family.label,
     )
     output = output_dir / family.output_name
-    output.write_text(table, encoding="utf-8")
+    output.write_text(table, encoding="utf-8", newline="\n")
     return output
 
 
@@ -827,7 +824,7 @@ def _write_average_family_table(
         allowed_methods=allowed_methods,
     )
     output = output_dir / family.output_name
-    output.write_text(table, encoding="utf-8")
+    output.write_text(table, encoding="utf-8", newline="\n")
     return output
 
 
@@ -891,7 +888,7 @@ def _write_average_positive_window_table(
         allowed_methods=allowed_methods,
     )
     output = output_dir / "positive_windows_results.tex"
-    output.write_text(table, encoding="utf-8")
+    output.write_text(table, encoding="utf-8", newline="\n")
     return output
 
 
@@ -953,7 +950,9 @@ def _write_pipeline_ranking(
     )
     json_path = output_dir / "pipeline_ranking.json"
     csv_path = output_dir / "pipeline_ranking.csv"
-    json_path.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    json_path.write_text(
+        json.dumps(rows, indent=2), encoding="utf-8", newline="\n"
+    )
     fieldnames = (
         list(rows[0])
         if rows
@@ -967,7 +966,7 @@ def _write_pipeline_ranking(
         ]
     )
     with csv_path.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=fieldnames)
+        writer = csv.DictWriter(stream, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

@@ -1149,11 +1149,10 @@ metric is Euclidean and mode is online in every row.}
 Stem & Space, $K$ & Horizon front & Convex front & Delta front \\
 \midrule
 \code{full} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
-\code{y} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{full} & raw, 1 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
 \code{cov_y} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
-\code{residual} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
-\code{cov_avgy} & raw, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
-\code{cov} & raw, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{full} & raw, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
+\code{cov_avgy} & instance, 3 & ridge shared / horizon & ridge / convex shared & ridge / delta shared \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1171,8 +1170,8 @@ replace only the suffix by \code{ridge_horizon}, \code{convex_shared}, or
 \toprule
 $A$ & Space, $K$ & Control & Separate one-axis variants \\
 \midrule
-\code{avgy} & instance, 3 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
-\code{cov} & instance, 1 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
+\code{avgy} & instance, 1 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
+\code{cov} & raw, 1 & regressor shared & classifier shared; regressor shared soft; regressor horizon \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1191,15 +1190,18 @@ Front & Model set / controlled axis \\
 \midrule
 \code{screen.slurm} & $\mathcal B_{\rm screen}$ and $\mathcal G_{\rm screen}$ on $\mathcal D_P\times\mathcal S\times\mathcal R$ \\
 \code{benchmark.slurm} & complete selected screen pipelines; \code{full} uses Chronos-2, \code{ultra} adds TabPFN-TS \\
-\code{k_ablation.slurm} & nine selected pipelines, $K\in\{1,3,5,10,15,20,100\}$ only \\
+\code{k_ablation.slurm} & selected pipelines, $K\in\{1,3,5,10,15,20,100\}$ only \\
 \code{h_ablation.slurm} & selected pipelines, $L=504$, $H\in\{24,168,504\}$ only \\
 \code{l_ablation.slurm} & selected pipelines, $H=24$, $L\in\{24,168,504\}$ only \\
-\code{horizon_baselines_ablation.slurm} & six controls in \cref{tab:selected-baselines}; shared versus horizon ridge \\
-\code{convex_baselines_ablation.slurm} & same six; shared ridge versus shared convex \\
-\code{delta_baselines_ablation.slurm} & same six; shared ridge versus shared delta-ridge \\
+\code{horizon_baselines_ablation.slurm} & five controls in \cref{tab:selected-baselines}; shared versus horizon ridge \\
+\code{convex_baselines_ablation.slurm} & same five; shared ridge versus shared convex \\
+\code{delta_baselines_ablation.slurm} & same five; shared ridge versus shared delta-ridge \\
 \code{catboost_ablation.slurm} & two controls in \cref{tab:selected-catboost}; three separate one-axis variants \\
 \code{mixed_quantity_ablation.slurm} & selected pipelines transferred to the five mixed-quantity panels \\
-\code{crossrag.slurm} & winner on Chronos-2 at its own $K$; winner and Cross-RAG on Chronos-Bolt at $(L,H,K)=(512,64,15)$ \\
+\code{fourier_retrieval_ablation.slurm} & selected pipelines under their original and Fourier-amplitude retrieval spaces \\
+\code{offline_datastore_ablation.slurm} & selected pipelines under online and fixed T0-only retrieval \\
+\code{sota_benchmark.slurm} & selected Chronos-Bolt method on exact paper splits plus immutable published TS-RAG/Cross-RAG rows \\
+\code{tsrag.slurm} & released TS-RAG and the selected project method on matching fixed $K=10$ neighbours \\
 \code{ts_ifa.slurm} & complete non-meta routing/branch grid over the selected test/full/ultra subset \\
 \code{ts_ifa\_h\_ablation.slurm} & selected candidates at $L=504$ over three horizons \\
 \code{ts_ifa\_l\_ablation.slurm} & selected candidates at $H=24$ over three lookbacks \\
@@ -1212,6 +1214,14 @@ Front & Model set / controlled axis \\
 \bottomrule
 \end{tabularx}
 \end{table}
+
+The sole manual follow-up selection is the root
+\code{SWEEP_CANDIDATES.txt}, whose non-comment records are complete
+\code{family/retrieval/method} identities. A shared reader filters adaptation,
+shared-ridge, shared-CatBoost, TS-IFA ridge, or TS-IFA neural entries for each
+front. \code{SELECTED_CANDIDATES_FILE} may select another manifest; the
+front-specific CSV variables remain explicit one-launch overrides. TS-IFA H/L
+and meta fronts require at least one matching \code{ts_ifa} entry or override.
 
 Earlier screen analysis selected six shared-ridge baselines, two hard shared
 CatBoost regressors, and one shared Bayes gate; no convex or delta baseline was

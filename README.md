@@ -422,6 +422,8 @@ The intended submission interface is:
 | `ts_ifa_meta_ridge.slurm` | `full` by default | Meta-learning for textually selected joint-ridge candidates |
 | `ts_ifa_meta_neural.slurm` | `full` by default | Meta-learning for textually selected joint-neural candidates |
 | `mixed_quantity_ablation.slurm` | `full` | `mixed_quantity_ablation` family on original ETT panels and Weather |
+| `fourier_retrieval_ablation.slurm` | `full` | selected adaptation pipelines under their original and Fourier-amplitude retrieval spaces |
+| `offline_datastore_ablation.slurm` | `full` | selected adaptation pipelines under online and fixed T0-only retrieval |
 | `horizon_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus horizon ridge |
 | `convex_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared convex |
 | `delta_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared delta-ridge |
@@ -505,19 +507,24 @@ For an explicit custom backbone selection, pass `MODELS_CSV`, for example
 `MODELS_CSV=tabpfnts`. `full` and `ultra` otherwise differ only in their
 default model list.
 
-The three baseline family studies default to the six baseline pipelines in
-`SWEEP_CANDIDATES.txt`. Override `BASELINE_WINNERS_CSV` when a later screen
+`SWEEP_CANDIDATES.txt` is the sole manual selection manifest for adaptation and
+TS-IFA follow-ups. Each non-comment line is a complete
+`family/retrieval/method` pipeline; the shared reader filters this list for each
+front. `SELECTED_CANDIDATES_FILE` selects another manifest, while the existing
+front-specific CSV variables remain explicit overrides.
+
+The three baseline family studies currently default to the five selected
+shared-ridge pipelines in that file. Override `BASELINE_WINNERS_CSV` when a later screen
 changes those selections. Every entry must name a primary shared-ridge method;
 each launcher evaluates it beside exactly one transformed variant:
 
 | Selected design / retrieval | Ridge control | Horizon variant | Convex variant | Delta-ridge variant |
 |---|---|---|---|---|
 | `full`, instance L2, `K=3` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
-| `y`, instance L2, `K=3` | `y_ridge_shared` | `y_ridge_horizon` | `y_convex_shared` | `y_delta_ridge_shared` |
+| `full`, raw L2, `K=1` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
 | `cov_y`, instance L2, `K=3` | `cov_y_ridge_shared` | `cov_y_ridge_horizon` | `cov_y_convex_shared` | `cov_y_delta_ridge_shared` |
-| `residual`, instance L2, `K=3` | `residual_ridge_shared` | `residual_ridge_horizon` | `residual_convex_shared` | `residual_delta_ridge_shared` |
-| `cov_avgy`, raw L2, `K=3` | `cov_avgy_ridge_shared` | `cov_avgy_ridge_horizon` | `cov_avgy_convex_shared` | `cov_avgy_delta_ridge_shared` |
-| `cov`, raw L2, `K=3` | `cov_ridge_shared` | `cov_ridge_horizon` | `cov_convex_shared` | `cov_delta_ridge_shared` |
+| `full`, raw L2, `K=3` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
+| `cov_avgy`, instance L2, `K=3` | `cov_avgy_ridge_shared` | `cov_avgy_ridge_horizon` | `cov_avgy_convex_shared` | `cov_avgy_delta_ridge_shared` |
 
 ```bash
 sbatch horizon_baselines_ablation.slurm
@@ -538,8 +545,8 @@ and horizon-wise regressor, plus matching references.
 
 | Candidate / retrieval | Screen control | Classification | Mixture | Horizon |
 |---|---|---|---|---|
-| `avgy`, instance L2, `K=3` | `catboost_avgy_regressor_shared` | `catboost_avgy_classifier_shared` | `catboost_avgy_regressor_shared_soft` | `catboost_avgy_regressor_horizon` |
-| `cov`, instance L2, `K=1` | `catboost_cov_regressor_shared` | `catboost_cov_classifier_shared` | `catboost_cov_regressor_shared_soft` | `catboost_cov_regressor_horizon` |
+| `avgy`, instance L2, `K=1` | `catboost_avgy_regressor_shared` | `catboost_avgy_classifier_shared` | `catboost_avgy_regressor_shared_soft` | `catboost_avgy_regressor_horizon` |
+| `cov`, raw L2, `K=1` | `catboost_cov_regressor_shared` | `catboost_cov_classifier_shared` | `catboost_cov_regressor_shared_soft` | `catboost_cov_regressor_horizon` |
 
 The mixed-quantity dataset study is also isolated and can be submitted later:
 
@@ -552,8 +559,9 @@ All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
 ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
 quantity-separated ETT panels instead.
 
-Copy the selected complete names into `WINNERS_CSV` near the top of each later
-Slurm file (or pass the same variable as an environment override):
+The K/H/L and mixed-quantity fronts read the complete adaptation entries from
+`SWEEP_CANDIDATES.txt` by default. Pass `WINNERS_CSV` only for an explicit
+one-off override:
 
 ```bash
 WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared}"
@@ -565,6 +573,17 @@ Then submit exactly one front per experiment:
 sbatch k_ablation.slurm
 sbatch h_ablation.slurm
 sbatch l_ablation.slurm
+```
+
+The retrieval ablations use the same selection automatically. The Fourier
+front retains each method, metric, K, and online/fixed mode while comparing the
+original space with standardized Fourier-amplitude retrieval. The offline
+datastore front retains each method, space, metric, and K while comparing the
+selected online pipeline with fixed retrieval restricted to T0:
+
+```bash
+sbatch fourier_retrieval_ablation.slurm
+sbatch offline_datastore_ablation.slurm
 ```
 
 The K experiment expands each winner across the K grid while retaining its
@@ -797,9 +816,10 @@ sbatch ts_ifa.slurm
 EXPERIMENT_MODE=full sbatch ts_ifa.slurm
 ```
 
-After inspecting the grid, copy chosen entries in the format documented by
-`TS_IFA_CANDIDATES.txt` into `TS_IFA_CANDIDATES_CSV`. The H/L and meta fronts
-accept only that explicit selection, for example:
+After inspecting the grid, append chosen `ts_ifa/<retrieval>/<method>` entries
+to `SWEEP_CANDIDATES.txt`. The H/L and meta fronts select the relevant TS-IFA,
+ridge, or neural subset automatically. Until such entries exist they fail
+clearly; `TS_IFA_CANDIDATES_CSV` remains a one-off override, for example:
 
 ```bash
 TS_IFA_CANDIDATES_CSV='ts_ifa/raw_euclidean_3_online/joint_ridge_shared_softmax_cov' \

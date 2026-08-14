@@ -4,6 +4,65 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-14: Increased the `tsrag.slurm` host-memory request from 40 GB to
+  80 GB after job 43308 was cgroup OOM-killed while constructing the Traffic
+  TS-RAG retrieval datastore. Updated `CLUSTER_STATUS.txt` with the failed job
+  and resume action. Affected contract: TS-RAG cluster resource allocation and
+  cluster handoff only; the experiment grid, retrieval protocol, signatures,
+  and artifacts are unchanged. Check passed: the front declares exactly
+  `#SBATCH --mem=80000`. Deferred integration: resubmit `tsrag.slurm` and
+  confirm Traffic extraction and the remaining workflow complete within the
+  new allocation. Required rerun: resume the interrupted TS-RAG workflow;
+  completed exact configurations remain reusable.
+
+- 2026-08-14: Fixed `pipeline_ranking` so each adapted result is compared with
+  the vanilla result from the same retrieval run rather than whichever
+  retrieval was discovered last. Result records now carry their run identity,
+  the screen average tables and CSV/JSON ranking were regenerated, and
+  generated reports use stable LF line endings. Standardized manual candidate
+  selection in the sole root `SWEEP_CANDIDATES.txt` contract, currently holding
+  the requested top five baselines, best shared CatBoost cov/avgY gates, and
+  matching shared Bayes cov/avgY gates; the obsolete TS-IFA-only candidate file
+  was removed. A shared shell reader validates entries and filters them by
+  family/method for all 14 adaptation and TS-IFA ablation/follow-up fronts,
+  while their existing CSV variables and `SELECTED_CANDIDATES_FILE` retain
+  explicit override support. TS-IFA fronts now fail clearly when the shared
+  file has no relevant TS-IFA entry and no CSV override. The new
+  `fourier_retrieval_ablation.slurm` applies the adaptation selection and
+  compares each original retrieval pipeline with a Fourier-amplitude retrieval
+  counterpart while preserving method, distance metric, K, and retrieval mode.
+  The new `offline_datastore_ablation.slurm` similarly compares each selected
+  pipeline with its fixed-mode counterpart, where the datastore and retrieved
+  futures are restricted to T0; explicit pipeline tables now support mixed
+  online/fixed retrieval selections.
+  Affected contracts:
+  result discovery/ranking, generated screen reports, root candidate selection,
+  the shared Slurm helper, 14 root fronts, shared profile dispatch, and focused
+  smoke checks. Checks
+  passed: the sweep result-table regression (including retrieval-specific
+  references and LF outputs), exact candidate/filter/front audit, sweep profile
+  audit, Python compilation of touched modules/tests, Git Bash syntax for the
+  helper and the initial 12 fronts, current screen average-report regeneration,
+  plus candidate/profile audits and Bash syntax for the Fourier front and its
+  touched dispatch helpers. The offline front additionally passed the
+  mixed-mode sweep-table regression, Python compilation, candidate/profile
+  audits, and Bash syntax. Deferred integration: exercise the Fourier and
+  offline-datastore fronts, one other default selected adaptation front, and
+  one TS-IFA override on the
+  cluster. README and `latex/experiment_guideline.tex` now document the sole
+  shared candidate/override contract and the Fourier and offline-datastore
+  fronts. Handoff maintenance reran the selected-candidate, sweep-profile,
+  result-table, and sweep-table smoke checks with `PYTHONPATH=src`; compiled the
+  six touched Python modules/tests; and passed Git Bash syntax for all 19
+  touched fronts/helpers. BibTeX plus four pdfLaTeX passes rebuilt the guideline
+  without unresolved references or overfull boxes, and all 15 rendered pages
+  passed visual inspection.
+  Required reruns: none for the ranking correction; Fourier evidence requires
+  submitting `fourier_retrieval_ablation.slurm`; offline-datastore evidence
+  requires submitting `offline_datastore_ablation.slurm`; future ablation
+  submissions use the new manual list, while any desired
+  comparison against older candidate selections must be resubmitted explicitly.
+
 - 2026-08-13: Replaced the obsolete Cross-RAG execution front with
   `sota_benchmark.slurm`. `SOTA_BENCHMARK.json` now records the immutable
   published TS-RAG/Cross-RAG Table-4 MSE values and exact evaluation protocol.
