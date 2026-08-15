@@ -1,7 +1,48 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-14
+Updated: 2026-08-15
 
-SCHEMA V1 CUTOVER (CURRENT HANDOFF)
+CURRENT HANDOFF
+- Jobs 43582 (screen tables), 43584 (Fourier), 43585 (fixed-T0 datastore),
+  43593 (lookback), 43596 (per-horizon ridge), 43598 (mixed quantities), 43602
+  (convex), and 43603 (delta ridge) completed with empty stderr and terminal
+  report stages. Their synchronized schema-1 metrics were analyzed locally.
+- The formulation evidence consistently retains shared ridge: selected controls
+  gain 1.76--1.95% mean T3 nMSE, versus 1.33--1.52% for horizon fits,
+  -0.05--0.88% for convex fits, and 0.47--0.82% for delta-ridge fits. Fourier
+  retrieval is also weaker (1.28--1.62%) than the corresponding original
+  pipelines. Fixed-T0 retrieval matches or improves every paired ridge
+  (1.80--2.09% versus 1.79--1.95% online) and is the preferred stricter store.
+- The completed lookback and mixed-quantity reports require caution. L=168 is
+  the balanced H=24 choice; L=24 includes a Traffic vanilla nMSE of 2.07e10.
+  Mixed panels include severe Weather degradation, catastrophic ETTm1 raw-ridge
+  values, and a catastrophic ETTm2 avgY gate, supporting their ablation-only
+  status rather than a primary result.
+- TS-RAG job 43579 completed all four inference metric artifacts. Equal-dataset
+  mean nMSE improvement is +1.90% over matching Chronos-Bolt vanilla and +0.85%
+  over the selected full-ridge control, but it loses to that control on Traffic
+  and Solar. The workflow is failed because its final table step reported no
+  completed TS-RAG results despite the four synchronized manifests now being
+  completed; fix result discovery and rebuild the table without rerunning valid
+  inference.
+- SOTA benchmark job 43580 completed ETTh1, ETTh2, ETTm1, ETTm2, and Weather,
+  then OOM-killed during the Electricity instance-K=10 evaluation extraction;
+  Exchange did not start. The local adapted MSE beats local vanilla on four of
+  five rows, but its five-row mean 0.2519 remains above published TS-RAG 0.2398
+  and Cross-RAG 0.2322. Resume with more host memory; reuse completed rows.
+- K-ablation job 43589 completed the first 23/96 extraction identities, then
+  OOM-killed on Electricity 504:168 raw K=100. K=100 has now been removed from
+  the intended grid. The synchronized schema-1 tree currently has 60/144
+  K<=20 retrieval extractions complete, so resubmitting reuses those 60 but must
+  finish the remaining 84 before adaptation and tables. H-ablation job 43592
+  completed all raw-K=1 gates, then collided with the exact Electricity 504:24
+  instance-K=3 extraction that concurrently running L-ablation job 43593 had
+  allocated six minutes earlier. The shared extraction is now complete, so
+  resubmission can reuse it. The H baseline and table stages never ran.
+- Next cluster actions: increase memory or shard the SOTA extraction, rebuild
+  the TS-RAG table after correcting discovery, rerun K and H, and run the v4
+  TS-IFA pilot. Cross-RAG has no execution front.
+
+PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic
   retrieval datastore. The front now requests 80 GB instead of 40 GB; exact
   completed configurations remain reusable. Resume with `sbatch tsrag.slurm`

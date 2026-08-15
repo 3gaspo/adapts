@@ -276,7 +276,7 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   objective, soft mixture output, or per-horizon regression. Matching
   no-feature and oracle references are included.
 - `k_ablation`: the manually named winning pipelines on `D x S`, varying only
-  `K in {1,3,5,10,15,20,100}` while retaining each formula and normalization.
+  `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
 - `h_ablation`: manually named pipelines with `L=504` and
   `H in {24,168,504}`.
 - `l_ablation`: manually named pipelines with `H=24` and
@@ -313,7 +313,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `convex_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared convex |
 | `delta_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared delta-ridge |
 | `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared regressor versus classifier, soft mixture, and horizon regressor |
-| `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20,100` | `WINNERS_CSV` only |
+| `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `sota_benchmark` | Seven paper datasets | `512:64` | Chronos-Bolt | Selected method's own retrieval | Computed selected method plus published TS-RAG/Cross-RAG MSE |

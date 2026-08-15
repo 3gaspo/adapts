@@ -4,6 +4,126 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-15: Added the completed baseline lookback ablation to the experiment
+  guideline and executive summary as an exact result table and paired plot of
+  mean nMSE improvement and positive-window rate. Across the four datasets,
+  $L=168$ is the most balanced choice: the three instance-retrieval designs
+  gain +0.90% to +1.14% on average, whereas $L=24$ includes an unstable Traffic
+  vanilla reference and the full designs at $L=504$ fall below a 50% mean
+  window-win rate. Affected files/artifacts:
+  `latex/l_ablation_baseline_results.pdf`,
+  `latex/experiment_guideline.tex`/`.pdf`, and
+  `latex/executive_summary.tex`/`.pdf`. Checks passed: recomputed the plotted
+  values from all 108 completed result records; compiled the guideline through
+  BibTeX and the required pdfLaTeX passes; compiled the executive summary
+  twice; found no LaTeX errors, unresolved references/citations, or overfull
+  boxes; and rendered and visually inspected both integration pages and the
+  standalone plot. Required reruns are unchanged: `k_ablation.slurm` must
+  complete the 84 missing current K<=20 extraction identities before its
+  adaptation/table stages, and `h_ablation.slurm` must resume its incomplete
+  workflow while reusing the now-complete extraction that collided with L.
+  Submit the two fronts sequentially to avoid another shared-extraction race.
+
+- 2026-08-15: Removed K=100 from the active K-ablation grid, leaving
+  K={1,3,5,10,15,20}, and synchronized the root-front comment, profile smoke
+  expectation, README grid, experiment-guideline source, and cluster handoff.
+  The current synchronized schema-1 tree contains only 60/144 required K<=20
+  retrieval extraction manifests, so a rerun will reuse those 60 but must
+  compute the remaining 84 before adaptation and tables; forcing an
+  adaptation-only launch would fail current manifest validation. Diagnosed the
+  H-ablation failure as a concurrent-ownership collision rather than an H-grid
+  error: L job 43593 allocated Electricity 504:24 instance-K=3 at 22:47:36,
+  and H job 43592 reached the same shared identity at 22:53:32 while it was
+  still running. The allocator correctly refused a second writer; the later
+  Bash `pop_var_context` messages were secondary failure-unwinding noise from
+  nested sourced scripts. Aggregated all 108 completed L-ablation results (nine
+  pipelines x three lookbacks x four datasets) into paired nMSE-improvement and
+  positive-window plots. Affected files/contracts: `k_ablation.slurm`,
+  `src/slurm/profiles.sh`,
+  `src/tests/smoke/check_sweep_method_profiles.py`, `README.md`,
+  `latex/experiment_guideline.tex`, and `CLUSTER_STATUS.txt`. Checks passed: Git
+  Bash syntax for the K front/profile/orchestrator, the focused profile smoke
+  test, an exact current-manifest inventory, exact L metric aggregation, and
+  responsive/light/dark/tooltip/series-toggle plot checks. Deferred integration:
+  consider adding wait-and-reuse behavior for identical concurrently running
+  extraction identities if overlapping fronts will routinely be submitted
+  together.
+  Required reruns: resubmit `k_ablation.slurm` to finish the missing K<=20
+  extractions plus adaptation/tables, and resubmit `h_ablation.slurm`; its
+  formerly conflicting extraction is now complete and reusable.
+
+- 2026-08-15: Integrated the completed corrected screen, Fourier-retrieval,
+  horizon-sharing, convex, delta-ridge, and mixed-quantity ablations into the
+  experiment guideline and ICLR 2027 submission draft. The documented evidence
+  selects full shared ridge with instance-Euclidean retrieval and $K=3$ for the
+  largest mean gain (+1.95%), while the compact cov/avgY shared ridge has the
+  highest window win rate (54.17%). Every matched Fourier, per-horizon, convex,
+  and delta formulation is worse than its shared-ridge control. Mixed panels
+  are non-robust in aggregate, so cross-variable retrieval and fusion should be
+  restricted to channels representing the same physical quantity. Affected
+  files/artifacts: `latex/experiment_guideline.tex`,
+  `latex/experiment_guideline.pdf`, and the workspace ICLR submission
+  `latex/submissions/adaptation_ICLR2027/main.tex`/`main.pdf`. Checks passed:
+  reconciled values against the exact generated reports; compiled both
+  documents through the full bibliography/reference sequence; found no LaTeX
+  errors, undefined references, or overfull boxes; rendered and visually
+  inspected every changed result-table page; and confirmed the result text is
+  extractable with pypdf. Deferred integration: fill the submission's remaining
+  direct-conditioning, decomposition, figure, and AI-use placeholders after
+  their evidence is available. Required reruns: none for these documentation
+  updates; the incomplete $K$ and horizon-length workflows remain required for
+  claims about their optima.
+
+- 2026-08-15: Pulled and analyzed jobs 43579--43603. Eight workflows completed
+  through their report stages; TS-RAG produced four valid inference metrics but
+  failed table discovery, SOTA completed five of seven datasets before an
+  Electricity OOM, K stopped at extraction 24/96 on the Electricity 504:168
+  K=100 OOM, and H stopped after the raw-K=1 gates on a concurrently running
+  instance-extraction manifest. Current ablations retain shared ridge over
+  Fourier, horizon, convex, and delta variants; fixed-T0 retrieval is at least
+  as good as every paired online ridge and is the preferred stricter store.
+  L=24 and the mixed-quantity panels expose severe nMSE/outlier instability and
+  must not drive primary conclusions. Updated the cluster handoff and executive
+  summary with the exact partial/completed scope and decisions. Affected files:
+  `CLUSTER_STATUS.txt`, `latex/executive_summary.tex`, and
+  `latex/executive_summary.pdf`. Checks completed: inspected all 12 exact log
+  pairs, terminal stages, synchronized manifests, per-run metric JSON, and all
+  eight full/average report sets; independently recomputed TS-RAG comparisons
+  and partial SOTA MSE means; compiled the executive summary with MiKTeX and
+  inspected its rendered pages. Deferred integration: fix TS-RAG table result
+  discovery and exercise a table-only rebuild; complete the SOTA, K, and H
+  workflows, then reconcile the four-page adaptation result summary. Required
+  reruns: resume SOTA after increasing/sharding host memory, resume K from the
+  interrupted K=100 identity, and resume H; completed exact configurations are
+  reusable. No rerun is required for the eight terminal report workflows or
+  the four valid TS-RAG inference artifacts.
+
+- 2026-08-15: Rebuilt the four-page adaptation results summary from the latest
+  synchronized schema-1 evidence. The current screen table now uses the
+  retrieval-matched ranking from job 43304, all result cells are percentages,
+  and the CatBoost feature-importance figure was regenerated from all 96
+  current screen CSVs. The summary preserves the exact distance-weight and
+  shared CatBoost feature definitions, uses the $V+aV$ baseline notation,
+  isolates archived formulation/$K\leq20$ and pre-v4 TS-IFA percentages from
+  current comparisons, records that no v4 T1/T2 history exists, refreshes the
+  test/full/ultra mode table, and inventories all 23 root Slurm fronts with
+  current colored status. Affected files/artifacts:
+  `latex/adaptation_results_summary.tex`,
+  `latex/catboost_feature_importance_current.pdf`, and
+  `outputs/pdf/adaptation_results_summary.pdf`. Checks passed: inspected the
+  current report manifest/ranking, all 96 feature CSVs, terminal synchronized
+  logs, root-front list, and cluster handoff; compiled twice with MiKTeX after
+  the final edit; found no overfull boxes; rendered and visually inspected all
+  four A4 pages with Poppler; verified four readable, unencrypted pages with
+  pypdf and confirmed all 23 front names are present. The PDF skill's optional
+  Node marker could not run because Node is not installed, and no dependency
+  was installed. Deferred maintenance: reconcile `latex/executive_summary.tex`
+  with the current schema-1 screen ranking; README and the experiment guideline
+  require no protocol change. Required reruns: schema-1 formulation and
+  $K$ ablations (including an evaluated $K=100$ result), the v4 TS-IFA pilot,
+  the incomplete SOTA benchmark after restoring ETTh2, TS-RAG with the revised
+  memory request, and the first Fourier/fixed-datastore executions.
+
 - 2026-08-14: Increased the `tsrag.slurm` host-memory request from 40 GB to
   80 GB after job 43308 was cgroup OOM-killed while constructing the Traffic
   TS-RAG retrieval datastore. Updated `CLUSTER_STATUS.txt` with the failed job

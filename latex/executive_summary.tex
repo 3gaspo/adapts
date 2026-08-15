@@ -17,7 +17,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\scriptsize\color{navy}\textbf{Forecast adaptation and TS-IFA}}
-\rhead{\scriptsize\color{gray}Results through 7 August 2026}
+\rhead{\scriptsize\color{gray}Results through 15 August 2026}
 \cfoot{\scriptsize\color{gray}\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
 \setlength{\headheight}{13pt}
@@ -68,104 +68,108 @@ Splits & $T_0$ datastore (30\%); $T_1$ training (40\%); $T_2$ validation (20\%),
 \bottomrule
 \end{tabularx}
 
-For a given configuation $c$ and method $m$, we consider the mean relative improvement in nMSE over vanilla $v$:
+For a given configuration $c$ and method $m$, relative improvement in nMSE
+over the vanilla run from the \emph{same retrieval pipeline} is
 \[
-I_{m,c}=100\frac{\operatorname{nMSE}_{m,c} - \operatorname{nMSE}_{m,v}}{\operatorname{nMSE}_{m,v}}\ \%.
+I_{m,c}=100\frac{\operatorname{nMSE}_{v,c}-\operatorname{nMSE}_{m,c}}
+{\operatorname{nMSE}_{v,c}}\ \%.
 \]
 Tables report the mean of $I_{m,c}$ over the 12 held-out $T_3$ configurations.
 
 \sectionbar{Selected baseline and gate candidates}
 \scriptsize
-\begin{tabularx}{\linewidth}{@{}p{43mm}Yp{20mm}cr@{}}
+\begin{tabularx}{\linewidth}{@{}p{52mm}Yp{20mm}cr@{}}
 \toprule
-\textbf{Code name} & \textbf{Forecast formula} & \textbf{Space} &
+\textbf{Code name} & \textbf{Family / design} & \textbf{Space} &
 \textbf{$K$} & \textbf{T3 gain} \\
 \midrule
 \model{full_ridge_shared} &
-$V_h+\beta_VV_h+\beta_CC_h+\sum_k(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h})$
-& instance & 3 & \gain{2.733} \\
-\model{y_ridge_shared} &
-$V_h+\beta_VV_h+\sum_k\beta^Y_kY_{k,h}$
-& instance & 3 & \gain{2.293} \\
+ridge on $V,C,Y_{1:K},N_{1:K}$ & instance & 3 & \gain{1.951} \\
+\model{full_ridge_shared} &
+ridge on $V,C,Y_{1:K},N_{1:K}$ & raw & 1 & \gain{1.789} \\
 \model{cov_y_ridge_shared} &
-$V_h+\beta_VV_h+\beta_CC_h+\sum_k\beta^Y_kY_{k,h}$
-& instance & 3 & \gain{2.546} \\
-\model{residual_ridge_shared} &
-$V_h+\beta_VV_h+\sum_k(\beta^Y_kY_{k,h}+\beta^N_kN_{k,h})$
-& instance & 3 & \gain{2.539} \\
+ridge on $V,C,Y_{1:K}$ & instance & 3 & \gain{1.782} \\
+\model{full_ridge_shared} &
+ridge on $V,C,Y_{1:K},N_{1:K}$ & raw & 3 & \gain{1.780} \\
 \model{cov_avgy_ridge_shared} &
-$V_h+\beta_VV_h+\beta_CC_h+\beta_{\bar Y}\bar Y_h$
-& raw & 3 & \gain{2.306} \\
-\model{cov_ridge_shared} &
-$V_h+\beta_VV_h+\beta_CC_h$
-& raw & 3 & \gain{2.142} \\
+ridge on $V,C,\bar Y$ & instance & 3 & \gain{1.765} \\
 \midrule
-\model{catboost_avgy_regressor_shared} & $G(\bar Y;g_\theta(z))_h$
-& instance & 3 & \gain{0.019} \\
 \model{catboost_cov_regressor_shared} & $G(C;g_\theta(z))_h$
-& instance & 1 & \gain{0.015} \\
+& raw & 1 & \gain{0.031} \\
+\model{catboost_avgy_regressor_shared} & $G(\bar Y;g_\theta(z))_h$
+& instance & 1 & \loss{-1.900} \\
 \model{bayes_cov_shared} & $G(C;b(C))_h$
-& instance & 1 & \loss{-0.003} \\
+& raw & 1 & 0.000 \\
+\model{bayes_avgy_shared} & $G(\bar Y;b(\bar Y))_h$
+& instance & 1 & 0.000 \\
 \bottomrule
 \end{tabularx}
 
-All six ridge candidates improve the mean held-out nMSE, whereas the three
-selected gates are effectively tied with vanilla. The strongest candidate at
-its screened configuration is \model{full_ridge_shared} at \gain{2.733}.
+The corrected ranking carries each result's retrieval identity to its matching
+vanilla reference. The five manually selected baseline pipelines improve mean
+held-out nMSE; \model{full_ridge_shared} with instance retrieval and $K=3$ is
+best at \gain{1.951}. The selected gates do not provide a comparable gain.
 
-\newpage
-\sectionbar{Formulation ablations}
-\footnotesize
-Each row holds the variable design and retrieval pipeline fixed. The
-$\Delta$-ridge and convex code names replace \code{_ridge_shared} by
-\code{_delta_ridge_shared} and \code{_convex_shared}, respectively.
+\clearpage
+\thispagestyle{fancy}
+\sectionbar{Completed current ablations}
+\scriptsize
+All comparisons below use the corrected retrieval-matched vanilla reference.
 
-\begin{tabularx}{\linewidth}{@{}Yrrr@{}}
+\begin{tabularx}{\linewidth}{@{}p{30mm}p{58mm}Y@{}}
 \toprule
-\textbf{Shared-ridge control (code name)} & \textbf{Ridge} &
-\textbf{$\Delta$-ridge} & \textbf{Convex} \\
+\textbf{Axis} & \textbf{Equal-configuration result} & \textbf{Conclusion} \\
 \midrule
-\model{full_ridge_shared} & \best{2.733\%} & 1.515\% & 0.635\% \\
-\model{y_ridge_shared} & \best{2.293\%} & 1.347\% & 1.209\% \\
-\model{cov_y_ridge_shared} & \best{2.546\%} & 1.468\% & 1.115\% \\
-\model{residual_ridge_shared} & \best{2.539\%} & 1.339\% & 0.330\% \\
-\model{cov_avgy_ridge_shared} & \best{2.306\%} & 1.183\% & 1.063\% \\
-\model{cov_ridge_shared} & \best{2.142\%} & 0.652\% & 0.347\% \\
+Fourier retrieval & Selected ridges gain 1.76--1.95\% with their original
+retrieval and 1.28--1.62\% with FFT amplitude. & Do not promote Fourier. \\
+Fixed $T_0$ store & Every paired ridge is at least as good with fixed retrieval:
+1.80--2.09\% versus 1.79--1.95\% online. & Prefer the stricter fixed store. \\
+Per-horizon ridge & Shared controls gain 1.76--1.95\%; horizon fits gain
+1.33--1.52\%. & Extra horizon parameters hurt. \\
+Convex fit & Matched convex variants range from $-0.05$\% to +0.88\%, below
+every shared-ridge control. & Reject convex variants. \\
+$\Delta$-ridge fit & Matched variants gain 0.47--0.82\%, again below every
+shared-ridge control. & Reject $\Delta$-ridge variants. \\
+Lookback $L$ at $H=24$ & $L=168$ gives the most balanced full-ridge gains
+(0.81--1.14\%); $L=504$ gives 0.24--0.41\%. The $L=24$ mean is distorted by a
+Traffic nMSE of $2.07\times10^{10}$. & Keep $L=168$ as the stable choice. \\
+Mixed-quantity panels & Weather worsens for every selected ridge; ETTm1 raw
+retrieval and the ETTm2 avgY gate show catastrophic outliers. & Keep these
+panels ablation-only. \\
 \bottomrule
 \end{tabularx}
 
-Ordinary shared ridge is best for every matched design.
-
-\vspace{4pt}
-\sectionbar{Effect of the neighbour count $K$}
 \begin{center}
-\includegraphics[width=0.97\linewidth]{k_ablation_ridge_curves.pdf}
-\captionof{figure}{Mean held-out T3 nMSE improvement over 12 configurations.
-Only the six selected ridge baselines are plotted.}
+\includegraphics[width=0.94\linewidth]{l_ablation_baseline_results.pdf}
+\captionof{figure}{Completed baseline lookback ablation at fixed $H=24$.
+$L=24$ has the largest numerical means but includes the pathological Traffic
+scale; $L=168$ is the balanced retained setting.}
 \end{center}
 
-\footnotesize
-\begin{tabularx}{\linewidth}{@{}Yp{18mm}p{18mm}cr@{}}
-\toprule
-\textbf{Candidate (code name)} & \textbf{Family} & \textbf{Space} &
-\textbf{Best $K$} & \textbf{T3 gain} \\
-\midrule
-\model{full_ridge_shared} & baseline & instance & 10 & \gain{2.991} \\
-\model{y_ridge_shared} & baseline & instance & 20 & \gain{2.661} \\
-\model{cov_y_ridge_shared} & baseline & instance & 20 & \gain{2.954} \\
-\model{residual_ridge_shared} & baseline & instance & 20 & \gain{2.861} \\
-\model{cov_avgy_ridge_shared} & baseline & raw & 15 & \gain{2.777} \\
-\model{cov_ridge_shared} & baseline & raw & 15 & \gain{2.435} \\
-\midrule
-\model{catboost_avgy_regressor_shared} & gate & instance & 3 & \gain{0.019} \\
-\model{catboost_cov_regressor_shared} & gate & instance & 1 & \gain{0.015} \\
-\model{bayes_cov_shared} & gate & instance & 1 & \loss{-0.003} \\
-\bottomrule
-\end{tabularx}
+\vspace{4pt}
+\sectionbar{Partial and failed workflows}
+\scriptsize
+\textbf{TS-RAG (job 43579).} All four released-model inferences completed, but
+the table step failed to discover them. Against matching Chronos-Bolt vanilla,
+TS-RAG changes nMSE by +0.44\% (Electricity), +0.48\% (Traffic), $-2.01$\%
+(Solar), and +8.69\% (Exchange): +1.90\% equally averaged. Against the selected
+full-ridge control the mean advantage is only +0.85\%, with losses on Traffic
+and Solar. The metric artifacts are valid; the workflow/table is not terminally
+successful.
 
-The ridge candidates peak between $K=10$ and $K=20$; the gates peak at their
-screen values and remain negligible. The unfinished $K=100$ extension is not
-included.
+\textbf{Exact-split SOTA benchmark (job 43580).} Five of seven local rows
+completed before Electricity retrieval was OOM-killed; Exchange did not start.
+The adapted MSE is 0.3446/0.2500/0.3077/0.1494/0.2079 on
+ETTh1/ETTh2/ETTm1/ETTm2/Weather. It improves local vanilla on four rows, but its
+five-row mean (0.2519) remains above the published TS-RAG/Cross-RAG means
+(0.2398/0.2322). This is not yet a complete benchmark.
+
+\textbf{K and horizon sweeps.} Job 43589 stopped on the now-removed $K=100$.
+The active $K\leq20$ grid has 60/144 current retrieval extractions complete; a
+rerun must finish the remaining 84 before adaptation and tables. Job 43592
+completed the raw-$K=1$ gate branch, then collided with the identical
+Electricity $504{:}24$ instance-$K=3$ extraction concurrently owned by the L
+job. That extraction is now complete and reusable, but H still needs a rerun.
 
 \newpage
 \sectionbar{TS-IFA results}
@@ -198,7 +202,8 @@ worsen T3, with the largest failures at $H=168$; the raw 10K ridge pilot remains
 the least-bad aggregate result at \gain{0.04}.
 
 \vfill
-{\scriptsize\color{gray}Source: screen, CatBoost, convex, delta, $K$ and TS-IFA
-results. Percentages are equal-weight means of per-setting nMSE improvement
-over vanilla; positive is better. Target-aware oracles are diagnostic only.}
+{\scriptsize\color{gray}Source: corrected current screen and ablation reports,
+jobs 43579--43603, published Table-4 rows, and archived TS-IFA analyses.
+Percentages are equal-weight means of per-configuration nMSE improvement over
+the matching vanilla pipeline; positive is better.}
 \end{document}

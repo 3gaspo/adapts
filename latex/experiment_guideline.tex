@@ -8,6 +8,7 @@
 \usepackage{amsmath,amssymb,amsfonts,mathtools,bm}
 \usepackage{booktabs,longtable,tabularx,array,multirow}
 \usepackage{float}
+\usepackage{graphicx}
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage[round,authoryear]{natbib}
@@ -1084,19 +1085,21 @@ Cross-variable retrieval is reported only as an ablation. \\
 \caption{Resolved experiment profiles. A selected winner name fixes family,
 formula, retrieval space, metric, $K$, and online mode.}
 \label{tab:profiles}
-\begin{tabularx}{\linewidth}{@{}p{.105\linewidth}p{.20\linewidth}p{.18\linewidth}p{.15\linewidth}X@{}}
+\begin{tabularx}{\linewidth}{@{}p{.17\linewidth}p{.17\linewidth}p{.16\linewidth}p{.13\linewidth}X@{}}
 \toprule
 Profile & Datasets & $(L,H)$ & Backbone & Retrieval / methods \\
 \midrule
 \code{test} & Electricity & $504{:}168$ & Chronos-2 & raw Euclidean, $K=3$; smoke-only \\
-\code{screen} & four primary & $168{:}24,336{:}48,504{:}168$ & Chronos-2
+\code{screen} & four primary & \shortstack{$168{:}24$, $336{:}48$,\\$504{:}168$} & Chronos-2
 & raw/instance Euclidean, $K\in\{1,3\}$; 10 baselines and 8 gate/reference artifacts \\
 \code{full} & primary + four separated ETT & default three & Chronos-2
 & selected complete screen pipelines only \\
 \code{ultra} & same as full & default three & Chronos-2, TabPFN-TS
 & same winners and output root as full \\
-\code{crossrag} & four primary & $512{:}64$ & Chronos-2, Chronos-Bolt
-& winner at selected $K$ on Chronos-2; winner and released Cross-RAG at $K=15$ on Chronos-Bolt \\
+\code{sota_benchmark} & seven paper datasets & $512{:}64$ & Chronos-Bolt
+& selected method on exact paper test splits plus immutable published TS-RAG/Cross-RAG rows \\
+\code{tsrag} & four primary & $512{:}64$ & Chronos-2, Chronos-Bolt
+& fixed Chronos-T5 Euclidean retrieval at $K=10$; released TS-RAG is Bolt-only \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1190,7 +1193,7 @@ Front & Model set / controlled axis \\
 \midrule
 \code{screen.slurm} & $\mathcal B_{\rm screen}$ and $\mathcal G_{\rm screen}$ on $\mathcal D_P\times\mathcal S\times\mathcal R$ \\
 \code{benchmark.slurm} & complete selected screen pipelines; \code{full} uses Chronos-2, \code{ultra} adds TabPFN-TS \\
-\code{k_ablation.slurm} & selected pipelines, $K\in\{1,3,5,10,15,20,100\}$ only \\
+\code{k_ablation.slurm} & selected pipelines, $K\in\{1,3,5,10,15,20\}$ only \\
 \code{h_ablation.slurm} & selected pipelines, $L=504$, $H\in\{24,168,504\}$ only \\
 \code{l_ablation.slurm} & selected pipelines, $H=24$, $L\in\{24,168,504\}$ only \\
 \code{horizon_baselines_ablation.slurm} & five controls in \cref{tab:selected-baselines}; shared versus horizon ridge \\
@@ -1223,13 +1226,144 @@ front. \code{SELECTED_CANDIDATES_FILE} may select another manifest; the
 front-specific CSV variables remain explicit one-launch overrides. TS-IFA H/L
 and meta fronts require at least one matching \code{ts_ifa} entry or override.
 
-Earlier screen analysis selected six shared-ridge baselines, two hard shared
-CatBoost regressors, and one shared Bayes gate; no convex or delta baseline was
-eligible for that screen. Those historical synchronized artifacts lack enough
-payload and configuration evidence for current-schema reuse and are archived.
-They remain analysis evidence, but a current table or continued $K$ study must
-rerun the affected extraction and result identities. Publication CatBoost fits
+The corrected current screen ranking compares each adapted result only with the
+vanilla result from the same retrieval run. The manual follow-up manifest holds
+the top five shared-ridge pipelines, the best shared CatBoost cov/avgY pipeline,
+and the matching shared Bayes references. No convex or delta baseline was
+eligible for the screen. Earlier formulation and $K$ summaries derived from the
+old cross-retrieval ranking remain invalid; the current formulation reports
+below were regenerated through the corrected reader. The incomplete $K$ sweep
+still supports no optimum. Publication CatBoost fits
 allow 300 trees; only the smoke profile uses two.
+
+\subsection{Current held-out results}
+
+All results in this subsection are complete held-out $\Tthree$ comparisons
+against the vanilla forecast from the same retrieval run. Improvements are the
+equal-configuration mean $I_{m,c}$ defined below; window wins are the mean of
+$W_{m,c}$. The screen contains 12 dataset--setting configurations.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Leading pipelines from the corrected shared-method screen. The five
+ridge rows are the selected baseline sweep; the final row is the strongest
+deployable learned gate.}
+\label{tab:current-screen-results}
+\begin{tabularx}{\linewidth}{@{}Xlrrr@{}}
+\toprule
+Method & Retrieval & $K$ & Mean $I_{m,c}$ & Window wins \\
+\midrule
+\code{full_ridge_shared} & instance Euclidean & 3 & \textbf{+1.95\%} & 53.18\% \\
+\code{full_ridge_shared} & raw Euclidean & 1 & +1.79\% & 53.40\% \\
+\code{cov_y_ridge_shared} & instance Euclidean & 3 & +1.78\% & 53.65\% \\
+\code{full_ridge_shared} & raw Euclidean & 3 & +1.78\% & 52.64\% \\
+\code{cov_avgy_ridge_shared} & instance Euclidean & 3 & +1.76\% & \textbf{54.17\%} \\
+\midrule
+\code{catboost_cov_regressor_shared} & raw Euclidean & 1 & +0.03\% & 3.50\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The baseline sweep therefore selects shared ridge, not a gate. The full design
+with instance-normalized retrieval and $K=3$ gives the largest mean reduction,
+while all five selected ridge pipelines lie in the narrow +1.76--1.95\% band.
+The CatBoost gate is effectively tied with vanilla and improves too few windows
+to be a competitive primary adaptor.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Matched one-axis retrieval and formulation ablations. Each entry is
+mean held-out nMSE improvement over its retrieval-matched vanilla run. The
+shared column is the unchanged control in the dedicated ablation reports.}
+\label{tab:current-formulation-results}
+\begin{tabularx}{\linewidth}{@{}p{.25\linewidth}rrrrr@{}}
+\toprule
+Control pipeline & Shared & Fourier & Horizon & Convex & Delta \\
+\midrule
+\code{full}, instance, $K=3$ & \textbf{+1.95} & +1.33 & +1.52 & $-0.05$ & +0.61 \\
+\code{full}, raw, $K=1$ & \textbf{+1.79} & +1.28 & +1.33 & +0.55 & +0.57 \\
+\code{cov_y}, instance, $K=3$ & \textbf{+1.78} & +1.37 & +1.35 & +0.71 & +0.47 \\
+\code{full}, raw, $K=3$ & \textbf{+1.87} & +1.33 & +1.45 & +0.88 & +0.82 \\
+\code{cov_avgy}, instance, $K=3$ & \textbf{+1.76} & +1.62 & +1.43 & +0.76 & +0.54 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The original Euclidean retrieval beats the Fourier-amplitude alternative for
+every selected pipeline. Shared ridge also beats its matched per-horizon,
+convex, and delta-ridge replacement in every row. The extra horizon parameters
+do not compensate for their higher variance, and the convex and delta
+constraints remove useful signed fusion freedom. These alternatives remain
+ablation-only; shared ridge is the sole retained baseline formulation.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Completed baseline lookback ablation at fixed $H=24$. Each cell reports
+mean held-out nMSE improvement / mean positive-window rate (\%), averaged
+equally over Electricity, Traffic, Solar, and Exchange.}
+\label{tab:current-lookback-results}
+\begin{tabularx}{\linewidth}{@{}Xrrr@{}}
+\toprule
+Pipeline & $L=24$ & $L=168$ & $L=504$ \\
+\midrule
+\code{full}, raw, $K=3$ & +6.72 / 55.34 & +1.04 / 49.70 & +0.24 / 48.78 \\
+\code{full}, raw, $K=1$ & +4.49 / 51.89 & +0.81 / 50.05 & +0.37 / 49.14 \\
+\code{full}, instance, $K=3$ & +2.43 / 53.03 & \textbf{+1.14} / 49.85 & +0.41 / 48.64 \\
+\code{cov_y}, instance, $K=3$ & +2.90 / 53.05 & +0.90 / 50.40 & +0.97 / 49.02 \\
+\code{cov_avgy}, instance, $K=3$ & +2.92 / 52.35 & +0.93 / 50.65 & \textbf{+1.03} / 49.50 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.96\linewidth]{l_ablation_baseline_results.pdf}
+\caption{Baseline lookback-length ablation. Dashed references mark no nMSE
+improvement and a 50\% window win rate.}
+\label{fig:current-lookback-results}
+\end{figure}
+
+Every baseline has its largest equal-dataset mean nMSE gain at $L=24$, but that
+aggregate is not a stable selection criterion: the Traffic vanilla reference at
+$L=24$ has nMSE $2.07\times10^{10}$ and drives the scale pathology already
+identified in the synchronized report. At $L=168$, all five baselines remain
+positive and the three instance-ridge designs cluster at +0.90--1.14\%; at
+$L=504$, the full designs fall to +0.24--0.41\% and all window-win averages are
+below 50\%. We therefore retain $L=168$ as the balanced $H=24$ setting rather
+than promoting the numerically larger but outlier-sensitive $L=24$ aggregate.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Transfer of the best screened \code{full_ridge_shared} instance-$K=3$
+pipeline to panels whose channels mix physical quantities. The primary row is
+the homogeneous screen reference; mixed rows average three $(L,H)$ settings.}
+\label{tab:current-mixed-results}
+\begin{tabularx}{\linewidth}{@{}Xrr@{}}
+\toprule
+Panel & Mean $I_{m,c}$ & Window wins \\
+\midrule
+Primary homogeneous screen & \textbf{+1.95\%} & 53.18\% \\
+ETTh1 mixed & +3.08\% & 52.88\% \\
+ETTh2 mixed & +1.19\% & 49.98\% \\
+ETTm1 mixed & +8.60\% & 52.58\% \\
+ETTm2 mixed & +0.91\% & 53.59\% \\
+Weather mixed & $-125.87$\% & 42.78\% \\
+\midrule
+All five mixed panels & $-22.42$\% & 50.36\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Some ETT panels remain locally adaptable, but mixing unrelated variables makes
+the method non-robust: Weather reverses the aggregate result, and raw-retrieval
+full designs additionally exhibit catastrophic ETTm1 outliers. Cross-variable
+retrieval and fusion should therefore be restricted to channels representing
+the same physical quantity. Mixed-quantity panels are diagnostic ablations, not
+members of the primary benchmark.
 
 \subsection{Result identity, repetitions, and selection}
 Extraction is a reusable workflow with identity
@@ -1337,7 +1471,11 @@ linear families, conditional CatBoost gates, and TS-IFA. Every method
 shares the same query dates, leakage-free online datastore, query-scale
 neighbour signals, and held-out $\Tthree$ evaluation. This makes capacity,
 retrieval choice, and validation protocol explicit rather than conflating them
-with backbone quality.
+with backbone quality. Current complete evidence selects the shared full ridge
+baseline with instance-normalized Euclidean retrieval and $K=3$. Fourier
+retrieval and per-horizon, convex, or delta formulations are uniformly weaker
+in matched comparisons, while mixed-quantity panels are unstable enough to
+justify homogeneous-quantity grouping as the primary contract.
 
 \bibliographystyle{plainnat}
 \bibliography{adaptation_references}

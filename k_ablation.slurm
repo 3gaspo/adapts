@@ -11,7 +11,8 @@
 #SBATCH --mem=40000
 
 # The selected pipelines supply family, method, space, metric, and mode; this
-# front replaces their selected K with the complete K-ablation grid.
+# front replaces their selected K with K={1,3,5,10,15,20}. Completed matching
+# extractions are reused before the remaining adaptation and table stages.
 
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY=k_ablation
