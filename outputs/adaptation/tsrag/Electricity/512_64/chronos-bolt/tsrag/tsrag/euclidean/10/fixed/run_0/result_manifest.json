@@ -1,0 +1,22 @@
+{
+  "format": "adaptation_tsrag_result",
+  "metric_fields": [
+    "baseline",
+    "split",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "protocol": {
+    "lags": 512,
+    "horizon": 64,
+    "neighbors": 10
+  },
+  "files": {
+    "metrics": "tsrag_metrics.json",
+    "predictions": "tsrag_predictions.pt",
+    "timing": "tsrag_timing.json"
+  }
+}

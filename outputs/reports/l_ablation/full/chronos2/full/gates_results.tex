@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_1/bayes-cov-s & raw\_L2\_1/cb-cov-reg-s & IN\_L2\_1/bayes-avgy-s & IN\_L2\_1/cb-avgy-reg-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 24--24 & $\times 10^{1}$ & 2.90 & \textbf{2.87} & \textbf{2.87} & 2.90 & 2.90 \\
+ & 168--24 & $\times 10^{-1}$ & 2.94 & 2.94 & \textbf{2.94} & 2.94 & 2.94 \\
+ & 504--24 & $\times 10^{-1}$ & \textbf{1.44} & \textbf{1.44} & 1.45 & \textbf{1.44} & \textbf{1.44} \\
+\midrule
+\multirow{3}{*}{Traffic} & 24--24 & $\times 10^{10}$ & 2.07 & \textbf{2.07} & \textbf{2.07} & 2.07 & 2.07 \\
+ & 168--24 & $\times 10^{-1}$ & 2.62 & 2.62 & \textbf{2.61} & 2.62 & 2.62 \\
+ & 504--24 & $\times 10^{-1}$ & 1.99 & 1.99 & \textbf{1.99} & 1.99 & 1.99 \\
+\midrule
+\multirow{3}{*}{Solar} & 24--24 & $\times 10^{0}$ & 2.88 & \textbf{2.44} & 2.44 & 2.88 & 2.88 \\
+ & 168--24 & $\times 10^{-1}$ & \textbf{2.10} & \textbf{2.10} & 2.10 & \textbf{2.10} & \textbf{2.10} \\
+ & 504--24 & $\times 10^{-1}$ & 2.30 & 2.25 & \textbf{2.25} & 2.30 & 2.30 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 24--24 & $\times 10^{0}$ & \textbf{7.68} & \textbf{7.68} & \textbf{7.68} & \textbf{7.68} & 9.70 \\
+ & 168--24 & $\times 10^{-1}$ & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & 7.37 \\
+ & 504--24 & $\times 10^{-1}$ & \textbf{2.03} & \textbf{2.03} & \textbf{2.03} & \textbf{2.03} & \textbf{2.03} \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results}
+\end{table}

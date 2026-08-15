@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_1/bayes-cov-s & raw\_L2\_1/cb-cov-reg-s & IN\_L2\_1/bayes-avgy-s & IN\_L2\_1/cb-avgy-reg-s \\
+\midrule
+\multirow{3}{*}{ETTh1} & 168--24 & $\times 10^{-1}$ & \textbf{8.45} & 8.97 & 8.71 & \textbf{8.45} & 9.22 \\
+ & 336--48 & $\times 10^{-1}$ & 7.85 & 7.85 & \textbf{7.82} & 7.85 & 7.85 \\
+ & 504--168 & $\times 10^{0}$ & \textbf{1.02} & \textbf{1.02} & \textbf{1.02} & \textbf{1.02} & 1.04 \\
+\midrule
+\multirow{3}{*}{ETTh2} & 168--24 & $\times 10^{0}$ & \textbf{1.09} & \textbf{1.09} & \textbf{1.09} & \textbf{1.09} & 1.45 \\
+ & 336--48 & $\times 10^{0}$ & \textbf{1.16} & \textbf{1.16} & \textbf{1.16} & \textbf{1.16} & 1.66 \\
+ & 504--168 & $\times 10^{0}$ & \textbf{1.21} & \textbf{1.21} & \textbf{1.21} & \textbf{1.21} & 1.35 \\
+\midrule
+\multirow{3}{*}{ETTm1} & 168--24 & $\times 10^{-1}$ & 8.33 & \textbf{7.91} & 7.94 & 8.33 & 11.73 \\
+ & 336--48 & $\times 10^{-1}$ & \textbf{7.11} & \textbf{7.11} & 7.31 & \textbf{7.11} & 9.34 \\
+ & 504--168 & $\times 10^{-1}$ & \textbf{8.88} & \textbf{8.88} & 8.96 & \textbf{8.88} & 11.37 \\
+\midrule
+\multirow{3}{*}{ETTm2} & 168--24 & $\times 10^{13}$ & \textbf{2.14} & \textbf{2.14} & \textbf{2.14} & \textbf{2.14} & \textbf{2.14} \\
+ & 336--48 & $\times 10^{13}$ & \textbf{2.36} & \textbf{2.36} & \textbf{2.36} & \textbf{2.36} & \textbf{2.36} \\
+ & 504--168 & $\times 10^{0}$ & \textbf{1.80} & \textbf{1.80} & \textbf{1.80} & \textbf{1.80} & 25164648128676.55 \\
+\midrule
+\multirow{3}{*}{Weather} & 168--24 & $\times 10^{0}$ & \textbf{1.03} & \textbf{1.03} & 1.16 & \textbf{1.03} & 1.58 \\
+ & 336--48 & $\times 10^{-1}$ & 9.91 & 9.91 & \textbf{9.49} & 9.91 & 12.78 \\
+ & 504--168 & $\times 10^{0}$ & \textbf{1.44} & \textbf{1.44} & \textbf{1.44} & \textbf{1.44} & 1.96 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results}
+\end{table}

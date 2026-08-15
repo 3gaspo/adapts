@@ -1,0 +1,21 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "cov_avgy_ridge_shared": "predictions/adapt/predictions/cov_avgy_ridge_shared.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "cov_avgy_ridge_shared": "predictions/eval/predictions/cov_avgy_ridge_shared.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "baselines",
+    "fit_on_eval": false
+  }
+}

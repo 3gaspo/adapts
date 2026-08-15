@@ -1,0 +1,20 @@
+\begin{table}[htbp]
+\centering
+\caption{Mean percentage of evaluation windows with lower horizon-averaged MSE than the vanilla forecast, averaged equally over the selected dataset and horizon configurations.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+Model & IN\_L2\_3 & raw\_L2\_1 & raw\_L2\_3 & IN\_L2\_1 \\
+\midrule
+cov-Y-ridge-s & 50.06\% & -- & -- & -- \\
+cov-avgy-ridge-s & \textbf{50.47\%} & -- & -- & -- \\
+full-ridge-s & 50.36\% & 50.09\% & 50.30\% & -- \\
+bayes-cov-s & -- & 6.28\% & -- & -- \\
+cb-cov-reg-s & -- & 11.51\% & -- & -- \\
+bayes-avgy-s & -- & -- & -- & 0.00\% \\
+cb-avgy-reg-s & -- & -- & -- & 6.26\% \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:positive-window-percentage-average}
+\end{table}

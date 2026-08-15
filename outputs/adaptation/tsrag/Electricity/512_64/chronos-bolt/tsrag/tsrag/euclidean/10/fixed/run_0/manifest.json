@@ -1,0 +1,140 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "tsrag_metrics.json",
+        "size": 246
+      },
+      {
+        "path": "tsrag_predictions.pt",
+        "size": 9826074
+      },
+      {
+        "path": "tsrag_timing.json",
+        "size": 223
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 402
+      }
+    ],
+    "required": [
+      "tsrag_metrics.json",
+      "tsrag_predictions.pt",
+      "tsrag_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "tsrag",
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "fixed",
+      "space": "tsrag"
+    },
+    "pipeline": {
+      "batch_size": 256,
+      "retrieval_protocol": "tsrag_default",
+      "retrieval_scope": "same_user"
+    },
+    "runtime": {
+      "slurm.job_id": 43579
+    }
+  },
+  "identity": {
+    "backbone": "chronos-bolt",
+    "dataset": "Electricity",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "formula": "tsrag",
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "fixed",
+      "space": "tsrag"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "chronos_bolt_weights": {
+      "path": "/home/h61084/codes/weights/chronos-bolt-base"
+    },
+    "tsrag_weights": {
+      "path": "/home/h61084/codes/weights/ts-rag"
+    },
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/tsrag/euclidean/10/fixed/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43579",
+        "launched_at_utc": "2026-08-14T20:22:14.606918+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43579"
+      }
+    ],
+    "finished_at_utc": "2026-08-14T20:22:47.070097+00:00",
+    "launch_id": "43579",
+    "launched_at_utc": "2026-08-14T20:22:14.606918+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-14T20:22:47.013229+00:00",
+    "started_at_utc": "2026-08-14T20:22:14.722723+00:00"
+  },
+  "manifest_id": "7548a56d-53cd-4952-848d-c27daa965470",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "tsrag_metrics.json",
+        "tsrag_predictions.pt",
+        "tsrag_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "9ab1af91aac471c045704a3aab94002eb09c0047be5e9ae7d452d907ac09e5b3",
+    "path": "4e10d96b68897a7492154f80b194a0640928eb46363b2562564f841412711d48",
+    "pipeline": "6d8991ba40cdf4f65349d70a9069e7f2f8740d569878e0a938e57ef909ff6c0f"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "tsrag",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "tsrag"
+    ]
+  }
+}

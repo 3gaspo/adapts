@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & IN\_L2\_3/cov-Y-ridge-s & IN\_L2\_3/cov-avgy-ridge-s & IN\_L2\_3/full-ridge-s & FFT\_L2\_3/cov-Y-ridge-s & FFT\_L2\_3/cov-avgy-ridge-s & FFT\_L2\_3/full-ridge-s & raw\_L2\_1/full-ridge-s & FFT\_L2\_1/full-ridge-s & raw\_L2\_3/full-ridge-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 168--24 & $\times 10^{-1}$ & 2.94 & 2.94 & 2.94 & 2.94 & 2.92 & \textbf{2.92} & 2.93 & 2.94 & 2.94 & 2.94 \\
+ & 336--48 & $\times 10^{-1}$ & 2.90 & 2.88 & 2.88 & \textbf{2.88} & 2.90 & 2.90 & 2.90 & 2.89 & 2.90 & 2.89 \\
+ & 504--168 & $\times 10^{-1}$ & 2.49 & 2.47 & 2.47 & 2.47 & 2.47 & 2.47 & 2.49 & \textbf{2.46} & 2.47 & 2.46 \\
+\midrule
+\multirow{3}{*}{Traffic} & 168--24 & $\times 10^{-1}$ & 2.62 & 2.55 & 2.55 & \textbf{2.53} & 2.57 & 2.56 & 2.57 & 2.56 & 2.57 & 2.54 \\
+ & 336--48 & $\times 10^{-1}$ & 2.61 & 2.58 & 2.58 & \textbf{2.58} & 2.61 & 2.61 & 2.61 & 2.59 & 2.61 & 2.59 \\
+ & 504--168 & $\times 10^{-1}$ & 2.68 & 2.67 & 2.67 & \textbf{2.66} & 2.68 & 2.68 & 2.68 & 2.67 & 2.68 & 2.67 \\
+\midrule
+\multirow{3}{*}{Solar} & 168--24 & $\times 10^{-1}$ & 2.10 & 2.08 & 2.08 & \textbf{2.07} & 2.08 & 2.08 & 2.08 & 2.07 & 2.08 & 2.07 \\
+ & 336--48 & $\times 10^{-1}$ & 2.41 & 2.28 & 2.28 & 2.27 & 2.27 & 2.27 & 2.27 & \textbf{2.27} & 2.27 & 2.28 \\
+ & 504--168 & $\times 10^{-1}$ & 2.85 & 2.64 & 2.64 & 2.64 & 2.64 & 2.64 & 2.64 & \textbf{2.64} & 2.66 & 2.64 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 168--24 & $\times 10^{-1}$ & \textbf{6.47} & 6.47 & 6.47 & 6.47 & 6.70 & 6.47 & 6.70 & 6.47 & 6.64 & 6.47 \\
+ & 336--48 & $\times 10^{-1}$ & 6.36 & 6.34 & 6.34 & 6.34 & 6.34 & 6.34 & 6.34 & 6.34 & 6.34 & \textbf{6.34} \\
+ & 504--168 & $\times 10^{0}$ & 2.31 & 2.27 & 2.28 & 2.26 & 2.27 & 2.28 & \textbf{2.25} & 2.27 & 2.27 & 2.25 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results}
+\end{table}

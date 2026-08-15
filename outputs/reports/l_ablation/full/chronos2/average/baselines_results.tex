@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 1724992342.64.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+Model & IN\_L2\_3 & raw\_L2\_1 & raw\_L2\_3 & IN\_L2\_1 \\
+\midrule
+cov-Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.59\%}\\{\scriptsize 1725033827.85}\end{tabular} & -- & -- & -- \\
+cov-avgy-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.63\%}\\{\scriptsize 1725033829.44}\end{tabular} & -- & -- & -- \\
+full-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.33\%}\\{\scriptsize 1725055625.32}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.89\%}\\{\scriptsize 1725051856.35}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{2.66\%}}\\{\scriptsize 1725038220.32}\end{tabular} & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}

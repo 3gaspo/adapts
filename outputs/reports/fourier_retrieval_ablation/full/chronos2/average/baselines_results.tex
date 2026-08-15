@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.50.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+Model & IN\_L2\_3 & FFT\_L2\_3 & raw\_L2\_1 & FFT\_L2\_1 & raw\_L2\_3 & IN\_L2\_1 \\
+\midrule
+cov-Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.78\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.37\%}\\{\scriptsize 0.49}\end{tabular} & -- & -- & -- & -- \\
+cov-avgy-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.76\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.62\%}\\{\scriptsize 0.49}\end{tabular} & -- & -- & -- & -- \\
+full-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{1.95\%}}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.33\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.79\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.28\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.87\%}\\{\scriptsize 0.49}\end{tabular} & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}

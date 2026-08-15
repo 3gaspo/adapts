@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 942, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 878, in main
+    result = allocate_run(
+             ^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 466, in allocate_run
+    return _allocate_run_unlocked(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/experiment_runs.py", line 368, in _allocate_run_unlocked
+    raise ManifestError(f"matching run is already running: {target}")
+ManifestError: matching run is already running: /home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/instance/euclidean/3/online/run_0
+/home/h61084/codes/adapts/src/slurm/extract_adaptation.sh: line 193: pop_var_context: head of shell_variables not a function context
+/home/h61084/codes/adapts/src/slurm/run_profile_experiment.sh: line 223: pop_var_context: head of shell_variables not a function context

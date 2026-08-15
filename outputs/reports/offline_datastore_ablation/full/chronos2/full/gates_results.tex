@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_1/bayes-cov-s & raw\_L2\_1/cb-cov-reg-s & raw\_L2\_1\_fixed/bayes-cov-s & raw\_L2\_1\_fixed/cb-cov-reg-s & IN\_L2\_1/bayes-avgy-s & IN\_L2\_1/cb-avgy-reg-s & IN\_L2\_1\_fixed/bayes-avgy-s & IN\_L2\_1\_fixed/cb-avgy-reg-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 168--24 & $\times 10^{-1}$ & 2.94 & 2.94 & \textbf{2.94} & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 \\
+ & 336--48 & $\times 10^{-1}$ & \textbf{2.90} & \textbf{2.90} & 2.90 & \textbf{2.90} & 2.91 & \textbf{2.90} & \textbf{2.90} & \textbf{2.90} & \textbf{2.90} \\
+ & 504--168 & $\times 10^{-1}$ & \textbf{2.49} & \textbf{2.49} & 2.49 & \textbf{2.49} & 2.49 & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} \\
+\midrule
+\multirow{3}{*}{Traffic} & 168--24 & $\times 10^{-1}$ & 2.62 & 2.62 & 2.61 & 2.62 & \textbf{2.61} & 2.62 & 2.62 & 2.62 & 2.62 \\
+ & 336--48 & $\times 10^{-1}$ & 2.61 & 2.61 & 2.61 & 2.61 & \textbf{2.61} & 2.61 & 2.61 & 2.61 & 2.61 \\
+ & 504--168 & $\times 10^{-1}$ & 2.68 & 2.68 & 2.69 & 2.68 & \textbf{2.68} & 2.68 & 2.68 & 2.68 & 2.69 \\
+\midrule
+\multirow{3}{*}{Solar} & 168--24 & $\times 10^{-1}$ & \textbf{2.10} & \textbf{2.10} & 2.10 & \textbf{2.10} & 2.12 & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} \\
+ & 336--48 & $\times 10^{-1}$ & 2.41 & 2.41 & 2.41 & 2.41 & \textbf{2.37} & 2.41 & 2.41 & 2.41 & 2.41 \\
+ & 504--168 & $\times 10^{-1}$ & 2.85 & 2.85 & 2.86 & 2.85 & \textbf{2.85} & 2.85 & 2.85 & 2.85 & 2.85 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 168--24 & $\times 10^{-1}$ & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & 7.37 & \textbf{6.47} & \textbf{6.47} \\
+ & 336--48 & $\times 10^{-1}$ & 6.36 & 6.36 & \textbf{6.32} & 6.36 & 6.44 & 6.36 & 6.39 & 6.36 & 6.36 \\
+ & 504--168 & $\times 10^{0}$ & 2.31 & 2.31 & 2.31 & 2.31 & 2.31 & 2.31 & 2.50 & 2.31 & \textbf{2.30} \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results}
+\end{table}

@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & IN\_L2\_3/cov-Y-ridge-s & IN\_L2\_3/cov-avgy-ridge-s & IN\_L2\_3/full-ridge-s & raw\_L2\_1/full-ridge-s & raw\_L2\_3/full-ridge-s \\
+\midrule
+\multirow{3}{*}{ETTh1} & 168--24 & $\times 10^{-1}$ & 8.45 & 8.30 & 8.28 & \textbf{8.15} & 8.29 & 8.15 \\
+ & 336--48 & $\times 10^{-1}$ & 7.85 & 7.62 & 7.70 & 7.62 & 7.65 & \textbf{7.62} \\
+ & 504--168 & $\times 10^{0}$ & 1.02 & 1.02 & 1.02 & \textbf{0.99} & 1.03 & 1.01 \\
+\midrule
+\multirow{3}{*}{ETTh2} & 168--24 & $\times 10^{0}$ & 1.09 & 1.07 & 1.07 & 1.07 & 1.07 & \textbf{1.06} \\
+ & 336--48 & $\times 10^{0}$ & \textbf{1.16} & 1.16 & 1.16 & 1.16 & 1.17 & 1.16 \\
+ & 504--168 & $\times 10^{0}$ & 1.21 & 1.20 & 1.20 & \textbf{1.18} & 1.21 & 1.20 \\
+\midrule
+\multirow{3}{*}{ETTm1} & 168--24 & $\times 10^{-1}$ & 8.33 & 7.58 & 7.58 & \textbf{7.45} & 13804333229.42 & 269667270.15 \\
+ & 336--48 & $\times 10^{-1}$ & 7.11 & 6.63 & 6.63 & \textbf{6.53} & 6.77 & 6.55 \\
+ & 504--168 & $\times 10^{-1}$ & 8.88 & 8.50 & 8.86 & \textbf{8.24} & 8.58 & 8.39 \\
+\midrule
+\multirow{3}{*}{ETTm2} & 168--24 & $\times 10^{13}$ & \textbf{2.14} & 2.15 & 2.15 & 2.15 & 2.15 & 2.15 \\
+ & 336--48 & $\times 10^{13}$ & \textbf{2.36} & 2.36 & 2.36 & 2.36 & 2.39 & 2.36 \\
+ & 504--168 & $\times 10^{0}$ & 1.80 & 1.78 & 1.78 & \textbf{1.74} & 1.77 & 1.80 \\
+\midrule
+\multirow{3}{*}{Weather} & 168--24 & $\times 10^{0}$ & \textbf{1.03} & 2.05 & 1.57 & 2.84 & 1.84 & 2.92 \\
+ & 336--48 & $\times 10^{-1}$ & \textbf{9.91} & 15.18 & 11.92 & 21.23 & 15.41 & 23.00 \\
+ & 504--168 & $\times 10^{0}$ & \textbf{1.44} & 2.07 & 1.79 & 2.68 & 1.83 & 2.42 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results}
+\end{table}

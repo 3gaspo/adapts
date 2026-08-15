@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 292
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 508
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1676
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 573
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 172
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1182
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "cov_avgy_delta_ridge_shared",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43603
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Traffic",
+    "horizon": 24,
+    "lookback": 168,
+    "model_config": {
+      "formula": "cov_avgy_delta_ridge_shared",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/instance/euclidean/3/online/run_1/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43603",
+        "launched_at_utc": "2026-08-14T22:04:46.966674+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43603"
+      }
+    ],
+    "finished_at_utc": "2026-08-14T22:04:54.340729+00:00",
+    "launch_id": "43603",
+    "launched_at_utc": "2026-08-14T22:04:46.966674+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-14T22:04:54.284133+00:00",
+    "started_at_utc": "2026-08-14T22:04:47.070042+00:00"
+  },
+  "manifest_id": "baebefce-733b-41bf-8bd2-21a924219e21",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "a54a13b0b879e2e03c182f031edf3c559fa65fb1d75a9403c24bcc6ea31d0a5a",
+    "path": "f2263c25cc7d15ac358aa58ae1a7499dcd5ff0f9a10aee436bc94e6965d9eb4c",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "cov_avgy_delta_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "delta_baselines_ablation",
+      "baselines"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "bayes_avgy_shared": "predictions/adapt/predictions/bayes_avgy_shared.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "bayes_avgy_shared": "predictions/eval/predictions/bayes_avgy_shared.npy"
+      }
+    },
+    "fit": {
+      "gate_diagnostics": {
+        "bayes_avgy_shared_score": "predictions/fit/gate_diagnostics/bayes_avgy_shared_score.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

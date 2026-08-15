@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\caption{Mean percentage of evaluation windows with lower horizon-averaged MSE than the vanilla forecast, averaged equally over the selected dataset and horizon configurations.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+Model & IN\_L2\_3 & raw\_L2\_1 & raw\_L2\_3 \\
+\midrule
+cov-Y-ridge-s & 53.65\% & -- & -- \\
+cov-Y-delta-ridge-s & 52.33\% & -- & -- \\
+cov-avgy-ridge-s & \textbf{54.17\%} & -- & -- \\
+cov-avgy-delta-ridge-s & 52.06\% & -- & -- \\
+full-ridge-s & 53.18\% & 53.40\% & 53.04\% \\
+full-delta-ridge-s & 51.07\% & 51.68\% & 52.36\% \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:positive-window-percentage-average}
+\end{table}

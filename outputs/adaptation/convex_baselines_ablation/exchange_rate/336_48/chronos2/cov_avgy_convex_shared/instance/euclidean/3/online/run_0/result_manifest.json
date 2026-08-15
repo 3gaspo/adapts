@@ -1,0 +1,53 @@
+{
+  "format": "adaptation_evaluation_result",
+  "family": "baselines",
+  "methods": [
+    "cov_avgy_convex_shared"
+  ],
+  "split_protocol": {
+    "validation_fraction": 0.2,
+    "available_dates": 150,
+    "t1_dates": 120,
+    "t2_dates": 30,
+    "t1_samples": 960,
+    "t2_samples": 240,
+    "t1_first_query_date": 2275,
+    "t1_last_query_date": 5250,
+    "t2_first_query_date": 5275,
+    "t2_last_query_date": 6000
+  },
+  "fit_sampling": {
+    "T1": {
+      "available_samples": 960,
+      "used_samples": 960
+    },
+    "T2": {
+      "available_samples": 240,
+      "used_samples": 240
+    },
+    "T1+T2": {
+      "available_samples": 1200,
+      "used_samples": 1200
+    },
+    "T3_oracle": {
+      "available_samples": 96,
+      "used_samples": 96
+    }
+  },
+  "metric_fields": [
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "files": {
+    "metrics_csv": "baseline_metrics.csv",
+    "metrics_json": "baseline_metrics.json",
+    "artifacts": "baseline_artifacts.pt",
+    "predictions": "prediction_manifest.json",
+    "timing": "baseline_timing.json"
+  }
+}

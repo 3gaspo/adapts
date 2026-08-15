@@ -1,0 +1,156 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "gate_metrics.csv",
+        "size": 260
+      },
+      {
+        "path": "gate_metrics.json",
+        "size": 476
+      },
+      {
+        "path": "gate_artifacts.json",
+        "size": 2571
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 1277
+      },
+      {
+        "path": "gate_timing.json",
+        "size": 166
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1138
+      }
+    ],
+    "required": [
+      "gate_metrics.csv",
+      "gate_metrics.json",
+      "gate_artifacts.json",
+      "prediction_manifest.json",
+      "gate_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "catboost_cov_regressor_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "pipeline": {
+      "gate.depth": 4,
+      "gate.early_stopping_rounds": 50,
+      "gate.iterations": 300,
+      "gate.learning_rate": 0.03,
+      "max_adapt_refit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43592
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "exchange_rate",
+    "horizon": 504,
+    "lookback": 504,
+    "model_config": {
+      "formula": "catboost_cov_regressor_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43592",
+        "launched_at_utc": "2026-08-14T20:53:20.734310+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43592"
+      }
+    ],
+    "finished_at_utc": "2026-08-14T20:53:28.071040+00:00",
+    "launch_id": "43592",
+    "launched_at_utc": "2026-08-14T20:53:20.734310+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-14T20:53:28.013113+00:00",
+    "started_at_utc": "2026-08-14T20:53:20.837699+00:00"
+  },
+  "manifest_id": "c3f3c55d-8a67-49b1-8c38-9fa52e3c6afb",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "gate_metrics.csv",
+        "gate_metrics.json",
+        "gate_artifacts.json",
+        "prediction_manifest.json",
+        "gate_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "65264c9fff2bfd98f67942ee078e96480327bbea9ca3d1c44913e7e58fade758",
+    "path": "a363e433038ff4fc2bb4545ea4f35a365d8c56435655d8e850cd5c9645e6caf1",
+    "pipeline": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "catboost_cov_regressor_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "h_ablation",
+      "gates"
+    ]
+  }
+}

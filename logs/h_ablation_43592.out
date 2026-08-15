@@ -1,0 +1,485 @@
+
+2026-08-14T21:47:49+02:00 job start kind=adaptation_extraction family=h_ablation experiment_mode=full skip_complete=true tasks=24 datasets=Electricity,Traffic,Solar,exchange_rate models=chronos2 settings=504:24,504:168,504:504 distance_spaces=raw distance_metrics=euclidean neighbors=1
+
+2026-08-14T21:47:49+02:00 extraction start configuration=1/24 dataset=Electricity model=chronos2 lags=504 horizon=24 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0 computation_signature=902486883b81abc8d5f2d08c545ffdf8632e066a1b04831e485bbbb99eebb2b2 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 21:47:51,878 INFO [__main__] ========================================================================
+2026-08-14 21:47:51,879 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=24 neighbors=0 distance=raw/euclidean
+2026-08-14 21:47:52,178 INFO [__main__] dataset load start
+2026-08-14 21:47:52,179 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 21:47:52,882 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 21:47:52,882 INFO [__main__] model load start
+2026-08-14 21:48:04,199 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 21:48:04,202 INFO [__main__] extraction start split=adapt queries=526
+2026-08-14 21:49:17,290 INFO [__main__] extraction done split=adapt
+2026-08-14 21:49:17,291 INFO [__main__] extraction start split=eval queries=42
+2026-08-14 21:49:23,070 INFO [__main__] extraction done split=eval
+2026-08-14 21:49:23,172 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 21:49:23,177 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 21:49:23,177 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0
+2026-08-14 21:49:23,177 INFO [__main__] experiment done seconds=91.29
+2026-08-14 21:49:23,177 INFO [__main__] ========================================================================
+2026-08-14 21:49:26,479 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T21:49:26+02:00 extraction done configuration=1/24 dataset=Electricity model=chronos2 lags=504 horizon=24 retrieval=vanilla
+
+2026-08-14T21:49:27+02:00 extraction start configuration=2/24 dataset=Electricity model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/raw/euclidean/1/online/run_0 computation_signature=83bea2d591f56bfe083be243c78d8773f607912a9c3fb2e2d75f1b8a9d3b86b1 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 21:49:29,447 INFO [__main__] ========================================================================
+2026-08-14 21:49:29,447 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=24 neighbors=1 distance=raw/euclidean
+2026-08-14 21:49:29,755 INFO [__main__] dataset load start
+2026-08-14 21:49:29,756 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 21:49:30,529 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 21:49:30,529 INFO [__main__] model load start
+2026-08-14 21:49:41,869 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 21:49:41,871 INFO [__main__] extraction start split=adapt queries=526
+2026-08-14 21:56:48,912 INFO [__main__] extraction done split=adapt
+2026-08-14 21:56:48,912 INFO [__main__] extraction start split=eval queries=42
+2026-08-14 21:57:20,828 INFO [__main__] extraction done split=eval
+2026-08-14 21:57:21,717 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 21:57:21,717 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 21:57:21,717 INFO [__main__] experiment done seconds=472.26
+2026-08-14 21:57:21,717 INFO [__main__] ========================================================================
+2026-08-14 21:57:24,919 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T21:57:25+02:00 extraction done configuration=2/24 dataset=Electricity model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14T21:57:25+02:00 skip complete family=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/none/none/0/none/run_2
+2026-08-14T21:57:25+02:00 skip complete family=extraction dataset=Electricity model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/1/online/run_1
+
+2026-08-14T21:57:25+02:00 extraction start configuration=5/24 dataset=Electricity model=chronos2 lags=504 horizon=504 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/none/none/0/none/run_0 computation_signature=4f9e0a9612a40a2cc22198ce613b5c471e4537556d0507bf343bbf1dd1898cfb period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 21:57:27,918 INFO [__main__] ========================================================================
+2026-08-14 21:57:27,918 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=504 neighbors=0 distance=raw/euclidean
+2026-08-14 21:57:28,209 INFO [__main__] dataset load start
+2026-08-14 21:57:28,210 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 21:57:28,973 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 21:57:28,974 INFO [__main__] model load start
+2026-08-14 21:57:40,474 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 21:57:40,476 INFO [__main__] extraction start split=adapt queries=506
+2026-08-14 21:59:21,278 INFO [__main__] extraction done split=adapt
+2026-08-14 21:59:21,278 INFO [__main__] extraction start split=eval queries=38
+2026-08-14 21:59:28,826 INFO [__main__] extraction done split=eval
+2026-08-14 21:59:29,070 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 21:59:29,076 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 21:59:29,076 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/none/none/0/none/run_0
+2026-08-14 21:59:29,076 INFO [__main__] experiment done seconds=121.15
+2026-08-14 21:59:29,076 INFO [__main__] ========================================================================
+2026-08-14 21:59:32,572 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T21:59:32+02:00 extraction done configuration=5/24 dataset=Electricity model=chronos2 lags=504 horizon=504 retrieval=vanilla
+
+2026-08-14T21:59:33+02:00 extraction start configuration=6/24 dataset=Electricity model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/raw/euclidean/1/online/run_0 computation_signature=6f60f148ccc1819a7d9abd01f88661e9214b16ef8cbad69118db7b1fe25d458e period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 21:59:35,454 INFO [__main__] ========================================================================
+2026-08-14 21:59:35,454 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos2 lags=504 horizon=504 neighbors=1 distance=raw/euclidean
+2026-08-14 21:59:35,762 INFO [__main__] dataset load start
+2026-08-14 21:59:35,764 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 21:59:36,644 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-14 21:59:36,644 INFO [__main__] model load start
+2026-08-14 21:59:48,205 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 21:59:48,207 INFO [__main__] extraction start split=adapt queries=506
+2026-08-14 22:09:50,842 INFO [__main__] extraction done split=adapt
+2026-08-14 22:09:50,842 INFO [__main__] extraction start split=eval queries=38
+2026-08-14 22:10:40,347 INFO [__main__] extraction done split=eval
+2026-08-14 22:10:41,448 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 22:10:41,449 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 22:10:41,449 INFO [__main__] experiment done seconds=665.97
+2026-08-14 22:10:41,449 INFO [__main__] ========================================================================
+2026-08-14 22:10:44,811 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T22:10:45+02:00 extraction done configuration=6/24 dataset=Electricity model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:10:45+02:00 extraction start configuration=7/24 dataset=Traffic model=chronos2 lags=504 horizon=24 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/none/none/0/none/run_0 computation_signature=4f0e4ed45c4aafb601717e966930479b922f7e26fc505947b8a288dac9f3286b period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:10:47,850 INFO [__main__] ========================================================================
+2026-08-14 22:10:47,850 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=24 neighbors=0 distance=raw/euclidean
+2026-08-14 22:10:48,155 INFO [__main__] dataset load start
+2026-08-14 22:10:48,157 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:10:49,364 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 22:10:49,364 INFO [__main__] model load start
+2026-08-14 22:11:00,804 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:11:00,806 INFO [__main__] extraction start split=adapt queries=350
+2026-08-14 22:12:57,316 INFO [__main__] extraction done split=adapt
+2026-08-14 22:12:57,316 INFO [__main__] extraction start split=eval queries=28
+2026-08-14 22:13:06,714 INFO [__main__] extraction done split=eval
+2026-08-14 22:13:06,796 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 22:13:06,801 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 22:13:06,801 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/none/none/0/none/run_0
+2026-08-14 22:13:06,801 INFO [__main__] experiment done seconds=138.95
+2026-08-14 22:13:06,801 INFO [__main__] ========================================================================
+2026-08-14 22:13:09,522 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T22:13:09+02:00 extraction done configuration=7/24 dataset=Traffic model=chronos2 lags=504 horizon=24 retrieval=vanilla
+
+2026-08-14T22:13:10+02:00 extraction start configuration=8/24 dataset=Traffic model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/raw/euclidean/1/online/run_0 computation_signature=cf79fc8ba674a37ab68730056e9367945bd2449ac80abb06bd9b3f2b5c844a20 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:13:12,446 INFO [__main__] ========================================================================
+2026-08-14 22:13:12,447 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=24 neighbors=1 distance=raw/euclidean
+2026-08-14 22:13:12,798 INFO [__main__] dataset load start
+2026-08-14 22:13:12,800 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:13:13,910 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 22:13:13,910 INFO [__main__] model load start
+2026-08-14 22:13:30,825 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:13:30,827 INFO [__main__] extraction start split=adapt queries=350
+2026-08-14 22:23:49,352 INFO [__main__] extraction done split=adapt
+2026-08-14 22:23:49,352 INFO [__main__] extraction start split=eval queries=28
+2026-08-14 22:24:37,569 INFO [__main__] extraction done split=eval
+2026-08-14 22:24:38,650 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 22:24:38,650 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 22:24:38,650 INFO [__main__] experiment done seconds=686.20
+2026-08-14 22:24:38,650 INFO [__main__] ========================================================================
+2026-08-14 22:24:41,730 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T22:24:42+02:00 extraction done configuration=8/24 dataset=Traffic model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14T22:24:42+02:00 skip complete family=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/none/none/0/none/run_1
+2026-08-14T22:24:42+02:00 skip complete family=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/1/online/run_1
+
+2026-08-14T22:24:42+02:00 extraction start configuration=11/24 dataset=Traffic model=chronos2 lags=504 horizon=504 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/none/none/0/none/run_0 computation_signature=94400c7d36a33fba631e8eca35ac80a15fe236059ac76f1ce820901abf96d953 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:24:45,067 INFO [__main__] ========================================================================
+2026-08-14 22:24:45,067 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=504 neighbors=0 distance=raw/euclidean
+2026-08-14 22:24:45,368 INFO [__main__] dataset load start
+2026-08-14 22:24:45,370 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:24:46,505 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 22:24:46,505 INFO [__main__] model load start
+2026-08-14 22:24:58,741 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:24:58,743 INFO [__main__] extraction start split=adapt queries=331
+2026-08-14 22:27:59,517 INFO [__main__] extraction done split=adapt
+2026-08-14 22:27:59,518 INFO [__main__] extraction start split=eval queries=24
+2026-08-14 22:28:12,485 INFO [__main__] extraction done split=eval
+2026-08-14 22:28:13,183 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 22:28:13,726 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 22:28:13,726 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/none/none/0/none/run_0
+2026-08-14 22:28:13,726 INFO [__main__] experiment done seconds=208.12
+2026-08-14 22:28:13,726 INFO [__main__] ========================================================================
+2026-08-14 22:28:16,902 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T22:28:17+02:00 extraction done configuration=11/24 dataset=Traffic model=chronos2 lags=504 horizon=504 retrieval=vanilla
+
+2026-08-14T22:28:17+02:00 extraction start configuration=12/24 dataset=Traffic model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/raw/euclidean/1/online/run_0 computation_signature=25af98a11d6766bde7566ae578fce8bfd8fb4b43ec4271c8e3e45d1145e4393e period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:28:20,363 INFO [__main__] ========================================================================
+2026-08-14 22:28:20,363 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=504 neighbors=1 distance=raw/euclidean
+2026-08-14 22:28:20,620 INFO [__main__] dataset load start
+2026-08-14 22:28:20,621 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:28:21,818 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-14 22:28:21,819 INFO [__main__] model load start
+2026-08-14 22:28:35,946 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:28:35,948 INFO [__main__] extraction start split=adapt queries=331
+2026-08-14 22:43:17,200 INFO [__main__] extraction done split=adapt
+2026-08-14 22:43:17,201 INFO [__main__] extraction start split=eval queries=24
+2026-08-14 22:44:21,089 INFO [__main__] extraction done split=eval
+2026-08-14 22:44:22,160 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 22:44:22,160 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 22:44:22,160 INFO [__main__] experiment done seconds=961.79
+2026-08-14 22:44:22,160 INFO [__main__] ========================================================================
+2026-08-14 22:44:25,955 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T22:44:26+02:00 extraction done configuration=12/24 dataset=Traffic model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-08-14T22:44:26+02:00 skip complete family=extraction dataset=Solar model=chronos2 lags=504 horizon=24 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_24/chronos2/none/none/0/none/run_0
+2026-08-14T22:44:26+02:00 skip complete family=extraction dataset=Solar model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_24/chronos2/raw/euclidean/1/online/run_0
+2026-08-14T22:44:26+02:00 skip complete family=extraction dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_168/chronos2/none/none/0/none/run_1
+2026-08-14T22:44:26+02:00 skip complete family=extraction dataset=Solar model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_168/chronos2/raw/euclidean/1/online/run_1
+
+2026-08-14T22:44:27+02:00 extraction start configuration=17/24 dataset=Solar model=chronos2 lags=504 horizon=504 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/none/none/0/none/run_0 computation_signature=11754d60150d39e3da55e495b293cba23c66192ed59275c9acfda32655a058ea period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:44:29,391 INFO [__main__] ========================================================================
+2026-08-14 22:44:29,392 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=504 neighbors=0 distance=raw/euclidean
+2026-08-14 22:44:29,752 INFO [__main__] dataset load start
+2026-08-14 22:44:29,753 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:44:30,129 INFO [__main__] dataset load done dates=8760 users=137
+2026-08-14 22:44:30,129 INFO [__main__] model load start
+2026-08-14 22:44:42,826 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:44:42,827 INFO [__main__] extraction start split=adapt queries=156
+2026-08-14 22:44:57,509 INFO [__main__] extraction done split=adapt
+2026-08-14 22:44:57,509 INFO [__main__] extraction start split=eval queries=10
+2026-08-14 22:44:58,428 INFO [__main__] extraction done split=eval
+2026-08-14 22:44:58,467 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 22:44:58,472 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 22:44:58,472 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/none/none/0/none/run_0
+2026-08-14 22:44:58,472 INFO [__main__] experiment done seconds=29.08
+2026-08-14 22:44:58,472 INFO [__main__] ========================================================================
+2026-08-14 22:45:01,170 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T22:45:01+02:00 extraction done configuration=17/24 dataset=Solar model=chronos2 lags=504 horizon=504 retrieval=vanilla
+
+2026-08-14T22:45:01+02:00 extraction start configuration=18/24 dataset=Solar model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/raw/euclidean/1/online/run_0 computation_signature=f0c888d50da8c406d62548db8e2207184228b7678bda2e6114e1aa02e2f3efb9 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:45:04,239 INFO [__main__] ========================================================================
+2026-08-14 22:45:04,239 INFO [__main__] experiment start kind=extraction dataset=Solar model=chronos2 lags=504 horizon=504 neighbors=1 distance=raw/euclidean
+2026-08-14 22:45:04,557 INFO [__main__] dataset load start
+2026-08-14 22:45:04,558 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/solar/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:45:04,959 INFO [__main__] dataset load done dates=8760 users=137
+2026-08-14 22:45:04,959 INFO [__main__] model load start
+2026-08-14 22:45:13,072 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:45:13,073 INFO [__main__] extraction start split=adapt queries=156
+2026-08-14 22:46:43,612 INFO [__main__] extraction done split=adapt
+2026-08-14 22:46:43,612 INFO [__main__] extraction start split=eval queries=10
+2026-08-14 22:46:48,352 INFO [__main__] extraction done split=eval
+2026-08-14 22:46:49,138 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 22:46:49,138 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 22:46:49,138 INFO [__main__] experiment done seconds=104.89
+2026-08-14 22:46:49,138 INFO [__main__] ========================================================================
+2026-08-14 22:46:52,245 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T22:46:52+02:00 extraction done configuration=18/24 dataset=Solar model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-08-14T22:46:52+02:00 skip complete family=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=24 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_24/chronos2/none/none/0/none/run_0
+2026-08-14T22:46:52+02:00 skip complete family=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_24/chronos2/raw/euclidean/1/online/run_0
+2026-08-14T22:46:52+02:00 skip complete family=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=168 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_168/chronos2/none/none/0/none/run_1
+2026-08-14T22:46:52+02:00 skip complete family=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_168/chronos2/raw/euclidean/1/online/run_1
+
+2026-08-14T22:46:53+02:00 extraction start configuration=23/24 dataset=exchange_rate model=chronos2 lags=504 horizon=504 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0 computation_signature=434d7452dd0b7a07141339e695226603fd34aa637d9a23ca28349fb0d8829475 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:46:55,670 INFO [__main__] ========================================================================
+2026-08-14 22:46:55,670 INFO [__main__] experiment start kind=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=504 neighbors=0 distance=raw/euclidean
+2026-08-14 22:46:56,012 INFO [__main__] dataset load start
+2026-08-14 22:46:56,014 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/exchange_rate/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:46:56,033 INFO [__main__] dataset load done dates=7588 users=8
+2026-08-14 22:46:56,033 INFO [__main__] model load start
+2026-08-14 22:47:07,405 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:47:07,406 INFO [__main__] extraction start split=adapt queries=132
+2026-08-14 22:47:10,033 INFO [__main__] extraction done split=adapt
+2026-08-14 22:47:10,033 INFO [__main__] extraction start split=eval queries=8
+2026-08-14 22:47:10,179 INFO [__main__] extraction done split=eval
+2026-08-14 22:47:10,198 INFO [__main__] vanilla metrics saved path=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0/vanilla_metrics.json
+2026-08-14 22:47:10,202 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0/extraction_manifest.json
+2026-08-14 22:47:10,202 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0
+2026-08-14 22:47:10,202 INFO [__main__] experiment done seconds=14.53
+2026-08-14 22:47:10,202 INFO [__main__] ========================================================================
+2026-08-14 22:47:13,127 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/none/none/0/none/run_0 status=complete
+2026-08-14T22:47:13+02:00 extraction done configuration=23/24 dataset=exchange_rate model=chronos2 lags=504 horizon=504 retrieval=vanilla
+
+2026-08-14T22:47:13+02:00 extraction start configuration=24/24 dataset=exchange_rate model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0 computation_signature=3c9a2b7a72885963f642fa312c7f9eeb28e602ca63057672567501f4fae9eb76 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-14 22:47:16,068 INFO [__main__] ========================================================================
+2026-08-14 22:47:16,069 INFO [__main__] experiment start kind=extraction dataset=exchange_rate model=chronos2 lags=504 horizon=504 neighbors=1 distance=raw/euclidean
+2026-08-14 22:47:16,373 INFO [__main__] dataset load start
+2026-08-14 22:47:16,375 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/exchange_rate/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-14 22:47:16,392 INFO [__main__] dataset load done dates=7588 users=8
+2026-08-14 22:47:16,392 INFO [__main__] model load start
+2026-08-14 22:47:24,347 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-14 22:47:24,347 INFO [__main__] extraction start split=adapt queries=132
+2026-08-14 22:47:32,210 INFO [__main__] extraction done split=adapt
+2026-08-14 22:47:32,210 INFO [__main__] extraction start split=eval queries=8
+2026-08-14 22:47:32,726 INFO [__main__] extraction done split=eval
+2026-08-14 22:47:33,184 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0/extraction_manifest.json
+2026-08-14 22:47:33,184 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0
+2026-08-14 22:47:33,184 INFO [__main__] experiment done seconds=17.11
+2026-08-14 22:47:33,184 INFO [__main__] ========================================================================
+2026-08-14 22:47:36,141 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+2026-08-14T22:47:36+02:00 extraction done configuration=24/24 dataset=exchange_rate model=chronos2 lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:47:36+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-14T22:47:36+02:00 job start kind=gates family=h_ablation experiment_mode=full skip_complete=true tasks=12 datasets=Electricity,Traffic,Solar,exchange_rate models=chronos2 settings=504:24,504:168,504:504 distance_spaces=raw distance_metrics=euclidean neighbors=1 methods=catboost_cov_regressor_shared,bayes_cov_shared task_type=CPU thread_count=2 horizon_fits=serial allocated_cpus=16 results_root=outputs/adaptation/h_ablation
+2026-08-14 22:47:38,961 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:47:39+02:00 gates start configuration=1/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=dc779d07268d5e8e90554c3cfc4e133023e31e42ade8f81bb5f89d5018ce35ab iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:47:41,925 INFO [__main__] ========================================================================
+2026-08-14 22:47:41,925 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:47:45,045 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:47:48,366 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:47:48,941 INFO [__main__] experiment done seconds=7.01
+2026-08-14 22:47:48,941 INFO [__main__] ========================================================================
+2026-08-14T22:47:49+02:00 gates done configuration=1/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:47:49+02:00 gates start configuration=1/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=588fbebef596b237c01538c4aec2455debaa1f0f3b51c7fab1c88788563fe1c7 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:47:52,392 INFO [__main__] ========================================================================
+2026-08-14 22:47:52,393 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:47:55,285 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:47:55,501 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:47:55,529 INFO [__main__] experiment done seconds=3.13
+2026-08-14 22:47:55,529 INFO [__main__] ========================================================================
+2026-08-14T22:47:56+02:00 gates done configuration=1/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14 22:47:58,223 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/1/online/run_1 status=complete
+
+2026-08-14T22:47:58+02:00 gates start configuration=2/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=2ed2c29d61ccc96316a8ab3cac80f302fed5124aaa6099ed93301e263aa9dcb4 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:48:01,171 INFO [__main__] ========================================================================
+2026-08-14 22:48:01,172 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:48:10,419 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:48:13,791 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:48:14,405 INFO [__main__] experiment done seconds=13.23
+2026-08-14 22:48:14,405 INFO [__main__] ========================================================================
+2026-08-14T22:48:15+02:00 gates done configuration=2/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:48:15+02:00 gates start configuration=2/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=a2a8c8e0f977de958e4a28e9c3d00809d2663d1c1b96c42af00352cd40ab75de iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:48:17,509 INFO [__main__] ========================================================================
+2026-08-14 22:48:17,510 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:48:22,045 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:48:22,915 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:48:22,943 INFO [__main__] experiment done seconds=5.43
+2026-08-14 22:48:22,943 INFO [__main__] ========================================================================
+2026-08-14T22:48:23+02:00 gates done configuration=2/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-08-14 22:48:25,703 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:48:26+02:00 gates start configuration=3/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=2cc2f513832b37545db00d8ae034c8dc8a97b13e2bad9f029757998890aa4f0c iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:48:28,487 INFO [__main__] ========================================================================
+2026-08-14 22:48:28,487 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:48:53,319 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:49:00,470 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:49:01,061 INFO [__main__] experiment done seconds=32.57
+2026-08-14 22:49:01,061 INFO [__main__] ========================================================================
+2026-08-14T22:49:01+02:00 gates done configuration=3/12 dataset=Electricity model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:49:01+02:00 gates start configuration=3/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=98b3ff9b33d8437d66ff780ba9767a72d147b11793f10469727c9cd2a7ee555c iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:49:04,571 INFO [__main__] ========================================================================
+2026-08-14 22:49:04,572 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:49:12,950 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:49:15,306 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:49:15,338 INFO [__main__] experiment done seconds=10.76
+2026-08-14 22:49:15,338 INFO [__main__] ========================================================================
+2026-08-14T22:49:15+02:00 gates done configuration=3/12 dataset=Electricity model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-08-14 22:49:18,038 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:49:18+02:00 gates start configuration=4/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=888905e0d93b4136e231ab7bee0cdb917477af67075a108bca1124146bdafc52 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:49:20,862 INFO [__main__] ========================================================================
+2026-08-14 22:49:20,863 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:49:24,874 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:49:28,054 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:49:28,676 INFO [__main__] experiment done seconds=7.81
+2026-08-14 22:49:28,676 INFO [__main__] ========================================================================
+2026-08-14T22:49:29+02:00 gates done configuration=4/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:49:29+02:00 gates start configuration=4/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=0807f53402d148d4f4257438f23225dace729503b5a9390b4714d5a1f6afa935 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:49:31,968 INFO [__main__] ========================================================================
+2026-08-14 22:49:31,968 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:49:36,045 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:49:36,479 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:49:36,508 INFO [__main__] experiment done seconds=4.54
+2026-08-14 22:49:36,508 INFO [__main__] ========================================================================
+2026-08-14T22:49:37+02:00 gates done configuration=4/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14 22:49:39,099 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/1/online/run_1 status=complete
+
+2026-08-14T22:49:39+02:00 gates start configuration=5/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=6fc4e03352b16491019e511b075d516b70a67bae4c823c94cefe2c2b1f54213f iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:49:42,047 INFO [__main__] ========================================================================
+2026-08-14 22:49:42,048 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:49:59,411 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:50:10,024 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:50:10,588 INFO [__main__] experiment done seconds=28.54
+2026-08-14 22:50:10,588 INFO [__main__] ========================================================================
+2026-08-14T22:50:11+02:00 gates done configuration=5/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:50:11+02:00 gates start configuration=5/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=2e78860e277d056c4e82e62e4c1378374a4ad0d4810c3420a8b38b9c8cb5a11c iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:50:13,963 INFO [__main__] ========================================================================
+2026-08-14 22:50:13,964 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:50:21,162 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:50:22,714 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:50:22,748 INFO [__main__] experiment done seconds=8.78
+2026-08-14 22:50:22,748 INFO [__main__] ========================================================================
+2026-08-14T22:50:23+02:00 gates done configuration=5/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-08-14 22:50:25,443 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:50:26+02:00 gates start configuration=6/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=a5adb254456379d6aab5bf8b42f066a660757bd855c0ff94d908db5ad0e5b7a6 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:50:28,418 INFO [__main__] ========================================================================
+2026-08-14 22:50:28,418 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:51:11,359 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:51:25,604 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:51:26,256 INFO [__main__] experiment done seconds=57.83
+2026-08-14 22:51:26,256 INFO [__main__] ========================================================================
+2026-08-14T22:51:27+02:00 gates done configuration=6/12 dataset=Traffic model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:51:27+02:00 gates start configuration=6/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=415ea81668f0c19d38c8001e9c1eb896982a9ca3f8bc4ebe5568e171daa255c3 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:51:29,977 INFO [__main__] ========================================================================
+2026-08-14 22:51:29,977 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:51:44,493 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:51:48,776 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:51:48,822 INFO [__main__] experiment done seconds=18.84
+2026-08-14 22:51:48,822 INFO [__main__] ========================================================================
+2026-08-14T22:51:49+02:00 gates done configuration=6/12 dataset=Traffic model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-08-14 22:51:51,654 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Solar/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:51:52+02:00 gates start configuration=7/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=46f7a7796397aedf895e99998e013acd1a5365c4e613570f6ce3544a47f99b89 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:51:54,492 INFO [__main__] ========================================================================
+2026-08-14 22:51:54,492 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:51:56,156 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:51:57,423 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:51:58,105 INFO [__main__] experiment done seconds=3.61
+2026-08-14 22:51:58,105 INFO [__main__] ========================================================================
+2026-08-14T22:51:58+02:00 gates done configuration=7/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:51:58+02:00 gates start configuration=7/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=fce09f8dd4faff163229f74bb76c3e0fd9ddd8eb8c0a2bc18350df8ffe8d36ae iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:01,099 INFO [__main__] ========================================================================
+2026-08-14 22:52:01,099 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:52:02,797 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:02,880 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:02,909 INFO [__main__] experiment done seconds=1.81
+2026-08-14 22:52:02,909 INFO [__main__] ========================================================================
+2026-08-14T22:52:03+02:00 gates done configuration=7/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14 22:52:05,526 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Solar/504_168/chronos2/raw/euclidean/1/online/run_1 status=complete
+
+2026-08-14T22:52:06+02:00 gates start configuration=8/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=88af47a1def332b6f78d4dc540bb81f3b717183fdea42a055fcbcc0afd0d6975 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:08,529 INFO [__main__] ========================================================================
+2026-08-14 22:52:08,529 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:52:11,275 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:12,785 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:13,360 INFO [__main__] experiment done seconds=4.83
+2026-08-14 22:52:13,361 INFO [__main__] ========================================================================
+2026-08-14T22:52:14+02:00 gates done configuration=8/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:52:14+02:00 gates start configuration=8/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=7b768440fe96d6274270a878368d66212280db2a42fa8de8dc263881c5a88043 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:16,446 INFO [__main__] ========================================================================
+2026-08-14 22:52:16,446 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:52:18,379 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:18,660 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:18,690 INFO [__main__] experiment done seconds=2.24
+2026-08-14 22:52:18,690 INFO [__main__] ========================================================================
+2026-08-14T22:52:19+02:00 gates done configuration=8/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-08-14 22:52:21,307 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Solar/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:52:21+02:00 gates start configuration=9/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=7d82b4b5420332f7415e4bdf55f9654993e02c52ca76bc03ad54a5d31850b3e5 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:24,330 INFO [__main__] ========================================================================
+2026-08-14 22:52:24,331 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:52:29,039 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:31,214 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:31,814 INFO [__main__] experiment done seconds=7.48
+2026-08-14 22:52:31,814 INFO [__main__] ========================================================================
+2026-08-14T22:52:32+02:00 gates done configuration=9/12 dataset=Solar model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:52:32+02:00 gates start configuration=9/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=aaad804d67323baf72db5345bc1800484ca209e870a6a8c3e49eef63a8115de7 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:43,268 INFO [__main__] ========================================================================
+2026-08-14 22:52:43,269 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:52:46,109 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:46,503 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:46,533 INFO [__main__] experiment done seconds=3.26
+2026-08-14 22:52:46,533 INFO [__main__] ========================================================================
+2026-08-14T22:52:47+02:00 gates done configuration=9/12 dataset=Solar model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+2026-08-14 22:52:49,038 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_24/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:52:49+02:00 gates start configuration=10/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=e4817d0db51739a35e54d21fe90dc3e077379c655d8573e52371c723454bb3ac iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:51,947 INFO [__main__] ========================================================================
+2026-08-14 22:52:51,948 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:52:54,490 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:52:55,562 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:52:56,152 INFO [__main__] experiment done seconds=4.20
+2026-08-14 22:52:56,152 INFO [__main__] ========================================================================
+2026-08-14T22:52:56+02:00 gates done configuration=10/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:52:56+02:00 gates start configuration=10/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=51897cc267e7725960ba96e9facd7df0619a58d9b1e8c15aa60ba14728d29f0a iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:52:59,275 INFO [__main__] ========================================================================
+2026-08-14 22:52:59,276 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:53:00,823 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:53:00,888 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:53:00,918 INFO [__main__] experiment done seconds=1.64
+2026-08-14 22:53:00,918 INFO [__main__] ========================================================================
+2026-08-14T22:53:01+02:00 gates done configuration=10/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=24 retrieval=raw_euclidean_1_online
+2026-08-14 22:53:03,548 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_168/chronos2/raw/euclidean/1/online/run_1 status=complete
+
+2026-08-14T22:53:04+02:00 gates start configuration=11/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=06ac4cf4d93068d60f67f5085f1cdeba1bdf39f30e742a945f9a451ef2b5a8ce iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:53:06,490 INFO [__main__] ========================================================================
+2026-08-14 22:53:06,490 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:53:08,130 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:53:09,325 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:53:09,956 INFO [__main__] experiment done seconds=3.46
+2026-08-14 22:53:09,957 INFO [__main__] ========================================================================
+2026-08-14T22:53:10+02:00 gates done configuration=11/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:53:10+02:00 gates start configuration=11/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=6f1d57e47d76c76fa078fc7a098be7b8763edb27d85b537c344a84046ea7e04c iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:53:13,357 INFO [__main__] ========================================================================
+2026-08-14 22:53:13,358 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:53:16,608 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:53:17,520 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:53:17,554 INFO [__main__] experiment done seconds=4.19
+2026-08-14 22:53:17,554 INFO [__main__] ========================================================================
+2026-08-14T22:53:18+02:00 gates done configuration=11/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=168 retrieval=raw_euclidean_1_online
+2026-08-14 22:53:20,231 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/504_504/chronos2/raw/euclidean/1/online/run_0 status=complete
+
+2026-08-14T22:53:20+02:00 gates start configuration=12/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0 computation_signature=65264c9fff2bfd98f67942ee078e96480327bbea9ca3d1c44913e7e58fade758 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:53:23,353 INFO [__main__] ========================================================================
+2026-08-14 22:53:23,353 INFO [__main__] selected methods=('catboost_cov_regressor_shared',)
+2026-08-14 22:53:25,618 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:53:26,857 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:53:27,480 INFO [__main__] experiment done seconds=4.12
+2026-08-14 22:53:27,480 INFO [__main__] ========================================================================
+2026-08-14T22:53:28+02:00 gates done configuration=12/12 dataset=exchange_rate model=chronos2 formula=catboost_cov_regressor_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:53:28+02:00 gates start configuration=12/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0 computation_signature=e26ded95df2ed2114029dfb0afffa89c9be411fbe3fba8dc192ffa2fa88d3967 iterations=300 learning_rate=0.03 depth=4 early_stopping_rounds=50 task_type=CPU thread_count=2 validation_fraction=0.2 seed=1
+2026-08-14 22:53:30,501 INFO [__main__] ========================================================================
+2026-08-14 22:53:30,501 INFO [__main__] selected methods=('bayes_cov_shared',)
+2026-08-14 22:53:32,057 INFO [__main__] gate fitting start candidate=cov
+2026-08-14 22:53:32,145 INFO [__main__] gate fitting done candidate=cov
+2026-08-14 22:53:32,176 INFO [__main__] experiment done seconds=1.67
+2026-08-14 22:53:32,176 INFO [__main__] ========================================================================
+2026-08-14T22:53:32+02:00 gates done configuration=12/12 dataset=exchange_rate model=chronos2 formula=bayes_cov_shared lags=504 horizon=504 retrieval=raw_euclidean_1_online
+
+2026-08-14T22:53:32+02:00 job done kind=gates output=outputs/adaptation/h_ablation
+
+2026-08-14T22:53:32+02:00 job start kind=adaptation_extraction family=h_ablation experiment_mode=full skip_complete=true tasks=24 datasets=Electricity,Traffic,Solar,exchange_rate models=chronos2 settings=504:24,504:168,504:504 distance_spaces=instance distance_metrics=euclidean neighbors=3
+2026-08-14T22:53:32+02:00 skip complete family=extraction dataset=Electricity model=chronos2 lags=504 horizon=24 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/504_24/chronos2/none/none/0/none/run_0
