@@ -4,6 +4,30 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-15: Corrected sweep-table provenance so each
+  `report_manifest.json` records only manifests whose result rows pass the
+  report's family, variant, exact-pipeline, retrieval-axis, dataset, setting,
+  model, metric, and split filters. The requested section now records all of
+  those controls. Added a regression with unrelated completed pipelines that
+  verifies a one-pipeline report obtains only the two requested dataset runs.
+  Affected contract: sweep table report manifests and their focused smoke
+  coverage; table values and existing experiment artifacts are unchanged.
+  Checks passed: Python AST parsing for both touched Python files, the focused
+  sweep-table smoke including exact report provenance, the general result-table
+  smoke, and `git diff --check`. Deferred integration: rebuild one real
+  selected-pipeline report on the cluster. README/LaTeX implications: none,
+  because they already promise exact obtained inputs. Required reruns: no
+  scientific runs; rebuild reports when corrected provenance is required.
+
+- 2026-08-15: Made `SWEEP_CANDIDATES.txt` the sole selected-pipeline source in
+  the project guidance and removed duplicated winner names, counts, and
+  retrieval settings from `AGENTS.md`. Affected contract: local maintenance
+  guidance only; executable selectors, experiment profiles, public
+  documentation, and artifacts are unchanged. Check passed: the guidance now
+  contains one authoritative selector rule and no hard-coded selected-control
+  roster. Deferred integration: none. README/LaTeX implications: none, because
+  both already document the current selector contract. Required reruns: none.
+
 - 2026-08-15: Corrected TS-RAG table discovery to read the current schema's
   nested `launch.launch_id`, so a table stage scoped by
   `EXPERIMENT_LAUNCH_ID` retains the four completed job-43579 results instead

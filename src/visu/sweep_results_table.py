@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
 
-from experiment_runs import write_report_manifest
+from experiment_runs import SelectedRun, write_report_manifest
 
 from .results_table import (
     Result,
@@ -435,6 +435,98 @@ def _filters_match(
     if result.dataset in dataset_settings:
         return result.setting in dataset_settings[result.dataset]
     return not setting_filter or result.setting in setting_filter
+
+
+def _family_contains_result(table_family: str, result_family: str) -> bool:
+    if table_family == result_family:
+        return True
+    if table_family == "full":
+        return result_family in {"baselines", "gates", "ts_ifa"}
+    if table_family == "comparison":
+        return result_family in {"baselines", "gates", "crossrag"}
+    return False
+
+
+def _report_input_runs(
+    experiment_dir: str | Path,
+    *,
+    table_kind: str,
+    datasets: Sequence[str] | None,
+    settings: Sequence[str] | None,
+    dataset_settings: Mapping[str, set[str]],
+    models: Sequence[str] | None,
+    families: Sequence[str] | None,
+    spaces: Sequence[str],
+    distance_metrics: Sequence[str],
+    neighbors: Sequence[int],
+    retrieval_mode: str,
+    metric: str,
+    split: str,
+    variants: Sequence[str] | None,
+    pipelines: Sequence[str] | None,
+) -> list[SelectedRun]:
+    """Return only manifests whose result rows pass the report filters."""
+    root = Path(experiment_dir).expanduser().resolve()
+    records = _filter_models(discover_results(root), models)
+    selected_families = _selected_families(families)
+    selected_runs = set(
+        _selected_runs(
+            _run_names(spaces, distance_metrics, neighbors, retrieval_mode),
+            pipelines,
+        )
+    )
+    selected_pipelines = (
+        {_pipeline_parts(pipeline) for pipeline in pipelines} if pipelines else None
+    )
+    selected_variants: dict[str, set[str]] = {}
+    for family in selected_families:
+        available = family.full_variants
+        if table_kind == "average":
+            available = (*family.average_variants, *family.diagnostic_variants)
+        selected_variants[family.name] = set(
+            _select_variants(family, available, variants)
+        )
+
+    dataset_order = list(datasets) if datasets else None
+    setting_filter = set(settings or ())
+    used_directories: set[Path] = set()
+    for result in records:
+        if (
+            result.method == REFERENCE_METHOD
+            or result.metric.casefold() != metric.casefold()
+            or result.split.casefold() != split.casefold()
+            or result.run not in selected_runs
+            or not _filters_match(
+                result,
+                dataset_order,
+                setting_filter,
+                dataset_settings,
+            )
+        ):
+            continue
+        result_family = _result_family(result)
+        method = result.method.rsplit("/", 1)[-1]
+        if selected_pipelines is not None:
+            if (result_family, result.run, method) not in selected_pipelines:
+                continue
+            if not any(
+                _family_contains_result(family.name, result_family)
+                for family in selected_families
+            ):
+                continue
+        elif not any(
+            _family_contains_result(family.name, result_family)
+            and method in selected_variants[family.name]
+            for family in selected_families
+        ):
+            continue
+        used_directories.add(result.path.parent.resolve())
+
+    return [
+        choice
+        for choice in selected_manifest_runs(root)
+        if choice.run_dir.resolve() in used_directories
+    ]
 
 
 def _average_metric(
@@ -1227,43 +1319,56 @@ def main(argv: Sequence[str] | None = None) -> list[Path]:
         repeat_policy=args.repeat_policy,
         purposes=args.purpose,
     )
+    datasets = _split_names(args.datasets)
+    settings = _split_names(args.settings)
+    dataset_settings = _parse_dataset_settings(args.dataset_settings)
+    models = _split_names(args.models)
+    families = _split_names(args.families)
+    spaces = _split_names(args.spaces) or ("raw", "instance")
+    distance_metrics = _split_names(args.distance_metrics) or ("euclidean",)
+    neighbors = _parse_neighbors(args.neighbors)
+    variants = _split_names(args.variants)
+    pipelines = _split_names(args.pipelines)
     generator = generate_full_results_tables if args.table_kind == "full" else generate_average_results_tables
     outputs = generator(
         args.experiment_dir,
         args.output_dir,
         metric=args.metric,
         split=args.split,
-        datasets=_split_names(args.datasets),
-        settings=_split_names(args.settings),
-        dataset_settings=_parse_dataset_settings(args.dataset_settings),
-        models=_split_names(args.models),
-        families=_split_names(args.families),
-        spaces=_split_names(args.spaces) or ("raw", "instance"),
-        distance_metrics=_split_names(args.distance_metrics) or ("euclidean",),
-        neighbors=_parse_neighbors(args.neighbors),
+        datasets=datasets,
+        settings=settings,
+        dataset_settings=dataset_settings,
+        models=models,
+        families=families,
+        spaces=spaces,
+        distance_metrics=distance_metrics,
+        neighbors=neighbors,
         retrieval_mode=args.retrieval_mode,
         decimals=args.decimals,
         lower_is_better=not args.higher_is_better,
-        variants=_split_names(args.variants),
-        pipelines=_split_names(args.pipelines),
+        variants=variants,
+        pipelines=pipelines,
     )
     for output in outputs:
         print(f"LaTeX table written to {output}")
-    datasets = set(_split_names(args.datasets) or [])
-    settings = set(_split_names(args.settings) or [])
-    models = set(_split_names(args.models) or [])
-    selected = []
-    for run in selected_manifest_runs(args.experiment_dir):
-        identity = run.manifest["identity"]
-        setting = f"{identity['lookback']}_{identity['horizon']}"
-        if datasets and identity["dataset"] not in datasets:
-            continue
-        if settings and setting not in settings:
-            continue
-        if models and identity["backbone"] not in models:
-            continue
-        selected.append(run)
     if outputs:
+        selected = _report_input_runs(
+            args.experiment_dir,
+            table_kind=args.table_kind,
+            datasets=datasets,
+            settings=settings,
+            dataset_settings=dataset_settings,
+            models=models,
+            families=families,
+            spaces=spaces,
+            distance_metrics=distance_metrics,
+            neighbors=neighbors,
+            retrieval_mode=args.retrieval_mode,
+            metric=args.metric,
+            split=args.split,
+            variants=variants,
+            pipelines=pipelines,
+        )
         write_report_manifest(
             outputs[0].parent / "report_manifest.json",
             inputs=selected,
@@ -1272,11 +1377,23 @@ def main(argv: Sequence[str] | None = None) -> list[Path]:
             filters={
                 "pipeline": pipeline,
                 "purposes": args.purpose,
-                "datasets": sorted(datasets),
-                "settings": sorted(settings),
-                "models": sorted(models),
-                "families": _split_names(args.families),
-                "variants": _split_names(args.variants),
+                "table_kind": args.table_kind,
+                "metric": args.metric,
+                "split": args.split,
+                "datasets": list(datasets or ()),
+                "settings": list(settings or ()),
+                "dataset_settings": {
+                    dataset: sorted(values)
+                    for dataset, values in dataset_settings.items()
+                },
+                "models": list(models or ()),
+                "families": list(families or ()),
+                "spaces": list(spaces),
+                "distance_metrics": list(distance_metrics),
+                "neighbors": list(neighbors),
+                "retrieval_mode": args.retrieval_mode,
+                "variants": list(variants or ()),
+                "pipelines": list(pipelines or ()),
             },
         )
     return outputs

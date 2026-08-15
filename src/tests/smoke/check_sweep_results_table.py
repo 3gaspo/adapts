@@ -14,6 +14,7 @@ from check_results_table import _evaluation_run, _ts_ifa_run
 from visu.sweep_results_table import (
     generate_average_results_tables,
     generate_full_results_tables,
+    main as generate_sweep_report,
 )
 
 
@@ -155,6 +156,41 @@ def main() -> None:
             ((2.0 - 0.72) / 2.0 * 100.0 + (2.2 - 0.92) / 2.2 * 100.0)
             / 2.0,
         )
+
+        exact_pipeline = "baselines/raw_euclidean_1_online/y_ridge_shared"
+        exact_output = root / "tables/exact"
+        generate_sweep_report(
+            [
+                str(root),
+                "--output-dir",
+                str(exact_output),
+                "--families",
+                "baselines",
+                "--datasets",
+                "electricity,solar",
+                "--settings",
+                "168_24",
+                "--models",
+                "chronos2",
+                "--spaces",
+                "raw",
+                "--neighbors",
+                "1",
+                "--pipelines",
+                exact_pipeline,
+            ]
+        )
+        report = json.loads(
+            (exact_output / "report_manifest.json").read_text(encoding="utf-8")
+        )
+        assert report["obtained"]["count"] == 2
+        assert {
+            entry["label"] for entry in report["obtained"]["inputs"]
+        } == {"y_ridge_shared"}
+        assert report["requested"]["filters"]["pipelines"] == [exact_pipeline]
+        assert report["requested"]["filters"]["spaces"] == ["raw"]
+        assert report["requested"]["filters"]["neighbors"] == [1]
+        assert report["requested"]["filters"]["retrieval_mode"] == "online"
 
         try:
             generate_average_results_tables(
