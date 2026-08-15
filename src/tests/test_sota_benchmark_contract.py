@@ -45,6 +45,7 @@ class SOTABenchmarkContractTest(unittest.TestCase):
         runner = (ROOT / "src/slurm/run_sota_benchmark.sh").read_text(encoding="utf-8")
         table = (ROOT / "src/visu/sota_benchmark_table.py").read_text(encoding="utf-8")
         self.assertIn("run_sota_benchmark.sh", front)
+        self.assertIn("#SBATCH --mem=80000", front)
         self.assertIn("SOTA_BENCHMARK.json", runner)
         self.assertIn("EVAL_QUERY_STRIDE=1", runner)
         self.assertNotIn("run_crossrag.sh", runner)

@@ -4,6 +4,28 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-15: Corrected TS-RAG table discovery to read the current schema's
+  nested `launch.launch_id`, so a table stage scoped by
+  `EXPERIMENT_LAUNCH_ID` retains the four completed job-43579 results instead
+  of filtering every manifest out. Raised `sota_benchmark.slurm` host memory
+  from 40,000 MB to 80,000 MB after the Electricity `K=10`, `L=512` retrieval
+  payload required about 43.4 GiB for persistent evaluation tensors alone.
+  Affected files/contracts: `src/visu/tsrag_comparison_table.py`,
+  `sota_benchmark.slurm`, and their focused contract tests. Checks passed: six
+  standalone TS-RAG contract tests, including same-launch table discovery;
+  four standalone SOTA contract tests, including the 80 GB directive; Python
+  compilation of the touched Python files; Git Bash syntax for both fronts and
+  their runners; `git diff --check`; and an exact local table rebuild scoped to
+  launch 43579, which recovered four rows each for TS-RAG and both matched
+  Chronos-Bolt controls plus the two Chronos-2 controls. The package-style
+  unittest invocation remains unavailable in the shared runtime because
+  optional `einops` is not installed, while the same static tests pass when run
+  directly. Documentation and LaTeX implications: no scientific protocol or
+  analyzed conclusion changed. Required cluster work: run only the TS-RAG table
+  stage because its four inference artifacts are already valid; resubmit the
+  complete SOTA front, which will reuse its five completed datasets and resume
+  Electricity before Exchange and tables.
+
 - 2026-08-15: Added the completed baseline lookback ablation to the experiment
   guideline and executive summary as an exact result table and paired plot of
   mean nMSE improvement and positive-window rate. Across the four datasets,

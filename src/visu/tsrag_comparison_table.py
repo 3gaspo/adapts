@@ -22,7 +22,7 @@ def _selected_manifests(root: Path) -> list[tuple[dict[str, Any], Path]]:
     selected = []
     for path in root.rglob("manifest.json"):
         manifest = _json(path)
-        if launch_id and manifest.get("launch_id") != launch_id:
+        if launch_id and str(manifest.get("launch", {}).get("launch_id")) != launch_id:
             continue
         if manifest.get("status") in {"ready", "completed"}:
             selected.append((manifest, path.parent))

@@ -8,7 +8,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=40000
+#SBATCH --mem=80000
 
 # Evaluate one selected project method on the Cross-RAG paper's exact test
 # windows, then combine it with the paper's published TS-RAG/Cross-RAG MSEs.

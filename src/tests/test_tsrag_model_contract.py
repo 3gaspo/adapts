@@ -3,9 +3,11 @@
 import ast
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -104,6 +106,7 @@ class TSRAGModelContractTest(unittest.TestCase):
                         json.dumps(
                             {
                                 "status": "completed",
+                                "launch": {"launch_id": "job-123"},
                                 "identity": {"dataset": dataset, "backbone": backbone},
                             }
                         ),
@@ -128,6 +131,7 @@ class TSRAGModelContractTest(unittest.TestCase):
                     json.dumps(
                         {
                             "status": "completed",
+                            "launch": {"launch_id": "job-123"},
                             "identity": {"dataset": dataset, "backbone": "chronos-bolt"},
                         }
                     ),
@@ -146,7 +150,8 @@ class TSRAGModelContractTest(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            paths = module.build(controls, tsrag, root / "report")
+            with patch.dict(os.environ, {"EXPERIMENT_LAUNCH_ID": "job-123"}):
+                paths = module.build(controls, tsrag, root / "report")
             text = paths["csv"].read_text(encoding="utf-8")
             self.assertIn("chronos-bolt,tsrag", text)
             self.assertNotIn("chronos2,tsrag", text)

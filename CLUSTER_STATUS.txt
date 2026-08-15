@@ -20,15 +20,16 @@ CURRENT HANDOFF
 - TS-RAG job 43579 completed all four inference metric artifacts. Equal-dataset
   mean nMSE improvement is +1.90% over matching Chronos-Bolt vanilla and +0.85%
   over the selected full-ridge control, but it loses to that control on Traffic
-  and Solar. The workflow is failed because its final table step reported no
-  completed TS-RAG results despite the four synchronized manifests now being
-  completed; fix result discovery and rebuild the table without rerunning valid
+  and Solar. Its final table step filtered every result because it read a
+  top-level `launch_id` instead of schema-1 `launch.launch_id`; discovery is now
+  fixed. Rebuild with `STAGES=tables sbatch tsrag.slurm` without rerunning valid
   inference.
 - SOTA benchmark job 43580 completed ETTh1, ETTh2, ETTm1, ETTm2, and Weather,
   then OOM-killed during the Electricity instance-K=10 evaluation extraction;
   Exchange did not start. The local adapted MSE beats local vanilla on four of
   five rows, but its five-row mean 0.2519 remains above published TS-RAG 0.2398
-  and Cross-RAG 0.2322. Resume with more host memory; reuse completed rows.
+  and Cross-RAG 0.2322. The front now requests 80 GB instead of 40 GB; resubmit
+  it to reuse completed rows and resume Electricity, Exchange, and tables.
 - K-ablation job 43589 completed the first 23/96 extraction identities, then
   OOM-killed on Electricity 504:168 raw K=100. K=100 has now been removed from
   the intended grid. The synchronized schema-1 tree currently has 60/144
@@ -38,9 +39,9 @@ CURRENT HANDOFF
   instance-K=3 extraction that concurrently running L-ablation job 43593 had
   allocated six minutes earlier. The shared extraction is now complete, so
   resubmission can reuse it. The H baseline and table stages never ran.
-- Next cluster actions: increase memory or shard the SOTA extraction, rebuild
-  the TS-RAG table after correcting discovery, rerun K and H, and run the v4
-  TS-IFA pilot. Cross-RAG has no execution front.
+- Next cluster actions: run the TS-RAG table-only rebuild, resubmit SOTA with
+  its 80 GB allocation, rerun K and H, and run the v4 TS-IFA pilot. Cross-RAG
+  has no execution front.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic
