@@ -6,6 +6,8 @@ from .neighbors import (
     neighbor_to_query_scale,
     period_eval_dates,
     search_neighbors,
+    search_neighbors_other_users,
+    search_neighbors_same_user,
 )
 
 __all__ = [
@@ -15,4 +17,6 @@ __all__ = [
     "neighbor_to_query_scale",
     "period_eval_dates",
     "search_neighbors",
+    "search_neighbors_other_users",
+    "search_neighbors_same_user",
 ]

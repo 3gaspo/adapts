@@ -144,6 +144,7 @@ def main() -> None:
         ("mixed_quantity_ablation.slurm", "run_profile_experiment.sh"),
         ("fourier_retrieval_ablation.slurm", "run_profile_experiment.sh"),
         ("offline_datastore_ablation.slurm", "run_profile_experiment.sh"),
+        ("retrieval_scope_ablation.slurm", "run_profile_experiment.sh"),
         ("horizon_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
         ("convex_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
         ("delta_baselines_ablation.slurm", "run_baseline_family_ablation.sh"),
@@ -168,6 +169,11 @@ def main() -> None:
     )
     assert "EXPERIMENT_FAMILY=offline_datastore_ablation" in offline_front
     assert "selected_candidates_csv adaptation" in offline_front
+    scope_front = (ROOT / "retrieval_scope_ablation.slurm").read_text(
+        encoding="utf-8"
+    )
+    assert "EXPERIMENT_FAMILY=retrieval_scope_ablation" in scope_front
+    assert "selected_candidates_csv adaptation" in scope_front
     catboost_front = (ROOT / "catboost_ablation.slurm").read_text(encoding="utf-8")
     assert "selected_candidates_csv catboost_shared" in catboost_front
     for selected_front in (
@@ -206,6 +212,10 @@ def main() -> None:
     assert '"$family/fourier_${metric}_${neighbors}_${retrieval}/$method"' in profile_runner
     assert 'elif [ "$EXPERIMENT_FAMILY" = offline_datastore_ablation ]; then' in profile_runner
     assert '"$family/${space}_${metric}_${neighbors}_fixed/$method"' in profile_runner
+    assert 'elif [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then' in profile_runner
+    assert 'append_unique PIPELINES "$family/${run}_${scope}/$method"' in profile_runner
+    assert "for scope in all same_user other_users" in profile_runner
+    assert 'RETRIEVAL_SCOPE="$scope"' in profile_runner
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner
     assert 'RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"' in profile_runner
@@ -310,7 +320,9 @@ def main() -> None:
     assert 'variant="${design}_convex_shared"' in family_runner
     assert 'variant="${design}_delta_ridge_shared"' in family_runner
     assert "positive_window_pct" in common
+    assert "retrieval_scope_ablation" in common
     assert 'python -m experiment_runs prepare --run-dir "$1"' in common
+    assert '--pipeline-config "retrieval.scope=$retrieval_scope"' in common
     baseline_evaluator = (
         ROOT / "src" / "adaptors" / "baselines" / "evaluate.py"
     ).read_text(encoding="utf-8")
@@ -320,6 +332,9 @@ def main() -> None:
     for run_writer in (baseline_evaluator, ts_ifa_trainer):
         assert "prepare_run_output(output_dir)" in run_writer
         assert "shutil.rmtree(output_dir)" not in run_writer
+
+    assert 'pipeline_values+=("retrieval.scope=${RETRIEVAL_SCOPE:-all}")' in baseline_runner
+    assert 'pipeline_values+=("retrieval.scope=${RETRIEVAL_SCOPE:-all}")' in gate_runner
 
 
 if __name__ == "__main__":

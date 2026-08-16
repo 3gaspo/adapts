@@ -1,5 +1,5 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-15
+Updated: 2026-08-16
 
 CURRENT HANDOFF
 - Jobs 43582 (screen tables), 43584 (Fourier), 43585 (fixed-T0 datastore),
@@ -20,28 +20,30 @@ CURRENT HANDOFF
 - TS-RAG job 43579 completed all four inference metric artifacts. Equal-dataset
   mean nMSE improvement is +1.90% over matching Chronos-Bolt vanilla and +0.85%
   over the selected full-ridge control, but it loses to that control on Traffic
-  and Solar. Its final table step filtered every result because it read a
-  top-level `launch_id` instead of schema-1 `launch.launch_id`; discovery is now
-  fixed. Rebuild with `STAGES=tables sbatch tsrag.slurm` without rerunning valid
-  inference.
-- SOTA benchmark job 43580 completed ETTh1, ETTh2, ETTm1, ETTm2, and Weather,
-  then OOM-killed during the Electricity instance-K=10 evaluation extraction;
-  Exchange did not start. The local adapted MSE beats local vanilla on four of
-  five rows, but its five-row mean 0.2519 remains above published TS-RAG 0.2398
-  and Cross-RAG 0.2322. The front now requests 80 GB instead of 40 GB; resubmit
-  it to reuse completed rows and resume Electricity, Exchange, and tables.
-- K-ablation job 43589 completed the first 23/96 extraction identities, then
-  OOM-killed on Electricity 504:168 raw K=100. K=100 has now been removed from
-  the intended grid. The synchronized schema-1 tree currently has 60/144
-  K<=20 retrieval extractions complete, so resubmitting reuses those 60 but must
-  finish the remaining 84 before adaptation and tables. H-ablation job 43592
-  completed all raw-K=1 gates, then collided with the exact Electricity 504:24
-  instance-K=3 extraction that concurrently running L-ablation job 43593 had
-  allocated six minutes earlier. The shared extraction is now complete, so
-  resubmission can reuse it. The H baseline and table stages never ran.
-- Next cluster actions: run the TS-RAG table-only rebuild, resubmit SOTA with
-  its 80 GB allocation, rerun K and H, and run the v4 TS-IFA pilot. Cross-RAG
-  has no execution front.
+  and Solar. Table-only job 43756 failed because discovery incorrectly scoped
+  completed inputs to the new table launch. The reader now consumes completed
+  manifests across launches, records all 12 obtained manifests, and rebuilt the
+  complete report locally without inference.
+- SOTA job 43757 reused the five job-43580 rows and completed Electricity and
+  Exchange under the 80 GB allocation. All seven selected-method manifests are
+  completed across jobs 43305, 43580, and 43757. The selected full ridge has
+  equal-dataset mean MSE 0.204286 versus 0.207888 for locally evaluated
+  Chronos-Bolt, 0.197 for published TS-RAG, and 0.191 for published Cross-RAG;
+  it improves local vanilla on six datasets and loses only on ETTm2. Its table
+  stage exposed the same cross-launch discovery bug and failed after preserving
+  every producer. The corrected reader records all seven obtained manifests and
+  rebuilt the complete report locally.
+- The latest synchronized K-ablation job-43754 snapshot has empty stderr and is
+  still inside extraction: 116/144 active K<=20 retrieval identities are
+  completed, Traffic 336:48 raw K=20 is running, and 27 identities are not yet
+  present. Both instance-retrieval gate forms have completed all 72 settings
+  each (144 result manifests); raw gates, baselines, and final tables have not
+  started. This is not yet analyzable K evidence. H-ablation job 43592 still
+  needs resubmission; its former shared-extraction collision is now reusable.
+- Next cluster actions: deploy the cross-launch table fix and rerun only the
+  TS-RAG and SOTA table stages; let job 43754 finish or resume the same K front;
+  rerun H; run the selected-winner retrieval-scope ablation; then run the v4
+  TS-IFA pilot. Cross-RAG has no execution front.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic

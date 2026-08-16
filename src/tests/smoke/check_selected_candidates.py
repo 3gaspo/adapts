@@ -55,6 +55,7 @@ def main() -> None:
         "mixed_quantity_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "fourier_retrieval_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "offline_datastore_ablation.slurm": ("WINNERS_CSV", "adaptation"),
+        "retrieval_scope_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "k_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "h_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "l_ablation.slurm": ("WINNERS_CSV", "adaptation"),

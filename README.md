@@ -264,6 +264,9 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   `ETTh1`, `ETTh2`, `ETTm1`, `ETTm2`, and `Weather`. Their channels represent
   unlike physical quantities, so cross-variable nearest neighbors are studied
   separately and never enter the primary ranking.
+- `retrieval_scope_ablation`: selected complete screen winners on the primary
+  grid with only the eligible neighbor users changed: all users, the query
+  user alone, or every user except the query user.
 - `horizon_baselines_ablation`: selected shared baseline winners and their
   per-horizon counterparts on the same dataset/setting grid and exact winner
   retrieval configuration.
@@ -309,6 +312,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | `WINNERS_CSV` only |
 | `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same `WINNERS_CSV` as full |
 | `mixed_quantity_ablation` | `D_mixed` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
+| `retrieval_scope_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline; all/same/other users | `WINNERS_CSV` only |
 | `horizon_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus horizon-wise ridge |
 | `convex_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared convex |
 | `delta_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared delta-ridge |
@@ -424,6 +428,7 @@ The intended submission interface is:
 | `mixed_quantity_ablation.slurm` | `full` | `mixed_quantity_ablation` family on original ETT panels and Weather |
 | `fourier_retrieval_ablation.slurm` | `full` | selected adaptation pipelines under their original and Fourier-amplitude retrieval spaces |
 | `offline_datastore_ablation.slurm` | `full` | selected adaptation pipelines under online and fixed T0-only retrieval |
+| `retrieval_scope_ablation.slurm` | `full` | selected adaptation pipelines with all-user, same-user-only, and other-users-only neighbor pools |
 | `horizon_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus horizon ridge |
 | `convex_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared convex |
 | `delta_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared delta-ridge |
@@ -559,7 +564,7 @@ All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
 ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
 quantity-separated ETT panels instead.
 
-The K/H/L and mixed-quantity fronts read the complete adaptation entries from
+The K/H/L, mixed-quantity, and retrieval fronts read the complete adaptation entries from
 `SWEEP_CANDIDATES.txt` by default. Pass `WINNERS_CSV` only for an explicit
 one-off override:
 
@@ -579,11 +584,15 @@ The retrieval ablations use the same selection automatically. The Fourier
 front retains each method, metric, K, and online/fixed mode while comparing the
 original space with standardized Fourier-amplitude retrieval. The offline
 datastore front retains each method, space, metric, and K while comparing the
-selected online pipeline with fixed retrieval restricted to T0:
+selected online pipeline with fixed retrieval restricted to T0. The retrieval
+scope front retains the complete selected pipeline while comparing the current
+all-user pool with same-user-only and other-users-only pools. `all` includes
+the query user; `other_users` excludes it exactly:
 
 ```bash
 sbatch fourier_retrieval_ablation.slurm
 sbatch offline_datastore_ablation.slurm
+sbatch retrieval_scope_ablation.slurm
 ```
 
 The K experiment expands each winner across the K grid while retaining its

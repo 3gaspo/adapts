@@ -3,11 +3,9 @@
 import ast
 import importlib.util
 import json
-import os
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -105,8 +103,9 @@ class TSRAGModelContractTest(unittest.TestCase):
                     (run / "manifest.json").write_text(
                         json.dumps(
                             {
+                                "manifest_id": f"control-{backbone}-{dataset}",
                                 "status": "completed",
-                                "launch": {"launch_id": "job-123"},
+                                "launch": {"launch_id": f"control-{dataset}"},
                                 "identity": {"dataset": dataset, "backbone": backbone},
                             }
                         ),
@@ -130,8 +129,9 @@ class TSRAGModelContractTest(unittest.TestCase):
                 (run / "manifest.json").write_text(
                     json.dumps(
                         {
+                            "manifest_id": f"tsrag-{dataset}",
                             "status": "completed",
-                            "launch": {"launch_id": "job-123"},
+                            "launch": {"launch_id": f"tsrag-{dataset}"},
                             "identity": {"dataset": dataset, "backbone": "chronos-bolt"},
                         }
                     ),
@@ -150,11 +150,17 @@ class TSRAGModelContractTest(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            with patch.dict(os.environ, {"EXPERIMENT_LAUNCH_ID": "job-123"}):
-                paths = module.build(controls, tsrag, root / "report")
+            paths = module.build(controls, tsrag, root / "report")
             text = paths["csv"].read_text(encoding="utf-8")
+            report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("chronos-bolt,tsrag", text)
             self.assertNotIn("chronos2,tsrag", text)
+            self.assertEqual(len(report["obtained_manifests"]), 12)
+
+    def test_comparison_table_reuses_completed_cross_launch_results(self):
+        table = (ROOT / "src/visu/tsrag_comparison_table.py").read_text(encoding="utf-8")
+        self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
+        self.assertIn('manifest.get("status") == "completed"', table)
 
 
 if __name__ == "__main__":

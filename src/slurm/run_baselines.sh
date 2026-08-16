@@ -104,7 +104,7 @@ run_task() {
   resolve_extraction_run "$dataset" "$L" "$H" "$model" "$space" "$metric" "$neighbors" "$RETRIEVAL_MODE"
   INPUT_DIR="$EXTRACTION_RUN_DIR"
   require_extraction "$INPUT_DIR"
-  resolve_extraction_run "$dataset" "$L" "$H" "$model" none none 0 none
+  resolve_extraction_run "$dataset" "$L" "$H" "$model" none none 0 none all
   vanilla_dir="$EXTRACTION_RUN_DIR"
   VANILLA_SOURCE="$vanilla_dir/vanilla_metrics.json"
   VANILLA_TIMING_SOURCE="$vanilla_dir/extraction_timing.json"
@@ -119,6 +119,9 @@ run_task() {
       "max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none}" "max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none}"
       "max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none}" "run_seed=$SEED"
     )
+    if [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then
+      pipeline_values+=("retrieval.scope=${RETRIEVAL_SCOPE:-all}")
+    fi
     ADDITIONAL_INPUTS=("vanilla_manifest=$vanilla_dir/manifest.json")
     allocate_manifest_run "$identity_root" "adaptation/$EXPERIMENT_FAMILY/baselines" "$dataset" "$L" "$H" "$model" \
       formula,space,metric,k,mode "$method" formula space,metric,k,mode \

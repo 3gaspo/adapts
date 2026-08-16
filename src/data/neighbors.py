@@ -309,6 +309,33 @@ def _metric_ready(values: np.ndarray, metric: DistanceMetric) -> np.ndarray:
     raise ValueError(f"unknown distance metric {metric!r}")
 
 
+def _pairwise_distances(
+    query: np.ndarray,
+    store: np.ndarray,
+    metric: DistanceMetric,
+) -> np.ndarray:
+    if metric == "euclidean":
+        q2 = (query * query).sum(axis=1, keepdims=True)
+        s2 = (store * store).sum(axis=1, keepdims=True).T
+        store_t = store.T
+        return np.sqrt(np.maximum(q2 + s2 - 2.0 * query @ store_t, 0.0))
+    return 1.0 - query @ store.T
+
+
+def _top_k(
+    distances: np.ndarray,
+    *,
+    k: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    top = np.argpartition(distances, kth=k - 1, axis=1)[:, :k]
+    top_dist = np.take_along_axis(distances, top, axis=1)
+    order = np.argsort(top_dist, axis=1)
+    return (
+        np.take_along_axis(top_dist, order, axis=1),
+        np.take_along_axis(top, order, axis=1),
+    )
+
+
 def search_neighbors(
     query_features: np.ndarray,
     store_features: np.ndarray,
@@ -343,18 +370,10 @@ def search_neighbors(
     for start in range(0, n_query, int(chunk_size)):
         stop = min(start + int(chunk_size), n_query)
         q = query[start:stop]
-        if metric == "euclidean":
-            q2 = (q * q).sum(axis=1, keepdims=True)
-            s2 = rearrange((store * store).sum(axis=1, keepdims=True), "store 1 -> 1 store")
-            store_t = rearrange(store, "store dim -> dim store")
-            distances = np.sqrt(np.maximum(q2 + s2 - 2.0 * q @ store_t, 0.0))
-        else:
-            distances = 1.0 - q @ rearrange(store, "store dim -> dim store")
-        top = np.argpartition(distances, kth=k - 1, axis=1)[:, :k]
-        top_dist = np.take_along_axis(distances, top, axis=1)
-        order = np.argsort(top_dist, axis=1)
-        all_distances[start:stop] = np.take_along_axis(top_dist, order, axis=1)
-        all_indices[start:stop] = np.take_along_axis(top, order, axis=1)
+        distances = _pairwise_distances(q, store, metric)  # type: ignore[arg-type]
+        top_distances, top_indices = _top_k(distances, k=k)
+        all_distances[start:stop] = top_distances
+        all_indices[start:stop] = top_indices
     return all_distances, all_indices
 
 
@@ -388,3 +407,49 @@ def search_neighbors_same_user(
         distances[user_idx] = user_distances[0]
         indices[user_idx] = user_indices[0] + start
     return distances, indices
+
+
+def search_neighbors_other_users(
+    query_features: np.ndarray,
+    store_features: np.ndarray,
+    *,
+    n_users: int,
+    store_dates: int,
+    k: int,
+    metric: DistanceMetric = "euclidean",
+    chunk_size: int = 512,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Search every query while excluding that user's datastore slice."""
+    n_users = int(n_users)
+    store_dates = int(store_dates)
+    k = int(k)
+    if query_features.shape[0] != n_users:
+        raise ValueError("other-user retrieval expects one query per user")
+    if store_features.shape[0] != n_users * store_dates:
+        raise ValueError("other-user datastore does not match user/date dimensions")
+    if k < 0:
+        raise ValueError("k must be non-negative")
+    if k == 0:
+        return (
+            np.empty((n_users, 0), dtype=np.float32),
+            np.empty((n_users, 0), dtype=np.int64),
+        )
+    available = (n_users - 1) * store_dates
+    if available < k:
+        raise ValueError(f"other-user datastore has {available} eligible windows, fewer than k={k}")
+
+    metric = str(metric).lower()  # type: ignore[assignment]
+    query = _metric_ready(query_features, metric)  # type: ignore[arg-type]
+    store = _metric_ready(store_features, metric)  # type: ignore[arg-type]
+    all_distances = np.empty((n_users, k), dtype=np.float32)
+    all_indices = np.empty((n_users, k), dtype=np.int64)
+    for start in range(0, n_users, int(chunk_size)):
+        stop = min(start + int(chunk_size), n_users)
+        distances = _pairwise_distances(query[start:stop], store, metric)  # type: ignore[arg-type]
+        for row, user_idx in enumerate(range(start, stop)):
+            user_start = user_idx * store_dates
+            distances[row, user_start : user_start + store_dates] = np.inf
+        top_distances, top_indices = _top_k(distances, k=k)
+        all_distances[start:stop] = top_distances
+        all_indices[start:stop] = top_indices
+    return all_distances, all_indices

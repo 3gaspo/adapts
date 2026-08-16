@@ -83,7 +83,7 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   resolve_extraction_run "$dataset" "$L" "$H" "$model" "$space" "$metric" "$neighbors" "$RETRIEVAL_MODE"
   INPUT_DIR="$EXTRACTION_RUN_DIR"
   require_extraction "$INPUT_DIR"
-  resolve_extraction_run "$dataset" "$L" "$H" "$model" none none 0 none
+  resolve_extraction_run "$dataset" "$L" "$H" "$model" none none 0 none all
   VANILLA_SOURCE="$EXTRACTION_RUN_DIR/vanilla_metrics.json"
   VANILLA_TIMING_SOURCE="$EXTRACTION_RUN_DIR/extraction_timing.json"
   assert_files vanilla-metrics "$VANILLA_SOURCE" "$VANILLA_TIMING_SOURCE" "$INPUT_DIR/extraction_timing.json"

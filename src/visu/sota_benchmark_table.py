@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -17,21 +16,21 @@ def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _our_rows(results_root: Path, config: dict[str, Any]) -> list[dict[str, Any]]:
+def _our_rows(
+    results_root: Path, config: dict[str, Any]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     project_to_paper = {
         values["project_name"]: name
         for name, values in config["datasets"].items()
     }
-    launch_id = os.environ.get("EXPERIMENT_LAUNCH_ID")
     values: dict[str, dict[str, float]] = {}
     vanilla: dict[str, float] = {}
+    obtained: list[dict[str, Any]] = []
     for manifest_path in results_root.rglob("manifest.json"):
         if manifest_path.parent.parent.name == "manifest_history":
             continue
         manifest = _load_json(manifest_path)
-        if launch_id and manifest.get("launch_id") != launch_id:
-            continue
-        if manifest.get("status") not in {"ready", "completed"}:
+        if manifest.get("status") != "completed":
             continue
         identity = manifest.get("identity", {})
         project_dataset = identity.get("dataset")
@@ -41,6 +40,7 @@ def _our_rows(results_root: Path, config: dict[str, Any]) -> list[dict[str, Any]
         if not metrics_path.is_file():
             continue
         dataset = project_to_paper[project_dataset]
+        used = False
         for row in _load_json(metrics_path):
             if row.get("split") != "eval":
                 continue
@@ -49,6 +49,17 @@ def _our_rows(results_root: Path, config: dict[str, Any]) -> list[dict[str, Any]
                 vanilla[dataset] = float(row["mse"])
             else:
                 values.setdefault(method, {})[dataset] = float(row["mse"])
+            used = True
+        if used:
+            obtained.append(
+                {
+                    "manifest_id": manifest["manifest_id"],
+                    "launch_id": manifest.get("launch", {}).get("launch_id"),
+                    "dataset": project_dataset,
+                    "backbone": identity.get("backbone"),
+                    "formula": identity.get("model_config", {}).get("formula"),
+                }
+            )
     if set(vanilla) != set(DATASETS):
         raise ValueError(f"incomplete Chronos-Bolt row: {sorted(vanilla)}")
     rows = [{"method": "Chronos-Bolt (our evaluation)", **vanilla, "source": "computed"}]
@@ -56,14 +67,14 @@ def _our_rows(results_root: Path, config: dict[str, Any]) -> list[dict[str, Any]
         if set(dataset_values) != set(DATASETS):
             raise ValueError(f"incomplete method={method}: {sorted(dataset_values)}")
         rows.append({"method": method, **dataset_values, "source": "computed"})
-    return rows
+    return rows, sorted(obtained, key=lambda item: item["dataset"])
 
 
 def build_table(config_path: Path, results_root: Path, output_dir: Path) -> dict[str, Path]:
     config = _load_json(config_path)
     if config.get("metric") != "mse" or tuple(config.get("datasets", {})) != DATASETS:
         raise ValueError("unexpected SOTA benchmark configuration")
-    rows = _our_rows(results_root, config)
+    rows, obtained = _our_rows(results_root, config)
     for method, values in config["published_results"].items():
         rows.append(
             {
@@ -112,6 +123,7 @@ def build_table(config_path: Path, results_root: Path, output_dir: Path) -> dict
                 "format": "adaptation_sota_benchmark_report",
                 "metric": "mse",
                 "published_source": config["source"],
+                "obtained_manifests": obtained,
                 "files": {"csv": csv_path.name, "latex": tex_path.name},
                 "methods": [row["method"] for row in rows],
                 "datasets": list(DATASETS),

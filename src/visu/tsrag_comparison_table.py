@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -18,19 +17,30 @@ def _json(path: Path) -> Any:
 
 
 def _selected_manifests(root: Path) -> list[tuple[dict[str, Any], Path]]:
-    launch_id = os.environ.get("EXPERIMENT_LAUNCH_ID")
     selected = []
     for path in root.rglob("manifest.json"):
         manifest = _json(path)
-        if launch_id and str(manifest.get("launch", {}).get("launch_id")) != launch_id:
-            continue
-        if manifest.get("status") in {"ready", "completed"}:
+        if manifest.get("status") == "completed":
             selected.append((manifest, path.parent))
     return selected
 
 
-def _rows(controls_root: Path, tsrag_root: Path) -> list[dict[str, Any]]:
+def _manifest_ref(manifest: dict[str, Any]) -> dict[str, Any]:
+    identity = manifest["identity"]
+    return {
+        "manifest_id": manifest["manifest_id"],
+        "launch_id": manifest.get("launch", {}).get("launch_id"),
+        "dataset": identity["dataset"],
+        "backbone": identity["backbone"],
+        "formula": identity.get("model_config", {}).get("formula"),
+    }
+
+
+def _rows(
+    controls_root: Path, tsrag_root: Path
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows: dict[tuple[str, str, str], dict[str, Any]] = {}
+    obtained: list[dict[str, Any]] = []
     for manifest, directory in _selected_manifests(controls_root):
         metrics = directory / "baseline_metrics.json"
         if not metrics.is_file():
@@ -38,6 +48,7 @@ def _rows(controls_root: Path, tsrag_root: Path) -> list[dict[str, Any]]:
         identity = manifest["identity"]
         dataset = str(identity["dataset"])
         backbone = str(identity["backbone"])
+        used = False
         for row in _json(metrics):
             if row.get("split") != "eval":
                 continue
@@ -48,6 +59,9 @@ def _rows(controls_root: Path, tsrag_root: Path) -> list[dict[str, Any]]:
                 "dataset": dataset,
                 **{name: float(row[name]) for name in ("mse", "mae", "nmse", "positive_window_pct")},
             }
+            used = True
+        if used:
+            obtained.append(_manifest_ref(manifest))
     for manifest, directory in _selected_manifests(tsrag_root):
         metrics = directory / "tsrag_metrics.json"
         if not metrics.is_file():
@@ -60,6 +74,7 @@ def _rows(controls_root: Path, tsrag_root: Path) -> list[dict[str, Any]]:
             "dataset": dataset,
             **{name: float(row[name]) for name in ("mse", "mae", "nmse", "positive_window_pct")},
         }
+        obtained.append(_manifest_ref(manifest))
     groups = {(backbone, method) for backbone, method, _ in rows}
     for backbone, method in groups:
         present = {dataset for b, m, dataset in rows if (b, m) == (backbone, method)}
@@ -67,11 +82,13 @@ def _rows(controls_root: Path, tsrag_root: Path) -> list[dict[str, Any]]:
             raise ValueError(f"incomplete {backbone}/{method}: {sorted(present)}")
     if not any(method == "tsrag" for _, method in groups):
         raise ValueError("no completed TS-RAG results found")
-    return [rows[key] for key in sorted(rows)]
+    return [rows[key] for key in sorted(rows)], sorted(
+        obtained, key=lambda item: (item["backbone"], item["dataset"], item["formula"] or "")
+    )
 
 
 def build(controls_root: Path, tsrag_root: Path, output_dir: Path) -> dict[str, Path]:
-    rows = _rows(controls_root, tsrag_root)
+    rows, obtained = _rows(controls_root, tsrag_root)
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "tsrag_comparison.csv"
     fields = ("backbone", "method", "dataset", "mse", "mae", "nmse", "positive_window_pct")
@@ -108,6 +125,7 @@ def build(controls_root: Path, tsrag_root: Path, output_dir: Path) -> dict[str, 
                     "neighbors": 10,
                     "retrieval": "chronos-t5-base/euclidean/same_user/fixed",
                 },
+                "obtained_manifests": obtained,
                 "files": {"csv": csv_path.name, "latex": tex_path.name},
             },
             indent=2,

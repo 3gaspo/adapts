@@ -35,6 +35,7 @@ class Result:
 _RUN_NAME_RE = re.compile(
     r"(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
     r"_(euclidean|cosine|pearson)_(\d+)_(online|fixed)"
+    r"(?:_(all|same_user|other_users))?"
 )
 _EVALUATION_RESULT_FORMAT = "adaptation_evaluation_result"
 _TS_IFA_RESULT_FORMAT = "adaptation_ts_ifa_result"
@@ -264,6 +265,13 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         setting = f"{identity['lookback']}_{identity['horizon']}"
         model = str(identity["backbone"])
         run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode") if name in config)
+        retrieval_scope = str(
+            choice.manifest.get("config", {}).get("pipeline", {}).get(
+                "retrieval.scope", ""
+            )
+        )
+        if retrieval_scope:
+            run = f"{run}_{retrieval_scope}"
         if (choice.run_dir / "baseline_metrics.json").is_file():
             path = choice.run_dir / "baseline_metrics.json"
             family = "baselines"
@@ -310,6 +318,8 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
             if formula == "vanilla":
                 method = formula
             elif formula in _PIPELINE_INDEPENDENT_METHODS:
+                method = f"{run}/{formula}"
+            elif retrieval_scope:
                 method = f"{run}/{formula}"
             else:
                 method = f"{run}/{choice.label}"
@@ -506,7 +516,7 @@ for _design, _label in _BASELINE_DESIGN_LABELS.items():
 def _short_run_name(run: str) -> str:
     match = _RUN_NAME_RE.fullmatch(run)
     if match is not None:
-        space, metric, neighbors, mode = match.groups()
+        space, metric, neighbors, mode, scope = match.groups()
         space = {
             "in": "IN",
             "instance": "IN",
@@ -518,6 +528,8 @@ def _short_run_name(run: str) -> str:
         parts = [space, metric, neighbors]
         if mode == "fixed":
             parts.append("fixed")
+        if scope:
+            parts.append({"same_user": "same", "other_users": "other"}.get(scope, scope))
         return "_".join(parts)
     short = run.replace("_euclidean_", "_L2_")
     return short.removesuffix("_online")

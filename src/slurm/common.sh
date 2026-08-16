@@ -56,7 +56,7 @@ require_experiment_mode() {
 
 require_experiment_family() {
   case "${EXPERIMENT_FAMILY:-}" in
-    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|fourier_retrieval_ablation|offline_datastore_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|sota_benchmark|tsrag|tables) ;;
+    extraction|baselines|gates|benchmark|screen|mixed_quantity_ablation|fourier_retrieval_ablation|offline_datastore_ablation|retrieval_scope_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|ts_ifa|ts_ifa_h_ablation|ts_ifa_l_ablation|ts_ifa_meta_ridge|ts_ifa_meta_neural|crossrag|sota_benchmark|tsrag|tables) ;;
     *) log_error "unknown EXPERIMENT_FAMILY=${EXPERIMENT_FAMILY:-}"; return 2 ;;
   esac
 }
@@ -305,12 +305,14 @@ mark_manifest_ready() {
 
 resolve_extraction_run() {
   local dataset="$1" lags="$2" horizon="$3" backbone="$4" space="$5" metric="$6" neighbors="$7" mode="$8"
+  local retrieval_scope="${9:-${RETRIEVAL_SCOPE:-all}}"
   local identity_root="$PROJECT_ROOT/outputs/extraction/$dataset/${lags}_${horizon}/${backbone,,}/${space,,}/${metric,,}/$neighbors/${mode,,}"
   local label manifest_id extra pair
   local -a resolve_args=(
     --config-policy distinct
     --repeat-policy selected
     --allow-ready-launch-id "$EXPERIMENT_LAUNCH_ID"
+    --pipeline-config "retrieval.scope=$retrieval_scope"
   )
   if [ -n "${EXTRACTION_PIPELINE_CONFIGS:-}" ]; then
     for pair in ${EXTRACTION_PIPELINE_CONFIGS}; do resolve_args+=(--pipeline-config "$pair"); done

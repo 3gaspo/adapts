@@ -65,7 +65,9 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                 (run / "manifest.json").write_text(
                     json.dumps(
                         {
+                            "manifest_id": f"sota-{values['project_name']}",
                             "status": "completed",
+                            "launch": {"launch_id": f"source-{values['project_name']}"},
                             "identity": {
                                 "dataset": values["project_name"],
                                 "backbone": "chronos-bolt",
@@ -85,9 +87,16 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                 )
             paths = module.build_table(config_path, results, output)
             text = paths["csv"].read_text(encoding="utf-8")
+            report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("our_method", text)
             self.assertIn("TS-RAG (published)", text)
             self.assertIn("Cross-RAG (published)", text)
+            self.assertEqual(len(report["obtained_manifests"]), 7)
+
+    def test_table_reuses_completed_cross_launch_results(self):
+        table = (ROOT / "src/visu/sota_benchmark_table.py").read_text(encoding="utf-8")
+        self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
+        self.assertIn('manifest.get("status") != "completed"', table)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,13 @@ from experiment_runs import allocate_run, mark_status
 from visu.baseline_coefficients import export_baseline_coefficient_plots
 
 
-def _write_run(root: Path, formula: str, model: dict) -> None:
+def _write_run(
+    root: Path,
+    formula: str,
+    model: dict,
+    *,
+    pipeline_config: dict | None = None,
+) -> None:
     config = {
         "formula": formula,
         "space": "instance",
@@ -35,7 +41,7 @@ def _write_run(root: Path, formula: str, model: dict) -> None:
         backbone="chronos2",
         model_config_order=list(config),
         model_config=config,
-        pipeline_config={},
+        pipeline_config=pipeline_config or {},
         display_name=formula,
     )
     torch.save(
@@ -86,6 +92,17 @@ def main() -> None:
                 "weights": np.asarray([[0.7, 0.3], [0.6, 0.4]]),
             },
         )
+        _write_run(
+            root,
+            "full_ridge_shared",
+            {
+                "kind": "ridge",
+                "mode": "shared",
+                "signals": ("V",),
+                "coef": np.asarray([0.2]),
+            },
+            pipeline_config={"retrieval.scope": "other_users"},
+        )
 
         output_dir = root / "tables" / "chronos2" / "coefficients"
         outputs = export_baseline_coefficient_plots(
@@ -97,9 +114,10 @@ def main() -> None:
             pipelines=[
                 "baselines/instance_euclidean_3_online/cov_y_ridge_shared",
                 "baselines/instance_euclidean_3_online/cov_convex_horizon",
+                "baselines/instance_euclidean_3_online_other_users/full_ridge_shared",
             ],
         )
-        assert len(outputs) == 5
+        assert len(outputs) == 7
         coefficient_csv = (
             output_dir
             / "Electricity"
@@ -112,6 +130,13 @@ def main() -> None:
         assert coefficient_csv.with_suffix(".png").is_file()
         assert coefficient_csv.with_name("cov_convex_horizon.csv").is_file()
         assert coefficient_csv.with_name("cov_convex_horizon.png").is_file()
+        assert (
+            output_dir
+            / "Electricity"
+            / "168_24"
+            / "instance_euclidean_3_online_other_users"
+            / "full_ridge_shared.csv"
+        ).is_file()
         with (output_dir / "coefficient_index.csv").open(
             newline="", encoding="utf-8"
         ) as stream:
@@ -119,6 +144,7 @@ def main() -> None:
         assert {row["baseline"] for row in rows} == {
             "cov_y_ridge_shared",
             "cov_convex_horizon",
+            "full_ridge_shared",
         }
         assert (output_dir / "report_manifest.json").is_file()
 

@@ -17,7 +17,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\scriptsize\color{navy}\textbf{Forecast adaptation and TS-IFA}}
-\rhead{\scriptsize\color{gray}Results through 15 August 2026}
+\rhead{\scriptsize\color{gray}Results through 16 August 2026}
 \cfoot{\scriptsize\color{gray}\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
 \setlength{\headheight}{13pt}
@@ -147,27 +147,33 @@ scale; $L=168$ is the balanced retained setting.}
 \end{center}
 
 \vspace{4pt}
-\sectionbar{Partial and failed workflows}
+\sectionbar{Completed and partial follow-ups}
 \scriptsize
 \textbf{TS-RAG (job 43579).} All four released-model inferences completed, but
-the table step failed to discover them. Against matching Chronos-Bolt vanilla,
+the original and table-only job-43756 report stages failed to discover completed
+inputs across launches. The corrected completed-manifest reader rebuilt the
+12-input report locally without inference. Against matching Chronos-Bolt vanilla,
 TS-RAG changes nMSE by +0.44\% (Electricity), +0.48\% (Traffic), $-2.01$\%
 (Solar), and +8.69\% (Exchange): +1.90\% equally averaged. Against the selected
 full-ridge control the mean advantage is only +0.85\%, with losses on Traffic
-and Solar. The metric artifacts are valid; the workflow/table is not terminally
-successful.
+and Solar. The metric artifacts and rebuilt table are valid; only the cluster
+table stage still needs the corrected reader deployed.
 
-\textbf{Exact-split SOTA benchmark (job 43580).} Five of seven local rows
-completed before Electricity retrieval was OOM-killed; Exchange did not start.
-The adapted MSE is 0.3446/0.2500/0.3077/0.1494/0.2079 on
-ETTh1/ETTh2/ETTm1/ETTm2/Weather. It improves local vanilla on four rows, but its
-five-row mean (0.2519) remains above the published TS-RAG/Cross-RAG means
-(0.2398/0.2322). This is not yet a complete benchmark.
+\textbf{Exact-split SOTA benchmark (jobs 43305, 43580, 43757).} All seven
+selected-method rows are complete. Full shared ridge scores
+0.3446/0.2500/0.3077/0.1494/0.2079/0.1060/0.0645 on
+ETTh1/ETTh2/ETTm1/ETTm2/Weather/Electricity/Exchange: mean MSE 0.2043 versus
+0.2079 for locally evaluated Chronos-Bolt, 0.1970 for published TS-RAG, and
+0.1910 for published Cross-RAG. It improves local vanilla on six datasets
+(+1.73\% on the mean) and loses only on ETTm2. Job 43757's table stage exposed
+the same cross-launch discovery bug; the corrected seven-input report was
+rebuilt locally without recomputation.
 
-\textbf{K and horizon sweeps.} Job 43589 stopped on the now-removed $K=100$.
-The active $K\leq20$ grid has 60/144 current retrieval extractions complete; a
-rerun must finish the remaining 84 before adaptation and tables. Job 43592
-completed the raw-$K=1$ gate branch, then collided with the identical
+\textbf{K and horizon sweeps.} The latest synchronized job-43754 snapshot has
+116/144 active $K\leq20$ retrieval identities completed, one running, and 27
+not yet present. Both instance gate forms are complete over 72 settings each;
+raw gates, baselines, and tables have not started, so no $K$ optimum is yet
+supported. Job 43592 completed the raw-$K=1$ gate branch, then collided with the identical
 Electricity $504{:}24$ instance-$K=3$ extraction concurrently owned by the L
 job. That extraction is now complete and reusable, but H still needs a rerun.
 
@@ -203,7 +209,7 @@ the least-bad aggregate result at \gain{0.04}.
 
 \vfill
 {\scriptsize\color{gray}Source: corrected current screen and ablation reports,
-jobs 43579--43603, published Table-4 rows, and archived TS-IFA analyses.
+jobs 43579--43757, published Table-4 rows, and archived TS-IFA analyses.
 Percentages are equal-weight means of per-configuration nMSE improvement over
 the matching vanilla pipeline; positive is better.}
 \end{document}

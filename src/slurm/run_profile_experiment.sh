@@ -125,6 +125,20 @@ parse_winners() {
       append_unique SELECTED_NEIGHBORS "$neighbors"
       RETRIEVAL_MODE_SELECTED="$retrieval"
       continue
+    elif [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then
+      group_neighbors="$neighbors"
+      for scope in all same_user other_users; do
+        key="$family|$space|$metric|$neighbors|$retrieval|$scope"
+        append_method "$key" "$method"
+        append_unique PIPELINES "$family/${run}_${scope}/$method"
+      done
+      append_unique SPACES "$space"
+      append_unique METRICS "$metric"
+      append_unique FAMILIES "$family"
+      append_unique METHODS "$method"
+      append_unique SELECTED_NEIGHBORS "$neighbors"
+      RETRIEVAL_MODE_SELECTED="$retrieval"
+      continue
     elif [ "$EXPERIMENT_FAMILY" = crossrag ]; then
       group_neighbors="$neighbors"
       PIPELINES+=("$family/$run/$method")
@@ -165,6 +179,7 @@ parse_winners() {
 run_method_group() {
   local model_csv="$1" family="$2" space="$3" metric="$4"
   local neighbors="$5" retrieval="$6" methods="$7"
+  local scope="${8:-all}"
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
   MODELS_CSV="$model_csv"
   SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
@@ -172,6 +187,7 @@ run_method_group() {
   DISTANCE_METRICS_CSV="$metric"
   NEIGHBORS_CSV="$neighbors"
   RETRIEVAL_MODE="$retrieval"
+  RETRIEVAL_SCOPE="$scope"
   SKIP_COMPLETE="$EXTRACTION_SKIP_COMPLETE"
   source "$PROJECT_ROOT/src/slurm/extract_adaptation.sh"
   SKIP_COMPLETE="$RESULT_SKIP_COMPLETE"
@@ -185,12 +201,13 @@ run_method_group() {
 }
 
 run_groups() {
-  local model_csv="$1" key family space metric neighbors retrieval methods
+  local model_csv="$1" key family space metric neighbors retrieval scope methods
   for key in "${!GROUP_METHODS[@]}"; do
-    IFS='|' read -r family space metric neighbors retrieval <<< "$key"
+    IFS='|' read -r family space metric neighbors retrieval scope <<< "$key"
+    scope="${scope:-all}"
     methods="${GROUP_METHODS[$key]}"
     run_method_group \
-      "$model_csv" "$family" "$space" "$metric" "$neighbors" "$retrieval" "$methods"
+      "$model_csv" "$family" "$space" "$metric" "$neighbors" "$retrieval" "$methods" "$scope"
   done
 }
 

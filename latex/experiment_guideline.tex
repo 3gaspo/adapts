@@ -267,19 +267,21 @@ For query $(s,u)$, let
 $\mathcal R_s=\{r_{s,0}<\cdots<r_{s,n_s^{\rm store}-1}\}$ be the ordered finite
 set of $n_s^{\rm store}=|\mathcal R_s|$ store dates in
 $\{L-1,\ldots,T-H-1\}$ that pass the fixed/online, period, stride, and cap
-rules in \cref{sec:practical}. The eligible store keys and the resulting
-labelled datastore are
+rules in \cref{sec:practical}. For scope
+$q\in\{\mathrm{all},\mathrm{same},\mathrm{other}\}$, the eligible store keys are
 \[
- \mathcal I_s=\mathcal R_s\times\mathcal U,
- \qquad
- \mathcal D_s
- =\{(\phi(X_{r,v}),X_{r,v},Y_{r,v},r,v):(r,v)\in\mathcal I_s\}.
+ \mathcal I^{\rm all}_{s,u}=\mathcal R_s\times\mathcal U,\qquad
+ \mathcal I^{\rm same}_{s,u}=\mathcal R_s\times\{u\},\qquad
+ \mathcal I^{\rm other}_{s,u}=\mathcal R_s\times(\mathcal U\setminus\{u\}).
 \]
-For $K\in\{1,\ldots,|\mathcal I_s|\}$, let $\TopK^{\min}$ return the ordered
+The labelled datastore $\mathcal D^q_{s,u}$ contains
+$(\phi(X_{r,v}),X_{r,v},Y_{r,v},r,v)$ for every
+$(r,v)\in\mathcal I^q_{s,u}$.
+For $K\in\{1,\ldots,|\mathcal I^q_{s,u}|\}$, let $\TopK^{\min}$ return the ordered
 $K$ minimizers. Exact search returns the following store keys:
 \[
- \mathcal N_K(s,u)
- =\TopK_{(r,v)\in\mathcal I_s}^{\min}
+ \mathcal N^q_K(s,u)
+ =\TopK_{(r,v)\in\mathcal I^q_{s,u}}^{\min}
  d\!\left(\phi(X_{s,u}),\phi(X_{r,v})\right).
 \]
 The datastore is flattened in \emph{user-major, date-minor} order. For
@@ -1203,6 +1205,7 @@ Front & Model set / controlled axis \\
 \code{mixed_quantity_ablation.slurm} & selected pipelines transferred to the five mixed-quantity panels \\
 \code{fourier_retrieval_ablation.slurm} & selected pipelines under their original and Fourier-amplitude retrieval spaces \\
 \code{offline_datastore_ablation.slurm} & selected pipelines under online and fixed T0-only retrieval \\
+\code{retrieval_scope_ablation.slurm} & selected pipelines with all-user, same-user-only, and other-users-only retrieval \\
 \code{sota_benchmark.slurm} & selected Chronos-Bolt method on exact paper splits plus immutable published TS-RAG/Cross-RAG rows \\
 \code{tsrag.slurm} & released TS-RAG and the selected project method on matching fixed $K=10$ neighbours \\
 \code{ts_ifa.slurm} & complete non-meta routing/branch grid over the selected test/full/ultra subset \\

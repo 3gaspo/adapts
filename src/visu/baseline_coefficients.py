@@ -276,6 +276,13 @@ def export_baseline_coefficient_plots(
         setting = f"{identity['lookback']}_{identity['horizon']}"
         model_name = str(identity["backbone"])
         run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode"))
+        retrieval_scope = str(
+            choice.manifest.get("config", {}).get("pipeline", {}).get(
+                "retrieval.scope", ""
+            )
+        )
+        if retrieval_scope:
+            run = f"{run}_{retrieval_scope}"
         if dataset not in datasets or setting not in settings or model_name not in models:
             continue
         if pipelines and (run, formula) not in allowed_pipelines:
@@ -300,7 +307,7 @@ def export_baseline_coefficient_plots(
                 f"{formula} has {feature_count} coefficients but "
                 f"{len(feature_names)} expanded signal names"
             )
-        method = choice.label
+        method = formula if retrieval_scope else choice.label
         method_dir = destination / dataset / setting / run
         method_dir.mkdir(parents=True, exist_ok=True)
         csv_path = method_dir / f"{method}.csv"

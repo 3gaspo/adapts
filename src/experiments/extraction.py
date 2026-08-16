@@ -26,6 +26,7 @@ from ..data.neighbors import (
     neighbor_to_query_scale,
     period_eval_dates,
     search_neighbors,
+    search_neighbors_other_users,
     search_neighbors_same_user,
 )
 from ..models.models import load_pretrained_model, parameter_counts, resolve_device
@@ -385,6 +386,16 @@ def extract_period(
                 metric=args.distance_metric,
                 chunk_size=args.search_chunk_size,
             )
+        elif args.retrieval_scope == "other_users":
+            distances, indices = search_neighbors_other_users(
+                query.features,
+                store.features,
+                n_users=n_users,
+                store_dates=store.n_dates,
+                k=k,
+                metric=args.distance_metric,
+                chunk_size=args.search_chunk_size,
+            )
         else:
             distances, indices = search_neighbors(
                 query.features,
@@ -586,6 +597,16 @@ def plot_neighbor_example(
             metric=args.distance_metric,
             chunk_size=args.search_chunk_size,
         )
+    elif args.retrieval_scope == "other_users":
+        _, indices = search_neighbors_other_users(
+            query.features,
+            store.features,
+            n_users=dataset.n_users,
+            store_dates=store.n_dates,
+            k=args.neighbors,
+            metric=args.distance_metric,
+            chunk_size=args.search_chunk_size,
+        )
     else:
         _, indices = search_neighbors(
             query.features,
@@ -663,7 +684,11 @@ def parse_args() -> argparse.Namespace:
         help="Lookback space used by neighbor search",
     )
     parser.add_argument("--distance-metric", default="euclidean", choices=["euclidean", "cosine", "pearson"])
-    parser.add_argument("--retrieval-scope", default="all", choices=["all", "same_user"])
+    parser.add_argument(
+        "--retrieval-scope",
+        default="all",
+        choices=["all", "same_user", "other_users"],
+    )
     parser.add_argument("--retrieval-model-kwargs", default=None, help="JSON options for the TS-RAG Chronos-T5 retriever")
     parser.add_argument("--retrieval-mode", default="online", choices=["online", "fixed"])
     parser.add_argument("--min-store-dates", type=int, default=None)

@@ -11,7 +11,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from check_results_table import _evaluation_run, _ts_ifa_run
+from visu.results_table import discover_results
 from visu.sweep_results_table import (
+    _average_method_statistics,
     generate_average_results_tables,
     generate_full_results_tables,
     main as generate_sweep_report,
@@ -73,6 +75,28 @@ def main() -> None:
                         dataset=dataset,
                     )
                 _ts_ifa_run(root, dataset=dataset, retrieval=retrieval)
+
+            for scope, nmse in (
+                ("all", 0.91),
+                ("same_user", 0.89),
+                ("other_users", 0.87),
+            ):
+                _evaluation_run(
+                    root,
+                    family="baselines",
+                    formula="y_ridge_shared",
+                    row={
+                        "split": "eval",
+                        "mse": nmse / 100,
+                        "mae": 0.01,
+                        "nmse": nmse + offset,
+                        "positive_window_pct": 70.0,
+                    },
+                    include_vanilla=True,
+                    retrieval=("raw", "cosine", 7, "online"),
+                    dataset=dataset,
+                    pipeline_config={"retrieval.scope": scope},
+                )
 
         method = "joint_ridge_horizon_unconstrained_full"
         pipelines = [
@@ -191,6 +215,69 @@ def main() -> None:
         assert report["requested"]["filters"]["spaces"] == ["raw"]
         assert report["requested"]["filters"]["neighbors"] == [1]
         assert report["requested"]["filters"]["retrieval_mode"] == "online"
+
+        scope_pipelines = [
+            f"baselines/raw_cosine_7_online_{scope}/y_ridge_shared"
+            for scope in ("all", "same_user", "other_users")
+        ]
+        scope_records = [
+            (result.dataset, result.run, result.method, result.metric, result.value)
+            for result in discover_results(root)
+            if result.run.startswith("raw_cosine_7_online_")
+        ]
+        assert len(scope_records) == 48, scope_records
+        assert {
+            (run, method)
+            for _, run, method, metric, _ in scope_records
+            if metric == "nmse"
+        } == {
+            (f"raw_cosine_7_online_{scope}", "vanilla")
+            for scope in ("all", "same_user", "other_users")
+        } | {
+            (
+                f"raw_cosine_7_online_{scope}",
+                f"raw_cosine_7_online_{scope}/y_ridge_shared",
+            )
+            for scope in ("all", "same_user", "other_users")
+        }, scope_records
+        scope_results = [
+            result
+            for result in discover_results(root)
+            if result.run.startswith("raw_cosine_7_online_")
+        ]
+        assert all(
+            math.isfinite(
+                _average_method_statistics(
+                    scope_results,
+                    method=f"raw_cosine_7_online_{scope}/y_ridge_shared",
+                    metric="nmse",
+                    split="eval",
+                    datasets=["electricity", "solar"],
+                    settings=["168_24"],
+                    dataset_settings={},
+                    lower_is_better=True,
+                )[1]
+            )
+            for scope in ("all", "same_user", "other_users")
+        ), scope_records
+        scope_outputs = generate_average_results_tables(
+            root,
+            root / "tables/scopes",
+            datasets=["electricity", "solar"],
+            settings=["168_24"],
+            models=["chronos2"],
+            families=["baselines"],
+            pipelines=scope_pipelines,
+        )
+        scope_table = (root / "tables/scopes/baselines_results.tex").read_text(
+            encoding="utf-8"
+        )
+        assert scope_outputs
+        assert r"raw\_cosine\_7\_all" in scope_table
+        assert r"raw\_cosine\_7\_same" in scope_table
+        assert r"raw\_cosine\_7\_other" in scope_table
+        y_row = next(line for line in scope_table.splitlines() if line.startswith("Y-ridge-s &"))
+        assert "-- & -- & --" not in y_row
 
         try:
             generate_average_results_tables(

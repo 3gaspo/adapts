@@ -86,6 +86,7 @@ model_kwargs() {
 
 run_extraction() {
   local dataset="$1" model="$2" lags="$3" horizon="$4" neighbors="$5" space="$6" metric="$7" save_name="$8" output_root="$9"
+  local retrieval_scope="${10}"
   local dataset_dir config model_options retrieval_period datastore_stride
   local data_args=() alignment_args=() protocol_args=() retrieval_args=() limit_args=()
   dataset_dir="$(find_dataset_dir "$dataset")"
@@ -122,7 +123,7 @@ run_extraction() {
     --distance-metric "$metric" \
     "${limit_args[@]}" \
     --retrieval-mode "$RETRIEVAL_MODE" \
-    --retrieval-scope "$RETRIEVAL_SCOPE" \
+    --retrieval-scope "$retrieval_scope" \
     "${retrieval_args[@]}" \
     --model "$model" \
     --model-kwargs "$model_options" \
@@ -172,7 +173,7 @@ run_task() {
   local space="${TASK_SPACES[$task_id]}"
   local metric="${TASK_METRICS[$task_id]}"
   local neighbors="${TASK_NEIGHBORS[$task_id]}"
-  local save_name run_root retrieval_setting retrieval_period datastore_stride identity_root
+  local save_name run_root retrieval_setting retrieval_period datastore_stride identity_root retrieval_scope
   local path_space path_metric path_neighbors path_mode dataset_dir dataset_config
   local -a model_values pipeline_values required_artifacts
   parse_setting "$setting"
@@ -190,6 +191,7 @@ run_task() {
     path_metric=none
     path_neighbors=0
     path_mode=none
+    retrieval_scope=all
   else
     save_name=.
     retrieval_setting="${space}_${metric}_${neighbors}_${RETRIEVAL_MODE}"
@@ -197,6 +199,7 @@ run_task() {
     path_metric="$metric"
     path_neighbors="$neighbors"
     path_mode="$RETRIEVAL_MODE"
+    retrieval_scope="$RETRIEVAL_SCOPE"
   fi
   identity_root="$MODEL_ROOT/${path_space,,}/${path_metric,,}/$path_neighbors/${path_mode,,}"
   model_values=("space=$path_space" "metric=$path_metric" "k=$path_neighbors" "mode=$path_mode")
@@ -207,7 +210,7 @@ run_task() {
     "data.period=$retrieval_period" "data.align_period=$ALIGN_PERIOD"
     "data.max_store_windows=${MAX_STORE_WINDOWS:-none}"
     "normalization=instance"
-    "retrieval.scope=$RETRIEVAL_SCOPE"
+    "retrieval.scope=$retrieval_scope"
   )
   dataset_dir="$(find_dataset_dir "$dataset")"
   dataset_config="$dataset_dir/config.json"
@@ -221,7 +224,7 @@ run_task() {
   fi
   mark_manifest_running "$run_root"
   log_section "extraction start configuration=$((task_id + 1))/${#TASK_DATASETS[@]} dataset=$dataset model=$model lags=$L horizon=$H retrieval=$retrieval_setting run=$run_root computation_signature=$ALLOCATED_SIGNATURE period=$retrieval_period align_period=$ALIGN_PERIOD datastore_stride=$datastore_stride adapt_stride=$ADAPT_QUERY_STRIDE eval_stride=$EVAL_QUERY_STRIDE max_store_windows=$MAX_STORE_WINDOWS seed=$SEED"
-  run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root"
+  run_extraction "$dataset" "$model" "$L" "$H" "$neighbors" "$space" "$metric" "$save_name" "$run_root" "$retrieval_scope"
   require_extraction "$run_root"
   required_artifacts=(
     adapt_prediction_payload.pt adapt_features_payload.pt

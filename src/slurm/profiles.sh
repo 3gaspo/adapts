@@ -66,7 +66,7 @@ adaptation_profile_defaults() {
       DEFAULT_DISTANCE_SPACES_CSV="raw,instance,fourier"
       DEFAULT_NEIGHBORS_CSV="1,3"
       ;;
-    offline_datastore_ablation)
+    offline_datastore_ablation|retrieval_scope_ablation)
       DEFAULT_DATASETS_CSV="$PRIMARY_DATASETS_CSV"
       DEFAULT_MODELS_CSV="chronos2"
       DEFAULT_SETTINGS_CSV="$PRIMARY_SETTINGS_CSV"
@@ -199,7 +199,7 @@ require_profile_neighbors() {
 
 requires_selected_methods() {
   case "${EXPERIMENT_FAMILY:-}" in
-    benchmark|mixed_quantity_ablation|fourier_retrieval_ablation|offline_datastore_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag|sota_benchmark) return 0 ;;
+    benchmark|mixed_quantity_ablation|fourier_retrieval_ablation|offline_datastore_ablation|retrieval_scope_ablation|horizon_baselines_ablation|convex_baselines_ablation|delta_baselines_ablation|catboost_ablation|k_ablation|h_ablation|l_ablation|crossrag|sota_benchmark) return 0 ;;
     *) return 1 ;;
   esac
 }
