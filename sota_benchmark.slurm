@@ -12,11 +12,12 @@
 
 # Evaluate one selected project method on the Cross-RAG paper's exact test
 # windows, then combine it with the paper's published TS-RAG/Cross-RAG MSEs.
-WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/full_ridge_shared}"
 STAGES="${STAGES:-evaluate,tables}"
 EXPERIMENT_MODE=full
 EXPERIMENT_FAMILY=sota_benchmark
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
+source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"
+WINNERS_CSV="${WINNERS_CSV:-$(selected_candidate_first baseline_shared)}"
 export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY WINNERS_CSV STAGES
 source "$PROJECT_ROOT/src/slurm/run_sota_benchmark.sh"

@@ -17,7 +17,9 @@ def _load_json(path: Path) -> Any:
 
 
 def _our_rows(
-    results_root: Path, config: dict[str, Any]
+    results_root: Path,
+    config: dict[str, Any],
+    selected_pipeline: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     project_to_paper = {
         values["project_name"]: name
@@ -35,6 +37,9 @@ def _our_rows(
         identity = manifest.get("identity", {})
         project_dataset = identity.get("dataset")
         if project_dataset not in project_to_paper:
+            continue
+        model_config = identity.get("model_config", {})
+        if any(model_config.get(key) != value for key, value in selected_pipeline.items()):
             continue
         metrics_path = manifest_path.parent / "baseline_metrics.json"
         if not metrics_path.is_file():
@@ -70,11 +75,16 @@ def _our_rows(
     return rows, sorted(obtained, key=lambda item: item["dataset"])
 
 
-def build_table(config_path: Path, results_root: Path, output_dir: Path) -> dict[str, Path]:
+def build_table(
+    config_path: Path,
+    results_root: Path,
+    output_dir: Path,
+    selected_pipeline: dict[str, Any],
+) -> dict[str, Path]:
     config = _load_json(config_path)
     if config.get("metric") != "mse" or tuple(config.get("datasets", {})) != DATASETS:
         raise ValueError("unexpected SOTA benchmark configuration")
-    rows, obtained = _our_rows(results_root, config)
+    rows, obtained = _our_rows(results_root, config, selected_pipeline)
     for method, values in config["published_results"].items():
         rows.append(
             {
@@ -123,6 +133,7 @@ def build_table(config_path: Path, results_root: Path, output_dir: Path) -> dict
                 "format": "adaptation_sota_benchmark_report",
                 "metric": "mse",
                 "published_source": config["source"],
+                "selected_pipeline": selected_pipeline,
                 "obtained_manifests": obtained,
                 "files": {"csv": csv_path.name, "latex": tex_path.name},
                 "methods": [row["method"] for row in rows],
@@ -140,6 +151,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--config", required=True)
     parser.add_argument("--results-root", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--formula", required=True)
+    parser.add_argument("--space", required=True)
+    parser.add_argument("--distance-metric", required=True)
+    parser.add_argument("--neighbors", required=True, type=int)
+    parser.add_argument("--retrieval-mode", required=True)
     return parser.parse_args(argv)
 
 
@@ -149,6 +165,13 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         Path(args.config).expanduser().resolve(),
         Path(args.results_root).expanduser().resolve(),
         Path(args.output_dir).expanduser().resolve(),
+        {
+            "formula": args.formula,
+            "space": args.space,
+            "metric": args.distance_metric,
+            "k": args.neighbors,
+            "mode": args.retrieval_mode,
+        },
     )
 
 

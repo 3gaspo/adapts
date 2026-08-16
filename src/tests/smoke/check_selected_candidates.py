@@ -34,6 +34,29 @@ def _selected(filter_name: str) -> list[str]:
     return [item for item in result.stdout.split(",") if item]
 
 
+def _selected_first(filter_name: str) -> str:
+    bash = shutil.which("bash")
+    git_bash = Path(r"C:\Program Files\Git\bin\bash.exe")
+    if os.name == "nt" and git_bash.is_file():
+        bash = str(git_bash)
+    if bash is None:
+        raise RuntimeError("bash is required for the selected candidate contract check")
+    result = subprocess.run(
+        [
+            bash,
+            "-c",
+            'PROJECT_ROOT="$(pwd)"; '
+            'source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"; '
+            f"selected_candidate_first {filter_name}",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
 def main() -> None:
     expected = [
         "baselines/instance_euclidean_3_online/full_ridge_shared",
@@ -49,9 +72,11 @@ def main() -> None:
     assert _selected("adaptation") == expected
     assert _selected("baseline_shared") == expected[:5]
     assert _selected("catboost_shared") == expected[5:7]
+    assert _selected_first("baseline_shared") == expected[0]
     assert _selected("ts_ifa") == []
 
     filters = {
+        "benchmark.slurm": ("WINNERS_CSV", "adaptation"),
         "mixed_quantity_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "fourier_retrieval_ablation.slurm": ("WINNERS_CSV", "adaptation"),
         "offline_datastore_ablation.slurm": ("WINNERS_CSV", "adaptation"),
@@ -82,6 +107,14 @@ def main() -> None:
         assert 'source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"' in text
         assert (
             f'{variable}="${{{variable}:-$(selected_candidates_csv {filter_name})}}"'
+            in text
+        )
+
+    for filename in ("sota_benchmark.slurm", "tsrag.slurm"):
+        text = (ROOT / filename).read_text(encoding="utf-8")
+        assert 'source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"' in text
+        assert (
+            'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidate_first baseline_shared)}"'
             in text
         )
 

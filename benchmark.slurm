@@ -15,11 +15,12 @@
 # publication result tree so ultra reuses completed full outputs.
 EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"
 EXPERIMENT_FAMILY=benchmark
-WINNERS_CSV="${WINNERS_CSV:-}"
 RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/benchmark}"
 
 PROJECT_ROOT="${SLURM_SUBMIT_DIR:-$(pwd)}"
 cd "$PROJECT_ROOT"
+source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"
+WINNERS_CSV="${WINNERS_CSV:-$(selected_candidates_csv adaptation)}"
 export PROJECT_ROOT EXPERIMENT_MODE EXPERIMENT_FAMILY WINNERS_CSV RESULTS_ROOT
 source "$PROJECT_ROOT/src/slurm/common.sh"
 require_benchmark_experiment_mode || exit $?

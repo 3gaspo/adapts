@@ -1,5 +1,5 @@
 #!/bin/bash
-# Manually commit and push lightweight experiment artifacts from this project.
+# Manually synchronize and publish lightweight experiment artifacts from this project.
 set -euo pipefail
 
 usage() {
@@ -38,6 +38,13 @@ cd "$project_root"
   printf 'publisher requires the main branch\n' >&2
   exit 1
 }
+
+proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
+[ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; exit 1; }
+
+# shellcheck disable=SC1090
+. "$proxy_script"
+git pull --ff-only origin main
 
 if [ -n "$job_id" ]; then
   shopt -s nullglob
@@ -94,10 +101,4 @@ if ! git diff --cached --quiet -- "${paths[@]}" "${exclusions[@]}"; then
 else
   printf 'No new artifact changes; pushing existing local commits.\n'
 fi
-
-proxy_script="${PROXY_SCRIPT_PATH:-$HOME/codes/proxy.sh}"
-[ -f "$proxy_script" ] || { printf 'proxy script not found: %s\n' "$proxy_script" >&2; exit 1; }
-
-# shellcheck disable=SC1090
-. "$proxy_script"
 git push origin main

@@ -58,7 +58,8 @@ for stage in "${requested_stages[@]}"; do
       srun --ntasks=1 python -m src.visu.tsrag_comparison_table \
         --controls-root "$CONTROL_ROOT" \
         --tsrag-root "$TSRAG_RESULTS_ROOT" \
-        --output-dir "$REPORT_ROOT"
+        --output-dir "$REPORT_ROOT" \
+        --control-method "$candidate_method"
       ;;
     *) log_error "unknown STAGES entry=$stage expected=evaluate,tables"; return 2 ;;
   esac

@@ -77,7 +77,12 @@ for values in config["datasets"].values():
       srun --ntasks=1 python -m src.visu.sota_benchmark_table \
         --config "$SOTA_CONFIG" \
         --results-root "$RESULTS_ROOT" \
-        --output-dir "$REPORT_ROOT"
+        --output-dir "$REPORT_ROOT" \
+        --formula "$candidate_method" \
+        --space "$candidate_space" \
+        --distance-metric "$candidate_metric" \
+        --neighbors "$candidate_k" \
+        --retrieval-mode "$candidate_mode"
       ;;
     *) log_error "unknown STAGES entry=$stage expected=evaluate,tables"; return 2 ;;
   esac

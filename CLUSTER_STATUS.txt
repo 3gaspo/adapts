@@ -25,25 +25,30 @@ CURRENT HANDOFF
   manifests across launches, records all 12 obtained manifests, and rebuilt the
   complete report locally without inference.
 - SOTA job 43757 reused the five job-43580 rows and completed Electricity and
-  Exchange under the 80 GB allocation. All seven selected-method manifests are
-  completed across jobs 43305, 43580, and 43757. The selected full ridge has
+  Exchange under the 80 GB allocation. All seven former instance-K=10 method
+  manifests are completed across jobs 43305, 43580, and 43757. That full ridge has
   equal-dataset mean MSE 0.204286 versus 0.207888 for locally evaluated
   Chronos-Bolt, 0.197 for published TS-RAG, and 0.191 for published Cross-RAG;
   it improves local vanilla on six datasets and loses only on ETTm2. Its table
   stage exposed the same cross-launch discovery bug and failed after preserving
   every producer. The corrected reader records all seven obtained manifests and
-  rebuilt the complete report locally.
-- The latest synchronized K-ablation job-43754 snapshot has empty stderr and is
-  still inside extraction: 116/144 active K<=20 retrieval identities are
-  completed, Traffic 336:48 raw K=20 is running, and 27 identities are not yet
-  present. Both instance-retrieval gate forms have completed all 72 settings
+  rebuilt the complete report locally. The post-screen selector contract now
+  chooses the first shared-ridge entry in `SWEEP_CANDIDATES.txt`, which is
+  instance K=3; the K=10 evidence is preserved but is no longer the current
+  selected SOTA control. All seven K=3 producer rows and the table must run.
+- K-ablation job 43754 reached the 23-hour limit during Traffic 504:168 raw
+  K=15: 118/144 active K<=20 retrieval identities are completed, that identity
+  remains stale as running, and 25 identities are not yet present. Both
+  instance-retrieval gate forms have completed all 72 settings
   each (144 result manifests); raw gates, baselines, and final tables have not
   started. This is not yet analyzable K evidence. H-ablation job 43592 still
   needs resubmission; its former shared-extraction collision is now reusable.
-- Next cluster actions: deploy the cross-launch table fix and rerun only the
-  TS-RAG and SOTA table stages; let job 43754 finish or resume the same K front;
-  rerun H; run the selected-winner retrieval-scope ablation; then run the v4
-  TS-IFA pilot. Cross-RAG has no execution front.
+- Next cluster actions: deploy the selector/table fixes; rerun TS-RAG so its
+  completed producers are skipped and its table is rebuilt; rerun the complete
+  SOTA workflow for the selected instance-K=3 control; mark launch 43754
+  interrupted and resume K; rerun H; run CatBoost, retrieval scope, and the
+  final benchmark; then run the v4 TS-IFA pilot. Cross-RAG has no execution
+  front.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic

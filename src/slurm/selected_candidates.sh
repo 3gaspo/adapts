@@ -59,3 +59,13 @@ selected_candidates_csv() {
   local IFS=,
   printf '%s' "${entries[*]}"
 }
+
+selected_candidate_first() {
+  local selection="${1:-adaptation}" candidates
+  candidates="$(selected_candidates_csv "$selection")" || return
+  if [ -z "$candidates" ]; then
+    printf 'no selected candidate for filter: %s\n' "$selection" >&2
+    return 1
+  fi
+  printf '%s' "${candidates%%,*}"
+}

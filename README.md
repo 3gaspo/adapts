@@ -309,8 +309,8 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 |---|---|---|---|---|---|
 | `test` | Electricity | `504:168` | Chronos-2 | Raw Euclidean / `3` | Primary baselines/gates or TS-IFA, according to front |
 | `screen` | `D_primary` | `168:24`, `336:48`, `504:168` | Chronos-2 | Raw + instance Euclidean / `1,3` | 3 direct + 7 shared-ridge baselines; 8 shared gate/reference methods |
-| `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | `WINNERS_CSV` only |
-| `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same `WINNERS_CSV` as full |
+| `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | All adaptation entries in `SWEEP_CANDIDATES.txt` |
+| `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same selected manifest as full |
 | `mixed_quantity_ablation` | `D_mixed` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `retrieval_scope_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline; all/same/other users | `WINNERS_CSV` only |
 | `horizon_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus horizon-wise ridge |
@@ -492,10 +492,9 @@ There is no averaging over K or normalization: those identify different
 pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
 `winner_name` includes family, retrieval configuration, and formula.
 
-Copy the desired complete names into the final benchmark:
+The final benchmark reads every adaptation entry from `SWEEP_CANDIDATES.txt`:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch benchmark.slurm
 ```
 
@@ -503,14 +502,12 @@ This defaults to `EXPERIMENT_MODE=full` and Chronos-2. To add the extra
 backbones afterward without recomputing completed Chronos-2 results:
 
 ```bash
-EXPERIMENT_MODE=ultra \
-WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
-sbatch benchmark.slurm
+EXPERIMENT_MODE=ultra sbatch benchmark.slurm
 ```
 
 For an explicit custom backbone selection, pass `MODELS_CSV`, for example
-`MODELS_CSV=tabpfnts`. `full` and `ultra` otherwise differ only in their
-default model list.
+`MODELS_CSV=tabpfnts`. `WINNERS_CSV` remains an explicit one-launch candidate
+override. `full` and `ultra` otherwise differ only in their default model list.
 
 `SWEEP_CANDIDATES.txt` is the sole manual selection manifest for adaptation and
 TS-IFA follow-ups. Each non-comment line is a complete
@@ -556,7 +553,6 @@ and horizon-wise regressor, plus matching references.
 The mixed-quantity dataset study is also isolated and can be submitted later:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared \
 sbatch mixed_quantity_ablation.slurm
 ```
 
@@ -564,13 +560,9 @@ All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
 ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
 quantity-separated ETT panels instead.
 
-The K/H/L, mixed-quantity, and retrieval fronts read the complete adaptation entries from
-`SWEEP_CANDIDATES.txt` by default. Pass `WINNERS_CSV` only for an explicit
-one-off override:
-
-```bash
-WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_3_online/full_ridge_shared,gates/instance_euclidean_3_online/catboost_cov_regressor_shared}"
-```
+The benchmark, K/H/L, mixed-quantity, and retrieval fronts read the complete
+adaptation entries from `SWEEP_CANDIDATES.txt` by default. Pass `WINNERS_CSV`
+only for an explicit one-off override.
 
 Then submit exactly one front per experiment:
 
@@ -609,7 +601,6 @@ The SOTA benchmark evaluates one selected project method and then appends the
 paper values without executing Cross-RAG or TS-RAG:
 
 ```bash
-WINNERS_CSV=baselines/instance_euclidean_10_online/full_ridge_shared \
 sbatch sota_benchmark.slurm
 ```
 
@@ -620,7 +611,10 @@ eligible test origin, and per-channel standardization fitted on the official
 training segment. Our selected method retains its own fitting and retrieval
 protocol. The generated `sota_benchmark_mse.csv/.tex` therefore answers the
 intended question: how our trained method scores on the same evaluation data
-and metric, without claiming that it used Cross-RAG's training recipe.
+and metric, without claiming that it used Cross-RAG's training recipe. The
+front uses the first selected shared-ridge entry in `SWEEP_CANDIDATES.txt`; the
+table reader filters that exact formula and retrieval pipeline so older
+completed controls cannot enter the report.
 
 The released TS-RAG ARM is re-evaluated separately on the project datasets:
 
@@ -632,7 +626,8 @@ The front fixes `L=512`, `H=64` because those shapes are embedded in the public
 ARM checkpoint. It uses the TS-RAG repository defaults: locally downloaded
 `amazon/chronos-t5-base` EOS embeddings, Euclidean distance, same-channel fixed
 retrieval, and `K=10`. It evaluates released TS-RAG on Chronos-Bolt and the
-selected project method on the identical neighbors with both Chronos-Bolt and
+first selected shared-ridge method from `SWEEP_CANDIDATES.txt` on the identical
+neighbors with both Chronos-Bolt and
 Chronos-2. A Chronos-2 TS-RAG row is intentionally absent: the public ARM
 checkpoint contains Chronos-Bolt decoder/head parameters and cannot be loaded
 into Chronos-2.
@@ -939,12 +934,13 @@ publisher from that project's Git root:
 bash publish_job.sh <job-id>
 ```
 
-The script selects exactly one `logs/*_<job-id>.out`/`.err` pair and every
-run/report directory whose manifest records that launch ID. It force-adds only
-those paths while excluding `*.pt`, `*.npy`, and `*.cbm`, commits them on
-`main`, sources `$HOME/codes/proxy.sh`, and pushes `origin main`. It never pulls
-or creates a pull request. Existing unrelated staged paths are excluded from
-the commit.
+The script first verifies `main`, sources `$HOME/codes/proxy.sh`, and runs
+`git pull --ff-only origin main`. It then selects exactly one
+`logs/*_<job-id>.out`/`.err` pair and every run/report directory whose manifest
+records that launch ID. It force-adds only those paths while excluding `*.pt`,
+`*.npy`, and `*.cbm`, commits them, and pushes `origin main`. A non-fast-forward
+pull stops without creating a merge commit, and the script never creates a
+pull request. Existing unrelated staged paths are excluded from the commit.
 
 Omit the job ID to force-add, commit, and push the complete `logs/` and
 lightweight `outputs/` trees:
@@ -954,9 +950,8 @@ bash publish_job.sh
 ```
 
 `PROXY_SCRIPT_PATH` overrides the default `$HOME/codes/proxy.sh`. The publisher
-simply sources that script in the current interactive shell and then runs
-`git push origin main`; it leaves the shell's existing GitHub credential and
-askpass context untouched.
+sources that script once for both the pull and push and leaves the shell's
+existing GitHub credential and askpass context untouched.
 
 ## Local checks
 

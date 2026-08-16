@@ -106,7 +106,11 @@ class TSRAGModelContractTest(unittest.TestCase):
                                 "manifest_id": f"control-{backbone}-{dataset}",
                                 "status": "completed",
                                 "launch": {"launch_id": f"control-{dataset}"},
-                                "identity": {"dataset": dataset, "backbone": backbone},
+                                "identity": {
+                                    "dataset": dataset,
+                                    "backbone": backbone,
+                                    "model_config": {"formula": "our_method"},
+                                },
                             }
                         ),
                         encoding="utf-8",
@@ -123,6 +127,38 @@ class TSRAGModelContractTest(unittest.TestCase):
                         for method in ("vanilla", "our_method")
                     ]
                     (run / "baseline_metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+            stale = controls / "obsolete" / "run_0"
+            stale.mkdir(parents=True)
+            (stale / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "manifest_id": "obsolete-control",
+                        "status": "completed",
+                        "launch": {"launch_id": "obsolete"},
+                        "identity": {
+                            "dataset": module.DATASETS[0],
+                            "backbone": "chronos2",
+                            "model_config": {"formula": "obsolete_method"},
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (stale / "baseline_metrics.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "split": "eval",
+                            "baseline": "obsolete_method",
+                            "mse": 9.0,
+                            "mae": 9.0,
+                            "nmse": 9.0,
+                            "positive_window_pct": 0.0,
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
             for dataset in module.DATASETS:
                 run = tsrag / dataset / "run_0"
                 run.mkdir(parents=True)
@@ -150,17 +186,19 @@ class TSRAGModelContractTest(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            paths = module.build(controls, tsrag, root / "report")
+            paths = module.build(controls, tsrag, root / "report", "our_method")
             text = paths["csv"].read_text(encoding="utf-8")
             report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("chronos-bolt,tsrag", text)
             self.assertNotIn("chronos2,tsrag", text)
             self.assertEqual(len(report["obtained_manifests"]), 12)
+            self.assertEqual(report["selected_control_method"], "our_method")
 
     def test_comparison_table_reuses_completed_cross_launch_results(self):
         table = (ROOT / "src/visu/tsrag_comparison_table.py").read_text(encoding="utf-8")
         self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
         self.assertIn('manifest.get("status") == "completed"', table)
+        self.assertIn('get("formula") != control_method', table)
 
 
 if __name__ == "__main__":

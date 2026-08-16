@@ -71,6 +71,13 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                             "identity": {
                                 "dataset": values["project_name"],
                                 "backbone": "chronos-bolt",
+                                "model_config": {
+                                    "formula": "full_ridge_shared",
+                                    "space": "instance",
+                                    "metric": "euclidean",
+                                    "k": 3,
+                                    "mode": "online",
+                                },
                             },
                         }
                     ),
@@ -85,18 +92,59 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            paths = module.build_table(config_path, results, output)
+            stale = results / "obsolete" / "run_0"
+            stale.mkdir(parents=True)
+            (stale / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "manifest_id": "obsolete-k10",
+                        "status": "completed",
+                        "launch": {"launch_id": "obsolete"},
+                        "identity": {
+                            "dataset": "ETTh1",
+                            "backbone": "chronos-bolt",
+                            "model_config": {
+                                "formula": "full_ridge_shared",
+                                "space": "instance",
+                                "metric": "euclidean",
+                                "k": 10,
+                                "mode": "online",
+                            },
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (stale / "baseline_metrics.json").write_text(
+                json.dumps(
+                    [
+                        {"split": "eval", "baseline": "vanilla", "mse": 9.0},
+                        {"split": "eval", "baseline": "our_method", "mse": 9.0},
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            selected_pipeline = {
+                "formula": "full_ridge_shared",
+                "space": "instance",
+                "metric": "euclidean",
+                "k": 3,
+                "mode": "online",
+            }
+            paths = module.build_table(config_path, results, output, selected_pipeline)
             text = paths["csv"].read_text(encoding="utf-8")
             report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("our_method", text)
             self.assertIn("TS-RAG (published)", text)
             self.assertIn("Cross-RAG (published)", text)
             self.assertEqual(len(report["obtained_manifests"]), 7)
+            self.assertEqual(report["selected_pipeline"], selected_pipeline)
 
     def test_table_reuses_completed_cross_launch_results(self):
         table = (ROOT / "src/visu/sota_benchmark_table.py").read_text(encoding="utf-8")
         self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
         self.assertIn('manifest.get("status") != "completed"', table)
+        self.assertIn("selected_pipeline.items()", table)
 
 
 if __name__ == "__main__":

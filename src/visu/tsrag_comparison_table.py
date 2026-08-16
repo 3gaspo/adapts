@@ -37,7 +37,7 @@ def _manifest_ref(manifest: dict[str, Any]) -> dict[str, Any]:
 
 
 def _rows(
-    controls_root: Path, tsrag_root: Path
+    controls_root: Path, tsrag_root: Path, control_method: str
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     rows: dict[tuple[str, str, str], dict[str, Any]] = {}
     obtained: list[dict[str, Any]] = []
@@ -46,6 +46,8 @@ def _rows(
         if not metrics.is_file():
             continue
         identity = manifest["identity"]
+        if identity.get("model_config", {}).get("formula") != control_method:
+            continue
         dataset = str(identity["dataset"])
         backbone = str(identity["backbone"])
         used = False
@@ -87,8 +89,10 @@ def _rows(
     )
 
 
-def build(controls_root: Path, tsrag_root: Path, output_dir: Path) -> dict[str, Path]:
-    rows, obtained = _rows(controls_root, tsrag_root)
+def build(
+    controls_root: Path, tsrag_root: Path, output_dir: Path, control_method: str
+) -> dict[str, Path]:
+    rows, obtained = _rows(controls_root, tsrag_root, control_method)
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "tsrag_comparison.csv"
     fields = ("backbone", "method", "dataset", "mse", "mae", "nmse", "positive_window_pct")
@@ -125,6 +129,7 @@ def build(controls_root: Path, tsrag_root: Path, output_dir: Path) -> dict[str, 
                     "neighbors": 10,
                     "retrieval": "chronos-t5-base/euclidean/same_user/fixed",
                 },
+                "selected_control_method": control_method,
                 "obtained_manifests": obtained,
                 "files": {"csv": csv_path.name, "latex": tex_path.name},
             },
@@ -140,6 +145,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--controls-root", required=True)
     parser.add_argument("--tsrag-root", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--control-method", required=True)
     return parser.parse_args(argv)
 
 
@@ -149,6 +155,7 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         Path(args.controls_root).expanduser().resolve(),
         Path(args.tsrag_root).expanduser().resolve(),
         Path(args.output_dir).expanduser().resolve(),
+        args.control_method,
     )
 
 

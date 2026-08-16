@@ -132,7 +132,8 @@ def main() -> None:
     benchmark_front = (ROOT / "benchmark.slurm").read_text(encoding="utf-8")
     assert 'EXPERIMENT_MODE="${EXPERIMENT_MODE:-full}"' in benchmark_front
     assert 'RESULTS_ROOT="${RESULTS_ROOT:-outputs/adaptation/benchmark}"' in benchmark_front
-    assert 'WINNERS_CSV="${WINNERS_CSV:-}"' in benchmark_front
+    assert 'source "$PROJECT_ROOT/src/slurm/selected_candidates.sh"' in benchmark_front
+    assert 'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidates_csv adaptation)}"' in benchmark_front
     assert "require_benchmark_experiment_mode || exit $?" in benchmark_front
     assert 'source "$PROJECT_ROOT/src/slurm/run_profile_experiment.sh"' in benchmark_front
     screen_front = (ROOT / "screen.slurm").read_text(encoding="utf-8")
@@ -185,13 +186,11 @@ def main() -> None:
             ROOT / selected_front
         ).read_text(encoding="utf-8")
     sota_front = (ROOT / "sota_benchmark.slurm").read_text(encoding="utf-8")
-    assert (
-        'WINNERS_CSV="${WINNERS_CSV:-baselines/instance_euclidean_10_online/'
-        'full_ridge_shared}"'
-    ) in sota_front
+    assert 'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidate_first baseline_shared)}"' in sota_front
     assert 'source "$PROJECT_ROOT/src/slurm/run_sota_benchmark.sh"' in sota_front
     assert 'DEFAULT_MODELS_CSV="chronos-bolt"' in text
     tsrag_front = (ROOT / "tsrag.slurm").read_text(encoding="utf-8")
+    assert 'WINNERS_CSV="${WINNERS_CSV:-$(selected_candidate_first baseline_shared)}"' in tsrag_front
     assert 'source "$PROJECT_ROOT/src/slurm/run_tsrag_experiment.sh"' in tsrag_front
     for family_front in (
         "horizon_baselines_ablation.slurm",
