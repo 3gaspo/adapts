@@ -2494,3 +2494,63 @@
 2026-08-16 12:18:38,534 INFO [__main__] model load start
 2026-08-16 12:18:49,255 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
 2026-08-16 12:18:49,256 INFO [__main__] extraction start split=adapt queries=349
+2026-08-16 13:19:43,145 INFO [__main__] extraction done split=adapt
+2026-08-16 13:19:43,145 INFO [__main__] extraction start split=eval queries=28
+2026-08-16 13:24:33,397 INFO [__main__] extraction done split=eval
+2026-08-16 13:24:34,444 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/336_48/chronos2/raw/euclidean/20/online/run_0/extraction_manifest.json
+2026-08-16 13:24:34,444 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/336_48/chronos2/raw/euclidean/20/online/run_0
+2026-08-16 13:24:34,444 INFO [__main__] experiment done seconds=3957.31
+2026-08-16 13:24:34,445 INFO [__main__] ========================================================================
+2026-08-16 13:24:38,498 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/336_48/chronos2/raw/euclidean/20/online/run_0 status=complete
+2026-08-16T13:24:38+02:00 extraction done configuration=35/84 dataset=Traffic model=chronos2 lags=336 horizon=48 retrieval=raw_euclidean_20_online
+2026-08-16T13:24:39+02:00 skip complete family=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/none/none/0/none/run_1
+2026-08-16T13:24:39+02:00 skip complete family=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_1_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/1/online/run_1
+2026-08-16T13:24:39+02:00 skip complete family=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_3_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/3/online/run_1
+
+2026-08-16T13:24:39+02:00 extraction start configuration=39/84 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/5/online/run_0 computation_signature=3261cfd9e1ac7824cb2bba963fe3805ed5a13aac993773708abfecc3090f3d2d period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-16 13:24:41,677 INFO [__main__] ========================================================================
+2026-08-16 13:24:41,677 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=5 distance=raw/euclidean
+2026-08-16 13:24:41,975 INFO [__main__] dataset load start
+2026-08-16 13:24:41,977 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-16 13:24:43,187 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-16 13:24:43,187 INFO [__main__] model load start
+2026-08-16 13:24:53,765 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-16 13:24:53,767 INFO [__main__] extraction start split=adapt queries=345
+2026-08-16 13:53:05,328 INFO [__main__] extraction done split=adapt
+2026-08-16 13:53:05,328 INFO [__main__] extraction start split=eval queries=27
+2026-08-16 13:55:17,945 INFO [__main__] extraction done split=eval
+2026-08-16 13:55:19,016 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-16 13:55:19,016 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/5/online/run_0
+2026-08-16 13:55:19,016 INFO [__main__] experiment done seconds=1837.33
+2026-08-16 13:55:19,017 INFO [__main__] ========================================================================
+2026-08-16 13:55:22,612 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/5/online/run_0 status=complete
+2026-08-16T13:55:23+02:00 extraction done configuration=39/84 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_5_online
+
+2026-08-16T13:55:23+02:00 extraction start configuration=40/84 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/10/online/run_0 computation_signature=c274c4a966a856b80479948a1099d786bc946e807f7b43945a01da8a1dcfc28a period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-16 13:55:25,513 INFO [__main__] ========================================================================
+2026-08-16 13:55:25,513 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=10 distance=raw/euclidean
+2026-08-16 13:55:25,756 INFO [__main__] dataset load start
+2026-08-16 13:55:25,758 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-16 13:55:26,960 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-16 13:55:26,960 INFO [__main__] model load start
+2026-08-16 13:55:37,484 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-16 13:55:37,486 INFO [__main__] extraction start split=adapt queries=345
+2026-08-16 14:44:01,531 INFO [__main__] extraction done split=adapt
+2026-08-16 14:44:01,531 INFO [__main__] extraction start split=eval queries=27
+2026-08-16 14:47:50,247 INFO [__main__] extraction done split=eval
+2026-08-16 14:47:51,361 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/10/online/run_0/extraction_manifest.json
+2026-08-16 14:47:51,362 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/10/online/run_0
+2026-08-16 14:47:51,362 INFO [__main__] experiment done seconds=3145.84
+2026-08-16 14:47:51,362 INFO [__main__] ========================================================================
+2026-08-16 14:47:55,380 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/10/online/run_0 status=complete
+2026-08-16T14:47:55+02:00 extraction done configuration=40/84 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_10_online
+
+2026-08-16T14:47:56+02:00 extraction start configuration=41/84 dataset=Traffic model=chronos2 lags=504 horizon=168 retrieval=raw_euclidean_15_online run=/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/raw/euclidean/15/online/run_0 computation_signature=e09abadf8ecebf335c7824f1102c2817ee717137e9003dd7c211419cb53fa99b period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=127 max_store_windows=30000 seed=1
+2026-08-16 14:47:58,350 INFO [__main__] ========================================================================
+2026-08-16 14:47:58,350 INFO [__main__] experiment start kind=extraction dataset=Traffic model=chronos2 lags=504 horizon=168 neighbors=15 distance=raw/euclidean
+2026-08-16 14:47:58,643 INFO [__main__] dataset load start
+2026-08-16 14:47:58,644 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/traffic/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-16 14:47:59,852 INFO [__main__] dataset load done dates=17544 users=860
+2026-08-16 14:47:59,852 INFO [__main__] model load start
+2026-08-16 14:48:10,430 INFO [__main__] model load done name=chronos2 device=cuda parameters_total=119,477,664 parameters_trainable=0
+2026-08-16 14:48:10,432 INFO [__main__] extraction start split=adapt queries=345
