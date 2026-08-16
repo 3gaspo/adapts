@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/visu/sota_benchmark_table.py", line 144, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/visu/sota_benchmark_table.py", line 136, in main
+    return build_table(
+           ^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/visu/sota_benchmark_table.py", line 66, in build_table
+    rows = _our_rows(results_root, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/visu/sota_benchmark_table.py", line 53, in _our_rows
+    raise ValueError(f"incomplete Chronos-Bolt row: {sorted(vanilla)}")
+ValueError: incomplete Chronos-Bolt row: []
+srun: error: dgx-h100: task 0: Exited with exit code 1

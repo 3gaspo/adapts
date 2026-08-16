@@ -1,7 +1,39 @@
 {
   "artifacts": {
-    "files": [],
-    "required": []
+    "files": [
+      {
+        "path": "adapt_prediction_payload.pt",
+        "size": 4683629362
+      },
+      {
+        "path": "adapt_features_payload.pt",
+        "size": 5889215
+      },
+      {
+        "path": "eval_prediction_payload.pt",
+        "size": 46460836958
+      },
+      {
+        "path": "eval_features_payload.pt",
+        "size": 58387506
+      },
+      {
+        "path": "extraction_timing.json",
+        "size": 314
+      },
+      {
+        "path": "extraction_manifest.json",
+        "size": 1430
+      }
+    ],
+    "required": [
+      "adapt_prediction_payload.pt",
+      "adapt_features_payload.pt",
+      "eval_prediction_payload.pt",
+      "eval_features_payload.pt",
+      "extraction_timing.json",
+      "extraction_manifest.json"
+    ]
   },
   "config": {
     "experiment": {},
@@ -25,7 +57,7 @@
       "retrieval.scope": "all"
     },
     "runtime": {
-      "slurm.job_id": 43580
+      "slurm.job_id": 43757
     }
   },
   "identity": {
@@ -60,16 +92,24 @@
         "purpose": "publication",
         "slurm_array_task_id": null,
         "slurm_job_id": "43580"
+      },
+      {
+        "launch_id": "43757",
+        "launched_at_utc": "2026-08-15T17:46:56.453179+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43757"
       }
     ],
-    "finished_at_utc": null,
-    "launch_id": "43580",
-    "launched_at_utc": "2026-08-14T18:33:13.931112+00:00",
+    "finished_at_utc": "2026-08-15T19:18:25.304666+00:00",
+    "launch_id": "43757",
+    "launched_at_utc": "2026-08-15T17:46:56.453179+00:00",
     "mode": "full",
-    "ready_at_utc": null,
-    "started_at_utc": "2026-08-14T18:33:14.042979+00:00"
+    "ready_at_utc": "2026-08-15T19:18:25.246354+00:00",
+    "started_at_utc": "2026-08-15T17:46:56.610497+00:00"
   },
-  "manifest_id": "c9213eab-02fb-4ee2-aef3-48e29987a6f0",
+  "manifest_id": "e82780b8-62b1-4526-ab37-e2fd9c4bbf91",
   "project": "adaptation",
   "purposes": [
     "publication"
@@ -78,8 +118,15 @@
   "schema_version": 1,
   "seed_status": {
     "1": {
-      "artifacts": [],
-      "status": "interrupted"
+      "artifacts": [
+        "adapt_prediction_payload.pt",
+        "adapt_features_payload.pt",
+        "eval_prediction_payload.pt",
+        "eval_features_payload.pt",
+        "extraction_timing.json",
+        "extraction_manifest.json"
+      ],
+      "status": "completed"
     }
   },
   "seeds": [
@@ -90,7 +137,7 @@
     "path": "607cc97e35e57ab50ed402bc05bf9ed23d3a32fcbfe53c03a5015b89d0f1b0dd",
     "pipeline": "a0adc8ca89e135f947eb38ae504af050407e034d8fa0ad8defb7034624283458"
   },
-  "status": "interrupted",
+  "status": "completed",
   "table": {
     "column_config": [
       "metric",

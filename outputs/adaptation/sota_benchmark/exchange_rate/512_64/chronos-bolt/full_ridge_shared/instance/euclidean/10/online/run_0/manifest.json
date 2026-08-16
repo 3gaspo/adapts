@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 276
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 492
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 2188
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 533
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 161
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1150
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "full_ridge_shared",
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43757
+    }
+  },
+  "identity": {
+    "backbone": "chronos-bolt",
+    "dataset": "exchange_rate",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "formula": "full_ridge_shared",
+      "k": 10,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/10/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/none/none/0/none/run_2/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43757",
+        "launched_at_utc": "2026-08-15T19:26:33.806846+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43757"
+      }
+    ],
+    "finished_at_utc": "2026-08-15T19:26:40.856183+00:00",
+    "launch_id": "43757",
+    "launched_at_utc": "2026-08-15T19:26:33.806846+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-15T19:26:40.798508+00:00",
+    "started_at_utc": "2026-08-15T19:26:33.909178+00:00"
+  },
+  "manifest_id": "bdd6d462-e118-43a6-b3a2-3cc58292b05a",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "14784ae5f5c4593a48a305151b963bda61782cfae76182b9449a24e453b66b7f",
+    "path": "efd5a28e76b8e50e7e06dd03a26d89e5bf7c24e3f456e1702e566a70a2cc7389",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "full_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "sota_benchmark",
+      "baselines"
+    ]
+  }
+}

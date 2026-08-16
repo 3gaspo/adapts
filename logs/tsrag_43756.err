@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/visu/tsrag_comparison_table.py", line 138, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/visu/tsrag_comparison_table.py", line 130, in main
+    return build(
+           ^^^^^^
+  File "/home/h61084/codes/adapts/src/visu/tsrag_comparison_table.py", line 74, in build
+    rows = _rows(controls_root, tsrag_root)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/visu/tsrag_comparison_table.py", line 69, in _rows
+    raise ValueError("no completed TS-RAG results found")
+ValueError: no completed TS-RAG results found
+srun: error: dgx-h100: task 0: Exited with exit code 1
