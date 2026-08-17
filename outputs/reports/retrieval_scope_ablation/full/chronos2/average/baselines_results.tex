@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.50.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccccc}
+\toprule
+Model & IN\_L2\_3\_all & IN\_L2\_3\_same & IN\_L2\_3\_other & raw\_L2\_1\_all & raw\_L2\_1\_same & raw\_L2\_1\_other & raw\_L2\_3\_all & raw\_L2\_3\_same & raw\_L2\_3\_other & IN\_L2\_1\_all & IN\_L2\_1\_same & IN\_L2\_1\_other \\
+\midrule
+cov-Y-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.78\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.21\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.77\%}\\{\scriptsize 0.49}\end{tabular} & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+cov-avgy-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.76\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.75\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.75\%}\\{\scriptsize 0.49}\end{tabular} & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+full-ridge-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{1.95\%}}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.14\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.93\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.79\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.61\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.67\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.87\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.70\%}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{1.80\%}\\{\scriptsize 0.49}\end{tabular} & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results-average}
+\end{table}

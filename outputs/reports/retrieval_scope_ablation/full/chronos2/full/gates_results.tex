@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrrrrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & raw\_L2\_1\_all/bayes-cov-s & raw\_L2\_1\_all/cb-cov-reg-s & raw\_L2\_1\_same/bayes-cov-s & raw\_L2\_1\_same/cb-cov-reg-s & raw\_L2\_1\_other/bayes-cov-s & raw\_L2\_1\_other/cb-cov-reg-s & IN\_L2\_1\_all/bayes-avgy-s & IN\_L2\_1\_all/cb-avgy-reg-s & IN\_L2\_1\_same/bayes-avgy-s & IN\_L2\_1\_same/cb-avgy-reg-s & IN\_L2\_1\_other/bayes-avgy-s & IN\_L2\_1\_other/cb-avgy-reg-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 168--24 & $\times 10^{-1}$ & 2.94 & 2.94 & \textbf{2.94} & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.94 & 2.95 \\
+ & 336--48 & $\times 10^{-1}$ & 2.90 & 2.90 & 2.90 & 2.90 & \textbf{2.90} & 2.90 & 2.90 & 2.90 & 2.90 & 2.90 & 2.90 & 2.90 & 2.90 \\
+ & 504--168 & $\times 10^{-1}$ & \textbf{2.49} & \textbf{2.49} & 2.49 & \textbf{2.49} & 2.49 & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & \textbf{2.49} & 2.49 \\
+\midrule
+\multirow{3}{*}{Traffic} & 168--24 & $\times 10^{-1}$ & 2.62 & 2.62 & 2.61 & 2.62 & \textbf{2.59} & 2.62 & 2.61 & 2.62 & 2.62 & 2.62 & 2.62 & 2.62 & 2.62 \\
+ & 336--48 & $\times 10^{-1}$ & 2.61 & 2.61 & 2.61 & 2.61 & \textbf{2.61} & 2.61 & 2.61 & 2.61 & 2.61 & 2.61 & 2.67 & 2.61 & 2.61 \\
+ & 504--168 & $\times 10^{-1}$ & 2.68 & 2.68 & 2.69 & 2.68 & \textbf{2.68} & 2.68 & 2.68 & 2.68 & 2.68 & 2.68 & 2.76 & 2.68 & 2.68 \\
+\midrule
+\multirow{3}{*}{Solar} & 168--24 & $\times 10^{-1}$ & \textbf{2.10} & \textbf{2.10} & 2.10 & \textbf{2.10} & 2.10 & \textbf{2.10} & 2.14 & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} & \textbf{2.10} \\
+ & 336--48 & $\times 10^{-1}$ & 2.41 & 2.41 & 2.41 & 2.41 & \textbf{2.40} & 2.41 & 2.41 & 2.41 & 2.41 & 2.41 & 2.41 & 2.41 & 2.41 \\
+ & 504--168 & $\times 10^{-1}$ & 2.85 & 2.85 & 2.86 & 2.85 & \textbf{2.82} & 2.85 & 2.83 & 2.85 & 2.85 & 2.85 & 2.85 & 2.85 & 2.85 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 168--24 & $\times 10^{-1}$ & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & \textbf{6.47} & 7.37 & \textbf{6.47} & 7.11 & \textbf{6.47} & 6.62 \\
+ & 336--48 & $\times 10^{-1}$ & 6.36 & 6.36 & \textbf{6.32} & 6.36 & 6.36 & 6.66 & 6.70 & 6.36 & 6.39 & 6.36 & 7.69 & 6.36 & 6.34 \\
+ & 504--168 & $\times 10^{0}$ & \textbf{2.31} & \textbf{2.31} & \textbf{2.31} & \textbf{2.31} & \textbf{2.31} & 2.55 & 2.55 & \textbf{2.31} & 2.50 & \textbf{2.31} & 2.32 & \textbf{2.31} & 2.66 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results}
+\end{table}
