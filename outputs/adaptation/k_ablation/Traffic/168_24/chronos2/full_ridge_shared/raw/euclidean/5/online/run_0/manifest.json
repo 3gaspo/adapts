@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 282
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 498
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1932
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 533
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 163
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1172
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "full_ridge_shared",
+      "k": 5,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43975
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Traffic",
+    "horizon": 24,
+    "lookback": 168,
+    "model_config": {
+      "formula": "full_ridge_shared",
+      "k": 5,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/raw/euclidean/5/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/168_24/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43975",
+        "launched_at_utc": "2026-08-17T01:05:10.993724+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43975"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T01:05:28.145657+00:00",
+    "launch_id": "43975",
+    "launched_at_utc": "2026-08-17T01:05:10.993724+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-17T01:05:28.086735+00:00",
+    "started_at_utc": "2026-08-17T01:05:11.098307+00:00"
+  },
+  "manifest_id": "bc6af3e1-51ab-4a04-82a4-25c2ebf4f56b",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "e1142704653cb6ed7fdda53b7c909e80235b77d7613dae5178484aacffb8d3d3",
+    "path": "c49e7c85be94d0d83277549fd611d15abd03e4b739a0484b19e4612597b42b52",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "full_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "k_ablation",
+      "baselines"
+    ]
+  }
+}

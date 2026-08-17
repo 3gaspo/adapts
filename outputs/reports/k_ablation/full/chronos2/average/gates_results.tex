@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.50.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccccc}
+\toprule
+Model & IN\_L2\_1 & IN\_L2\_3 & IN\_L2\_5 & IN\_L2\_10 & IN\_L2\_15 & IN\_L2\_20 & raw\_L2\_1 & raw\_L2\_3 & raw\_L2\_5 & raw\_L2\_10 & raw\_L2\_15 & raw\_L2\_20 \\
+\midrule
+bayes-cov-s & -- & -- & -- & -- & -- & -- & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} \\
+cb-cov-reg-s & -- & -- & -- & -- & -- & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{0.03\%}\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.21\%}\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.10\%}\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{0.01\%}\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{0.12\%}}\\{\scriptsize 0.49}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.35\%}\\{\scriptsize 0.50}\end{tabular} \\
+bayes-avgy-s & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & -- & -- & -- & -- & -- & -- \\
+cb-avgy-reg-s & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-1.90\%}\\{\scriptsize 0.52}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-3.18\%}\\{\scriptsize 0.51}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.94\%}\\{\scriptsize 0.50}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-5.22\%}\\{\scriptsize 0.52}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-1.02\%}\\{\scriptsize 0.51}\end{tabular} & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-6.53\%}\\{\scriptsize 0.54}\end{tabular} & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results-average}
+\end{table}

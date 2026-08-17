@@ -1,0 +1,157 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "gate_metrics.csv",
+        "size": 256
+      },
+      {
+        "path": "gate_metrics.json",
+        "size": 472
+      },
+      {
+        "path": "gate_artifacts.json",
+        "size": 7509
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 704
+      },
+      {
+        "path": "gate_timing.json",
+        "size": 158
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1154
+      }
+    ],
+    "required": [
+      "gate_metrics.csv",
+      "gate_metrics.json",
+      "gate_artifacts.json",
+      "prediction_manifest.json",
+      "gate_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "bayes_avgy_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "gate.depth": 4,
+      "gate.early_stopping_rounds": 50,
+      "gate.iterations": 300,
+      "gate.learning_rate": 0.03,
+      "max_adapt_refit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "retrieval.scope": "all",
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43978
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Traffic",
+    "horizon": 168,
+    "lookback": 504,
+    "model_config": {
+      "formula": "bayes_avgy_shared",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/instance/euclidean/1/online/run_1/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Traffic/504_168/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43978",
+        "launched_at_utc": "2026-08-17T03:22:14.372628+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43978"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T03:22:26.865391+00:00",
+    "launch_id": "43978",
+    "launched_at_utc": "2026-08-17T03:22:14.372628+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-17T03:22:26.808030+00:00",
+    "started_at_utc": "2026-08-17T03:22:14.478456+00:00"
+  },
+  "manifest_id": "a02142da-eb60-4d7f-bff2-0aca30375354",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "gate_metrics.csv",
+        "gate_metrics.json",
+        "gate_artifacts.json",
+        "prediction_manifest.json",
+        "gate_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "f8f77b962eda3417838d0c34c5f33c8901ed065b0d5590ffaa0b0bc67127f309",
+    "path": "268a5321ab8f197bd18575002eb56732368c8085904582bfdd6b511cb9dbc5bb",
+    "pipeline": "9247ee2a2d83cbb5b00f3bd0f5d5cbedfec724e9c4c44175eae694b2b822ca8f"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "bayes_avgy_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "retrieval_scope_ablation",
+      "gates"
+    ]
+  }
+}

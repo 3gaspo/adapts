@@ -1,0 +1,26 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "bayes_avgy_horizon": "predictions/adapt/predictions/bayes_avgy_horizon.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "bayes_avgy_horizon": "predictions/eval/predictions/bayes_avgy_horizon.npy"
+      }
+    },
+    "fit": {
+      "gate_diagnostics": {
+        "bayes_avgy_horizon_score": "predictions/fit/gate_diagnostics/bayes_avgy_horizon_score.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

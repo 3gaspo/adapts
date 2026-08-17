@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/h61084/codes/adapts/src/adaptors/ts_ifa/train.py", line 1761, in <module>
+    main()
+  File "/home/h61084/codes/adapts/src/adaptors/ts_ifa/train.py", line 1469, in main
+    train_history, train_steps = train_joint_stage(
+                                 ^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/adaptors/ts_ifa/train.py", line 878, in train_joint_stage
+    outputs = model(batch)
+              ^^^^^^^^^^^^
+  File "/home/h61084/venvs/adapts/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/venvs/adapts/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/h61084/codes/adapts/src/adaptors/ts_ifa/model.py", line 404, in forward
+    token_ids = torch.arange(rooter_candidate_count, device=x.device)
+                             ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'rooter_candidate_count' is not defined
+srun: error: dgx-h100: task 0: Exited with exit code 1

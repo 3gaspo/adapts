@@ -1,0 +1,33 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "eval": {
+      "predictions": {
+        "ts_ifa_adapted": "predictions/eval/predictions/ts_ifa_adapted.npy",
+        "ts_ifa_vanilla_branch": "predictions/eval/predictions/ts_ifa_vanilla_branch.npy",
+        "ts_ifa_residual_branch": "predictions/eval/predictions/ts_ifa_residual_branch.npy"
+      },
+      "gate_diagnostics": {
+        "rooter_coefficients": "predictions/eval/gate_diagnostics/rooter_coefficients.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "ts_ifa",
+    "variant": "joint_ridge",
+    "method": "joint_ridge_shared_softmax_residual",
+    "routing_scope": "shared",
+    "routing_constraint": "softmax",
+    "candidate_names": [
+      "vanilla",
+      "residual"
+    ],
+    "rooter_candidate_names": [
+      "vanilla",
+      "residual"
+    ],
+    "gate_diagnostics": [
+      "rooter_coefficients"
+    ]
+  }
+}

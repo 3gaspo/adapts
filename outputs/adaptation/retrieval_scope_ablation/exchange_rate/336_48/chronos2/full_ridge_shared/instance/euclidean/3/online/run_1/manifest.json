@@ -1,0 +1,156 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 283
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 499
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1804
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 533
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 158
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1144
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "full_ridge_shared",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "retrieval.scope": "other_users",
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43978
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "exchange_rate",
+    "horizon": 48,
+    "lookback": 336,
+    "model_config": {
+      "formula": "full_ridge_shared",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/336_48/chronos2/instance/euclidean/3/online/run_2/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/exchange_rate/336_48/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43978",
+        "launched_at_utc": "2026-08-17T06:27:14.259279+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43978"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T06:27:18.989842+00:00",
+    "launch_id": "43978",
+    "launched_at_utc": "2026-08-17T06:27:14.259279+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-17T06:27:18.932953+00:00",
+    "started_at_utc": "2026-08-17T06:27:14.360360+00:00"
+  },
+  "manifest_id": "7376dd58-7b8b-4df0-bd8c-d52cc6af7a4a",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 1,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "35ebaa1d9cc621c4ec62ea5e1c19106a575c30e910aeda5495bc5c31494a5281",
+    "path": "8c00edd9c566acfb0f202657ff2520f575f4b9dacd8df2294cb98392cd7543d2",
+    "pipeline": "4713554ef70c258cc7467342d0d437a1ea9e127cd466084c4b965981fca7708c"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "full_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "retrieval_scope_ablation",
+      "baselines"
+    ]
+  }
+}

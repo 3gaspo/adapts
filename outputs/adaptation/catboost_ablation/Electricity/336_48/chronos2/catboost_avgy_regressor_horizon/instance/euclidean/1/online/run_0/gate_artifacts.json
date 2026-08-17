@@ -1,0 +1,599 @@
+{
+  "format": "adaptation_gate_models",
+  "protocol": "fit_T1_validate_iterations_T2_refit_T1_plus_T2",
+  "config": {
+    "iterations": 300,
+    "learning_rate": 0.03,
+    "depth": 4,
+    "early_stopping_rounds": 50,
+    "seed": 1,
+    "task_type": "CPU",
+    "devices": null,
+    "thread_count": 2,
+    "horizon_fits": "serial",
+    "scalar_feature_names": [
+      "candidate_minus_vanilla_mean",
+      "candidate_minus_vanilla_std",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ],
+    "horizon_feature_names": [
+      "candidate_minus_vanilla_h",
+      "neighbor_y_minus_vanilla_mean_h",
+      "neighbor_y_minus_vanilla_std_h",
+      "neighbor_y_minus_neighbor_pred_mean_h",
+      "neighbor_y_minus_neighbor_pred_std_h",
+      "neighbor_y_minus_vanilla_mean",
+      "neighbor_y_minus_vanilla_between_std",
+      "neighbor_y_minus_vanilla_within_std_mean",
+      "neighbor_y_minus_neighbor_pred_mean",
+      "neighbor_y_minus_neighbor_pred_between_std",
+      "neighbor_y_minus_neighbor_pred_within_std_mean",
+      "query_mean",
+      "query_std",
+      "neighbor_lookback_means_mean_raw",
+      "neighbor_lookback_means_std_raw",
+      "neighbor_lookback_stds_mean_raw",
+      "neighbor_lookback_stds_std_raw",
+      "same_user_ratio",
+      "neighbor_age_mean",
+      "neighbor_age_std",
+      "neighbor_weight_std",
+      "neighbor_weight_max",
+      "distance_mean"
+    ]
+  },
+  "models": {
+    "catboost_avgy_regressor_horizon": [
+      {
+        "objective": "regressor",
+        "selected_iterations": 85,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 175111125.43743688
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0000.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 78,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 156923741.73870668
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0001.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 43,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 147573814.08574384
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0002.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 22,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 166038452.8690604
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0003.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 36,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 137587522.10843548
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0004.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 32,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 144301323.10946992
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0005.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 93,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 140839938.3301981
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0006.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 85,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 158763713.8195077
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0007.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 77,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 144444832.77053174
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0008.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 102,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 150451613.48131502
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0009.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 77,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 122524707.14751615
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0010.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 58,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 114225041.0646523
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0011.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 33,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 118824052.33323951
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0012.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 237,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 134370285.08473796
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0013.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 47,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 135785901.92604747
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0014.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 57,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 160680527.2101778
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0015.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 273,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 152944849.34981522
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0016.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 12,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 168571436.56223676
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0017.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 16,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 152359913.60697854
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0018.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 19,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 142486301.51572523
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0019.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 26,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 140881407.85953927
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0020.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 46,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 159984616.68566564
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0021.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 84,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 150769392.5765165
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0022.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 110,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 146740687.74649814
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0023.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 51,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 128415069.67792949
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0024.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 44,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 143500404.00600415
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0025.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 130,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 202245656.5194505
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0026.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 86,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 146189708.50844795
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0027.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 76,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 149337741.38802466
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0028.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 45,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 161488068.09829566
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0029.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 81,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 157880166.61107096
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0030.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 162,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 167261477.49403873
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0031.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 53,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 247722094.2350871
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0032.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 62,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 214583038.66201308
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0033.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 62,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 203682777.40201324
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0034.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 12,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 237181766.3899517
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0035.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 58,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 200500306.41191778
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0036.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 42,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 214618304.16365024
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0037.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 59,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 212007152.88727623
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0038.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 36,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 189641848.14449963
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0039.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 24,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 200123589.41832307
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0040.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 13,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 223026746.64123255
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0041.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 15,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 200097480.1131281
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0042.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 29,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 187065140.657667
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0043.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 50,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 188004739.6184778
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0044.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 35,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 196206943.5304743
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0045.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 92,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 183745188.52029434
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0046.cbm",
+        "prediction": "hard_selection"
+      },
+      {
+        "objective": "regressor",
+        "selected_iterations": 27,
+        "probability_link": {
+          "kind": "sigmoid_standardized_advantage",
+          "scale": 376192083.1644504
+        },
+        "kind": "regressor",
+        "path": "models/catboost_avgy_regressor_horizon/horizon_0047.cbm",
+        "prediction": "hard_selection"
+      }
+    ]
+  },
+  "bayes": {},
+  "feature_importance_files": [
+    "plots/feature_importance_avgy_regressor_horizon.csv",
+    "plots/feature_importance_avgy_regressor_horizon.png"
+  ]
+}

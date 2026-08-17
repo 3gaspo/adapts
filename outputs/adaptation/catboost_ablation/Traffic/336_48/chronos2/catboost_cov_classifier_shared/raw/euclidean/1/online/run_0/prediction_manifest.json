@@ -1,0 +1,31 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "adapt": {
+      "predictions": {
+        "vanilla": "predictions/adapt/predictions/vanilla.npy",
+        "catboost_cov_classifier_shared": "predictions/adapt/predictions/catboost_cov_classifier_shared.npy"
+      },
+      "gate_diagnostics": {
+        "cov_shared_target": "predictions/adapt/gate_diagnostics/cov_shared_target.npy",
+        "cov_horizon_target": "predictions/adapt/gate_diagnostics/cov_horizon_target.npy",
+        "catboost_cov_classifier_shared_score": "predictions/adapt/gate_diagnostics/catboost_cov_classifier_shared_score.npy"
+      }
+    },
+    "eval": {
+      "predictions": {
+        "vanilla": "predictions/eval/predictions/vanilla.npy",
+        "catboost_cov_classifier_shared": "predictions/eval/predictions/catboost_cov_classifier_shared.npy"
+      },
+      "gate_diagnostics": {
+        "cov_shared_target": "predictions/eval/gate_diagnostics/cov_shared_target.npy",
+        "cov_horizon_target": "predictions/eval/gate_diagnostics/cov_horizon_target.npy",
+        "catboost_cov_classifier_shared_score": "predictions/eval/gate_diagnostics/catboost_cov_classifier_shared_score.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "gates",
+    "diagnostics": "scores_and_probabilities"
+  }
+}

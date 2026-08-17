@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\centering
+\caption{Gate nMSE results across retrieval settings, averaged over selected datasets and horizon settings. Vanilla Chronos-2 NMSE: 0.50.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcc}
+\toprule
+Model & raw\_L2\_1 & IN\_L2\_1 \\
+\midrule
+cov & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-2.29\%}\\{\scriptsize 0.50}\end{tabular} & -- \\
+avgy & -- & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-107.69\%}\\{\scriptsize 0.99}\end{tabular} \\
+bayes-cov-s & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} & -- \\
+bayes-cov-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.31\%}\\{\scriptsize 0.49}\end{tabular} & -- \\
+cb-cov-cls-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{0.02\%}\\{\scriptsize 0.50}\end{tabular} & -- \\
+cb-cov-reg-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{0.03\%}\\{\scriptsize 0.50}\end{tabular} & -- \\
+cb-cov-reg-h & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-0.36\%}\\{\scriptsize 0.50}\end{tabular} & -- \\
+cb-cov-reg-s-soft & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{\textbf{0.19\%}}\\{\scriptsize 0.49}\end{tabular} & -- \\
+bayes-avgy-s & -- & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} \\
+bayes-avgy-h & -- & \begin{tabular}{@{}c@{}}0.00\%\\{\scriptsize 0.50}\end{tabular} \\
+cb-avgy-cls-s & -- & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-50.36\%}\\{\scriptsize 0.77}\end{tabular} \\
+cb-avgy-reg-s & -- & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-1.90\%}\\{\scriptsize 0.52}\end{tabular} \\
+cb-avgy-reg-h & -- & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-3.21\%}\\{\scriptsize 0.52}\end{tabular} \\
+cb-avgy-reg-s-soft & -- & \begin{tabular}{@{}c@{}}\textcolor{red!70!black}{-16.61\%}\\{\scriptsize 0.57}\end{tabular} \\
+\midrule
+oracle-cov-s & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{6.65\%}\\{\scriptsize 0.45}\end{tabular} & -- \\
+oracle-cov-h & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{9.39\%}\\{\scriptsize 0.44}\end{tabular} & -- \\
+oracle-avgy-s & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{11.47\%}\\{\scriptsize 0.41}\end{tabular} \\
+oracle-avgy-h & -- & \begin{tabular}{@{}c@{}}\textcolor{green!50!black}{27.34\%}\\{\scriptsize 0.35}\end{tabular} \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:gates-results-average}
+\end{table}

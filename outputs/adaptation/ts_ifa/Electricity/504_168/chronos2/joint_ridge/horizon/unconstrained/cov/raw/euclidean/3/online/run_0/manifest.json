@@ -1,0 +1,199 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "ts_ifa.pt",
+        "size": 3671
+      },
+      {
+        "path": "branches.pt",
+        "size": 2148
+      },
+      {
+        "path": "rooter.pt",
+        "size": 3858
+      },
+      {
+        "path": "training_history.json",
+        "size": 4672472
+      },
+      {
+        "path": "eval_metrics.json",
+        "size": 365
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 870
+      },
+      {
+        "path": "config.json",
+        "size": 2387
+      },
+      {
+        "path": "training_nmse.pdf",
+        "size": 15279
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1333
+      }
+    ],
+    "required": [
+      "ts_ifa.pt",
+      "branches.pt",
+      "rooter.pt",
+      "training_history.json",
+      "eval_metrics.json",
+      "prediction_manifest.json",
+      "config.json",
+      "training_nmse.pdf",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "branch_set": "cov",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "routing_constraint": "unconstrained",
+      "routing_scope": "horizon",
+      "space": "raw",
+      "variant": "joint_ridge"
+    },
+    "pipeline": {
+      "attention_dim": 32,
+      "attention_heads": 4,
+      "batch_size": 256,
+      "branch_aux_weight": 0.1,
+      "branch_lr": 1e-05,
+      "coefficient_l2": 0.01,
+      "dropout": 0.0,
+      "hidden_dim": 128,
+      "horizon_smoothness": 0.01,
+      "logging_eval_freq": 1000,
+      "max_train_samples": null,
+      "max_valid_samples": null,
+      "meta_query_fraction": 0.2,
+      "neural_first_order": true,
+      "neural_inner_lr": 0.001,
+      "neural_inner_steps": 1,
+      "ridge_rooter_alpha": 0.01,
+      "rooter_epochs": 20000,
+      "rooter_lr": 1e-05,
+      "train_epochs": 20000,
+      "valid_eval_freq": 1000,
+      "validation_fraction": 0.2,
+      "vanilla_anchor": 0.01,
+      "vanilla_anchoring_init": true,
+      "weight_decay": 0.0001
+    },
+    "runtime": {
+      "slurm.job_id": 43980
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Electricity",
+    "horizon": 168,
+    "lookback": 504,
+    "model_config": {
+      "branch_set": "cov",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "routing_constraint": "unconstrained",
+      "routing_scope": "horizon",
+      "space": "raw",
+      "variant": "joint_ridge"
+    },
+    "model_config_order": [
+      "variant",
+      "routing_scope",
+      "routing_constraint",
+      "branch_set",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/3/online/run_2/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43980",
+        "launched_at_utc": "2026-08-17T02:04:10.813705+00:00",
+        "mode": "test",
+        "purpose": "smoke",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43980"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T02:06:54.354013+00:00",
+    "launch_id": "43980",
+    "launched_at_utc": "2026-08-17T02:04:10.813705+00:00",
+    "mode": "test",
+    "ready_at_utc": "2026-08-17T02:06:54.295225+00:00",
+    "started_at_utc": "2026-08-17T02:04:10.924381+00:00"
+  },
+  "manifest_id": "8a886f5c-9a1f-490c-9309-071eb24fdbf5",
+  "project": "adaptation",
+  "purposes": [
+    "smoke"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "ts_ifa.pt",
+        "branches.pt",
+        "rooter.pt",
+        "training_history.json",
+        "eval_metrics.json",
+        "prediction_manifest.json",
+        "config.json",
+        "training_nmse.pdf",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "ff7c9ede98042d2c29d7b09725a351db035574381d82e6022ce53dad7da66db1",
+    "path": "45f37c578a2b49ef54aa5ed1a484df446479d2ce475f34870045467ad68c3c2d",
+    "pipeline": "1ff4e6ddab5bd222ce7586c21828656cdf5aa79e035b52ff24b1c980fa5c722c"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "routing_constraint",
+      "branch_set",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "joint_ridge_horizon_unconstrained_cov",
+    "row_config": [
+      "variant",
+      "routing_scope"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "ts_ifa",
+      "ts_ifa"
+    ]
+  }
+}

@@ -1,0 +1,2174 @@
+{
+  "created_at_utc": "2026-08-17T01:32:35.876951+00:00",
+  "launch_id": "43976",
+  "obtained": {
+    "count": 108,
+    "inputs": [
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "3f2aba1d-6b10-49ea-a18e-510d07597ba1",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "6180f2d8-2366-4588-8890-f415b552eb0a",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "ce031921-d735-4808-a385-e7e6b9458ec3",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "d6550ce9-bd17-40b0-b8f6-e0a9daf69840",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "7abae407-1729-4975-b3e2-14711e1ac517",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "56c4daba-aa2e-47f8-9453-33ed861b147c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "15b06c5c-39b9-4fca-b5da-2183f7d37713",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "8781504e-b86d-4b8d-b8d0-0fda856aff47",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "18654fe9-bce9-430f-ad66-9d653cd0c3b3",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_168/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "b33f4f75-884b-4ee7-a852-b47329da8377",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "55fb6fc7-2d6a-4675-bed2-a8c0b1fbf13e",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "4b1451de-524d-4053-bb66-86c4b5bfdd64",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "fca13ea4-df2b-4694-9a47-a260a744fd86",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "eec5b53c-304a-46cf-bfe2-169d27cf2744",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "6c135d63-fb26-4934-a26b-623732fd62a5",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "71352e2e-4e20-40f7-832a-317eeda3a03a",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "9603d762-9bd1-4457-a3c7-f14882db3425",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "dc6725ed-030e-479d-bb94-80d9f4b45c48",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_24/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "b09cdba2-2bc6-4b0b-a0aa-fb2a2aff73e9",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "d268125d-f3b9-40b6-b254-1bada7606642",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "bd6b4a0d-5158-4b32-ae8e-6ca966c4f88e",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "96cdb702-a5ea-4bc4-ade7-a6cd86a495da",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "58c56eb1-2b8a-4257-a29d-2d59c2a504d7",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "2f67453b-de55-4f3f-90fd-02cc90ceceed",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "4eecb05f-e080-4489-a263-904f8c94c0f9",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "afaebe15-0ff0-43cb-981d-68cea53a09b7",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "894d62ab-77c8-455a-8ce3-19cbcaae145a",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Electricity/504_504/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "8266d8d3-7390-4284-9ed8-a5e184745e86",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "95c1b40d-611a-4f3a-bd0b-82ed30bbcd3f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "f81df90d-8c55-4059-9a4b-325ace99c843",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "cd4fffe2-ec58-4de0-9f8c-a2582b744fa6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "32cf978c-3ecb-488f-bef1-f6aaace9a412",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "f4deb35a-b859-4702-a78a-2341c0c3a0f6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "22443c89-cd38-4203-a305-265d82fb0e73",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "bbc1dd58-5921-453d-b5e6-6a3308f296b6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "9d1cd3e1-1aed-4d7b-b0f8-296130b4251b",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_168/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "f3d1d607-6355-4906-acb0-9d2ba3aad008",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "f3d0884a-7c9c-4918-8180-44b2fb480ebf",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "c6019499-b8e1-436e-8366-4a7542aff249",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "1f0f1f6e-1abf-4a8c-9e7c-c422a0284244",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "6852fd65-803f-4046-9883-876fdd172408",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "4723cc6e-91eb-4ec0-ada0-a9761799b2c6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "661888b5-d49f-4dd2-adef-f772bec7707d",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "6712ed1f-c193-427d-b6cf-beeb1b4eed1e",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "6e375f7c-f25e-48ed-9658-f7c0983a33e7",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_24/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "c25c9a8e-c100-4378-8ecb-9ef81af639e9",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "15d0c669-00b1-4837-9ec8-a1337a0693e7",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "b453318f-5e0d-4c02-9b07-fa9e20ce2ee0",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "4c5527fe-4000-43d7-9d25-c255d869837c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "9be84d8e-c2ba-4193-85fc-a9839ef45680",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "f0642e9d-605c-4e70-bf3b-7c4cbc419812",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "e1a82474-5762-4474-8fde-f7bdf4f0b364",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "d6514d72-269e-45bc-b228-f27d2f3c1c43",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "365a0811-3fa1-4b15-8dbf-06dba7cf6f8d",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Solar/504_504/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "47a7cf4b-89a8-40b4-a979-48c7273fcf3d",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "00450d14-37db-4325-82c7-6c580f6da125",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "454baa81-96ad-47b4-a01e-3b98e22b06ff",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "f203bb16-565d-4591-a00c-d9c2608f0563",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "57281263-650d-41fc-bf19-c317ca619e57",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "e818ec72-b0c8-4cc9-bc8b-26387ae39169",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "73f60b14-9df8-4ccc-98f0-107279d4160b",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "6eb1c641-19e5-4930-b583-91063b5c2026",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "f62a646a-a636-481f-af35-d8317c355645",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_168/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "041b753a-1489-46d7-8d9d-50c1afc32818",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "490abbb6-d1e4-4941-b06e-d2ac5a02e131",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "0f5485f4-3ea6-4669-8e3e-66c18e1b7c75",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "14e59d2d-018e-4f56-b063-f136e0935fd3",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "4526e578-98c1-40e3-9747-0bec9abe2fee",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "56185d24-f0e9-479c-ae94-44b50677806d",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "608a0e90-ab93-4f2a-8004-a9ccd3f69e43",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "5222f2ad-3373-4465-8d72-a28956ac246f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "701d0836-333f-401e-97b2-35277660ca10",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_24/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "8ed4ec81-538d-4831-a99a-3a437ecd442b",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "e8e4c0ef-0f16-4a38-8a60-228ee7edd642",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "c941596b-66c5-4f6a-9256-b1f514bb382f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "59d0357b-cd0d-4bac-8eef-bc0506610615",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "76cc48a0-c828-403b-8978-96c23c311587",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "8a85d074-1509-4154-9f3a-7c9d81914d6f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "2682feba-a3d1-4426-9f41-4a714f028f7b",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "e486069e-764c-4c1e-9374-2d553252a7e3",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "6ce7bea2-cb79-4396-84fa-264a679a47c2",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/Traffic/504_504/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "9b3c50e7-f6c8-462b-ab49-a6f62cacf5ac",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "84f5d651-47c1-499d-bea9-ce9cfcb5da0c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "ada901ec-5b0a-4476-8394-55da768980da",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "443e7b45-8d6a-47ac-a814-2e40982d8992",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "4419aff7-ef49-4307-a2b7-772ef5bff9fa",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "7b67e436-c0c8-4a46-89c1-7b1a57952043",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "cdb23012-82f3-4ac5-8cc7-4e4b2e8ba0a5",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "6ccf0990-4b7e-4577-aa0f-345f05ea4ec7",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "cabd8e72-869d-4161-b1f0-57549f39bc0c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_168/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "27e47150-88c1-47b3-be8c-fc7cdc6a2eb5",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "d9c42057-2fc8-4d04-9916-eb6229685adc",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "b76e3844-7108-43fb-bf0d-7c4652dad38e",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "851e32ef-3eae-403d-9351-5c133411f74f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "a0865e1d-e63d-46ac-a783-78f473e72cba",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "656bae38-d13f-453d-9a5c-61e7ecceadfa",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "84b753b8-70d9-4004-8a2b-fef74a1a8bda",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "0b7c69eb-dd14-4bac-8402-104b34a3ca3a",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "b3d3ae96-e95d-48e8-925f-49c139c4f522",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_24/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_avgy_shared",
+        "manifest_id": "0d741abe-a396-4dad-b1ed-18b0b58535c6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/bayes_avgy_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "bayes_cov_shared",
+        "manifest_id": "fb4a043d-0c02-4eab-b22f-9987cf2bae7c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/bayes_cov_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_avgy_regressor_shared",
+        "manifest_id": "cded785d-9f5b-4996-9b7a-2623d332ae9f",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/catboost_avgy_regressor_shared/instance/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "catboost_cov_regressor_shared",
+        "manifest_id": "c3f3c55d-8a67-49b1-8c38-9fa52e3c6afb",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/catboost_cov_regressor_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "gate.depth": 4,
+          "gate.early_stopping_rounds": 50,
+          "gate.iterations": 300,
+          "gate.learning_rate": 0.03,
+          "max_adapt_refit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_avgy_ridge_shared",
+        "manifest_id": "e5e66784-d23c-49be-b1bb-18dbc8112ae6",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/cov_avgy_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "cov_y_ridge_shared",
+        "manifest_id": "9f7664c1-3e61-483c-8f48-caba0457877a",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/cov_y_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "cf05d29e-4b93-4065-8e89-06335abd1e16",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/full_ridge_shared/instance/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "18325bfb-e1e9-491b-82a2-200f9c6c9a2c",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/full_ridge_shared/raw/euclidean/1/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "352d533d-ec11-4c22-8166-87febb100d09",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/h_ablation/exchange_rate/504_504/chronos2/full_ridge_shared/raw/euclidean/3/online/run_0/manifest.json",
+        "pipeline_config": {
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72",
+        "purposes": [
+          "publication"
+        ]
+      }
+    ]
+  },
+  "requested": {
+    "config_policy": "distinct",
+    "filters": {
+      "dataset_settings": {},
+      "datasets": [
+        "Electricity",
+        "Traffic",
+        "Solar",
+        "exchange_rate"
+      ],
+      "distance_metrics": [
+        "euclidean"
+      ],
+      "families": [
+        "baselines",
+        "gates"
+      ],
+      "metric": "nmse",
+      "models": [
+        "chronos2"
+      ],
+      "neighbors": [
+        3,
+        1
+      ],
+      "pipeline": {},
+      "pipelines": [
+        "baselines/instance_euclidean_3_online/full_ridge_shared",
+        "baselines/raw_euclidean_1_online/full_ridge_shared",
+        "baselines/instance_euclidean_3_online/cov_y_ridge_shared",
+        "baselines/raw_euclidean_3_online/full_ridge_shared",
+        "baselines/instance_euclidean_3_online/cov_avgy_ridge_shared",
+        "gates/raw_euclidean_1_online/catboost_cov_regressor_shared",
+        "gates/instance_euclidean_1_online/catboost_avgy_regressor_shared",
+        "gates/raw_euclidean_1_online/bayes_cov_shared",
+        "gates/instance_euclidean_1_online/bayes_avgy_shared"
+      ],
+      "purposes": [
+        "publication"
+      ],
+      "retrieval_mode": "online",
+      "settings": [
+        "504_24",
+        "504_168",
+        "504_504"
+      ],
+      "spaces": [
+        "instance",
+        "raw"
+      ],
+      "split": "eval",
+      "table_kind": "full",
+      "variants": [
+        "full_ridge_shared",
+        "cov_y_ridge_shared",
+        "cov_avgy_ridge_shared",
+        "catboost_cov_regressor_shared",
+        "catboost_avgy_regressor_shared",
+        "bayes_cov_shared",
+        "bayes_avgy_shared"
+      ]
+    },
+    "repeat_policy": "selected"
+  },
+  "schema_version": 1
+}

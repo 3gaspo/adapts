@@ -1,0 +1,155 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 271
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 487
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 2124
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 537
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 162
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1160
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "cov_y_ridge_shared",
+      "k": 20,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43975
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Solar",
+    "horizon": 24,
+    "lookback": 168,
+    "model_config": {
+      "formula": "cov_y_ridge_shared",
+      "k": 20,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Solar/168_24/chronos2/instance/euclidean/20/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Solar/168_24/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43975",
+        "launched_at_utc": "2026-08-17T03:24:14.987903+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43975"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T03:24:20.512801+00:00",
+    "launch_id": "43975",
+    "launched_at_utc": "2026-08-17T03:24:14.987903+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-17T03:24:20.454985+00:00",
+    "started_at_utc": "2026-08-17T03:24:15.094274+00:00"
+  },
+  "manifest_id": "2e44c267-ef1c-4248-9786-16358beaa6e4",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "d367b815cb72e3e6810e9b99c21961afcd1b6855ffa58babd08181d2def054b1",
+    "path": "4dc6f6c600172dc0a3306a5abdea470018c7ef188538bad465247a4e3e304395",
+    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "cov_y_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "k_ablation",
+      "baselines"
+    ]
+  }
+}

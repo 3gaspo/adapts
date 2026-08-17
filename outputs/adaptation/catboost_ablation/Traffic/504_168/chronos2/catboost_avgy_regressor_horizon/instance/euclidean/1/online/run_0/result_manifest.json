@@ -1,0 +1,53 @@
+{
+  "format": "adaptation_evaluation_result",
+  "family": "gates",
+  "methods": [
+    "catboost_avgy_regressor_horizon"
+  ],
+  "split_protocol": {
+    "validation_fraction": 0.2,
+    "available_dates": 345,
+    "t1_dates": 276,
+    "t2_dates": 69,
+    "t1_samples": 237360,
+    "t2_samples": 59340,
+    "t1_first_query_date": 5262,
+    "t1_last_query_date": 12137,
+    "t2_first_query_date": 12162,
+    "t2_last_query_date": 13862
+  },
+  "fit_sampling": {
+    "T1": {
+      "available_samples": 237360,
+      "used_samples": 237360
+    },
+    "T2": {
+      "available_samples": 59340,
+      "used_samples": 59340
+    },
+    "T1+T2": {
+      "available_samples": 296700,
+      "used_samples": 296700
+    },
+    "T3_oracle": {
+      "available_samples": 23220,
+      "used_samples": 23220
+    }
+  },
+  "metric_fields": [
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "files": {
+    "metrics_csv": "gate_metrics.csv",
+    "metrics_json": "gate_metrics.json",
+    "artifacts": "gate_artifacts.json",
+    "predictions": "prediction_manifest.json",
+    "timing": "gate_timing.json"
+  }
+}

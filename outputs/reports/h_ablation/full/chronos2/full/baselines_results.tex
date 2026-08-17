@@ -1,0 +1,28 @@
+\begin{table}[htbp]
+\centering
+\caption{Baseline nMSE results across retrieval settings by dataset and horizon setting}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcrrrrrr}
+\toprule
+Dataset & $L$--$H$ & Scale & vanilla & IN\_L2\_3/cov-Y-ridge-s & IN\_L2\_3/cov-avgy-ridge-s & IN\_L2\_3/full-ridge-s & raw\_L2\_1/full-ridge-s & raw\_L2\_3/full-ridge-s \\
+\midrule
+\multirow{3}{*}{Electricity} & 504--24 & $\times 10^{-1}$ & \textbf{1.44} & 1.45 & 1.45 & 1.45 & 1.45 & 1.45 \\
+ & 504--168 & $\times 10^{-1}$ & 2.49 & 2.47 & 2.47 & 2.47 & \textbf{2.46} & 2.46 \\
+ & 504--504 & $\times 10^{-1}$ & 3.82 & 3.74 & 3.73 & 3.77 & \textbf{3.73} & 3.75 \\
+\midrule
+\multirow{3}{*}{Traffic} & 504--24 & $\times 10^{-1}$ & 1.99 & 1.97 & 1.97 & \textbf{1.97} & 1.97 & 1.97 \\
+ & 504--168 & $\times 10^{-1}$ & 2.68 & 2.67 & 2.67 & \textbf{2.66} & 2.67 & 2.67 \\
+ & 504--504 & $\times 10^{-1}$ & 3.18 & 3.16 & 3.16 & \textbf{3.15} & 3.16 & 3.16 \\
+\midrule
+\multirow{3}{*}{Solar} & 504--24 & $\times 10^{-1}$ & 2.30 & \textbf{2.22} & 2.22 & 2.27 & 2.27 & 2.28 \\
+ & 504--168 & $\times 10^{-1}$ & 2.85 & 2.64 & 2.64 & 2.64 & \textbf{2.64} & 2.64 \\
+ & 504--504 & $\times 10^{-1}$ & 2.66 & 2.43 & \textbf{2.43} & 2.44 & 2.45 & 2.44 \\
+\midrule
+\multirow{3}{*}{exchange\_rate} & 504--24 & $\times 10^{-1}$ & \textbf{2.03} & 2.03 & 2.03 & 2.04 & 2.03 & 2.04 \\
+ & 504--168 & $\times 10^{0}$ & 2.31 & 2.27 & 2.28 & 2.26 & 2.27 & \textbf{2.25} \\
+ & 504--504 & $\times 10^{0}$ & 8.62 & \textbf{8.56} & 8.58 & 8.57 & 10.75 & 10.89 \\
+\bottomrule
+\end{tabular}%
+}
+\label{tab:baselines-results}
+\end{table}

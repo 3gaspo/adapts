@@ -1,0 +1,32 @@
+{
+  "format": "adaptation_prediction_store",
+  "splits": {
+    "eval": {
+      "predictions": {
+        "ts_ifa_adapted": "predictions/eval/predictions/ts_ifa_adapted.npy",
+        "ts_ifa_vanilla_branch": "predictions/eval/predictions/ts_ifa_vanilla_branch.npy",
+        "ts_ifa_memory_branch": "predictions/eval/predictions/ts_ifa_memory_branch.npy"
+      },
+      "gate_diagnostics": {
+        "rooter_coefficients": "predictions/eval/gate_diagnostics/rooter_coefficients.npy"
+      }
+    }
+  },
+  "metadata": {
+    "family": "ts_ifa",
+    "variant": "joint_ridge",
+    "method": "joint_ridge_shared_unconstrained_memory",
+    "routing_scope": "shared",
+    "routing_constraint": "unconstrained",
+    "candidate_names": [
+      "vanilla",
+      "memory"
+    ],
+    "rooter_candidate_names": [
+      "memory"
+    ],
+    "gate_diagnostics": [
+      "rooter_coefficients"
+    ]
+  }
+}

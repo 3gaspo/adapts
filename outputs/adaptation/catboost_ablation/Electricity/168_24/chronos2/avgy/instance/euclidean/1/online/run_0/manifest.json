@@ -1,0 +1,156 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "gate_metrics.csv",
+        "size": 259
+      },
+      {
+        "path": "gate_metrics.json",
+        "size": 475
+      },
+      {
+        "path": "gate_artifacts.json",
+        "size": 2056
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 498
+      },
+      {
+        "path": "gate_timing.json",
+        "size": 146
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1142
+      }
+    ],
+    "required": [
+      "gate_metrics.csv",
+      "gate_metrics.json",
+      "gate_artifacts.json",
+      "prediction_manifest.json",
+      "gate_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "avgy",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "gate.depth": 4,
+      "gate.early_stopping_rounds": 50,
+      "gate.iterations": 300,
+      "gate.learning_rate": 0.03,
+      "max_adapt_refit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 43977
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Electricity",
+    "horizon": 24,
+    "lookback": 168,
+    "model_config": {
+      "formula": "avgy",
+      "k": 1,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/instance/euclidean/1/online/run_1/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/168_24/chronos2/none/none/0/none/run_1/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "43977",
+        "launched_at_utc": "2026-08-17T01:17:49.118749+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "43977"
+      }
+    ],
+    "finished_at_utc": "2026-08-17T01:17:55.106707+00:00",
+    "launch_id": "43977",
+    "launched_at_utc": "2026-08-17T01:17:49.118749+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-17T01:17:55.049577+00:00",
+    "started_at_utc": "2026-08-17T01:17:49.224821+00:00"
+  },
+  "manifest_id": "6359aca8-f075-4a64-a0e7-66fb9b300078",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "gate_metrics.csv",
+        "gate_metrics.json",
+        "gate_artifacts.json",
+        "prediction_manifest.json",
+        "gate_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "1c27e1963e2a72f877c5de783ec82e7d6673f6cfabd858ee80572a29cc62fb77",
+    "path": "e92726818aed50df6c31fb631d8861c4d5894d8531dc9b29538cd62e995e4fae",
+    "pipeline": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "avgy",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "catboost_ablation",
+      "gates"
+    ]
+  }
+}

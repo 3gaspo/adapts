@@ -1,0 +1,53 @@
+{
+  "format": "adaptation_evaluation_result",
+  "family": "baselines",
+  "methods": [
+    "full_ridge_shared"
+  ],
+  "split_protocol": {
+    "validation_fraction": 0.2,
+    "available_dates": 156,
+    "t1_dates": 125,
+    "t2_dates": 31,
+    "t1_samples": 17125,
+    "t2_samples": 4247,
+    "t1_first_query_date": 2627,
+    "t1_last_query_date": 5727,
+    "t2_first_query_date": 5752,
+    "t2_last_query_date": 6502
+  },
+  "fit_sampling": {
+    "T1": {
+      "available_samples": 17125,
+      "used_samples": 17125
+    },
+    "T2": {
+      "available_samples": 4247,
+      "used_samples": 4247
+    },
+    "T1+T2": {
+      "available_samples": 21372,
+      "used_samples": 21372
+    },
+    "T3_oracle": {
+      "available_samples": 1370,
+      "used_samples": 1370
+    }
+  },
+  "metric_fields": [
+    "split",
+    "baseline",
+    "mse",
+    "mae",
+    "nmse",
+    "positive_window_pct",
+    "relative_nmse_improvement_pct"
+  ],
+  "files": {
+    "metrics_csv": "baseline_metrics.csv",
+    "metrics_json": "baseline_metrics.json",
+    "artifacts": "baseline_artifacts.pt",
+    "predictions": "prediction_manifest.json",
+    "timing": "baseline_timing.json"
+  }
+}
