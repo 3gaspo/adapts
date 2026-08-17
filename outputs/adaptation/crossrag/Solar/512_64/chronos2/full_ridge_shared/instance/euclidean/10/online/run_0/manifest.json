@@ -45,6 +45,44 @@
       "space": "instance"
     },
     "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Solar",
+          "horizon": 64,
+          "lookback": 512,
+          "model_config": {
+            "k": 10,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "instance"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "fit_baselines_on_eval": false,
       "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
       "max_adapt_refit_samples": null,
@@ -128,9 +166,9 @@
     1
   ],
   "signatures": {
-    "computation": "a579cb134d01b9ef56d5d0cda2b0c4aa8a33f7c8928b792b6606a0c87a1d07bc",
+    "computation": "8ba7fd1625a09a0a89d6b76b17ae334457b6c4787637c1f6217794ab4b30f0fa",
     "path": "5ed3f2f3cc9c8437e81668cbbd0d761a2be8b5f02dfc69e5b404e5103ed23ab6",
-    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+    "pipeline": "ee52d11f2c07a84c4176158bbb21abd85148a03c8544fc6a354777d019f32f6e"
   },
   "status": "completed",
   "table": {

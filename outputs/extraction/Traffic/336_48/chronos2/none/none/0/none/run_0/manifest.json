@@ -55,8 +55,11 @@
       "data.eval_query_stride": 127,
       "data.max_store_windows": 30000,
       "data.period": 24,
+      "data.split_bounds": "ratios",
       "data.splits": "0.3,0.5,0.2",
-      "normalization": "instance"
+      "data.standardize_train_boundary": null,
+      "normalization": "instance",
+      "retrieval.scope": "all"
     },
     "runtime": {
       "slurm.job_id": 42887
@@ -136,9 +139,9 @@
     1
   ],
   "signatures": {
-    "computation": "6e85286dfe5a173d9fc15ecd05af2dc37a406a8c8c6618dfda2fb6d23617855e",
+    "computation": "d66d3844189b6be816c54cfab57f1b573a14adee363ccb4e7a04f1f868ac5951",
     "path": "d66f128d335bf995ea94246c5c2ff5887397362c841e657dc0ab65b5e5f71988",
-    "pipeline": "ea11a46dc88c4f9f2092867a237694163b2001b596fdbdff57bceb908ac4bbc5"
+    "pipeline": "0d3dc1db0bfa4db310335a28bb2cddc56b7fbe8fcc726c0f15348468d4de3587"
   },
   "status": "completed",
   "table": {

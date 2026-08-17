@@ -45,6 +45,44 @@
       "space": "instance"
     },
     "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Traffic",
+          "horizon": 48,
+          "lookback": 336,
+          "model_config": {
+            "k": 3,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "instance"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "fit_baselines_on_eval": false,
       "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
       "max_adapt_refit_samples": null,
@@ -128,9 +166,9 @@
     1
   ],
   "signatures": {
-    "computation": "7f47f6cf4db71fd16168f64fde5b3dc42a0f3e19c2de514a6072cd0277a296dd",
+    "computation": "244af1813849bb72bc2e9e9c17d4dd3b757c8b91b465424848bf3c112b368fa8",
     "path": "672881549b7354d2f901692f157b9c3bcd028e4a0a25f11d14ba76f9131832d5",
-    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+    "pipeline": "4c6f603ab1e59ab1dfbf93bb876d8b1c3399d0a19cce8fad16aeb9d5c4fbdfff"
   },
   "status": "completed",
   "table": {

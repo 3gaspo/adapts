@@ -13,7 +13,45 @@
       "space": "minmax"
     },
     "pipeline": {
-      "batch_size": 256
+      "batch_size": 256,
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos-bolt",
+          "dataset": "Electricity",
+          "horizon": 64,
+          "lookback": 512,
+          "model_config": {
+            "k": 15,
+            "metric": "cosine",
+            "mode": "online",
+            "space": "minmax"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      }
     },
     "runtime": {
       "slurm.job_id": 43060
@@ -88,9 +126,9 @@
     1
   ],
   "signatures": {
-    "computation": "eb992b2070c213e8e53ce229b0aee8cdba02394746859185dcfb854649404cf6",
+    "computation": "db9aa2246935060bd53ab39a372c46365e9c8d4afc0b8a0585f9a80369a75fac",
     "path": "c98bd21f2639fa75ac5b41ad2d560a03bd387e10a9ded79d22dfb5a1dd4315a0",
-    "pipeline": "c1d32a6055fea9bdbfdcb167520ef79f95fc87a15758d550d9d2e296e2baa428"
+    "pipeline": "3d158102a940d5d607aad550ac065815f9459bd9d017425e422c2f8f6a4bfe3a"
   },
   "status": "interrupted",
   "table": {

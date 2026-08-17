@@ -45,6 +45,44 @@
       "space": "instance"
     },
     "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Electricity",
+          "horizon": 48,
+          "lookback": 336,
+          "model_config": {
+            "k": 1,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "instance"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "gate.depth": 4,
       "gate.early_stopping_rounds": 50,
       "gate.iterations": 300,
@@ -129,9 +167,9 @@
     1
   ],
   "signatures": {
-    "computation": "2c0beb6fae936c3e3a46731ec75255daea68d3478216ec06da79d30309e345cc",
+    "computation": "32560144d321dc7513594387612d05219c139ce44648139b924a5f187c42ece4",
     "path": "01a147235b5590371a6171a429b6e458020ad6946bcdfbdcbc1152315a49ef63",
-    "pipeline": "3993e66e2323f392b2bc98f5bc27cbe1ccbe2aa692665866306878d0976bdc09"
+    "pipeline": "455c395f729eab6e45820656945314dd3e5c39a2aff6e14cef8f4e9ad0afd1aa"
   },
   "status": "completed",
   "table": {

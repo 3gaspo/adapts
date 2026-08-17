@@ -70,7 +70,11 @@ def signature(value: Any) -> str:
 
 def _variant_config(manifest: Mapping[str, Any]) -> dict[str, Any]:
     config = manifest.get("config", {})
-    values = dict(config.get("pipeline", {}))
+    values = {
+        key: value
+        for key, value in config.get("pipeline", {}).items()
+        if not key.startswith("dependency.")
+    }
     values.update({f"experiment.{key}": value for key, value in config.get("experiment", {}).items()})
     return values
 
@@ -123,6 +127,35 @@ def manifest_computation_signature(manifest: Mapping[str, Any]) -> str:
         config.get("experiment", {}),
         manifest.get("seeds", []),
     )
+
+
+def scientific_dependency_config(path_or_run: str | Path) -> dict[str, Any]:
+    """Return only the declared scientific identity of an upstream run."""
+    manifest = load_manifest(path_or_run)
+    config = manifest.get("config", {})
+    return {
+        "schema_version": manifest["schema_version"],
+        "identity": plain(manifest["identity"]),
+        "pipeline": plain(config.get("pipeline", {})),
+        "experiment": plain(config.get("experiment", {})),
+        "seeds": sorted(int(seed) for seed in manifest.get("seeds", [])),
+    }
+
+
+def pipeline_config_with_dependencies(
+    pipeline_config: Mapping[str, Any],
+    dependencies: Mapping[str, str | Path],
+) -> dict[str, Any]:
+    """Embed upstream scientific configurations without paths or manifest IDs."""
+    result = dict(pipeline_config)
+    for name, path in dependencies.items():
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+            raise ValueError(f"invalid dependency name: {name!r}")
+        key = f"dependency.{name}"
+        if key in result:
+            raise ValueError(f"pipeline config already defines {key}")
+        result[key] = scientific_dependency_config(path)
+    return result
 
 
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -667,6 +700,7 @@ def select_identity_runs(
     config_policy: str = "distinct",
     repeat_policy: str = "selected",
     purposes: Iterable[str] | None = None,
+    seeds: Iterable[int] | None = None,
     allow_ready_launch_id: str | None = None,
 ) -> list[SelectedRun]:
     if config_policy not in {"distinct", "latest", "average"}:
@@ -682,6 +716,13 @@ def select_identity_runs(
     wanted_purposes = set(purposes or ())
     if wanted_purposes:
         candidates = [item for item in candidates if wanted_purposes & set(item[1].get("purposes", []))]
+    wanted_seeds = sorted(int(seed) for seed in seeds or ())
+    if wanted_seeds:
+        candidates = [
+            item
+            for item in candidates
+            if sorted(int(seed) for seed in item[1].get("seeds", [])) == wanted_seeds
+        ]
     requested = dict(requested_pipeline or {})
     if requested:
         candidates = [item for item in candidates if _pipeline_matches(item[1], requested)]
@@ -728,6 +769,37 @@ def select_identity_runs(
                 label = f"{label}_{path.name}"
             output.append(SelectedRun(path, manifest, label))
     return output
+
+
+def select_single_identity_run(
+    identity_root: str | Path,
+    *,
+    requested_pipeline: Mapping[str, Any] | None = None,
+    repeat_policy: str = "selected",
+    purposes: Iterable[str] | None = None,
+    seeds: Iterable[int] | None = None,
+    allow_ready_launch_id: str | None = None,
+) -> SelectedRun:
+    """Resolve one dependency run and fail closed across pipeline configurations."""
+    selected = select_identity_runs(
+        identity_root,
+        requested_pipeline=requested_pipeline,
+        config_policy="distinct",
+        repeat_policy=repeat_policy,
+        purposes=purposes,
+        seeds=seeds,
+        allow_ready_launch_id=allow_ready_launch_id,
+    )
+    if len(selected) != 1:
+        candidates = ", ".join(
+            f"{item.run_dir.name}:{item.manifest['signatures']['pipeline'][:12]}"
+            for item in selected
+        )
+        raise ManifestError(
+            f"expected exactly one selectable run in {Path(identity_root).expanduser().resolve()}, "
+            f"got {len(selected)} ({candidates}); provide exact pipeline filters"
+        )
+    return selected[0]
 
 
 def write_report_manifest(
@@ -792,6 +864,18 @@ def _pairs(values: Sequence[str]) -> dict[str, Any]:
     return result
 
 
+def _dependency_pairs(values: Sequence[str]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for item in values:
+        if "=" not in item:
+            raise ValueError(f"expected NAME=MANIFEST_PATH, got {item!r}")
+        name, path = item.split("=", 1)
+        if name in result:
+            raise ValueError(f"duplicate pipeline dependency: {name}")
+        result[name] = path
+    return result
+
+
 def _bool(value: str) -> bool:
     return value.casefold() in {"1", "true", "yes", "on"}
 
@@ -819,6 +903,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     allocate.add_argument("--row-config", default="")
     allocate.add_argument("--column-config", default="")
     allocate.add_argument("--input", action="append", default=[])
+    allocate.add_argument("--pipeline-dependency", action="append", default=[])
     allocate.add_argument("--policy", default="overwrite_exact")
     allocate.add_argument("--skip-completed", default="true")
     allocate.add_argument("--force", default="false")
@@ -869,12 +954,25 @@ def main(argv: Sequence[str] | None = None) -> None:
     resolve.add_argument("--config-policy", default="distinct")
     resolve.add_argument("--repeat-policy", default="selected")
     resolve.add_argument("--purpose", action="append", default=[])
+    resolve.add_argument("--seed", action="append", type=int, default=[])
     resolve.add_argument("--allow-ready-launch-id")
+
+    resolve_one = commands.add_parser("resolve-one")
+    resolve_one.add_argument("--identity-root", required=True)
+    resolve_one.add_argument("--pipeline-config", action="append", default=[])
+    resolve_one.add_argument("--repeat-policy", default="selected")
+    resolve_one.add_argument("--purpose", action="append", default=[])
+    resolve_one.add_argument("--seed", action="append", type=int, default=[])
+    resolve_one.add_argument("--allow-ready-launch-id")
 
     args = parser.parse_args(argv)
     if args.command == "allocate":
         model_order = [item for item in args.model_config_order.split(",") if item]
         inputs = {key: {"path": str(value)} for key, value in _pairs(args.input).items()}
+        pipeline_config = pipeline_config_with_dependencies(
+            _pairs(args.pipeline_config),
+            _dependency_pairs(args.pipeline_dependency),
+        )
         result = allocate_run(
             args.identity_root,
             project=args.project,
@@ -885,7 +983,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             backbone=args.backbone,
             model_config_order=model_order,
             model_config=_pairs(args.model_config),
-            pipeline_config=_pairs(args.pipeline_config),
+            pipeline_config=pipeline_config,
             runtime_config=_pairs(args.runtime_config),
             experiment_config=_pairs(args.experiment_config),
             seeds=args.seed,
@@ -926,16 +1024,27 @@ def main(argv: Sequence[str] | None = None) -> None:
     elif args.command == "pending-seeds":
         manifest = load_manifest(args.run_dir)
         print(",".join(seed for seed, state in manifest.get("seed_status", {}).items() if state.get("status") != "completed"))
-    else:
+    elif args.command == "resolve":
         for selected_run in select_identity_runs(
             args.identity_root,
             requested_pipeline=_pairs(args.pipeline_config),
             config_policy=args.config_policy,
             repeat_policy=args.repeat_policy,
             purposes=args.purpose,
+            seeds=args.seed,
             allow_ready_launch_id=args.allow_ready_launch_id,
         ):
             print(f"{selected_run.run_dir}\t{selected_run.label}\t{selected_run.manifest['manifest_id']}")
+    else:
+        selected_run = select_single_identity_run(
+            args.identity_root,
+            requested_pipeline=_pairs(args.pipeline_config),
+            repeat_policy=args.repeat_policy,
+            purposes=args.purpose,
+            seeds=args.seed,
+            allow_ready_launch_id=args.allow_ready_launch_id,
+        )
+        print(f"{selected_run.run_dir}\t{selected_run.label}\t{selected_run.manifest['manifest_id']}")
 
 
 if __name__ == "__main__":

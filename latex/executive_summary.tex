@@ -17,7 +17,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\scriptsize\color{navy}\textbf{Forecast adaptation and TS-IFA}}
-\rhead{\scriptsize\color{gray}Results through 16 August 2026}
+\rhead{\scriptsize\color{gray}Results through 17 August 2026}
 \cfoot{\scriptsize\color{gray}\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
 \setlength{\headheight}{13pt}
@@ -90,7 +90,7 @@ ridge on $V,C,Y_{1:K},N_{1:K}$ & raw & 1 & \gain{1.789} \\
 \model{cov_y_ridge_shared} &
 ridge on $V,C,Y_{1:K}$ & instance & 3 & \gain{1.782} \\
 \model{full_ridge_shared} &
-ridge on $V,C,Y_{1:K},N_{1:K}$ & raw & 3 & \gain{1.780} \\
+ridge on $V,C,Y_{1:K},N_{1:K}$ & raw & 3 & \gain{1.875} \\
 \model{cov_avgy_ridge_shared} &
 ridge on $V,C,\bar Y$ & instance & 3 & \gain{1.765} \\
 \midrule
@@ -136,6 +136,10 @@ Traffic nMSE of $2.07\times10^{10}$. & Keep $L=168$ as the stable choice. \\
 Mixed-quantity panels & Weather worsens for every selected ridge; ETTm1 raw
 retrieval and the ETTm2 avgY gate show catastrophic outliers. & Keep these
 panels ablation-only. \\
+Retrieval user scope & Across five selected ridges, all-user, other-users-only,
+and same-user-only retrieval gain 1.832\%, 1.785\%, and 1.480\% over 60 paired
+cells per scope. & Cross-user candidates carry nearly all the gain; retain all
+users by default. \\
 \bottomrule
 \end{tabularx}
 
@@ -147,8 +151,27 @@ scale; $L=168$ is the balanced retained setting.}
 \end{center}
 
 \vspace{4pt}
-\sectionbar{Completed and partial follow-ups}
+\sectionbar{Completed follow-ups}
 \scriptsize
+\textbf{Retrieval user scope (job 43978).} The complete report contains all 324
+selected adaptation manifests, and all 96 newly launched restricted-scope
+extractions are complete. The five ridges win 53/60, 53/60, and 51/60
+dataset--setting--pipeline cells with all, other, and same-user pools. Excluding
+the query user costs only 0.048 percentage points of mean nMSE gain, whereas
+same-user-only retrieval costs 0.352 points. Raw MSE still improves by
+2.335/2.275/2.148\%, but MAE worsens by 0.727/0.757/0.910\%, so the adaptation
+favours squared-error reduction rather than uniform absolute-error improvement.
+The gates remain weak: the best is the same-user cov CatBoost gate at +0.219\%,
+while all scoped avgY CatBoost gates are negative. Scope and candidate-pool size
+change together, so this supports cross-user availability rather than a causal
+identity effect at fixed pool cardinality.
+
+The all-user raw-$K=3$ control also corrects one old screen lineage. Its
+Electricity $504{:}168$ predecessor consumed a smoke extraction instead of the
+publication profile; the valid full-profile selected-ridge mean is +1.875\%,
+not +1.780\%. All 18 screen rows sharing that exact extraction require a narrow
+rerun, but this does not affect the completed scope comparison.
+
 \textbf{TS-RAG (job 43579).} All four released-model inferences completed, but
 the original and table-only job-43756 report stages failed to discover completed
 inputs across launches. The corrected completed-manifest reader rebuilt the
@@ -169,13 +192,12 @@ ETTh1/ETTh2/ETTm1/ETTm2/Weather/Electricity/Exchange: mean MSE 0.2043 versus
 the same cross-launch discovery bug; the corrected seven-input report was
 rebuilt locally without recomputation.
 
-\textbf{K and horizon sweeps.} The latest synchronized job-43754 snapshot has
-116/144 active $K\leq20$ retrieval identities completed, one running, and 27
-not yet present. Both instance gate forms are complete over 72 settings each;
-raw gates, baselines, and tables have not started, so no $K$ optimum is yet
-supported. Job 43592 completed the raw-$K=1$ gate branch, then collided with the identical
-Electricity $504{:}24$ instance-$K=3$ extraction concurrently owned by the L
-job. That extraction is now complete and reusable, but H still needs a rerun.
+\textbf{K, horizon, and CatBoost sweeps (jobs 43975--43977).} Instance full
+ridge selects $K=5$ at +2.00\%; instance cov--$Y$ and cov--$\bar Y$ select
+$K=20$ at +1.97\% and +1.96\%, and raw full ridge selects $K=10$ at +1.95\%.
+For instance full ridge at $L=504$, horizons 24/168/504 gain
++0.41/+2.78/+2.75\%. The best CatBoost formulation is only +0.19\% for the soft
+shared cov gate, so no learned gate is promoted.
 
 \newpage
 \sectionbar{TS-IFA results}
@@ -209,7 +231,7 @@ the least-bad aggregate result at \gain{0.04}.
 
 \vfill
 {\scriptsize\color{gray}Source: corrected current screen and ablation reports,
-jobs 43579--43757, published Table-4 rows, and archived TS-IFA analyses.
+jobs 43579--43978, published Table-4 rows, and archived TS-IFA analyses.
 Percentages are equal-weight means of per-configuration nMSE improvement over
 the matching vanilla pipeline; positive is better.}
 \end{document}

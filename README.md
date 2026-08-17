@@ -62,6 +62,13 @@ manifest. Independently submitted downstream jobs select an explicit completed
 extraction manifest; they never infer one from a similarly named directory.
 Within one multi-stage Slurm launch, a later stage may select a ready manifest
 only when it carries that same launch ID.
+The selector matches the complete expected extraction pipeline and seed, then
+fails unless exactly one pipeline configuration remains. Every downstream run
+also embeds the selected extraction's schema, identity, pipeline/experiment
+configuration, and seeds in its own scientific signature. Manifest IDs and
+paths remain provenance only. Consequently a completed smoke result cannot be
+skipped when a publication extraction is requested, even when both runs share
+the same directory identity.
 
 Every independently submitted comparison or ablation owns a workflow root
 below `outputs/adaptation/`, for example `baselines`, `gates`, `benchmark`,

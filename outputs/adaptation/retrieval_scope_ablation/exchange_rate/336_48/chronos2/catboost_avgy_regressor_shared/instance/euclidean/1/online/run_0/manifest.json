@@ -45,6 +45,44 @@
       "space": "instance"
     },
     "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "exchange_rate",
+          "horizon": 48,
+          "lookback": 336,
+          "model_config": {
+            "k": 1,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "instance"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "gate.depth": 4,
       "gate.early_stopping_rounds": 50,
       "gate.iterations": 300,
@@ -130,9 +168,9 @@
     1
   ],
   "signatures": {
-    "computation": "0628d64a08d83d9b6281cf9dc99d124cbddde1097e040a91a1c21263a589372e",
+    "computation": "fda93f85da0b0559df02afbde209d862546880e33cc2d8d288f2115e031b8ad3",
     "path": "01947a6f5fa29467f7bb2930492b4b30d238a91a6bd2e47dca1a9a2fd2a95bea",
-    "pipeline": "9247ee2a2d83cbb5b00f3bd0f5d5cbedfec724e9c4c44175eae694b2b822ca8f"
+    "pipeline": "3a43b8b0623a87cceec50f99a98d2ac14b3577452a8ed418ce2a3dfc75f4fc38"
   },
   "status": "completed",
   "table": {

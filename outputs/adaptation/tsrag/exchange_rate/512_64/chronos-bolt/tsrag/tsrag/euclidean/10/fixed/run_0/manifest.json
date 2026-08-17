@@ -36,6 +36,44 @@
     },
     "pipeline": {
       "batch_size": 256,
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos-bolt",
+          "dataset": "exchange_rate",
+          "horizon": 64,
+          "lookback": 512,
+          "model_config": {
+            "k": 10,
+            "metric": "euclidean",
+            "mode": "fixed",
+            "space": "tsrag"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 1,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": null,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "same_user"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "retrieval_protocol": "tsrag_default",
       "retrieval_scope": "same_user"
     },
@@ -114,9 +152,9 @@
     1
   ],
   "signatures": {
-    "computation": "d945d7caff51265d1061fa70862f6632c5b03b1485f1ca296e745fc6ff9b30a5",
+    "computation": "bfff06579c65ffceb5c0a6a4929ae63b00a248ee8ad708d63c9f8e1a1d30b541",
     "path": "06922dc7d29ba6625eb08f0dc8ec588a5a95e948944b0dd37fdb82c9e4ff2325",
-    "pipeline": "6d8991ba40cdf4f65349d70a9069e7f2f8740d569878e0a938e57ef909ff6c0f"
+    "pipeline": "d2a3f743a7024d660ee346333686497cbdf923f73d754a785ac463f8ee07572c"
   },
   "status": "completed",
   "table": {

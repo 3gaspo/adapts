@@ -278,7 +278,12 @@ allocate_manifest_run() {
   )
   for pair in "${model_values_ref[@]}"; do args+=(--model-config "$pair"); done
   for pair in "${pipeline_values_ref[@]}"; do args+=(--pipeline-config "$pair"); done
-  if [ -n "$input_path" ]; then args+=(--input "upstream_manifest=$input_path"); fi
+  if [ -n "$input_path" ]; then
+    args+=(--input "upstream_manifest=$input_path")
+    if [ "${input_path##*/}" = manifest.json ]; then
+      args+=(--pipeline-dependency "extraction=$input_path")
+    fi
+  fi
   if declare -p ADDITIONAL_INPUTS >/dev/null 2>&1; then
     for pair in "${ADDITIONAL_INPUTS[@]}"; do args+=(--input "$pair"); done
   fi
@@ -307,21 +312,41 @@ resolve_extraction_run() {
   local dataset="$1" lags="$2" horizon="$3" backbone="$4" space="$5" metric="$6" neighbors="$7" mode="$8"
   local retrieval_scope="${9:-${RETRIEVAL_SCOPE:-all}}"
   local identity_root="$PROJECT_ROOT/outputs/extraction/$dataset/${lags}_${horizon}/${backbone,,}/${space,,}/${metric,,}/$neighbors/${mode,,}"
-  local label manifest_id extra pair
+  local label manifest_id pair retrieval_period datastore_stride adapt_query_stride
+  local eval_query_stride align_period max_store_windows splits split_bounds standardize_train_boundary
+  retrieval_period="${PERIOD:-$(dataset_period "$dataset")}"
+  datastore_stride="${DATASTORE_STRIDE:-$DEFAULT_DATASTORE_STRIDE}"
+  adapt_query_stride="${ADAPT_QUERY_STRIDE:-$DEFAULT_ADAPT_QUERY_STRIDE}"
+  eval_query_stride="${EVAL_QUERY_STRIDE:-$DEFAULT_EVAL_QUERY_STRIDE}"
+  align_period="${ALIGN_PERIOD:-$DEFAULT_ALIGN_PERIOD}"
+  max_store_windows="${MAX_STORE_WINDOWS-$DEFAULT_MAX_STORE_WINDOWS}"
+  splits="${SPLITS:-0.3,0.5,0.2}"
+  split_bounds="${SPLIT_BOUNDS:-ratios}"
+  standardize_train_boundary="${STANDARDIZE_TRAIN_BOUNDARY:-none}"
   local -a resolve_args=(
-    --config-policy distinct
     --repeat-policy selected
     --allow-ready-launch-id "$EXPERIMENT_LAUNCH_ID"
+    --seed "${EXTRACTION_SEED:-${SEED:-1}}"
+    --pipeline-config "data.splits=$splits"
+    --pipeline-config "data.datastore_stride=$datastore_stride"
+    --pipeline-config "data.split_bounds=$split_bounds"
+    --pipeline-config "data.standardize_train_boundary=$standardize_train_boundary"
+    --pipeline-config "data.adapt_query_stride=$adapt_query_stride"
+    --pipeline-config "data.eval_query_stride=$eval_query_stride"
+    --pipeline-config "data.period=$retrieval_period"
+    --pipeline-config "data.align_period=$align_period"
+    --pipeline-config "data.max_store_windows=${max_store_windows:-none}"
+    --pipeline-config "normalization=instance"
     --pipeline-config "retrieval.scope=$retrieval_scope"
   )
   if [ -n "${EXTRACTION_PIPELINE_CONFIGS:-}" ]; then
     for pair in ${EXTRACTION_PIPELINE_CONFIGS}; do resolve_args+=(--pipeline-config "$pair"); done
   fi
-  IFS=$'\t' read -r EXTRACTION_RUN_DIR label manifest_id extra < <(
-    python -m experiment_runs resolve --identity-root "$identity_root" "${resolve_args[@]}"
+  IFS=$'\t' read -r EXTRACTION_RUN_DIR label manifest_id < <(
+    python -m experiment_runs resolve-one --identity-root "$identity_root" "${resolve_args[@]}"
   )
-  if [ -z "${EXTRACTION_RUN_DIR:-}" ] || [ -n "${extra:-}" ]; then
-    log_error "expected exactly one extraction pipeline identity=$identity_root; set EXTRACTION_PIPELINE_CONFIGS='key=value ...' when multiple pipeline configs exist"
+  if [ -z "${EXTRACTION_RUN_DIR:-}" ]; then
+    log_error "no unique extraction run matched the complete expected scientific configuration identity=$identity_root"
     return 1
   fi
   python -m experiment_runs validate \

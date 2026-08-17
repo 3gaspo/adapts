@@ -4,6 +4,67 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-17: Make upstream run fetching fail closed and bind downstream reuse
+  to the upstream scientific computation. The shared manifest helper now has a
+  single-run resolver with exact pipeline/seed filtering and can embed an
+  upstream schema, identity/model configuration, pipeline/experiment
+  configuration, and seeds in the downstream pipeline signature without using
+  its path or manifest ID. Adaptation resolves every extraction field, uses
+  that resolver, and automatically records the extraction dependency when
+  allocating a downstream run. The current-artifact audit found 18
+  scientifically invalid job-42887 screen runs (10 baselines and 8 gates) at
+  Electricity 504:168/raw/Euclidean/K=3 and changed only those overall statuses
+  to `interrupted`. All 72 job-42887 screen manifests at that dataset/setting
+  also recorded the smoke vanilla manifest; 54 were provenance/timing-only
+  errors because evaluation used the retrieval payload's vanilla arrays, and
+  their references were migrated without rerunning. A one-time exact migration
+  enriched 82 equivalent historical extraction manifests with reconstructible
+  default fields, embedded extraction dependencies into 3,156 valid downstream
+  manifests, recomputed their parameter-only signatures, and rebuilt their
+  repeat indexes. No result payload was deleted. Affected contracts/files:
+  shared manifest helper and tests, extraction resolver, dependency audit/
+  migration utility, README, current manifests and selection indexes, and the
+  cluster handoff. Checks passed: all 13 manifest lifecycle/selection tests in
+  each of the five standardized projects; Adaptation's method-profile contract;
+  Bash syntax; exact full-profile resolution to the selected publication run;
+  an idempotent zero-change post-migration audit; and a full 3,748-manifest,
+  3,667-selection-entry validation with zero dependency, signature, or index
+  errors. Required rerun: after synchronizing these changes to the cluster,
+  submit `sbatch screen.slurm` normally. Its exact extraction stage and 846
+  valid screen results should skip, the 18 interrupted scientific rows should
+  be recreated under new dependency-aware signatures, and job 43582's stale
+  full/average/coefficient reports should rebuild. No other synchronized
+  project needs a rerun. Recheck the screen ranking before treating later
+  selection-driven conclusions as final; update analyzed-result documents only
+  after the corrected report is synchronized. Deferred maintenance: reconcile
+  and render `latex/experiment_guideline.tex` with the dependency contract.
+
+- 2026-08-17: Synchronize and analyze retrieval-scope job 43978. The run
+  completed with empty stderr, terminal table and coefficient stages, 96/96
+  newly launched restricted-scope extraction manifests completed, and all
+  324 report-selected adaptation manifests completed. Across the five selected
+  ridge pipelines, equal-configuration T3 nMSE gains are +1.832% with all-user
+  retrieval, +1.785% with other-users-only retrieval, and +1.480% with
+  same-user-only retrieval; cross-user candidates therefore retain nearly all
+  of the benefit, while all-user retrieval remains the preferred default.
+  Squared-error gains do not extend to MAE, which worsens by 0.727--0.910%.
+  The all-user control also exposed 18 old screen rows at Electricity 504:168,
+  raw Euclidean K=3, whose job-42887 results consumed job-42822's smoke
+  extraction instead of the full publication extraction. The new scope result
+  uses the correct full-profile extraction and revises selected full ridge from
+  +1.780% to +1.875%; job 43978 itself requires no rerun. Affected evidence:
+  cluster handoff, executive summary/PDF, and the durable thesis activity log.
+  Checks completed before documentation: log/stderr scan, exact report coverage
+  and duplicate audit, manifest/seed/artifact inventory, paired scope analysis,
+  and screen-upstream provenance comparison. Deferred cluster work: rerun the
+  18 contaminated screen result rows for that one dataset/setting/retrieval
+  pipeline and rebuild the screen report. No other screen row was numerically
+  implicated; a later complete audit found and migrated 54 additional
+  provenance/timing-only vanilla references from the same job.
+  Two final pdfLaTeX passes completed without errors, undefined references, or
+  overfull boxes; all three executive-summary pages were rendered at 150 DPI
+  and visually inspected without clipping, overlap, or legibility defects.
+
 - 2026-08-17: Simplify artifact publication and align the specialized SOTA and
   TS-RAG tables with shared run selection. A job-scoped `publish_job.sh` call
   now publishes only its exact stdout/stderr pair; an unscoped call stages the

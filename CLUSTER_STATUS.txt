@@ -2,10 +2,11 @@ CLUSTER EXPERIMENT STATUS
 Updated: 2026-08-17
 
 CURRENT HANDOFF
-- Jobs 43975 (K), 43976 (H), and 43977 (CatBoost formulation) completed with
-  empty stderr and terminal report stages. At the 2026-08-17 09:55 synchronized
-  snapshot, retrieval-scope job 43978 was still running inside the final
-  instance-K=3 extraction block with no stderr and no report yet. TS-IFA job
+- Jobs 43975 (K), 43976 (H), 43977 (CatBoost formulation), and 43978
+  (retrieval scope) completed with empty stderr and terminal report stages.
+  Retrieval scope contributed 96 completed restricted-scope extraction
+  manifests and 324 completed adaptation manifests to a complete 324-input
+  report. TS-IFA job
   43980 failed at configuration 17/32 because its neural rooter referenced the
   undefined `rooter_candidate_count`; the forward pass now derives token IDs
   from the actual branch tensor count. Resubmitting `ts_ifa.slurm` reuses the 16
@@ -57,11 +58,42 @@ CURRENT HANDOFF
   ridge at H=24,168,504 with L=504. Completed CatBoost job 43977 retains only a
   tiny learned-gate gain (+0.19% for soft shared cov) despite much larger oracle
   headroom.
+- Completed retrieval-scope job 43978 shows that the cross-user pool carries
+  nearly all selected-ridge benefit. Averaged equally over five pipelines and
+  12 primary dataset/settings, all-user, other-users-only, and same-user-only
+  retrieval improve held-out nMSE by +1.832%, +1.785%, and +1.480%; their win
+  counts are 53/60, 53/60, and 51/60. All-user retrieval remains the default,
+  but excluding the query user costs only 0.048 percentage points on average,
+  whereas same-user-only costs 0.352 points. The corresponding raw-MSE gains
+  are +2.335%, +2.275%, and +2.148%, while MAE worsens by 0.727%, 0.757%, and
+  0.910%. Gates remain uncompetitive: the best scoped gate is same-user raw-K=1
+  CatBoost cov at only +0.219%, and every scoped CatBoost avgY result is
+  negative.
+- The scope audit exposed one superseded screen lineage, not a failure of job
+  43978. All 18 job-42887 screen rows for Electricity 504:168 with raw
+  Euclidean K=3 consumed job-42822's smoke extraction (aligned stride 256,
+  2,048-window cap). The scope all-user control uses the correct publication
+  extraction (25/25/127 strides, unaligned, 30,000-window cap) and revises the
+  selected full-ridge aggregate from +1.780% to +1.875%. Rerun precisely those
+  18 screen result rows and rebuild the screen report; the other screen rows
+  and the complete scope report are not implicated.
+- A complete dependency audit subsequently confirmed that those 18 rows are
+  the only numerically corrupted runs. The same old selector also recorded the
+  job-42822 smoke vanilla manifest in all 72 job-42887 Electricity 504:168
+  screen manifests. For the other 54 rows, evaluation used the correct
+  retrieval payload's embedded vanilla arrays, so only provenance and vanilla
+  timing attribution were wrong; those references were migrated without a
+  scientific rerun. The 18 numerical runs are now `interrupted`. Equivalent
+  historical extraction manifests and 3,156 valid downstream manifests were
+  migrated to dependency-aware parameter signatures, with no result payload
+  deletion, so ordinary resubmission can skip correct work robustly.
 - Next cluster actions: submit the final benchmark, TS-RAG, and SOTA fronts
-  against generation 2; let retrieval-scope job 43978 finish or safely resume it
-  if it has stopped; resume the corrected TS-IFA pilot, then promote any selected
-  TS-IFA records before its H, L, meta-ridge, and meta-neural follow-ups.
-  Cross-RAG has no execution front.
+  against generation 2; after synchronizing the dependency/status migration,
+  submit `screen.slurm` normally so its 846 valid rows skip, the 18 interrupted
+  rows rerun, and the full/average/coefficient reports rebuild; resume the
+  corrected TS-IFA pilot, then promote any selected TS-IFA records before its
+  H, L, meta-ridge, and meta-neural follow-ups. Cross-RAG has no execution
+  front.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic

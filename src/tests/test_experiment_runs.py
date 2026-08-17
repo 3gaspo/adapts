@@ -16,7 +16,9 @@ from experiment_runs import (
     mark_ready,
     mark_status,
     prepare_run_output,
+    pipeline_config_with_dependencies,
     select_identity_runs,
+    select_single_identity_run,
     validate_completed,
     write_report_manifest,
 )
@@ -103,6 +105,72 @@ class ExperimentRunsTest(unittest.TestCase):
                 [choice.run_dir.name for choice in distinct],
                 ["run_1", "run_2"],
             )
+
+    def test_single_dependency_resolution_rejects_ambiguous_pipeline_configs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            identity = Path(folder) / "electricity/504_168/patchtst/ridge/instance"
+            first = self._allocate(identity, 10)
+            second = self._allocate(identity, 20)
+            self._complete(first)
+            self._complete(second)
+
+            with self.assertRaisesRegex(ManifestError, "expected exactly one"):
+                select_single_identity_run(identity)
+            selected = select_single_identity_run(
+                identity,
+                requested_pipeline={"steps": 20},
+                seeds=[1],
+            )
+            self.assertEqual(selected.run_dir, second.run_dir)
+
+    def test_upstream_scientific_config_changes_downstream_reuse(self):
+        with tempfile.TemporaryDirectory() as folder:
+            upstream_identity = Path(folder) / "upstream"
+            smoke = self._allocate(upstream_identity, 10)
+            full = self._allocate(upstream_identity, 20)
+            downstream_identity = Path(folder) / "downstream"
+
+            smoke_pipeline = pipeline_config_with_dependencies(
+                {"fit": "ridge"}, {"extraction": smoke.run_dir / "manifest.json"}
+            )
+            full_pipeline = pipeline_config_with_dependencies(
+                {"fit": "ridge"}, {"extraction": full.run_dir / "manifest.json"}
+            )
+            dependency = smoke_pipeline["dependency.extraction"]
+            self.assertNotIn("manifest_id", dependency)
+            self.assertNotIn("path", dependency)
+            self.assertNotEqual(smoke_pipeline, full_pipeline)
+
+            smoke_result = allocate_run(
+                downstream_identity,
+                project="contract_test",
+                workflow="downstream",
+                dataset="electricity",
+                lookback=504,
+                horizon=168,
+                backbone="patchtst",
+                model_config_order=["formula"],
+                model_config={"formula": "ridge"},
+                pipeline_config=smoke_pipeline,
+                seeds=[1],
+                launch_id="downstream_smoke",
+            )
+            self._complete(smoke_result)
+            full_result = allocate_run(
+                downstream_identity,
+                project="contract_test",
+                workflow="downstream",
+                dataset="electricity",
+                lookback=504,
+                horizon=168,
+                backbone="patchtst",
+                model_config_order=["formula"],
+                model_config={"formula": "ridge"},
+                pipeline_config=full_pipeline,
+                seeds=[1],
+                launch_id="downstream_full",
+            )
+            self.assertEqual((full_result.run_dir.name, full_result.action), ("run_1", "new"))
 
     def test_obsolete_schema_is_rejected(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -45,6 +45,44 @@
       "space": "raw"
     },
     "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Electricity",
+          "horizon": 168,
+          "lookback": 504,
+          "model_config": {
+            "k": 3,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "raw"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 256,
+          "data.align_period": true,
+          "data.datastore_stride": 168,
+          "data.eval_query_stride": 256,
+          "data.max_store_windows": 2048,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
       "fit_baselines_on_eval": false,
       "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
       "max_adapt_refit_samples": null,
@@ -128,9 +166,9 @@
     1
   ],
   "signatures": {
-    "computation": "b35d29ad0c3a5baf3f7df14aabcc8d8418a284957a8e520a7abf3ee6e5464552",
+    "computation": "a2c339a6205ec9ba0859d26c876c9d93e1f511dd6fd4bb1d38c408618c50bafb",
     "path": "665c818f8127258284140ad5bc10b709756690979ce46647d505761707b39a25",
-    "pipeline": "3959ab3714fcc417ab0d659b51e1f083cb4ba2806ea0e1a0c6d946d75ebb0c72"
+    "pipeline": "94cb60a8d212e5325ce6f12e9d296d8ec935f8e2c3f0df375268033eb1caa1bb"
   },
   "status": "completed",
   "table": {

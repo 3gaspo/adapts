@@ -324,6 +324,11 @@ def main() -> None:
     assert "positive_window_pct" in common
     assert "retrieval_scope_ablation" in common
     assert 'python -m experiment_runs prepare --run-dir "$1"' in common
+    assert 'python -m experiment_runs resolve-one --identity-root "$identity_root"' in common
+    assert '--pipeline-dependency "extraction=$input_path"' in common
+    assert '--pipeline-config "data.datastore_stride=$datastore_stride"' in common
+    assert '--pipeline-config "data.eval_query_stride=$eval_query_stride"' in common
+    assert '--seed "${EXTRACTION_SEED:-${SEED:-1}}"' in common
     assert '--pipeline-config "retrieval.scope=$retrieval_scope"' in common
     baseline_evaluator = (
         ROOT / "src" / "adaptors" / "baselines" / "evaluate.py"
