@@ -1,4 +1,4 @@
-"""Static contract checks for exact-path manual publishing."""
+"""Static contract checks for log-scoped or full-tree manual publishing."""
 
 from pathlib import Path
 import unittest
@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class PublisherContractTest(unittest.TestCase):
-    def test_publisher_is_manual_exact_and_proxy_aware(self):
+    def test_publisher_is_manual_scoped_and_proxy_aware(self):
         publisher = (ROOT / "publish_job.sh").read_text(encoding="utf-8")
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
         common = (ROOT / "src/slurm/common.sh").read_text(encoding="utf-8")
@@ -18,7 +18,8 @@ class PublisherContractTest(unittest.TestCase):
         self.assertFalse((ROOT / "src/scripts/publish_job.sh").exists())
         self.assertIn('logs/*_"$job_id".out', publisher)
         self.assertIn('logs/*_"$job_id".err', publisher)
-        self.assertIn("launch_id", publisher)
+        self.assertNotIn("launch_id", publisher)
+        self.assertNotIn('find "$project_root/outputs"', publisher)
         self.assertIn("paths=(logs outputs)", publisher)
         self.assertIn('if [ -n "$job_id" ]', publisher)
         self.assertIn("git add -v -f --", publisher)

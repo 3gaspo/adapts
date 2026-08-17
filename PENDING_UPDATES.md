@@ -4,29 +4,99 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
-- 2026-08-16: Make `SWEEP_CANDIDATES.txt` the default source for every
-  selection-driven post-screen Slurm front. `benchmark.slurm` now consumes all
-  adaptation entries, while `sota_benchmark.slurm` and `tsrag.slurm` consume the
-  first shared-ridge entry in manifest order; explicit CSV overrides remain
-  available. The specialized table readers filter and record the exact selected
-  control so completed outputs from older selections cannot leak into a report.
-  The SOTA default consequently changes from the non-selected instance-K=10
-  control to the selected instance-K=3 full ridge, invalidating the old computed
-  SOTA row for current use without deleting it. Affected contracts: selected
-  candidate reader, three Slurm fronts, SOTA/TS-RAG orchestrators and reports,
-  focused tests, README, and cluster handoff. Required cluster reruns: TS-RAG
-  may reuse all producers and rebuild its table; SOTA must recompute all seven
-  selected K=3 rows and its table; the final benchmark still needs first
-  execution. No other completed scientific artifact is invalidated. Checks
-  passed in the shared thesis runtime: selected-candidate and profile smoke
-  contracts, 5 SOTA and 7 TS-RAG contract tests including obsolete-control
-  exclusion, Python compilation of both readers, Bash syntax for all six
-  changed fronts/helpers, and Git whitespace validation. The package-style
-  unittest invocation encountered the runtime's unrelated missing `einops`;
-  direct execution of both self-contained test files passed. Deferred
+- 2026-08-17: Simplify artifact publication and align the specialized SOTA and
+  TS-RAG tables with shared run selection. A job-scoped `publish_job.sh` call
+  now publishes only its exact stdout/stderr pair; an unscoped call stages the
+  `logs/` and `outputs/` parent trees directly, with the existing heavy-file
+  exclusions. SOTA and TS-RAG tables now use the shared schema-1 manifest
+  selector, pipeline/configuration/repeat/purpose policies, and standard report
+  provenance. TS-RAG remains a normal run with its existing metric payload;
+  published SOTA JSON values remain static rows appended after computed-run
+  selection. Affected contracts: canonical publisher, specialized readers and
+  orchestrators, focused tests, README, and workspace/experiment guidance.
+  Direct execution passed 5 SOTA, 7 TS-RAG, and all 6 publisher contract tests;
+  Git Bash syntax passed for both orchestrators and all nine byte-identical
+  publishers. The initial package-style unittest command could not import the
+  Adaptation package because the shared runtime lacks `einops`; the same
+  self-contained tests passed when executed directly. No scientific rerun or
+  artifact migration is required; rebuild the specialized reports when their
+  table stages next run. Deferred maintenance: reconcile and render the
+  experiment guideline with the simplified publisher and selector provenance.
+
+- 2026-08-17: Fix the neural TS-IFA crash from job 43980. The neural rooter now
+  constructs candidate-token IDs from the runtime branch count, matching its
+  token embedding and scorer inputs for every branch set, routing scope, and
+  constraint. The artifact contract and run signatures are unchanged. The 16
+  completed joint-ridge configurations remain reusable; resubmitting
+  `ts_ifa.slurm` reruns the interrupted first neural configuration and executes
+  the remaining 15 neural configurations. A dependency-isolated forward check
+  passed all 16 neural combinations of branch set, routing scope, and routing
+  constraint; Python compilation, TS-IFA Bash syntax, and Git whitespace checks
+  also passed. The complete project smoke remains deferred to the project
+  environment because the shared notebook runtime does not provide `einops`.
+
+- 2026-08-17: Analyze completed K/H/CatBoost jobs 43975--43977, promote
+  generation-2 candidates, and integrate the L/H evidence into the experiment
+  guideline and active ICLR 2027 submission. The eight unique adaptation
+  candidates are ordered by each pipeline's best-K held-out improvement;
+  instance full shared ridge K=5 is first and is therefore the exact TS-RAG and
+  SOTA control, while the final benchmark consumes all eight. The combined L/H
+  table records +2.43/+1.14/+0.41% over L=24/168/504 at H=24 and
+  +0.41/+2.78/+2.75% over H=24/168/504 at L=504, with the L=24 instability
+  stated explicitly. Cluster handoff and README were refreshed. No completed
+  scientific artifact is invalidated. Required runs: benchmark, TS-RAG, and
+  SOTA can now execute; retrieval scope remains pending terminal publication;
+  TS-IFA's undefined neural-router variable is fixed and the pilot is ready for
+  a resumable rerun. Checks passed in the shared thesis runtime: selected-
+  candidate and sweep-profile smoke contracts, 5 SOTA and 7 TS-RAG contract
+  tests, Bash syntax for benchmark/TS-RAG/SOTA, and Git whitespace validation.
+  Both LaTeX sources compiled without undefined references, citations, or
+  overfull boxes; the affected PDF pages were rendered and visually inspected.
+
+- 2026-08-16: Split selected candidates into immutable experiment generations
+  so active cluster work keeps its launch contract while post-K work can adopt
+  the winning K. `SWEEP_CANDIDATES.txt` is frozen as generation 1 for the
+  already-running K, H, CatBoost, and retrieval-scope workflows;
+  `SECOND_GENERATION_CANDIDATES.txt` was introduced as an empty tracked manifest
+  (and was populated after K analysis by the 2026-08-17 entry above); only
+  `benchmark.slurm`, `tsrag.slurm`, `sota_benchmark.slurm`, and the four TS-IFA
+  H/L/meta follow-up fronts consume. The v4 TS-IFA pilot remains a candidate
+  producer. The user reports all five producer/ablation workflows as active,
+  but their new job IDs and artifacts are not yet synchronized. Required
+  cluster sequence: publish and analyze the active runs, write best-K adaptation
+  records to generation 2, run benchmark/TS-RAG/SOTA, then promote any selected
+  TS-IFA records before its follow-ups. Existing K=10 SOTA evidence is retained;
+  its final-current replacement is determined only after generation 2 is
+  populated. Affected contracts: candidate manifests, seven Slurm fronts,
+  selection/profile smoke tests, README, local guidance, and cluster handoff.
+  No active producer manifest or existing scientific artifact was changed, and
+  this wiring change itself requires no scientific rerun. Checks passed in the
+  shared thesis runtime: selected-candidate and profile smoke contracts, 5 SOTA
+  and 7 TS-RAG contract tests, Bash syntax for all seven reassigned fronts, and
+  Git whitespace validation. Deferred documentation: reconcile the experiment
+  guideline during maintenance after generation 2 is populated.
+
+- 2026-08-16: Centralize candidate parsing and exact selected-control report
+  filtering for post-screen Slurm fronts; the default manifest assignment was
+  subsequently split into immutable generations by the entry above.
+  `benchmark.slurm` consumes all adaptation entries from its assigned manifest,
+  while `sota_benchmark.slurm` and `tsrag.slurm` consume its first shared-ridge
+  entry; explicit CSV overrides remain available. The specialized table readers
+  filter and record the exact selected control so completed outputs from older
+  selections cannot leak into a report. Existing instance-K=10 SOTA evidence is
+  preserved but is not a final-current selection; its replacement and rerun
+  scope will be determined by `SECOND_GENERATION_CANDIDATES.txt` after K
+  analysis. Affected contracts: selected candidate reader, three Slurm fronts,
+  SOTA/TS-RAG orchestrators and reports, focused tests, README, and cluster
+  handoff. Checks passed in the shared thesis runtime: selected-candidate and
+  profile smoke contracts, 5 SOTA and 7 TS-RAG contract tests including
+  obsolete-control exclusion, Python compilation of both readers, Bash syntax
+  for all six changed fronts/helpers, and Git whitespace validation. The
+  package-style unittest invocation encountered the runtime's unrelated missing
+  `einops`; direct execution of both self-contained test files passed. Deferred
   documentation: reconcile the experiment guideline during maintenance and
   replace the executive summary's former K=10 SOTA paragraph only after the
-  selected K=3 evidence is obtained and analyzed.
+  generation-2 evidence is obtained and analyzed.
 
 - 2026-08-16: Standardize `publish_job.sh` as the thesis-wide canonical
   publisher. It now sources the external proxy and fast-forward pulls
@@ -112,3 +182,22 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
   result-table smoke, and Git whitespace validation passed. No scientific run
   is required and table values are unchanged. Remaining cluster action:
   rebuild one real selected-pipeline sweep report with the corrected reader.
+
+Maintenance 2026-08-17: direct inspection confirmed the two immutable
+candidate generations, the seven generation-2 consumer fronts, the intentionally
+empty second-generation manifest, and the unchanged generation-1 contracts of
+the five reported active workflows. No newer job IDs or artifacts were present,
+so no result or executive-summary conclusion changed. Bash syntax passed for
+all nine byte-identical publishers. The complementary sweep-table smoke passed
+with the documented `PYTHONPATH=src` after an initial misconfigured
+`PYTHONPATH=.` invocation failed during import; Git whitespace validation was
+clean. The README and cluster handoff were current. The experiment guideline
+was reconciled with both candidate generations and the canonical proxy-first,
+fast-forward-pull publisher. Its final compile completed without warnings,
+undefined references, or overfull boxes, and all 18 rendered pages passed
+visual inspection. Focused selector/profile/TS-RAG/SOTA tests were not repeated
+because they were already successful and the sweep-table smoke supplied the
+complementary report boundary. Remaining work is external: publish and analyze
+the five active workflows, populate generation 2 from K and TS-IFA evidence,
+then run the deferred final consumers and one real publisher integration. No
+scientific recomputation was performed locally.

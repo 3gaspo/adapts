@@ -73,23 +73,50 @@ def configure_run_selection(
     )
 
 
-def selected_manifest_runs(root: str | Path) -> list[SelectedRun]:
+def selected_manifest_runs(
+    root: str | Path,
+    *,
+    pipeline_config: Mapping[str, Any] | None = None,
+    config_policy: str | None = None,
+    repeat_policy: str | None = None,
+    purposes: Sequence[str] | None = None,
+) -> list[SelectedRun]:
     base = Path(root).expanduser().resolve()
     active_launch = os.environ.get("EXPERIMENT_LAUNCH_ID")
+    requested_pipeline = (
+        _RUN_SELECTION["pipeline_config"]
+        if pipeline_config is None
+        else dict(pipeline_config)
+    )
+    selected_config_policy = config_policy or _RUN_SELECTION["config_policy"]
+    selected_repeat_policy = repeat_policy or _RUN_SELECTION["repeat_policy"]
+    selected_purposes = (
+        _RUN_SELECTION["purposes"] if purposes is None else list(purposes)
+    )
     identity_roots = sorted(
-        {path.parent.parent for path in base.rglob("manifest.json") if path.parent.name.startswith("run_") and "archive" not in path.relative_to(base).parts}
+        {
+            path.parent.parent
+            for path in base.rglob("manifest.json")
+            if path.parent.name.startswith("run_")
+            and "archive" not in path.relative_to(base).parts
+        }
     )
     selected: list[SelectedRun] = []
     for identity_root in identity_roots:
-        manifests = [load_manifest(path) for path in identity_root.glob("run_*/manifest.json")]
-        if any(manifest_is_selectable(manifest, allow_ready_launch_id=active_launch) for manifest in manifests):
+        manifests = [
+            load_manifest(path) for path in identity_root.glob("run_*/manifest.json")
+        ]
+        if any(
+            manifest_is_selectable(manifest, allow_ready_launch_id=active_launch)
+            for manifest in manifests
+        ):
             selected.extend(
                 select_identity_runs(
                     identity_root,
-                    requested_pipeline=_RUN_SELECTION["pipeline_config"],
-                    config_policy=_RUN_SELECTION["config_policy"],
-                    repeat_policy=_RUN_SELECTION["repeat_policy"],
-                    purposes=_RUN_SELECTION["purposes"],
+                    requested_pipeline=requested_pipeline,
+                    config_policy=selected_config_policy,
+                    repeat_policy=selected_repeat_policy,
+                    purposes=selected_purposes,
                     allow_ready_launch_id=active_launch,
                 )
             )

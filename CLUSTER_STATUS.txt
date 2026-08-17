@@ -1,7 +1,20 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-16
+Updated: 2026-08-17
 
 CURRENT HANDOFF
+- Jobs 43975 (K), 43976 (H), and 43977 (CatBoost formulation) completed with
+  empty stderr and terminal report stages. At the 2026-08-17 09:55 synchronized
+  snapshot, retrieval-scope job 43978 was still running inside the final
+  instance-K=3 extraction block with no stderr and no report yet. TS-IFA job
+  43980 failed at configuration 17/32 because its neural rooter referenced the
+  undefined `rooter_candidate_count`; the forward pass now derives token IDs
+  from the actual branch tensor count. Resubmitting `ts_ifa.slurm` reuses the 16
+  completed joint-ridge configurations and runs the 16 neural configurations.
+- `SECOND_GENERATION_CANDIDATES.txt` now contains the eight unique adaptation
+  pipelines in decreasing order of each pipeline's best-K held-out
+  improvement. The first record is instance-Euclidean full shared ridge at
+  K=5, so `tsrag.slurm` and `sota_benchmark.slurm` select that control; the
+  final benchmark consumes all eight records. No TS-IFA entry is selected.
 - Jobs 43582 (screen tables), 43584 (Fourier), 43585 (fixed-T0 datastore),
   43593 (lookback), 43596 (per-horizon ridge), 43598 (mixed quantities), 43602
   (convex), and 43603 (delta ridge) completed with empty stderr and terminal
@@ -32,23 +45,23 @@ CURRENT HANDOFF
   it improves local vanilla on six datasets and loses only on ETTm2. Its table
   stage exposed the same cross-launch discovery bug and failed after preserving
   every producer. The corrected reader records all seven obtained manifests and
-  rebuilt the complete report locally. The post-screen selector contract now
-  chooses the first shared-ridge entry in `SWEEP_CANDIDATES.txt`, which is
-  instance K=3; the K=10 evidence is preserved but is no longer the current
-  selected SOTA control. All seven K=3 producer rows and the table must run.
-- K-ablation job 43754 reached the 23-hour limit during Traffic 504:168 raw
-  K=15: 118/144 active K<=20 retrieval identities are completed, that identity
-  remains stale as running, and 25 identities are not yet present. Both
-  instance-retrieval gate forms have completed all 72 settings
-  each (144 result manifests); raw gates, baselines, and final tables have not
-  started. This is not yet analyzable K evidence. H-ablation job 43592 still
-  needs resubmission; its former shared-extraction collision is now reusable.
-- Next cluster actions: deploy the selector/table fixes; rerun TS-RAG so its
-  completed producers are skipped and its table is rebuilt; rerun the complete
-  SOTA workflow for the selected instance-K=3 control; mark launch 43754
-  interrupted and resume K; rerun H; run CatBoost, retrieval scope, and the
-  final benchmark; then run the v4 TS-IFA pilot. Cross-RAG has no execution
-  front.
+  rebuilt the complete report locally. This K=10 evidence remains preserved,
+  but the current final control is now instance full ridge at K=5. All seven
+  K=5 producer rows and the table must run.
+- Completed K job 43975 selects instance full ridge K=5 (+2.00% mean nMSE);
+  instance cov-Y and cov-avgY ridge both select K=20 (+1.97% and +1.96%), and
+  raw full ridge selects K=10 (+1.95%). The learned gates remain weak: raw
+  CatBoost-cov peaks at K=15 (+0.12%), instance CatBoost-avgY peaks at K=5 but
+  remains negative (-0.94%), and both Bayes gates are flat so retain K=1.
+  Completed H job 43976 shows +0.41%, +2.78%, and +2.75% for full instance
+  ridge at H=24,168,504 with L=504. Completed CatBoost job 43977 retains only a
+  tiny learned-gate gain (+0.19% for soft shared cov) despite much larger oracle
+  headroom.
+- Next cluster actions: submit the final benchmark, TS-RAG, and SOTA fronts
+  against generation 2; let retrieval-scope job 43978 finish or safely resume it
+  if it has stopped; resume the corrected TS-IFA pilot, then promote any selected
+  TS-IFA records before its H, L, meta-ridge, and meta-neural follow-ups.
+  Cross-RAG has no execution front.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic

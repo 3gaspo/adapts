@@ -6,96 +6,172 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
+
+from experiment_runs import SelectedRun, write_report_manifest
+from visu.results_table import selected_manifest_runs
 
 
 DATASETS = ("Electricity", "Traffic", "Solar", "exchange_rate")
+METRICS = ("mse", "mae", "nmse", "positive_window_pct")
+TSRAG_CONFIG = {
+    "formula": "tsrag",
+    "space": "tsrag",
+    "metric": "euclidean",
+    "k": 10,
+    "mode": "fixed",
+}
 
 
 def _json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _selected_manifests(root: Path) -> list[tuple[dict[str, Any], Path]]:
-    selected = []
-    for path in root.rglob("manifest.json"):
-        manifest = _json(path)
-        if manifest.get("status") == "completed":
-            selected.append((manifest, path.parent))
-    return selected
+def _pipeline_config(values: Sequence[str]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for item in values:
+        if "=" not in item:
+            raise ValueError(f"pipeline config must be KEY=VALUE, got {item!r}")
+        key, value = item.split("=", 1)
+        lowered = value.casefold()
+        if lowered in {"true", "false"}:
+            parsed[key] = lowered == "true"
+        else:
+            try:
+                parsed[key] = int(value)
+            except ValueError:
+                try:
+                    parsed[key] = float(value)
+                except ValueError:
+                    parsed[key] = value
+    return parsed
 
 
-def _manifest_ref(manifest: dict[str, Any]) -> dict[str, Any]:
-    identity = manifest["identity"]
-    return {
-        "manifest_id": manifest["manifest_id"],
-        "launch_id": manifest.get("launch", {}).get("launch_id"),
-        "dataset": identity["dataset"],
-        "backbone": identity["backbone"],
-        "formula": identity.get("model_config", {}).get("formula"),
-    }
-
-
-def _rows(
-    controls_root: Path, tsrag_root: Path, control_method: str
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    rows: dict[tuple[str, str, str], dict[str, Any]] = {}
-    obtained: list[dict[str, Any]] = []
-    for manifest, directory in _selected_manifests(controls_root):
-        metrics = directory / "baseline_metrics.json"
-        if not metrics.is_file():
-            continue
-        identity = manifest["identity"]
-        if identity.get("model_config", {}).get("formula") != control_method:
-            continue
-        dataset = str(identity["dataset"])
-        backbone = str(identity["backbone"])
-        used = False
-        for row in _json(metrics):
-            if row.get("split") != "eval":
-                continue
-            method = str(row["baseline"])
-            rows[(backbone, method, dataset)] = {
-                "backbone": backbone,
-                "method": method,
-                "dataset": dataset,
-                **{name: float(row[name]) for name in ("mse", "mae", "nmse", "positive_window_pct")},
-            }
-            used = True
-        if used:
-            obtained.append(_manifest_ref(manifest))
-    for manifest, directory in _selected_manifests(tsrag_root):
-        metrics = directory / "tsrag_metrics.json"
-        if not metrics.is_file():
-            continue
-        dataset = str(manifest["identity"]["dataset"])
-        row = _json(metrics)[0]
-        rows[("chronos-bolt", "tsrag", dataset)] = {
-            "backbone": "chronos-bolt",
-            "method": "tsrag",
-            "dataset": dataset,
-            **{name: float(row[name]) for name in ("mse", "mae", "nmse", "positive_window_pct")},
-        }
-        obtained.append(_manifest_ref(manifest))
-    groups = {(backbone, method) for backbone, method, _ in rows}
-    for backbone, method in groups:
-        present = {dataset for b, m, dataset in rows if (b, m) == (backbone, method)}
-        if present != set(DATASETS):
-            raise ValueError(f"incomplete {backbone}/{method}: {sorted(present)}")
-    if not any(method == "tsrag" for _, method in groups):
-        raise ValueError("no completed TS-RAG results found")
-    return [rows[key] for key in sorted(rows)], sorted(
-        obtained, key=lambda item: (item["backbone"], item["dataset"], item["formula"] or "")
+def _matches_protocol(
+    selected: SelectedRun, *, formula: str, backbones: set[str]
+) -> bool:
+    identity = selected.manifest["identity"]
+    model_config = identity.get("model_config", {})
+    expected = {**TSRAG_CONFIG, "formula": formula}
+    return (
+        identity.get("dataset") in DATASETS
+        and identity.get("lookback") == 512
+        and identity.get("horizon") == 64
+        and identity.get("backbone") in backbones
+        and all(model_config.get(key) == value for key, value in expected.items())
     )
 
 
+def _rows(
+    controls_root: Path,
+    tsrag_root: Path,
+    control_method: str,
+    *,
+    pipeline_config: Mapping[str, Any],
+    config_policy: str,
+    repeat_policy: str,
+    purposes: Sequence[str],
+) -> tuple[list[dict[str, Any]], list[SelectedRun]]:
+    collected: dict[tuple[str, str, str], list[dict[str, float]]] = {}
+    obtained: list[SelectedRun] = []
+    selection = {
+        "pipeline_config": pipeline_config,
+        "config_policy": config_policy,
+        "repeat_policy": repeat_policy,
+        "purposes": purposes,
+    }
+    for selected in selected_manifest_runs(controls_root, **selection):
+        if not _matches_protocol(
+            selected, formula=control_method, backbones={"chronos2", "chronos-bolt"}
+        ):
+            continue
+        metrics_path = selected.run_dir / "baseline_metrics.json"
+        if not metrics_path.is_file():
+            continue
+        identity = selected.manifest["identity"]
+        used = False
+        for row in _json(metrics_path):
+            if row.get("split") != "eval":
+                continue
+            key = (str(identity["backbone"]), str(row["baseline"]), str(identity["dataset"]))
+            collected.setdefault(key, []).append({name: float(row[name]) for name in METRICS})
+            used = True
+        if used:
+            obtained.append(selected)
+
+    for selected in selected_manifest_runs(tsrag_root, **selection):
+        if not _matches_protocol(selected, formula="tsrag", backbones={"chronos-bolt"}):
+            continue
+        metrics_path = selected.run_dir / "tsrag_metrics.json"
+        if not metrics_path.is_file():
+            continue
+        metric_rows = _json(metrics_path)
+        if len(metric_rows) != 1:
+            raise ValueError(f"expected one TS-RAG metric row in {metrics_path}")
+        dataset = str(selected.manifest["identity"]["dataset"])
+        collected.setdefault(("chronos-bolt", "tsrag", dataset), []).append(
+            {name: float(metric_rows[0][name]) for name in METRICS}
+        )
+        obtained.append(selected)
+
+    allow_average = config_policy == "average" or repeat_policy == "average"
+    rows: list[dict[str, Any]] = []
+    for (backbone, method, dataset), values in sorted(collected.items()):
+        if len(values) > 1 and not allow_average:
+            raise ValueError(
+                f"multiple selected values for {backbone}/{method}/{dataset}; "
+                "narrow --pipeline-config or use an average policy"
+            )
+        rows.append(
+            {
+                "backbone": backbone,
+                "method": method,
+                "dataset": dataset,
+                **{
+                    name: sum(value[name] for value in values) / len(values)
+                    for name in METRICS
+                },
+            }
+        )
+
+    groups = {(row["backbone"], row["method"]) for row in rows}
+    for backbone, method in groups:
+        present = {
+            row["dataset"]
+            for row in rows
+            if (row["backbone"], row["method"]) == (backbone, method)
+        }
+        if present != set(DATASETS):
+            raise ValueError(f"incomplete {backbone}/{method}: {sorted(present)}")
+    if not any(method == "tsrag" for _, method in groups):
+        raise ValueError("no selected TS-RAG results found")
+    return rows, obtained
+
+
 def build(
-    controls_root: Path, tsrag_root: Path, output_dir: Path, control_method: str
+    controls_root: Path,
+    tsrag_root: Path,
+    output_dir: Path,
+    control_method: str,
+    *,
+    pipeline_config: Mapping[str, Any] | None = None,
+    config_policy: str = "distinct",
+    repeat_policy: str = "selected",
+    purposes: Sequence[str] = (),
 ) -> dict[str, Path]:
-    rows, obtained = _rows(controls_root, tsrag_root, control_method)
+    requested_pipeline = dict(pipeline_config or {})
+    rows, obtained = _rows(
+        controls_root,
+        tsrag_root,
+        control_method,
+        pipeline_config=requested_pipeline,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        purposes=purposes,
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "tsrag_comparison.csv"
-    fields = ("backbone", "method", "dataset", "mse", "mae", "nmse", "positive_window_pct")
+    fields = ("backbone", "method", "dataset", *METRICS)
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
@@ -118,24 +194,23 @@ def build(
         lines.append(f"{backbone} & {label} & {numbers} & {average:.3f} " + r"\\")
     lines.extend((r"\bottomrule", r"\end{tabular}"))
     tex_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    manifest_path = output_dir / "report_manifest.json"
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "format": "adaptation_tsrag_comparison_report",
-                "protocol": {
-                    "lags": 512,
-                    "horizon": 64,
-                    "neighbors": 10,
-                    "retrieval": "chronos-t5-base/euclidean/same_user/fixed",
-                },
-                "selected_control_method": control_method,
-                "obtained_manifests": obtained,
-                "files": {"csv": csv_path.name, "latex": tex_path.name},
+
+    manifest_path = write_report_manifest(
+        output_dir / "report_manifest.json",
+        inputs=obtained,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        filters={
+            "datasets": list(DATASETS),
+            "setting": "512_64",
+            "selected_control_method": control_method,
+            "pipeline": requested_pipeline,
+            "purposes": list(purposes),
+            "protocol": {
+                "neighbors": 10,
+                "retrieval": "chronos-t5-base/euclidean/same_user/fixed",
             },
-            indent=2,
-        ),
-        encoding="utf-8",
+        },
     )
     return {"csv": csv_path, "latex": tex_path, "manifest": manifest_path}
 
@@ -146,6 +221,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--tsrag-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--control-method", required=True)
+    parser.add_argument("--pipeline-config", action="append", default=[])
+    parser.add_argument(
+        "--config-policy", choices=("distinct", "latest", "average"), default="distinct"
+    )
+    parser.add_argument(
+        "--repeat-policy",
+        choices=("selected", "latest", "distinct", "average"),
+        default="selected",
+    )
+    parser.add_argument("--purpose", action="append", default=[])
     return parser.parse_args(argv)
 
 
@@ -156,6 +241,10 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
         Path(args.tsrag_root).expanduser().resolve(),
         Path(args.output_dir).expanduser().resolve(),
         args.control_method,
+        pipeline_config=_pipeline_config(args.pipeline_config),
+        config_policy=args.config_policy,
+        repeat_policy=args.repeat_policy,
+        purposes=args.purpose,
     )
 
 

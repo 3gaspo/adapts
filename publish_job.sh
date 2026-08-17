@@ -65,17 +65,6 @@ if [ -n "$job_id" ]; then
     "${out_logs[0]#"$project_root"/}"
     "${err_logs[0]#"$project_root"/}"
   )
-  while IFS= read -r directory; do
-    [ -n "$directory" ] && paths+=("${directory#"$project_root"/}")
-  done < <(
-    find "$project_root/outputs" -type f \
-      \( -name manifest.json -o -name report_manifest.json \) -print0 2>/dev/null |
-      while IFS= read -r -d '' manifest; do
-        if grep -Eq '"launch_id"[[:space:]]*:[[:space:]]*"'"$job_id"'"' "$manifest"; then
-          dirname "$manifest"
-        fi
-      done | sort -u
-  )
   [ -n "$message" ] || message="slurm: publish $job_name $job_id"
 else
   paths=(logs outputs)

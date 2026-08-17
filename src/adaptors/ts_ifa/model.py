@@ -401,7 +401,7 @@ class TimeSeriesInformedForecastingAdapter(nn.Module):
             -1,
         )
         delta_state = self.rooter_delta_norm(candidate_deltas)
-        token_ids = torch.arange(rooter_candidate_count, device=x.device)
+        token_ids = torch.arange(branch_count, device=x.device)
         type_state = self.candidate_token_norm(self.candidate_tokens(token_ids))
         type_state = type_state.unsqueeze(0).expand(batch_size, -1, -1)
         scorer_input = torch.cat(

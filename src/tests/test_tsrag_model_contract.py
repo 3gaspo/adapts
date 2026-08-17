@@ -4,11 +4,14 @@ import ast
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
 
 
 def parsed(path: Path) -> tuple[str, ast.Module]:
@@ -103,13 +106,25 @@ class TSRAGModelContractTest(unittest.TestCase):
                     (run / "manifest.json").write_text(
                         json.dumps(
                             {
+                                "schema_version": 1,
                                 "manifest_id": f"control-{backbone}-{dataset}",
                                 "status": "completed",
                                 "launch": {"launch_id": f"control-{dataset}"},
+                                "config": {"pipeline": {"run_seed": 1}},
+                                "signatures": {"pipeline": "pipeline-1"},
+                                "purposes": ["publication"],
                                 "identity": {
                                     "dataset": dataset,
+                                    "lookback": 512,
+                                    "horizon": 64,
                                     "backbone": backbone,
-                                    "model_config": {"formula": "our_method"},
+                                    "model_config": {
+                                        "formula": "our_method",
+                                        "space": "tsrag",
+                                        "metric": "euclidean",
+                                        "k": 10,
+                                        "mode": "fixed",
+                                    },
                                 },
                             }
                         ),
@@ -126,19 +141,33 @@ class TSRAGModelContractTest(unittest.TestCase):
                         }
                         for method in ("vanilla", "our_method")
                     ]
-                    (run / "baseline_metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+                    (run / "baseline_metrics.json").write_text(
+                        json.dumps(metrics), encoding="utf-8"
+                    )
             stale = controls / "obsolete" / "run_0"
             stale.mkdir(parents=True)
             (stale / "manifest.json").write_text(
                 json.dumps(
                     {
+                        "schema_version": 1,
                         "manifest_id": "obsolete-control",
                         "status": "completed",
                         "launch": {"launch_id": "obsolete"},
+                        "config": {"pipeline": {"run_seed": 1}},
+                        "signatures": {"pipeline": "pipeline-1"},
+                        "purposes": ["publication"],
                         "identity": {
                             "dataset": module.DATASETS[0],
+                            "lookback": 512,
+                            "horizon": 64,
                             "backbone": "chronos2",
-                            "model_config": {"formula": "obsolete_method"},
+                            "model_config": {
+                                "formula": "obsolete_method",
+                                "space": "tsrag",
+                                "metric": "euclidean",
+                                "k": 10,
+                                "mode": "fixed",
+                            },
                         },
                     }
                 ),
@@ -165,10 +194,26 @@ class TSRAGModelContractTest(unittest.TestCase):
                 (run / "manifest.json").write_text(
                     json.dumps(
                         {
+                            "schema_version": 1,
                             "manifest_id": f"tsrag-{dataset}",
                             "status": "completed",
                             "launch": {"launch_id": f"tsrag-{dataset}"},
-                            "identity": {"dataset": dataset, "backbone": "chronos-bolt"},
+                            "config": {"pipeline": {"run_seed": 1}},
+                            "signatures": {"pipeline": "pipeline-1"},
+                            "purposes": ["publication"],
+                            "identity": {
+                                "dataset": dataset,
+                                "lookback": 512,
+                                "horizon": 64,
+                                "backbone": "chronos-bolt",
+                                "model_config": {
+                                    "formula": "tsrag",
+                                    "space": "tsrag",
+                                    "metric": "euclidean",
+                                    "k": 10,
+                                    "mode": "fixed",
+                                },
+                            },
                         }
                     ),
                     encoding="utf-8",
@@ -186,19 +231,29 @@ class TSRAGModelContractTest(unittest.TestCase):
                     ),
                     encoding="utf-8",
                 )
-            paths = module.build(controls, tsrag, root / "report", "our_method")
+            paths = module.build(
+                controls,
+                tsrag,
+                root / "report",
+                "our_method",
+                purposes=("publication",),
+            )
             text = paths["csv"].read_text(encoding="utf-8")
             report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("chronos-bolt,tsrag", text)
             self.assertNotIn("chronos2,tsrag", text)
-            self.assertEqual(len(report["obtained_manifests"]), 12)
-            self.assertEqual(report["selected_control_method"], "our_method")
+            self.assertEqual(report["obtained"]["count"], 12)
+            self.assertEqual(
+                report["requested"]["filters"]["selected_control_method"],
+                "our_method",
+            )
 
     def test_comparison_table_reuses_completed_cross_launch_results(self):
         table = (ROOT / "src/visu/tsrag_comparison_table.py").read_text(encoding="utf-8")
         self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
-        self.assertIn('manifest.get("status") == "completed"', table)
-        self.assertIn('get("formula") != control_method', table)
+        self.assertIn("selected_manifest_runs", table)
+        self.assertIn("write_report_manifest", table)
+        self.assertNotIn('rglob("manifest.json")', table)
 
 
 if __name__ == "__main__":

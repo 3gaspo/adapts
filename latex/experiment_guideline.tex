@@ -52,7 +52,7 @@
 
 \title{\vspace{-1.5em}\textbf{Retrieval-Based Adaptation of \\Time Series Foundation Models}\\[2mm]\large Experiment Guideline\vspace{-0.4em}}
 \author{Gaspard Berthelier}
-\date{7 August 2026}
+\date{17 August 2026}
 
 \begin{document}
 \maketitle
@@ -1221,23 +1221,35 @@ Front & Model set / controlled axis \\
 \end{tabularx}
 \end{table}
 
-The sole manual follow-up selection is the root
-\code{SWEEP_CANDIDATES.txt}, whose non-comment records are complete
-\code{family/retrieval/method} identities. A shared reader filters adaptation,
-shared-ridge, shared-CatBoost, TS-IFA ridge, or TS-IFA neural entries for each
-front. \code{SELECTED_CANDIDATES_FILE} may select another manifest; the
-front-specific CSV variables remain explicit one-launch overrides. TS-IFA H/L
-and meta fronts require at least one matching \code{ts_ifa} entry or override.
+Manual follow-up selection has two immutable generations. The root
+\code{SWEEP_CANDIDATES.txt} records the screen-selected pipelines used by the
+already-launched formulation, retrieval, K/H/L, and mixed-panel studies. After
+the K study is complete and analyzed, promoted best-K adaptation identities are
+written to \path{SECOND_GENERATION_CANDIDATES.txt}; this second manifest alone
+feeds the final benchmark, TS-RAG, and SOTA fronts. Selected TS-IFA identities
+are appended to it only after the routing pilot is analyzed, before the TS-IFA
+H/L and meta follow-ups. Non-comment records in both files are complete
+\code{family/retrieval/method} identities, and the shared reader filters the
+applicable adaptation, shared-ridge, shared-CatBoost, TS-IFA ridge, or TS-IFA
+neural entries for each front. \code{SELECTED_CANDIDATES_FILE} may select
+another manifest; front-specific CSV variables remain explicit one-launch
+overrides. A consumer fails clearly while its required generation-2 entries are
+absent.
 
 The corrected current screen ranking compares each adapted result only with the
-vanilla result from the same retrieval run. The manual follow-up manifest holds
-the top five shared-ridge pipelines, the best shared CatBoost cov/avgY pipeline,
-and the matching shared Bayes references. No convex or delta baseline was
-eligible for the screen. Earlier formulation and $K$ summaries derived from the
-old cross-retrieval ranking remain invalid; the current formulation reports
-below were regenerated through the corrected reader. The incomplete $K$ sweep
-still supports no optimum. Publication CatBoost fits
-allow 300 trees; only the smoke profile uses two.
+vanilla result from the same retrieval run. The frozen first-generation
+manifest holds the top five shared-ridge pipelines, the best shared CatBoost
+cov/avgY pipeline, and the matching shared Bayes references. The completed
+$K$ study promotes eight unique generation-2 identities in decreasing order of
+their best-$K$ held-out improvement; the two first-generation raw-full rows
+collapse to one identity. The first record is
+\code{baselines/instance_euclidean_5_online/full_ridge_shared}, so the final
+benchmark evaluates all eight records while TS-RAG and SOTA use that leading
+shared-ridge control. Bayes ties retain the smallest $K=1$. No convex or delta
+baseline was eligible for the screen. Earlier formulation and $K$ summaries
+derived from the old cross-retrieval ranking remain invalid; the current
+reports below were regenerated through the corrected reader. Publication
+CatBoost fits allow 300 trees; only the smoke profile uses two.
 
 \subsection{Current held-out results}
 
@@ -1329,14 +1341,29 @@ improvement and a 50\% window win rate.}
 \label{fig:current-lookback-results}
 \end{figure}
 
-Every baseline has its largest equal-dataset mean nMSE gain at $L=24$, but that
-aggregate is not a stable selection criterion: the Traffic vanilla reference at
-$L=24$ has nMSE $2.07\times10^{10}$ and drives the scale pathology already
-identified in the synchronized report. At $L=168$, all five baselines remain
-positive and the three instance-ridge designs cluster at +0.90--1.14\%; at
-$L=504$, the full designs fall to +0.24--0.41\% and all window-win averages are
-below 50\%. We therefore retain $L=168$ as the balanced $H=24$ setting rather
-than promoting the numerically larger but outlier-sensitive $L=24$ aggregate.
+\begin{table}[H]
+\centering
+\small
+\caption{Lookback and horizon sensitivity of the screened
+\code{full_ridge_shared} instance-$K=3$ control. Entries are equal-dataset mean
+held-out nMSE improvements (\%) over the retrieval-matched vanilla forecast.}
+\label{tab:current-lh-sensitivity}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Varied axis & Fixed axis & 24 & 168 & 504 \\
+\midrule
+Lookback $L$ & $H=24$ & +2.43 & +1.14 & +0.41 \\
+Horizon $H$ & $L=504$ & +0.41 & \textbf{+2.78} & +2.75 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The apparent $L=24$ maximum is not stable: its dataset effects range from
+$-7.37\%$ on Exchange to $+16.48\%$ on Solar, while the Traffic vanilla nMSE is
+$2.07\times10^{10}$. We therefore retain $L=168$ as the balanced short-horizon
+setting. At fixed $L=504$, the gain rises from +0.41\% at $H=24$ to +2.78\% at
+$H=168$ and then plateaus at +2.75\% for $H=504$, showing that the adaptor's
+relative benefit persists at long horizons.
 
 \begin{table}[H]
 \centering
@@ -1423,15 +1450,15 @@ current tables.
 Slurm workflows never submit a publisher or execute Git commands. After any
 terminal state, including failure, cancellation, or timeout, the user runs
 \code{bash publish_job.sh <job-id>} from the project root. The
-script selects only the exact stdout/stderr pair and run/report roots whose
+script verifies \code{main}, sources \code{$HOME/codes/proxy.sh} (or
+\code{PROXY_SCRIPT_PATH}), and fast-forward pulls \code{origin/main} before
+artifact selection or staging. It then selects only the exact stdout/stderr pair and run/report roots whose
 manifests record that launch ID, excludes \code{*.pt}, \code{*.npy}, and
-\code{*.cbm}, and commits those paths on \code{main}. It then sources
-\code{proxy.sh} with \code{.secrets/proxy.credentials} from
-\code{$HOME/codes/} and pushes \code{origin/main}
-without pulling. Omitting the job ID instead publishes the complete log and
-lightweight output trees. GitHub authentication remains separate from proxy
-authentication and is handled by the configured credential helper or the
-interactive terminal prompt.
+\code{*.cbm}, commits only those paths on \code{main}, and pushes
+\code{origin/main} without creating a pull request. Omitting the job ID instead
+publishes the complete log and lightweight output trees. A non-fast-forward
+pull stops without creating a merge commit; unrelated staged paths remain
+outside the publisher commit.
 
 Table construction accepts only current result manifests, keeps selected
 pipelines family-qualified, and requires complete dataset--setting--model
@@ -1475,7 +1502,8 @@ shares the same query dates, leakage-free online datastore, query-scale
 neighbour signals, and held-out $\Tthree$ evaluation. This makes capacity,
 retrieval choice, and validation protocol explicit rather than conflating them
 with backbone quality. Current complete evidence selects the shared full ridge
-baseline with instance-normalized Euclidean retrieval and $K=3$. Fourier
+baseline with instance-normalized Euclidean retrieval and $K=5$; its completed
+$K$ sweep gives a +2.00\% equal-configuration mean nMSE improvement. Fourier
 retrieval and per-horizon, convex, or delta formulations are uniformly weaker
 in matched comparisons, while mixed-quantity panels are unstable enough to
 justify homogeneous-quantity grouping as the primary contract.

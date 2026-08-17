@@ -22,6 +22,18 @@ fi
 CONTROL_ROOT="${CONTROL_ROOT:-outputs/adaptation/tsrag_controls}"
 TSRAG_RESULTS_ROOT="${TSRAG_RESULTS_ROOT:-outputs/adaptation/tsrag}"
 REPORT_ROOT="${REPORT_ROOT:-outputs/reports/tsrag/full}"
+TABLE_SELECTION_ARGS=(
+  --config-policy "${TABLE_CONFIG_POLICY:-distinct}"
+  --repeat-policy "${TABLE_REPEAT_POLICY:-selected}"
+)
+if [ -n "${TABLE_PIPELINE_CONFIGS:-}" ]; then
+  for table_config in ${TABLE_PIPELINE_CONFIGS}; do
+    TABLE_SELECTION_ARGS+=(--pipeline-config "$table_config")
+  done
+fi
+if [ -n "${TABLE_PURPOSE:-publication}" ]; then
+  TABLE_SELECTION_ARGS+=(--purpose "${TABLE_PURPOSE:-publication}")
+fi
 IFS=',' read -r -a requested_stages <<< "${STAGES:-evaluate,tables}"
 for stage in "${requested_stages[@]}"; do
   case "$stage" in
@@ -59,7 +71,8 @@ for stage in "${requested_stages[@]}"; do
         --controls-root "$CONTROL_ROOT" \
         --tsrag-root "$TSRAG_RESULTS_ROOT" \
         --output-dir "$REPORT_ROOT" \
-        --control-method "$candidate_method"
+        --control-method "$candidate_method" \
+        "${TABLE_SELECTION_ARGS[@]}"
       ;;
     *) log_error "unknown STAGES entry=$stage expected=evaluate,tables"; return 2 ;;
   esac

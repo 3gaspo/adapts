@@ -3,11 +3,14 @@
 import json
 import importlib.util
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
 
 
 def load_table_module():
@@ -65,11 +68,17 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                 (run / "manifest.json").write_text(
                     json.dumps(
                         {
+                            "schema_version": 1,
                             "manifest_id": f"sota-{values['project_name']}",
                             "status": "completed",
                             "launch": {"launch_id": f"source-{values['project_name']}"},
+                            "config": {"pipeline": {"run_seed": 1}},
+                            "signatures": {"pipeline": "pipeline-1"},
+                            "purposes": ["publication"],
                             "identity": {
                                 "dataset": values["project_name"],
+                                "lookback": 512,
+                                "horizon": 64,
                                 "backbone": "chronos-bolt",
                                 "model_config": {
                                     "formula": "full_ridge_shared",
@@ -97,11 +106,17 @@ class SOTABenchmarkContractTest(unittest.TestCase):
             (stale / "manifest.json").write_text(
                 json.dumps(
                     {
+                        "schema_version": 1,
                         "manifest_id": "obsolete-k10",
                         "status": "completed",
                         "launch": {"launch_id": "obsolete"},
+                        "config": {"pipeline": {"run_seed": 1}},
+                        "signatures": {"pipeline": "pipeline-1"},
+                        "purposes": ["publication"],
                         "identity": {
                             "dataset": "ETTh1",
+                            "lookback": 512,
+                            "horizon": 64,
                             "backbone": "chronos-bolt",
                             "model_config": {
                                 "formula": "full_ridge_shared",
@@ -131,20 +146,32 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                 "k": 3,
                 "mode": "online",
             }
-            paths = module.build_table(config_path, results, output, selected_pipeline)
+            paths = module.build_table(
+                config_path,
+                results,
+                output,
+                selected_pipeline,
+                purposes=("publication",),
+            )
             text = paths["csv"].read_text(encoding="utf-8")
             report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("our_method", text)
             self.assertIn("TS-RAG (published)", text)
             self.assertIn("Cross-RAG (published)", text)
-            self.assertEqual(len(report["obtained_manifests"]), 7)
-            self.assertEqual(report["selected_pipeline"], selected_pipeline)
+            self.assertEqual(report["obtained"]["count"], 7)
+            self.assertEqual(
+                report["requested"]["filters"]["selected_pipeline"], selected_pipeline
+            )
+            self.assertEqual(
+                report["requested"]["filters"]["purposes"], ["publication"]
+            )
 
     def test_table_reuses_completed_cross_launch_results(self):
         table = (ROOT / "src/visu/sota_benchmark_table.py").read_text(encoding="utf-8")
         self.assertNotIn("EXPERIMENT_LAUNCH_ID", table)
-        self.assertIn('manifest.get("status") != "completed"', table)
-        self.assertIn("selected_pipeline.items()", table)
+        self.assertIn("selected_manifest_runs", table)
+        self.assertIn("write_report_manifest", table)
+        self.assertNotIn('rglob("manifest.json")', table)
 
 
 if __name__ == "__main__":

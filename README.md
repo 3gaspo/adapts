@@ -309,7 +309,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 |---|---|---|---|---|---|
 | `test` | Electricity | `504:168` | Chronos-2 | Raw Euclidean / `3` | Primary baselines/gates or TS-IFA, according to front |
 | `screen` | `D_primary` | `168:24`, `336:48`, `504:168` | Chronos-2 | Raw + instance Euclidean / `1,3` | 3 direct + 7 shared-ridge baselines; 8 shared gate/reference methods |
-| `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | All adaptation entries in `SWEEP_CANDIDATES.txt` |
+| `full` | `D_full` | Default three settings | Chronos-2 | Each selected winner's complete retrieval pipeline | All adaptation entries in `SECOND_GENERATION_CANDIDATES.txt` |
 | `ultra` | `D_full` | Default three settings | Chronos-2, TabPFN-TS | Each selected winner's complete retrieval pipeline | Same selected manifest as full |
 | `mixed_quantity_ablation` | `D_mixed` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `retrieval_scope_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline; all/same/other users | `WINNERS_CSV` only |
@@ -492,7 +492,8 @@ There is no averaging over K or normalization: those identify different
 pipelines. The average table also writes a sorted `pipeline_ranking.csv` whose
 `winner_name` includes family, retrieval configuration, and formula.
 
-The final benchmark reads every adaptation entry from `SWEEP_CANDIDATES.txt`:
+After the K ablation is analyzed, the final benchmark reads every adaptation
+entry from `SECOND_GENERATION_CANDIDATES.txt`:
 
 ```bash
 sbatch benchmark.slurm
@@ -509,11 +510,22 @@ For an explicit custom backbone selection, pass `MODELS_CSV`, for example
 `MODELS_CSV=tabpfnts`. `WINNERS_CSV` remains an explicit one-launch candidate
 override. `full` and `ultra` otherwise differ only in their default model list.
 
-`SWEEP_CANDIDATES.txt` is the sole manual selection manifest for adaptation and
-TS-IFA follow-ups. Each non-comment line is a complete
-`family/retrieval/method` pipeline; the shared reader filters this list for each
-front. `SELECTED_CANDIDATES_FILE` selects another manifest, while the existing
-front-specific CSV variables remain explicit overrides.
+Selection has two immutable generations. `SWEEP_CANDIDATES.txt` records the
+screen-selected pipelines used by the formulation, retrieval, K/H/L, and mixed
+quantity studies already launched. Do not edit it after those studies begin.
+After the K ablation completes, record the promoted best-K adaptation pipelines
+in `SECOND_GENERATION_CANDIDATES.txt`; the final benchmark, TS-RAG, and SOTA
+fronts read only that file by default. Later add promoted `ts_ifa` entries to the
+same second-generation file for the TS-IFA H/L and meta follow-ups. Each
+non-comment line in either manifest is a complete `family/retrieval/method`
+pipeline. `SELECTED_CANDIDATES_FILE` selects another manifest, while the
+existing front-specific CSV variables remain explicit overrides.
+
+The completed K study ranks eight unique generation-2 adaptation pipelines.
+Its first record is
+`baselines/instance_euclidean_5_online/full_ridge_shared`; consequently TS-RAG
+and SOTA use instance full ridge with K=5, while the final benchmark evaluates
+all eight records in ranked order.
 
 The three baseline family studies currently default to the five selected
 shared-ridge pipelines in that file. Override `BASELINE_WINNERS_CSV` when a later screen
@@ -560,9 +572,10 @@ All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
 ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
 quantity-separated ETT panels instead.
 
-The benchmark, K/H/L, mixed-quantity, and retrieval fronts read the complete
-adaptation entries from `SWEEP_CANDIDATES.txt` by default. Pass `WINNERS_CSV`
-only for an explicit one-off override.
+The K/H/L, mixed-quantity, and retrieval fronts read the generation-1
+adaptation entries from `SWEEP_CANDIDATES.txt` by default. The final benchmark
+instead reads generation 2. Pass `WINNERS_CSV` only for an explicit one-off
+override.
 
 Then submit exactly one front per experiment:
 
@@ -612,9 +625,12 @@ training segment. Our selected method retains its own fitting and retrieval
 protocol. The generated `sota_benchmark_mse.csv/.tex` therefore answers the
 intended question: how our trained method scores on the same evaluation data
 and metric, without claiming that it used Cross-RAG's training recipe. The
-front uses the first selected shared-ridge entry in `SWEEP_CANDIDATES.txt`; the
-table reader filters that exact formula and retrieval pipeline so older
-completed controls cannot enter the report.
+front uses the first selected shared-ridge entry in
+`SECOND_GENERATION_CANDIDATES.txt`; the
+table reader applies the shared manifest selector (including pipeline,
+configuration, repeat, and purpose filters) before matching that exact formula
+and retrieval identity. The published JSON rows are then appended directly;
+they are static external metrics, not project runs.
 
 The released TS-RAG ARM is re-evaluated separately on the project datasets:
 
@@ -626,11 +642,13 @@ The front fixes `L=512`, `H=64` because those shapes are embedded in the public
 ARM checkpoint. It uses the TS-RAG repository defaults: locally downloaded
 `amazon/chronos-t5-base` EOS embeddings, Euclidean distance, same-channel fixed
 retrieval, and `K=10`. It evaluates released TS-RAG on Chronos-Bolt and the
-first selected shared-ridge method from `SWEEP_CANDIDATES.txt` on the identical
+first selected shared-ridge method from `SECOND_GENERATION_CANDIDATES.txt` on the identical
 neighbors with both Chronos-Bolt and
 Chronos-2. A Chronos-2 TS-RAG row is intentionally absent: the public ARM
 checkpoint contains Chronos-Bolt decoder/head parameters and cannot be loaded
-into Chronos-2.
+into Chronos-2. TS-RAG evaluations use the same schema-versioned run manifests,
+selection policies, and report provenance as baseline evaluations; only their
+metric payload filename and specialized comparison-row formatting differ.
 
 ## Fair comparison with the Cross-RAG paper
 
@@ -821,7 +839,7 @@ EXPERIMENT_MODE=full sbatch ts_ifa.slurm
 ```
 
 After inspecting the grid, append chosen `ts_ifa/<retrieval>/<method>` entries
-to `SWEEP_CANDIDATES.txt`. The H/L and meta fronts select the relevant TS-IFA,
+to `SECOND_GENERATION_CANDIDATES.txt`. The H/L and meta fronts select the relevant TS-IFA,
 ridge, or neural subset automatically. Until such entries exist they fail
 clearly; `TS_IFA_CANDIDATES_CSV` remains a one-off override, for example:
 
@@ -877,8 +895,8 @@ Implementation shells:
 - `common.sh` provides resource lookup, setting parsing, manifest checks, and
   timestamped shell logging; it is sourced, not submitted.
 - `publish_job.sh` is run manually after Slurm jobs terminate; with a job ID it
-  publishes only that job, and without one it publishes all logs and lightweight
-  outputs.
+  publishes only that job's log pair, and without one it publishes all logs and
+  lightweight outputs.
 
 The runnable Python modules are:
 
@@ -935,12 +953,12 @@ bash publish_job.sh <job-id>
 ```
 
 The script first verifies `main`, sources `$HOME/codes/proxy.sh`, and runs
-`git pull --ff-only origin main`. It then selects exactly one
-`logs/*_<job-id>.out`/`.err` pair and every run/report directory whose manifest
-records that launch ID. It force-adds only those paths while excluding `*.pt`,
-`*.npy`, and `*.cbm`, commits them, and pushes `origin main`. A non-fast-forward
-pull stops without creating a merge commit, and the script never creates a
-pull request. Existing unrelated staged paths are excluded from the commit.
+`git pull --ff-only origin main`. With a job ID, it selects only the exact
+`logs/*_<job-id>.out`/`.err` pair. It force-adds only those paths while excluding
+`*.pt`, `*.npy`, and `*.cbm`, commits them, and pushes `origin main`. A
+non-fast-forward pull stops without creating a merge commit, and the script
+never creates a pull request. Existing unrelated staged paths are excluded from
+the commit.
 
 Omit the job ID to force-add, commit, and push the complete `logs/` and
 lightweight `outputs/` trees:

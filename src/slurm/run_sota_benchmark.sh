@@ -14,6 +14,19 @@ REPORT_ROOT="${REPORT_ROOT:-outputs/reports/sota_benchmark/full}"
 SOTA_CONFIG="${SOTA_CONFIG:-$PROJECT_ROOT/SOTA_BENCHMARK.json}"
 export EXPERIMENT_FAMILY EXPERIMENT_MODE RESULTS_ROOT
 
+TABLE_SELECTION_ARGS=(
+  --config-policy "${TABLE_CONFIG_POLICY:-distinct}"
+  --repeat-policy "${TABLE_REPEAT_POLICY:-selected}"
+)
+if [ -n "${TABLE_PIPELINE_CONFIGS:-}" ]; then
+  for table_config in ${TABLE_PIPELINE_CONFIGS}; do
+    TABLE_SELECTION_ARGS+=(--pipeline-config "$table_config")
+  done
+fi
+if [ -n "${TABLE_PURPOSE:-publication}" ]; then
+  TABLE_SELECTION_ARGS+=(--purpose "${TABLE_PURPOSE:-publication}")
+fi
+
 winner_entries=()
 csv_to_array "${WINNERS_CSV:-}" winner_entries
 if [ "${#winner_entries[@]}" -ne 1 ]; then
@@ -82,7 +95,8 @@ for values in config["datasets"].values():
         --space "$candidate_space" \
         --distance-metric "$candidate_metric" \
         --neighbors "$candidate_k" \
-        --retrieval-mode "$candidate_mode"
+        --retrieval-mode "$candidate_mode" \
+        "${TABLE_SELECTION_ARGS[@]}"
       ;;
     *) log_error "unknown STAGES entry=$stage expected=evaluate,tables"; return 2 ;;
   esac

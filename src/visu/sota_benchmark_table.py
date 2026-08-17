@@ -1,4 +1,4 @@
-"""Combine our exact-split MSE with published Cross-RAG paper rows."""
+"""Combine selected exact-split MSE runs with published Cross-RAG paper rows."""
 
 from __future__ import annotations
 
@@ -6,7 +6,10 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
+
+from experiment_runs import SelectedRun, write_report_manifest
+from visu.results_table import selected_manifest_runs
 
 
 DATASETS = ("ETTh1", "ETTh2", "ETTm1", "ETTm2", "Weather", "Electricity", "Exchange")
@@ -16,32 +19,71 @@ def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _pipeline_config(values: Sequence[str]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for item in values:
+        if "=" not in item:
+            raise ValueError(f"pipeline config must be KEY=VALUE, got {item!r}")
+        key, value = item.split("=", 1)
+        lowered = value.casefold()
+        if lowered in {"true", "false"}:
+            parsed[key] = lowered == "true"
+        else:
+            try:
+                parsed[key] = int(value)
+            except ValueError:
+                try:
+                    parsed[key] = float(value)
+                except ValueError:
+                    parsed[key] = value
+    return parsed
+
+
+def _single_or_average(values: list[float], *, name: str, allow_average: bool) -> float:
+    if not values:
+        raise ValueError(f"missing {name}")
+    if len(values) > 1 and not allow_average:
+        raise ValueError(
+            f"multiple selected values for {name}; narrow --pipeline-config "
+            "or use an average policy"
+        )
+    return sum(values) / len(values)
+
+
 def _our_rows(
     results_root: Path,
-    config: dict[str, Any],
-    selected_pipeline: dict[str, Any],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    config: Mapping[str, Any],
+    selected_pipeline: Mapping[str, Any],
+    *,
+    pipeline_config: Mapping[str, Any],
+    config_policy: str,
+    repeat_policy: str,
+    purposes: Sequence[str],
+) -> tuple[list[dict[str, Any]], list[SelectedRun]]:
     project_to_paper = {
-        values["project_name"]: name
-        for name, values in config["datasets"].items()
+        values["project_name"]: name for name, values in config["datasets"].items()
     }
-    values: dict[str, dict[str, float]] = {}
-    vanilla: dict[str, float] = {}
-    obtained: list[dict[str, Any]] = []
-    for manifest_path in results_root.rglob("manifest.json"):
-        if manifest_path.parent.parent.name == "manifest_history":
-            continue
-        manifest = _load_json(manifest_path)
-        if manifest.get("status") != "completed":
-            continue
-        identity = manifest.get("identity", {})
+    collected: dict[tuple[str, str], list[float]] = {}
+    obtained: list[SelectedRun] = []
+    for selected in selected_manifest_runs(
+        results_root,
+        pipeline_config=pipeline_config,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        purposes=purposes,
+    ):
+        identity = selected.manifest["identity"]
         project_dataset = identity.get("dataset")
-        if project_dataset not in project_to_paper:
-            continue
         model_config = identity.get("model_config", {})
-        if any(model_config.get(key) != value for key, value in selected_pipeline.items()):
+        if (
+            project_dataset not in project_to_paper
+            or identity.get("lookback") != 512
+            or identity.get("horizon") != 64
+            or identity.get("backbone") != "chronos-bolt"
+            or any(model_config.get(key) != value for key, value in selected_pipeline.items())
+        ):
             continue
-        metrics_path = manifest_path.parent / "baseline_metrics.json"
+        metrics_path = selected.run_dir / "baseline_metrics.json"
         if not metrics_path.is_file():
             continue
         dataset = project_to_paper[project_dataset]
@@ -50,41 +92,54 @@ def _our_rows(
             if row.get("split") != "eval":
                 continue
             method = str(row["baseline"])
-            if method == "vanilla":
-                vanilla[dataset] = float(row["mse"])
-            else:
-                values.setdefault(method, {})[dataset] = float(row["mse"])
+            collected.setdefault((method, dataset), []).append(float(row["mse"]))
             used = True
         if used:
-            obtained.append(
-                {
-                    "manifest_id": manifest["manifest_id"],
-                    "launch_id": manifest.get("launch", {}).get("launch_id"),
-                    "dataset": project_dataset,
-                    "backbone": identity.get("backbone"),
-                    "formula": identity.get("model_config", {}).get("formula"),
-                }
+            obtained.append(selected)
+
+    allow_average = config_policy == "average" or repeat_policy == "average"
+    methods = {method for method, _ in collected}
+    if "vanilla" not in methods:
+        raise ValueError("no selected Chronos-Bolt evaluation runs found")
+    rows: list[dict[str, Any]] = []
+    for method in sorted(methods, key=lambda item: (item != "vanilla", item)):
+        values = {
+            dataset: _single_or_average(
+                collected.get((method, dataset), []),
+                name=f"{method}/{dataset}",
+                allow_average=allow_average,
             )
-    if set(vanilla) != set(DATASETS):
-        raise ValueError(f"incomplete Chronos-Bolt row: {sorted(vanilla)}")
-    rows = [{"method": "Chronos-Bolt (our evaluation)", **vanilla, "source": "computed"}]
-    for method, dataset_values in sorted(values.items()):
-        if set(dataset_values) != set(DATASETS):
-            raise ValueError(f"incomplete method={method}: {sorted(dataset_values)}")
-        rows.append({"method": method, **dataset_values, "source": "computed"})
-    return rows, sorted(obtained, key=lambda item: item["dataset"])
+            for dataset in DATASETS
+        }
+        label = "Chronos-Bolt (our evaluation)" if method == "vanilla" else method
+        rows.append({"method": label, **values, "source": "computed"})
+    return rows, obtained
 
 
 def build_table(
     config_path: Path,
     results_root: Path,
     output_dir: Path,
-    selected_pipeline: dict[str, Any],
+    selected_pipeline: Mapping[str, Any],
+    *,
+    pipeline_config: Mapping[str, Any] | None = None,
+    config_policy: str = "distinct",
+    repeat_policy: str = "selected",
+    purposes: Sequence[str] = (),
 ) -> dict[str, Path]:
     config = _load_json(config_path)
     if config.get("metric") != "mse" or tuple(config.get("datasets", {})) != DATASETS:
         raise ValueError("unexpected SOTA benchmark configuration")
-    rows, obtained = _our_rows(results_root, config, selected_pipeline)
+    requested_pipeline = dict(pipeline_config or {})
+    rows, obtained = _our_rows(
+        results_root,
+        config,
+        selected_pipeline,
+        pipeline_config=requested_pipeline,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        purposes=purposes,
+    )
     for method, values in config["published_results"].items():
         rows.append(
             {
@@ -126,22 +181,21 @@ def build_table(
     lines.extend((r"\bottomrule", r"\end{tabular}"))
     tex_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    manifest_path = output_dir / "report_manifest.json"
-    manifest_path.write_text(
-        json.dumps(
-            {
-                "format": "adaptation_sota_benchmark_report",
-                "metric": "mse",
-                "published_source": config["source"],
-                "selected_pipeline": selected_pipeline,
-                "obtained_manifests": obtained,
-                "files": {"csv": csv_path.name, "latex": tex_path.name},
-                "methods": [row["method"] for row in rows],
-                "datasets": list(DATASETS),
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
+    manifest_path = write_report_manifest(
+        output_dir / "report_manifest.json",
+        inputs=obtained,
+        config_policy=config_policy,
+        repeat_policy=repeat_policy,
+        filters={
+            "datasets": list(DATASETS),
+            "setting": "512_64",
+            "backbone": "chronos-bolt",
+            "selected_pipeline": dict(selected_pipeline),
+            "pipeline": requested_pipeline,
+            "purposes": list(purposes),
+            "static_metrics": str(config_path),
+            "published_source": config["source"],
+        },
     )
     return {"csv": csv_path, "latex": tex_path, "manifest": manifest_path}
 
@@ -156,6 +210,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--distance-metric", required=True)
     parser.add_argument("--neighbors", required=True, type=int)
     parser.add_argument("--retrieval-mode", required=True)
+    parser.add_argument("--pipeline-config", action="append", default=[])
+    parser.add_argument(
+        "--config-policy", choices=("distinct", "latest", "average"), default="distinct"
+    )
+    parser.add_argument(
+        "--repeat-policy",
+        choices=("selected", "latest", "distinct", "average"),
+        default="selected",
+    )
+    parser.add_argument("--purpose", action="append", default=[])
     return parser.parse_args(argv)
 
 
@@ -172,6 +236,10 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
             "k": args.neighbors,
             "mode": args.retrieval_mode,
         },
+        pipeline_config=_pipeline_config(args.pipeline_config),
+        config_policy=args.config_policy,
+        repeat_policy=args.repeat_policy,
+        purposes=args.purpose,
     )
 
 
