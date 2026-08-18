@@ -1,4 +1,4 @@
-"""Combine selected exact-split MSE runs with published Cross-RAG paper rows."""
+"""Combine exact train-standardized MSE runs with Cross-RAG paper rows."""
 
 from __future__ import annotations
 
@@ -50,6 +50,41 @@ def _single_or_average(values: list[float], *, name: str, allow_average: bool) -
     return sum(values) / len(values)
 
 
+def _same_boundary(actual: Any, expected: Any) -> bool:
+    try:
+        return float(actual) == float(expected)
+    except (TypeError, ValueError):
+        return False
+
+
+def _require_metric_protocol(
+    selected: SelectedRun,
+    dataset_config: Mapping[str, Any],
+) -> None:
+    dependency = selected.manifest.get("config", {}).get("pipeline", {}).get(
+        "dependency.extraction", {}
+    )
+    pipeline = dependency.get("pipeline", {})
+    expected_boundary = dataset_config["standardize_train_boundary"]
+    if not _same_boundary(
+        pipeline.get("data.standardize_train_boundary"), expected_boundary
+    ):
+        raise ValueError(
+            f"SOTA input is not standardized on the official train segment: "
+            f"{selected.run_dir}"
+        )
+    if pipeline.get("data.eval_query_stride") != 1:
+        raise ValueError(f"SOTA input does not contain every test window: {selected.run_dir}")
+    expected_bounds = dataset_config.get("project_split_bounds")
+    expected_split = (
+        ",".join(map(str, expected_bounds)) if expected_bounds else "ratios"
+    )
+    if str(pipeline.get("data.split_bounds")) != expected_split:
+        raise ValueError(
+            f"SOTA input has the wrong test boundaries: {selected.run_dir}"
+        )
+
+
 def _our_rows(
     results_root: Path,
     config: Mapping[str, Any],
@@ -87,6 +122,7 @@ def _our_rows(
         if not metrics_path.is_file():
             continue
         dataset = project_to_paper[project_dataset]
+        _require_metric_protocol(selected, config["datasets"][dataset])
         used = False
         for row in _load_json(metrics_path):
             if row.get("split") != "eval":
@@ -195,6 +231,9 @@ def build_table(
             "purposes": list(purposes),
             "static_metrics": str(config_path),
             "published_source": config["source"],
+            "published_method_settings": config["published_method_settings"],
+            "metric": config["metric"],
+            "metric_space": config["metric_space"],
         },
     )
     return {"csv": csv_path, "latex": tex_path, "manifest": manifest_path}

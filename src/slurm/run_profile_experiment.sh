@@ -21,6 +21,7 @@ PROFILE_DATASETS_CSV="${DATASETS_CSV:-$DEFAULT_DATASETS_CSV}"
 PROFILE_MODELS_CSV="${MODELS_CSV:-$DEFAULT_MODELS_CSV}"
 PROFILE_SETTINGS_CSV="${SETTINGS_CSV:-$DEFAULT_SETTINGS_CSV}"
 PROFILE_K_CSV="$DEFAULT_NEIGHBORS_CSV"
+RETRIEVAL_MAX_STORE_WINDOWS_CSV="${RETRIEVAL_MAX_STORE_WINDOWS_CSV:-10000,20000,30000,50000}"
 WINNERS_CSV="${WINNERS_CSV:-}"
 EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"
 RESULT_SKIP_COMPLETE="${SKIP_COMPLETE:-true}"
@@ -69,6 +70,7 @@ parse_winners() {
   }
   local entries=() entry family run method extra
   local space metric neighbors retrieval tail key group_neighbors k_values=()
+  local scope max_store_windows max_store_windows_values=() pipeline_run
   csv_to_array "$WINNERS_CSV" entries
   for entry in "${entries[@]}"; do
     IFS='/' read -r family run method extra <<< "$entry"
@@ -127,10 +129,25 @@ parse_winners() {
       continue
     elif [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then
       group_neighbors="$neighbors"
-      for scope in all same_user other_users; do
-        key="$family|$space|$metric|$neighbors|$retrieval|$scope"
-        append_method "$key" "$method"
-        append_unique PIPELINES "$family/${run}_${scope}/$method"
+      csv_to_array "$RETRIEVAL_MAX_STORE_WINDOWS_CSV" max_store_windows_values
+      for max_store_windows in "${max_store_windows_values[@]}"; do
+        if ! [[ "$max_store_windows" =~ ^[1-9][0-9]*$ ]]; then
+          log_error "invalid retrieval max-store-windows=$max_store_windows"
+          return 2
+        fi
+        for scope in all same_user other_users; do
+          key="$family|$space|$metric|$neighbors|$retrieval|$scope|$max_store_windows"
+          append_method "$key" "$method"
+          pipeline_run="${run}_${scope}"
+          [ "$max_store_windows" = 30000 ] || pipeline_run="${pipeline_run}_mw${max_store_windows}"
+          append_unique PIPELINES "$family/$pipeline_run/$method"
+        done
+        if [ "$max_store_windows" = 10000 ]; then
+          scope=other_users_matched
+          key="$family|$space|$metric|$neighbors|$retrieval|$scope|$max_store_windows"
+          append_method "$key" "$method"
+          append_unique PIPELINES "$family/${run}_${scope}_mw${max_store_windows}/$method"
+        fi
       done
       append_unique SPACES "$space"
       append_unique METRICS "$metric"
@@ -180,6 +197,7 @@ run_method_group() {
   local model_csv="$1" family="$2" space="$3" metric="$4"
   local neighbors="$5" retrieval="$6" methods="$7"
   local scope="${8:-all}"
+  local MAX_STORE_WINDOWS="${9:-${MAX_STORE_WINDOWS:-}}"
   DATASETS_CSV="$PROFILE_DATASETS_CSV"
   MODELS_CSV="$model_csv"
   SETTINGS_CSV="$PROFILE_SETTINGS_CSV"
@@ -201,13 +219,13 @@ run_method_group() {
 }
 
 run_groups() {
-  local model_csv="$1" key family space metric neighbors retrieval scope methods
+  local model_csv="$1" key family space metric neighbors retrieval scope max_store_windows methods
   for key in "${!GROUP_METHODS[@]}"; do
-    IFS='|' read -r family space metric neighbors retrieval scope <<< "$key"
+    IFS='|' read -r family space metric neighbors retrieval scope max_store_windows <<< "$key"
     scope="${scope:-all}"
     methods="${GROUP_METHODS[$key]}"
     run_method_group \
-      "$model_csv" "$family" "$space" "$metric" "$neighbors" "$retrieval" "$methods" "$scope"
+      "$model_csv" "$family" "$space" "$metric" "$neighbors" "$retrieval" "$methods" "$scope" "$max_store_windows"
   done
 }
 
@@ -236,6 +254,12 @@ fi
 
 if [ "$EXPERIMENT_FAMILY" = crossrag ]; then
   run_groups chronos2
+elif [ "$EXPERIMENT_FAMILY" = training_loss_ablation ]; then
+  for FIT_LOSS in mse nmse; do
+    export FIT_LOSS
+    log_section "training-loss ablation objective=$FIT_LOSS"
+    run_groups "$PROFILE_MODELS_CSV"
+  done
 else
   run_groups "$PROFILE_MODELS_CSV"
 fi
@@ -292,4 +316,21 @@ export DATASETS_CSV MODELS_CSV SETTINGS_CSV DISTANCE_SPACES_CSV
 export DISTANCE_METRICS_CSV NEIGHBORS_CSV FAMILIES_CSV METHODS_CSV
 export PIPELINES_CSV RETRIEVAL_MODE CANDIDATE_FAMILY CANDIDATE_METHOD
 export CANDIDATE_RUN CHRONOS2_PIPELINES_CSV CHRONOS_BOLT_PIPELINES_CSV
+if [ "$EXPERIMENT_FAMILY" = training_loss_ablation ]; then
+  REPORT_ROOT="$PROJECT_ROOT/outputs/reports/$EXPERIMENT_FAMILY/$EXPERIMENT_MODE"
+  srun --ntasks=1 python -m src.visu.training_loss_ablation_table \
+    --results-root "$RESULTS_ROOT" \
+    --output-dir "$REPORT_ROOT" \
+    --pipelines "$PIPELINES_CSV" \
+    --datasets "$DATASETS_CSV" \
+    --settings "$SETTINGS_CSV" \
+    --model "$MODELS_CSV" \
+    --purpose "${TABLE_PURPOSE:-publication}"
+  assert_files training-loss-table \
+    "$REPORT_ROOT/training_loss_ablation.csv" \
+    "$REPORT_ROOT/training_loss_ablation_average.csv" \
+    "$REPORT_ROOT/training_loss_ablation.tex" \
+    "$REPORT_ROOT/report_manifest.json"
+  return
+fi
 source "$PROJECT_ROOT/src/slurm/build_tables.sh"

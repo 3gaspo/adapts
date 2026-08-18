@@ -1,5 +1,6 @@
 #!/bin/bash
-# Evaluate our selected method on the Cross-RAG paper's official test windows.
+# Evaluate our selected method on the Cross-RAG paper's globally standardized
+# data and official test windows. This is not the project's per-window nMSE.
 set -euo pipefail
 source src/slurm/common.sh
 source src/slurm/profiles.sh

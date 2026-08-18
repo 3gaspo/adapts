@@ -26,10 +26,13 @@ class SOTABenchmarkContractTest(unittest.TestCase):
     def test_published_rows_and_protocol_are_explicit(self):
         config = json.loads((ROOT / "SOTA_BENCHMARK.json").read_text(encoding="utf-8"))
         self.assertEqual(config["metric"], "mse")
+        self.assertIn("train-split standardized", config["metric_space"])
         self.assertEqual(config["protocol"]["lags"], 512)
         self.assertEqual(config["protocol"]["horizon"], 64)
         self.assertEqual(config["published_results"]["TS-RAG"]["Average"], 0.197)
         self.assertEqual(config["published_results"]["Cross-RAG"]["Average"], 0.191)
+        self.assertEqual(config["published_method_settings"]["TS-RAG"]["neighbors"], 5)
+        self.assertEqual(config["published_method_settings"]["Cross-RAG"]["neighbors"], 15)
         self.assertEqual(config["datasets"]["ETTh1"]["official_boundaries"], [8640, 11520, 14400])
         self.assertEqual(config["datasets"]["ETTh1"]["project_split_bounds"], [4320, 11520, 14400])
         self.assertEqual(config["datasets"]["ETTm1"]["official_boundaries"], [34560, 46080, 57600])
@@ -72,7 +75,22 @@ class SOTABenchmarkContractTest(unittest.TestCase):
                             "manifest_id": f"sota-{values['project_name']}",
                             "status": "completed",
                             "launch": {"launch_id": f"source-{values['project_name']}"},
-                            "config": {"pipeline": {"run_seed": 1}},
+                            "config": {
+                                "pipeline": {
+                                    "run_seed": 1,
+                                    "dependency.extraction": {
+                                        "pipeline": {
+                                            "data.standardize_train_boundary": values["standardize_train_boundary"],
+                                            "data.eval_query_stride": 1,
+                                            "data.split_bounds": (
+                                                ",".join(map(str, values["project_split_bounds"]))
+                                                if values.get("project_split_bounds")
+                                                else "ratios"
+                                            ),
+                                        }
+                                    },
+                                }
+                            },
                             "signatures": {"pipeline": "pipeline-1"},
                             "purposes": ["publication"],
                             "identity": {
@@ -164,6 +182,34 @@ class SOTABenchmarkContractTest(unittest.TestCase):
             )
             self.assertEqual(
                 report["requested"]["filters"]["purposes"], ["publication"]
+            )
+            self.assertIn("train-split standardized", report["requested"]["filters"]["metric_space"])
+
+    def test_table_rejects_unstandardized_computed_run(self):
+        module = load_table_module()
+        with self.assertRaisesRegex(ValueError, "not standardized"):
+            module._require_metric_protocol(
+                type(
+                    "Choice",
+                    (),
+                    {
+                        "manifest": {
+                            "config": {
+                                "pipeline": {
+                                    "dependency.extraction": {
+                                        "pipeline": {
+                                            "data.standardize_train_boundary": "none",
+                                            "data.eval_query_stride": 1,
+                                            "data.split_bounds": "ratios",
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "run_dir": ROOT,
+                    },
+                )(),
+                {"standardize_train_boundary": 0.7},
             )
 
     def test_table_reuses_completed_cross_launch_results(self):

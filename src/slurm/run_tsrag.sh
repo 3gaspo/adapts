@@ -75,7 +75,11 @@ for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   require_extraction "$INPUT_DIR"
   identity_root="$RESULTS_ROOT/$dataset/${L}_${H}/${model,,}/tsrag/${space,,}/${metric,,}/$neighbors/${RETRIEVAL_MODE,,}"
   model_values=("formula=tsrag" "space=$space" "metric=$metric" "k=$neighbors" "mode=$RETRIEVAL_MODE")
-  pipeline_values=("batch_size=$TSRAG_BATCH_SIZE" "retrieval_protocol=tsrag_default" "retrieval_scope=$RETRIEVAL_SCOPE")
+  pipeline_values=(
+    "batch_size=$TSRAG_BATCH_SIZE" "retrieval_protocol=tsrag_default"
+    "retrieval_scope=$RETRIEVAL_SCOPE" "metric_set=mse,mae,nmse,nmae"
+    "runtime_fields=inference_seconds,inference_ms_per_example,total_parameters"
+  )
   ADDITIONAL_INPUTS=(
     "chronos_bolt_weights=$CHRONOS_BOLT_WEIGHTS_PATH"
     "tsrag_weights=$TSRAG_WEIGHTS_PATH"

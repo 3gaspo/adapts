@@ -453,3 +453,58 @@ def search_neighbors_other_users(
         all_distances[start:stop] = top_distances
         all_indices[start:stop] = top_indices
     return all_distances, all_indices
+
+
+def search_neighbors_other_users_matched(
+    query_features: np.ndarray,
+    store_features: np.ndarray,
+    *,
+    n_users: int,
+    store_dates: int,
+    k: int,
+    metric: DistanceMetric = "euclidean",
+    chunk_size: int = 512,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Search a cross-user pool matched to the same-user pool cardinality.
+
+    Each query receives exactly one candidate at every datastore date.  The
+    candidate user cycles deterministically through all users other than the
+    query user, preserving the same date grid and candidate count as
+    :func:`search_neighbors_same_user` without duplicating windows.
+    """
+    n_users = int(n_users)
+    store_dates = int(store_dates)
+    k = int(k)
+    if query_features.shape[0] != n_users:
+        raise ValueError("matched other-user retrieval expects one query per user")
+    if store_features.shape[0] != n_users * store_dates:
+        raise ValueError("matched other-user datastore does not match user/date dimensions")
+    if k < 0:
+        raise ValueError("k must be non-negative")
+    if k == 0:
+        return (
+            np.empty((n_users, 0), dtype=np.float32),
+            np.empty((n_users, 0), dtype=np.int64),
+        )
+    if n_users < 2 or store_dates < k:
+        available = store_dates if n_users >= 2 else 0
+        raise ValueError(
+            f"matched other-user datastore has {available} eligible windows, fewer than k={k}"
+        )
+
+    distances = np.empty((n_users, k), dtype=np.float32)
+    indices = np.empty((n_users, k), dtype=np.int64)
+    date_indices = np.arange(store_dates, dtype=np.int64)
+    for user_idx in range(n_users):
+        other_users = (user_idx + 1 + date_indices % (n_users - 1)) % n_users
+        candidate_indices = other_users * store_dates + date_indices
+        user_distances, local_indices = search_neighbors(
+            query_features[user_idx : user_idx + 1],
+            store_features[candidate_indices],
+            k=k,
+            metric=metric,
+            chunk_size=chunk_size,
+        )
+        distances[user_idx] = user_distances[0]
+        indices[user_idx] = candidate_indices[local_indices[0]]
+    return distances, indices

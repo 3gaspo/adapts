@@ -36,6 +36,10 @@ never separated. The model-specific protocols are:
   refit the selected model on T1+T2;
 - fixed-candidate CatBoost gates fit on T1, use T2 early stopping to select the
   number of trees, then instantiate a fresh model and refit on T1+T2;
+- trainable baselines and gate advantage targets use element-wise MSE by
+  default. `training_loss_ablation.slurm` repeats selected screen pipelines
+  with per-query-window nMSE weighting while keeping T2 model selection and
+  every other pipeline choice fixed;
 - every publication profile allows at most 300 CatBoost trees; only the
   `EXPERIMENT_MODE=test` smoke profile uses two iterations;
 - joint TS-IFA variants optimize branches and one active rooter together on
@@ -285,6 +289,9 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   under the same retrieval pipeline by changing one axis at a time: classifier
   objective, soft mixture output, or per-horizon regression. Matching
   no-feature and oracle references are included.
+- `training_loss_ablation`: selected trainable baseline and CatBoost/Bayes gate
+  pipelines, each fitted once with MSE and once with per-query-window nMSE;
+  retrieval, split, architecture, and T2 selection stay fixed.
 - `k_ablation`: the manually named winning pipelines on `D x S`, varying only
   `K in {1,3,5,10,15,20}` while retaining each formula and normalization.
 - `h_ablation`: manually named pipelines with `L=504` and
@@ -293,9 +300,10 @@ with Chronos-2. `src/slurm/profiles.sh` is the single source of truth:
   `L in {24,168,504}`.
 - `sota_benchmark`: evaluates one selected project method with Chronos-Bolt at
   `L=512`, `H=64` on the seven exact Cross-RAG paper test splits, then combines
-  the computed MSE with the published Cross-RAG and TS-RAG rows from
-  `SOTA_BENCHMARK.json`. The selected method keeps its own training/retrieval
-  protocol; only evaluation is aligned.
+  the computed train-split-standardized MSE with the published Cross-RAG and
+  TS-RAG rows from `SOTA_BENCHMARK.json`. Cross-RAG's TS-RAG comparator uses
+  `K=5`; Cross-RAG itself uses `K=15`. The selected method keeps its own
+  training/retrieval protocol; only evaluation is aligned.
 - `tsrag`: source-faithful inference with the released TS-RAG ARM checkpoint at
   `L=512`, `H=64`, using its default Chronos-T5 EOS embeddings, Euclidean
   same-channel retrieval, and `K=10`. The selected project method is evaluated
@@ -324,6 +332,7 @@ Solar, and Exchange; `D_full` adds the four quantity-separated ETT panels;
 | `convex_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared convex |
 | `delta_baselines_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared ridge versus shared delta-ridge |
 | `catboost_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Shared regressor versus classifier, soft mixture, and horizon regressor |
+| `training_loss_ablation` | `D_primary` | Screen settings | Chronos-2 | Selected pipeline / `1` or `3` | Selected trainable baselines/gates fitted with MSE versus nMSE |
 | `k_ablation` | `D_primary` | Screen settings | Chronos-2 | Winner's space/metric / `1,3,5,10,15,20` | `WINNERS_CSV` only |
 | `h_ablation` | `D_primary` | `504:24`, `504:168`, `504:504` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
 | `l_ablation` | `D_primary` | `24:24`, `168:24`, `504:24` | Chronos-2 | Selected pipeline / `1` or `3` | `WINNERS_CSV` only |
@@ -440,6 +449,7 @@ The intended submission interface is:
 | `convex_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared convex |
 | `delta_baselines_ablation.slurm` | `full` | separate family: selected shared ridge versus shared delta-ridge |
 | `catboost_ablation.slurm` | `full` | separate family: selected shared-regressor gates versus three one-axis variants |
+| `training_loss_ablation.slurm` | `full` | selected trainable baselines and CatBoost/Bayes gates fitted with MSE and nMSE |
 | `k_ablation.slurm` | `full` | `k_ablation` family over the K grid |
 | `h_ablation.slurm` | `full` | `h_ablation` family over the H grid |
 | `l_ablation.slurm` | `full` | `l_ablation` family over the L grid |
@@ -561,7 +571,11 @@ The CatBoost formulation study is independent and can be submitted later:
 
 ```bash
 sbatch catboost_ablation.slurm
+sbatch training_loss_ablation.slurm
 ```
+
+The second front holds each selected trainable baseline or CatBoost/Bayes gate
+pipeline fixed and compares fitting with MSE against per-query-window nMSE.
 
 Its defaults are the two selected CatBoost pipelines in `SWEEP_CANDIDATES.txt`.
 Each fixes the candidate and retrieval pipeline; the runner evaluates the hard
@@ -632,16 +646,22 @@ sbatch sota_benchmark.slurm
 exact dataset protocol. The launcher uses the ETT repositories' fixed
 12/4/4-month boundaries, the custom datasets' 70/10/20 boundaries, every
 eligible test origin, and per-channel standardization fitted on the official
-training segment. Our selected method retains its own fitting and retrieval
-protocol. The generated `sota_benchmark_mse.csv/.tex` therefore answers the
+training segment. It reports pooled element-wise MSE in that globally
+standardized space, not the project's per-query-window nMSE. The table rejects
+computed runs whose extraction manifest does not prove the required scaling,
+stride, and split boundaries. Our selected method retains its own fitting and
+retrieval protocol. The generated `sota_benchmark_mse.csv/.tex` therefore answers the
 intended question: how our trained method scores on the same evaluation data
 and metric, without claiming that it used Cross-RAG's training recipe. The
 front uses the first selected shared-ridge entry in
 `SECOND_GENERATION_CANDIDATES.txt`; the
 table reader applies the shared manifest selector (including pipeline,
 configuration, repeat, and purpose filters) before matching that exact formula
-and retrieval identity. The published JSON rows are then appended directly;
-they are static external metrics, not project runs.
+and retrieval identity. The published JSON rows are then appended directly. In
+Cross-RAG Table 4, Cross-RAG uses `K=15`, whereas its TS-RAG comparator uses
+the best `K=5` setting from the authors' search over `K in [1,15]`; this is not
+the original TS-RAG paper's default `K=10` result. The rows are static external
+metrics, not project runs.
 
 The released TS-RAG ARM is re-evaluated separately on the project datasets:
 
@@ -659,7 +679,11 @@ Chronos-2. A Chronos-2 TS-RAG row is intentionally absent: the public ARM
 checkpoint contains Chronos-Bolt decoder/head parameters and cannot be loaded
 into Chronos-2. TS-RAG evaluations use the same schema-versioned run manifests,
 selection policies, and report provenance as baseline evaluations; only their
-metric payload filename and specialized comparison-row formatting differ.
+metric payload filename and specialized comparison-row formatting differ. Each
+TS-RAG row reports pooled MSE, per-query-window nMSE, pooled MAE,
+per-query-window nMAE, model-only inference seconds and milliseconds per
+example, and total ARM parameters. Retrieval embedding/search happens in the
+reusable extraction stage and is outside that model-only time and count.
 
 ## Fair comparison with the Cross-RAG paper
 
@@ -705,6 +729,13 @@ two CatBoost threads by default. Each model is scored, saved in CatBoost's
 native format, and released before the next model is fitted. Gate summaries are
 computed in bounded chunks, horizon feature matrices are materialized lazily,
 and predictions and diagnostic scores are disk-backed.
+
+Every current Slurm-backed evaluation producer saves both pooled MSE and the
+project's per-query-window nMSE in its metric artifact. Baseline/gate and
+TS-RAG artifacts also save MAE and nMAE. The specialized SOTA report exposes
+only standardized-space MSE because the immutable paper rows do not publish
+project-defined nMSE; its locally computed producer artifact still contains
+both MSE and nMSE.
 
 ## Tables and averages
 
@@ -873,6 +904,7 @@ enumeration, input checks, and command invocation:
 - `extraction.slurm` -> `src/slurm/extract_adaptation.sh`.
 - `benchmark.slurm` and `screen.slurm` ->
   `src/slurm/run_profile_experiment.sh`.
+- `training_loss_ablation.slurm` -> `src/slurm/run_profile_experiment.sh`.
 - `baselines.slurm` -> `src/slurm/run_baselines.sh`.
 - `gates.slurm` -> `src/slurm/run_gates.sh`.
 - `mixed_quantity_ablation.slurm` -> `src/slurm/run_profile_experiment.sh`.
@@ -915,7 +947,8 @@ The runnable Python modules are:
   prediction payloads, and the atomic completion manifest.
 - `src.experiments.artifacts`: command-line validation of an extraction folder.
 - `src.adaptors.baselines.evaluate`: both baseline and gate families, selected
-  with `--family baselines` or `--family gates`.
+  with `--family baselines` or `--family gates`; `--fit-loss` selects MSE or
+  per-query-window nMSE fitting without changing the reported metric set.
 - `src.adaptors.cross_rag.evaluate`: Cross-RAG checkpoint inference on the fixed
   Chronos-Bolt `512:64`, min-max/cosine, `K=15` extraction payload. This source
   remains for architecture inspection but has no current Slurm front.
@@ -925,7 +958,10 @@ The runnable Python modules are:
 - `src.visu.sota_benchmark_table`: combines computed exact-test-split MSE with
   immutable published rows from `SOTA_BENCHMARK.json`.
 - `src.visu.tsrag_comparison_table`: tabulates the project-dataset TS-RAG run
-  and its Chronos-Bolt/Chronos-2 controls.
+  and its Chronos-Bolt/Chronos-2 controls with MSE, nMSE, MAE, nMAE, and TS-RAG
+  model inference/parameter diagnostics.
+- `src.visu.training_loss_ablation_table`: compares selected baseline/gate
+  pipelines under MSE and nMSE fitting objectives.
 - `src.adaptors.ts_ifa.train`: joint T1 training with T2 checkpoint selection or
   chronological T1 support/query meta-training with a frozen-branch T2 rooter fit.
 - `src.visu.sweep_results_table`: full and averaged publication tables.

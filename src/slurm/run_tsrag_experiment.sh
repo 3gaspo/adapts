@@ -73,6 +73,10 @@ for stage in "${requested_stages[@]}"; do
         --output-dir "$REPORT_ROOT" \
         --control-method "$candidate_method" \
         "${TABLE_SELECTION_ARGS[@]}"
+      assert_files tsrag-table \
+        "$REPORT_ROOT/tsrag_comparison.csv" \
+        "$REPORT_ROOT/tsrag_comparison.tex" \
+        "$REPORT_ROOT/report_manifest.json"
       ;;
     *) log_error "unknown STAGES entry=$stage expected=evaluate,tables"; return 2 ;;
   esac

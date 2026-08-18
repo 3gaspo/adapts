@@ -27,6 +27,7 @@ from ..data.neighbors import (
     period_eval_dates,
     search_neighbors,
     search_neighbors_other_users,
+    search_neighbors_other_users_matched,
     search_neighbors_same_user,
 )
 from ..models.models import load_pretrained_model, parameter_counts, resolve_device
@@ -396,6 +397,16 @@ def extract_period(
                 metric=args.distance_metric,
                 chunk_size=args.search_chunk_size,
             )
+        elif args.retrieval_scope == "other_users_matched":
+            distances, indices = search_neighbors_other_users_matched(
+                query.features,
+                store.features,
+                n_users=n_users,
+                store_dates=store.n_dates,
+                k=k,
+                metric=args.distance_metric,
+                chunk_size=args.search_chunk_size,
+            )
         else:
             distances, indices = search_neighbors(
                 query.features,
@@ -607,6 +618,16 @@ def plot_neighbor_example(
             metric=args.distance_metric,
             chunk_size=args.search_chunk_size,
         )
+    elif args.retrieval_scope == "other_users_matched":
+        _, indices = search_neighbors_other_users_matched(
+            query.features,
+            store.features,
+            n_users=dataset.n_users,
+            store_dates=store.n_dates,
+            k=args.neighbors,
+            metric=args.distance_metric,
+            chunk_size=args.search_chunk_size,
+        )
     else:
         _, indices = search_neighbors(
             query.features,
@@ -687,7 +708,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--retrieval-scope",
         default="all",
-        choices=["all", "same_user", "other_users"],
+        choices=["all", "same_user", "other_users", "other_users_matched"],
     )
     parser.add_argument("--retrieval-model-kwargs", default=None, help="JSON options for the TS-RAG Chronos-T5 retriever")
     parser.add_argument("--retrieval-mode", default="online", choices=["online", "fixed"])

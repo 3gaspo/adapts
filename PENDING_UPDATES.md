@@ -4,6 +4,122 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-18: Repair the retrieval dashboard notebook bootstrap for cluster
+  Jupyter sessions. The cluster branch now discovers the adaptation root from
+  the kernel directory or its parents, preserves the kernel working directory,
+  adds the project root for `src.*` imports, and resolves extraction/result
+  paths absolutely from that root. All `pip install` calls are confined to
+  explicit Colab-only switches; the cluster branch never mutates its prepared
+  environment. The workspace command codebook now requires submitting the
+  Jupyter Slurm front from the concerned project root and gives the adaptation
+  command explicitly. Affected files/contracts: retrieval dashboard notebook,
+  cluster notebook launch instructions, and activity log; artifact and
+  experiment contracts are unchanged. Checks passed in the shared notebook
+  runtime from both the adaptation root and `src/visu`: the setup cell found
+  the same project root, preserved the starting directory, exposed the `src`
+  package, constructed project-rooted artifact paths, and made no package-
+  installation call. A full dashboard import was deferred because this shared
+  runtime lacks the project dependency `einops`; exercise the notebook in the
+  prepared cluster environment during the next Jupyter session. No README or
+  LaTeX update and no experiment rerun are required.
+
+- 2026-08-18: Expand the retrieval-scope ablation to separate user-pool
+  diversity from datastore cardinality. The front now evaluates the existing
+  all-user, same-user, and other-users scopes at global materialized-store caps
+  of 10k, 20k, 30k, and 50k windows. At 10k it additionally evaluates a
+  deterministic `other_users_matched` pool with exactly one different-user
+  candidate per datastore date, giving every query the same candidate count
+  and temporal grid as same-user retrieval without duplicate windows. The
+  current 30k all/same/other identities and report names are unchanged for
+  exact reuse. Under the current stride-25 T0 protocol, Electricity and Traffic
+  are cap-bound at 30k (96 and 34 dates respectively), while Solar and Exchange
+  are bounded by their eligible dates (up to 98 and 84, depending on setting);
+  consequently the proposed equal 10k candidate pools cannot be constructed
+  from unique same-user windows, and matching requires downsampling the
+  cross-user pool. Affected files/contracts: retrieval-scope front and profile
+  orchestration, extraction scope choices and neighbor search, result/coefficient
+  logical naming, focused smoke tests, cluster handoff, and activity log.
+  Checks passed: Python compilation for all touched modules/tests; exact
+  Euclidean, cosine, and Pearson matched-pool neighbor checks; sweep-profile,
+  result-table, and coefficient-report smokes with `PYTHONPATH=src`; and Bash
+  syntax for the front and affected launchers. The first two report-smoke
+  invocations omitted `PYTHONPATH=src` and failed during import before tests
+  ran; their corrected invocations passed. Required cluster work: resubmit
+  `retrieval_scope_ablation.slurm`; exact completed 30k configurations skip,
+  while the new cap identities and 10k matched controls run. During maintenance,
+  reconcile README and the experiment guideline with the expanded design;
+  update the executive summary only after the new results are analyzed.
+
+- 2026-08-18: Reconcile Cross-RAG/TS-RAG metric protocols and add the fitting-
+  loss ablation. Cross-RAG Table 4 is now represented as globally
+  train-standardized pooled MSE with TS-RAG K=5 and Cross-RAG K=15; the SOTA
+  reader fails closed unless local producer manifests prove the official train
+  boundary, stride-1 evaluation, and exact test splits. The independent
+  released-TS-RAG K=10 benchmark now saves MSE, nMSE, MAE, nMAE, model-only
+  inference latency, and total/trainable ARM parameter counts, and its report
+  exposes the four metrics plus latency and total parameters. Added
+  `training_loss_ablation.slurm`, which holds selected screen pipelines fixed
+  while fitting trainable ridge/convex baselines and regression/Bayes gate
+  advantages with either MSE or per-query-window nMSE; direct/oracle methods
+  remain objective-free. Affected files/contracts: SOTA static protocol and
+  table, TS-RAG evaluator/runner/table, shared baseline/gate evaluator and
+  launchers, profile orchestration, the new ablation/report module and front,
+  focused tests, README, cluster handoff, and activity log. Checks passed:
+  Python compilation for all changed modules/tests; Bash syntax for all changed
+  fronts/launchers; 6 SOTA, 7 TS-RAG, and 2 training-loss contract tests; and a
+  dependency-light numerical check that nMSE gate targets downweight a 10x-
+  scale window by 100x. The broader baseline-oracle smoke could not import in
+  the shared notebook runtime because `einops` is absent; rerun it in the
+  project `uv` environment during maintenance. Required cluster work: rebuild
+  SOTA tables only, rerun `tsrag.slurm` for the expanded artifact contract, and
+  execute the new training-loss ablation; extraction artifacts remain reusable.
+  Reconcile the experiment guideline after maintenance and update the executive
+  summary only after the new results are analyzed.
+
+- 2026-08-18: Move stale and deliberately retired schema-1 runs out of the
+  active output tree while retaining their complete provenance. Added the
+  documented `archive/stale_runs/` contract and preserved original paths below
+  three dated batches: 19 bugged screen/TS-IFA runs with completed replacements,
+  all 9 retired Cross-RAG workflow runs, and all 3 retired K=100 extraction
+  runs. The complete Cross-RAG job-43060 and K=100 job-43589 log pairs moved
+  with their retired batches; mixed job-42887 and job-43980 logs remain active
+  because they also document valid reused configurations. The Cross-RAG and
+  completed K=100 selection indexes moved with their identity roots. The
+  existing pre-schema archive reason now records that its
+  legacy extraction pipeline used stride 24; direct inspection found no active
+  schema-1 stride-24 manifest to move. Affected files/contracts: archived run
+  trees and their READMEs, the active `outputs/adaptation/{screen,ts_ifa,crossrag}`
+  and `outputs/extraction` inventories, the narrow `.gitignore` exception that
+  makes only `archive/stale_runs/` fetchable while older bulk archives remain
+  ignored, legacy archive documentation, cluster handoff, and the durable
+  thesis activity log. Checks passed: the pre-move
+  closure audit found zero active downstream or report references to all 31
+  targets; the post-move audit found 3,789 active schema-1 manifests (3,788
+  completed and the one pre-existing job-43124 running manifest), zero missing
+  or inactive input paths, zero dangling/invalid selections, and zero active
+  Cross-RAG, K=100, or stride-24 configurations. No experiment rerun or
+  artifact migration is required. Deferred maintenance: reconcile the README
+  and experiment guideline only if their historical-artifact descriptions need
+  the new schema-1 stale-run archive alongside the existing pre-schema archive.
+
+- 2026-08-18: Retire the completed dependency migration utility. Removed the
+  standalone audit script together with its manifest rewriting, provenance
+  repair, selection-index repair, invalidation, and line-ending normalization
+  functions. No live Slurm front, Python module, test, or public command called
+  the utility; normal execution already resolves one exact selectable upstream
+  run and embeds its scientific dependency in downstream signatures. Affected
+  files/contracts: `src/scripts/audit_run_dependencies.py` only; the current
+  manifest and artifact contracts are unchanged. Checks passed: workspace
+  reference scan found no caller; all 13 focused manifest lifecycle/selection
+  tests passed with `PYTHONPATH=src`; in-memory compilation passed for all 62
+  Python sources; and a final source scan found no remaining audit, repair, or
+  migration function in Adaptation. The initial test command without the
+  required `PYTHONPATH` failed during import before running tests. Historical
+  migration records remain in the handoff documents because they describe
+  changes already applied. No experiment rerun or artifact migration is
+  required. Deferred maintenance: none beyond resolving this documentation-only
+  queue entry during the next maintenance pass.
+
 - 2026-08-18: Correct the candidate-selection workflow after the repaired
   screen. Screen reports are evidence for a manually curated
   `SWEEP_CANDIDATES.txt`, not an immutable manifest; selection may retain gates,
@@ -283,3 +399,20 @@ complementary report boundary. Remaining work is external: publish and analyze
 the five active workflows, populate generation 2 from K and TS-IFA evidence,
 then run the deferred final consumers and one real publisher integration. No
 scientific recomputation was performed locally.
+
+Maintenance 2026-08-18: direct inspection covered jobs 43975--43980, the
+populated generation-2 manifest, the current reports, the TS-IFA failure, and
+the migrated manifest trees. The read-only dependency audit inspected 3,748
+manifests with zero missing inputs, pending migrations, provenance repairs, or
+new scientific invalidations. Complementary extraction-manifest and generic
+result-table smokes passed, as did Git Bash syntax for all nine byte-identical
+publishers. The README, executive summary, and cluster handoff were current;
+the experiment guideline was reconciled with exact fail-closed extraction
+dependencies and exact-log publication. The full TS-IFA training smoke was not
+repeated because the prepared project environment is unavailable and the shared
+runtime lacks `einops`; its focused 16-combination forward check had already
+passed. BibTeX followed by three pdfLaTeX passes completed with a clean log,
+and all 18 rendered guideline pages passed visual inspection. Remaining work
+is external: rerun the 18 interrupted screen rows and reports, execute the
+generation-2 benchmark/TS-RAG/SOTA fronts, resume the
+corrected TS-IFA pilot, and exercise the publisher on the cluster.

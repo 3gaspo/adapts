@@ -35,7 +35,8 @@ class Result:
 _RUN_NAME_RE = re.compile(
     r"(in|raw|instance|minmax|encoder|fourier|chronos|patchtst|model|representation)"
     r"_(euclidean|cosine|pearson)_(\d+)_(online|fixed)"
-    r"(?:_(all|same_user|other_users))?"
+    r"(?:_(all|same_user|other_users|other_users_matched))?"
+    r"(?:_mw(\d+))?"
 )
 _EVALUATION_RESULT_FORMAT = "adaptation_evaluation_result"
 _TS_IFA_RESULT_FORMAT = "adaptation_ts_ifa_result"
@@ -277,6 +278,28 @@ def _relative_run(path: Path, root: Path, setting: str) -> str:
     return after_setting[0] if after_setting else path.parent.name
 
 
+def _retrieval_run_name(manifest: Mapping[str, object]) -> tuple[str, str]:
+    """Return the logical retrieval run, including scope-ablation axes."""
+    identity = manifest["identity"]  # type: ignore[index]
+    config = identity["model_config"]  # type: ignore[index]
+    run = "_".join(
+        str(config[name])
+        for name in ("space", "metric", "k", "mode")
+        if name in config
+    )
+    pipeline = manifest.get("config", {}).get("pipeline", {})  # type: ignore[union-attr]
+    retrieval_scope = str(pipeline.get("retrieval.scope", ""))
+    if not retrieval_scope:
+        return run, retrieval_scope
+    run = f"{run}_{retrieval_scope}"
+    dependency = pipeline.get("dependency.extraction", {})
+    dependency_pipeline = dependency.get("pipeline", {}) if isinstance(dependency, Mapping) else {}
+    max_store_windows = dependency_pipeline.get("data.max_store_windows")
+    if max_store_windows not in (None, "none", 30000, "30000"):
+        run = f"{run}_mw{max_store_windows}"
+    return run, retrieval_scope
+
+
 def discover_results(experiment_dir: str | Path) -> list[Result]:
     """Discover metrics only from selected, completed current manifests."""
     root = Path(experiment_dir).expanduser().resolve()
@@ -291,14 +314,7 @@ def discover_results(experiment_dir: str | Path) -> list[Result]:
         dataset = str(identity["dataset"])
         setting = f"{identity['lookback']}_{identity['horizon']}"
         model = str(identity["backbone"])
-        run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode") if name in config)
-        retrieval_scope = str(
-            choice.manifest.get("config", {}).get("pipeline", {}).get(
-                "retrieval.scope", ""
-            )
-        )
-        if retrieval_scope:
-            run = f"{run}_{retrieval_scope}"
+        run, retrieval_scope = _retrieval_run_name(choice.manifest)
         if (choice.run_dir / "baseline_metrics.json").is_file():
             path = choice.run_dir / "baseline_metrics.json"
             family = "baselines"
@@ -543,7 +559,7 @@ for _design, _label in _BASELINE_DESIGN_LABELS.items():
 def _short_run_name(run: str) -> str:
     match = _RUN_NAME_RE.fullmatch(run)
     if match is not None:
-        space, metric, neighbors, mode, scope = match.groups()
+        space, metric, neighbors, mode, scope, max_store_windows = match.groups()
         space = {
             "in": "IN",
             "instance": "IN",
@@ -556,7 +572,15 @@ def _short_run_name(run: str) -> str:
         if mode == "fixed":
             parts.append("fixed")
         if scope:
-            parts.append({"same_user": "same", "other_users": "other"}.get(scope, scope))
+            parts.append(
+                {
+                    "same_user": "same",
+                    "other_users": "other",
+                    "other_users_matched": "other-matched",
+                }.get(scope, scope)
+            )
+        if max_store_windows:
+            parts.append(f"mw{max_store_windows}")
         return "_".join(parts)
     short = run.replace("_euclidean_", "_L2_")
     return short.removesuffix("_online")

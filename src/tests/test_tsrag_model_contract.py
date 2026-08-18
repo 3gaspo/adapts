@@ -50,6 +50,9 @@ class TSRAGModelContractTest(unittest.TestCase):
         self.assertIn("--chronos-bolt-weights", evaluator)
         self.assertIn("--ts-rag-weights", evaluator)
         self.assertIn("--neighbors", evaluator)
+        self.assertIn('"nmae"', evaluator)
+        self.assertIn('"total_parameters"', evaluator)
+        self.assertIn('"inference_ms_per_example"', evaluator)
         self.assertIn("find_weight_path chronos-bolt-base", runner)
         self.assertIn("find_weight_path ts-rag", runner)
 
@@ -137,6 +140,7 @@ class TSRAGModelContractTest(unittest.TestCase):
                             "mse": 0.2,
                             "mae": 0.1,
                             "nmse": 0.3,
+                            "nmae": 0.2,
                             "positive_window_pct": 50.0,
                         }
                         for method in ("vanilla", "our_method")
@@ -182,6 +186,7 @@ class TSRAGModelContractTest(unittest.TestCase):
                             "mse": 9.0,
                             "mae": 9.0,
                             "nmse": 9.0,
+                            "nmae": 9.0,
                             "positive_window_pct": 0.0,
                         }
                     ]
@@ -225,9 +230,20 @@ class TSRAGModelContractTest(unittest.TestCase):
                                 "mse": 0.19,
                                 "mae": 0.09,
                                 "nmse": 0.29,
+                                "nmae": 0.19,
                                 "positive_window_pct": 55.0,
                             }
                         ]
+                    ),
+                    encoding="utf-8",
+                )
+                (run / "tsrag_timing.json").write_text(
+                    json.dumps(
+                        {
+                            "inference_seconds": 1.0,
+                            "inference_ms_per_example": 0.5,
+                            "total_parameters": 123456,
+                        }
                     ),
                     encoding="utf-8",
                 )
@@ -241,6 +257,8 @@ class TSRAGModelContractTest(unittest.TestCase):
             text = paths["csv"].read_text(encoding="utf-8")
             report = json.loads(paths["manifest"].read_text(encoding="utf-8"))
             self.assertIn("chronos-bolt,tsrag", text)
+            self.assertIn("nmae", text.splitlines()[0])
+            self.assertIn("123456", text)
             self.assertNotIn("chronos2,tsrag", text)
             self.assertEqual(report["obtained"]["count"], 12)
             self.assertEqual(

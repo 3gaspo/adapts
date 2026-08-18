@@ -13,7 +13,8 @@ from visu.results_table import selected_manifest_runs
 
 
 DATASETS = ("Electricity", "Traffic", "Solar", "exchange_rate")
-METRICS = ("mse", "mae", "nmse", "positive_window_pct")
+METRICS = ("mse", "nmse", "mae", "nmae", "positive_window_pct")
+RUNTIME_FIELDS = ("inference_seconds", "inference_ms_per_example", "total_parameters")
 TSRAG_CONFIG = {
     "formula": "tsrag",
     "space": "tsrag",
@@ -72,7 +73,7 @@ def _rows(
     repeat_policy: str,
     purposes: Sequence[str],
 ) -> tuple[list[dict[str, Any]], list[SelectedRun]]:
-    collected: dict[tuple[str, str, str], list[dict[str, float]]] = {}
+    collected: dict[tuple[str, str, str], list[dict[str, float | None]]] = {}
     obtained: list[SelectedRun] = []
     selection = {
         "pipeline_config": pipeline_config,
@@ -94,7 +95,12 @@ def _rows(
             if row.get("split") != "eval":
                 continue
             key = (str(identity["backbone"]), str(row["baseline"]), str(identity["dataset"]))
-            collected.setdefault(key, []).append({name: float(row[name]) for name in METRICS})
+            collected.setdefault(key, []).append(
+                {
+                    **{name: float(row[name]) for name in METRICS},
+                    **{name: None for name in RUNTIME_FIELDS},
+                }
+            )
             used = True
         if used:
             obtained.append(selected)
@@ -109,8 +115,15 @@ def _rows(
         if len(metric_rows) != 1:
             raise ValueError(f"expected one TS-RAG metric row in {metrics_path}")
         dataset = str(selected.manifest["identity"]["dataset"])
+        timing_path = selected.run_dir / "tsrag_timing.json"
+        if not timing_path.is_file():
+            raise ValueError(f"missing TS-RAG timing diagnostics: {timing_path}")
+        timing = _json(timing_path)
         collected.setdefault(("chronos-bolt", "tsrag", dataset), []).append(
-            {name: float(metric_rows[0][name]) for name in METRICS}
+            {
+                **{name: float(metric_rows[0][name]) for name in METRICS},
+                **{name: float(timing[name]) for name in RUNTIME_FIELDS},
+            }
         )
         obtained.append(selected)
 
@@ -130,6 +143,14 @@ def _rows(
                 **{
                     name: sum(value[name] for value in values) / len(values)
                     for name in METRICS
+                },
+                **{
+                    name: (
+                        None
+                        if any(value[name] is None for value in values)
+                        else sum(float(value[name]) for value in values) / len(values)
+                    )
+                    for name in RUNTIME_FIELDS
                 },
             }
         )
@@ -171,27 +192,47 @@ def build(
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "tsrag_comparison.csv"
-    fields = ("backbone", "method", "dataset", *METRICS)
+    fields = ("backbone", "method", "dataset", *METRICS, *RUNTIME_FIELDS)
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
 
-    grouped: dict[tuple[str, str], dict[str, float]] = {}
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in rows:
-        grouped.setdefault((row["backbone"], row["method"]), {})[row["dataset"]] = row["mse"]
-    tex_path = output_dir / "tsrag_comparison_mse.tex"
+        grouped.setdefault((row["backbone"], row["method"]), []).append(row)
+    tex_path = output_dir / "tsrag_comparison.tex"
     lines = [
-        r"\begin{tabular}{llrrrrr}",
+        r"\begin{tabular}{llrrrrrr}",
         r"\toprule",
-        r"Backbone & Method & Electricity & Traffic & Solar & Exchange & Average \\",
+        r"Backbone & Method & MSE & nMSE & MAE & nMAE & ms/example & Parameters \\",
         r"\midrule",
     ]
-    for (backbone, method), values in sorted(grouped.items()):
-        average = sum(values[name] for name in DATASETS) / len(DATASETS)
+    for (backbone, method), method_rows in sorted(grouped.items()):
         label = method.replace("_", r"\_")
-        numbers = " & ".join(f"{values[name]:.3f}" for name in DATASETS)
-        lines.append(f"{backbone} & {label} & {numbers} & {average:.3f} " + r"\\")
+        averages = {
+            name: sum(float(row[name]) for row in method_rows) / len(method_rows)
+            for name in ("mse", "nmse", "mae", "nmae")
+        }
+        runtime = [row["inference_ms_per_example"] for row in method_rows]
+        parameters = [row["total_parameters"] for row in method_rows]
+        runtime_text = (
+            "--"
+            if any(value is None for value in runtime)
+            else f"{sum(float(value) for value in runtime) / len(runtime):.3f}"
+        )
+        parameter_text = (
+            "--"
+            if any(value is None for value in parameters)
+            else f"{int(round(sum(float(value) for value in parameters) / len(parameters))):,}"
+        )
+        numbers = " & ".join(
+            f"{averages[name]:.4f}" for name in ("mse", "nmse", "mae", "nmae")
+        )
+        lines.append(
+            f"{backbone} & {label} & {numbers} & {runtime_text} & {parameter_text} "
+            + r"\\"
+        )
     lines.extend((r"\bottomrule", r"\end{tabular}"))
     tex_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -210,6 +251,8 @@ def build(
                 "neighbors": 10,
                 "retrieval": "chronos-t5-base/euclidean/same_user/fixed",
             },
+            "metrics": list(METRICS),
+            "runtime_fields": list(RUNTIME_FIELDS),
         },
     )
     return {"csv": csv_path, "latex": tex_path, "manifest": manifest_path}

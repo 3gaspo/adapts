@@ -49,12 +49,14 @@ GATE_TASK_TYPE="${GATE_TASK_TYPE^^}"
 GATE_THREAD_COUNT="${GATE_THREAD_COUNT:-2}"
 GATE_DEVICES="${GATE_DEVICES:-}"
 VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
+FIT_LOSS="${FIT_LOSS:-mse}"
 SEED="${SEED:-1}"
 MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-}"
 MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-}"
 MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 require_resolved_profile_grid
 require_profile_neighbors "$NEIGHBORS_CSV"
+case "$FIT_LOSS" in mse|nmse) ;; *) log_error "FIT_LOSS must be mse or nmse"; return 2 ;; esac
 if requires_selected_methods && [ -z "$GATE_METHODS_CSV" ]; then
   log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE requires GATE_METHODS_CSV for the gate candidate run"
   return 2
@@ -144,6 +146,9 @@ run_task() {
       "max_t1_fit_samples=${MAX_T1_FIT_SAMPLES:-none}" "max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none}"
       "max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none}" "run_seed=$SEED"
     )
+    if [ "$FIT_LOSS" != mse ] || [ "$EXPERIMENT_FAMILY" = training_loss_ablation ]; then
+      pipeline_values+=("fit_loss=$FIT_LOSS")
+    fi
     if [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then
       pipeline_values+=("retrieval.scope=${RETRIEVAL_SCOPE:-all}")
     fi
@@ -164,7 +169,7 @@ run_task() {
       --gate-iterations "$GATE_ITERATIONS" --gate-learning-rate "$GATE_LEARNING_RATE" \
       --gate-depth "$GATE_DEPTH" --gate-early-stopping-rounds "$GATE_EARLY_STOPPING_ROUNDS" \
       "${GATE_EXECUTION_ARGS[@]}" --validation-fraction "$VALIDATION_FRACTION" \
-      "${FIT_SAMPLE_ARGS[@]}" --methods "$method" --seed "$SEED"
+      --fit-loss "$FIT_LOSS" "${FIT_SAMPLE_ARGS[@]}" --methods "$method" --seed "$SEED"
     assert_files gate-output \
       "$OUTPUT_DIR/gate_metrics.csv" "$OUTPUT_DIR/gate_metrics.json" \
       "$OUTPUT_DIR/gate_artifacts.json" "$OUTPUT_DIR/prediction_manifest.json" \
@@ -174,7 +179,7 @@ run_task() {
   done
 }
 
-log_section "job start kind=gates family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=$GATE_METHODS_CSV task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_fits=serial allocated_cpus=$ALLOCATED_CPUS results_root=$RESULTS_ROOT"
+log_section "job start kind=gates family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE fit_loss=$FIT_LOSS skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=$GATE_METHODS_CSV task_type=$GATE_TASK_TYPE thread_count=$GATE_THREAD_COUNT horizon_fits=serial allocated_cpus=$ALLOCATED_CPUS results_root=$RESULTS_ROOT"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done

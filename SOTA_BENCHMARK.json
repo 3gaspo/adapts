@@ -2,12 +2,25 @@
   "source": "https://arxiv.org/pdf/2603.14709",
   "source_table": "Table 4",
   "metric": "mse",
+  "metric_space": "per-channel train-split standardized values",
+  "metric_formula": "mean((prediction_standardized - target_standardized)^2)",
   "protocol": {
     "lags": 512,
     "horizon": 64,
     "backbone": "chronos-bolt",
     "evaluation": "all eligible official test windows",
-    "scaling": "per-channel StandardScaler fitted on the official training segment"
+    "scaling": "per-channel population mean and standard deviation fitted on the official training segment; no per-window normalization",
+    "reported_name": "MSE"
+  },
+  "published_method_settings": {
+    "TS-RAG": {
+      "neighbors": 5,
+      "note": "Cross-RAG paper evaluation; selected as the best k in [1, 15]"
+    },
+    "Cross-RAG": {
+      "neighbors": 15,
+      "lambda": 0.7
+    }
   },
   "datasets": {
     "ETTh1": {

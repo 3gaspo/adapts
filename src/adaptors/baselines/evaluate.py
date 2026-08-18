@@ -370,6 +370,7 @@ def _ridge_statistics(
     arrays: dict[str, np.ndarray],
     design: str,
     mode: str,
+    fit_loss: str = "mse",
 ) -> dict[str, Any]:
     n_samples, horizon = arrays["y"].shape
     if n_samples == 0:
@@ -397,6 +398,9 @@ def _ridge_statistics(
             arrays["y"][start:stop].astype(np.float64)
             - arrays["pred"][start:stop].astype(np.float64)
         )
+        loss_scale = _fit_loss_scale(arrays, fit_loss, start, stop)
+        x = x / loss_scale[:, :, None]
+        target = target / loss_scale
         if mode == "shared":
             x_flat = x.reshape(-1, feature_count)
             target_flat = target.reshape(-1)
@@ -482,11 +486,31 @@ def _normalized_mse(arrays: dict[str, np.ndarray], prediction: np.ndarray) -> fl
     return float(np.mean(((prediction - arrays["y"]) / scale) ** 2))
 
 
+def _fit_loss_scale(
+    arrays: dict[str, np.ndarray],
+    fit_loss: str = "mse",
+    start: int = 0,
+    stop: int | None = None,
+) -> np.ndarray:
+    """Return the per-window divisor that turns squared error into the fit loss."""
+    if fit_loss == "mse":
+        return np.ones((len(arrays["y"][start:stop]), 1), dtype=np.float64)
+    if fit_loss != "nmse":
+        raise ValueError(f"unknown fit loss {fit_loss!r}")
+    scale = (
+        arrays["scale"][start:stop]
+        if "scale" in arrays
+        else arrays["x"][start:stop].std(axis=1, keepdims=True)
+    )
+    return np.maximum(np.asarray(scale, dtype=np.float64), 1e-8)
+
+
 def _convex_statistics(
     arrays: dict[str, np.ndarray],
     *,
     design: str,
     mode: str,
+    fit_loss: str = "mse",
 ) -> tuple[np.ndarray, np.ndarray]:
     n_samples, horizon = arrays["y"].shape
     neighbors = arrays["y_c"].shape[1]
@@ -507,6 +531,9 @@ def _convex_statistics(
         stop = min(start + chunk_samples, n_samples)
         x = _design_chunk(arrays, design, start, stop)
         target = arrays["y"][start:stop].astype(np.float64)
+        loss_scale = _fit_loss_scale(arrays, fit_loss, start, stop)
+        x = x / loss_scale[:, :, None]
+        target = target / loss_scale
         if mode == "shared":
             x_flat = x.reshape(-1, feature_count)
             xtx += x_flat.T @ x_flat
@@ -575,8 +602,14 @@ def _fit_convex(
     *,
     design: str,
     mode: str,
+    fit_loss: str = "mse",
 ) -> np.ndarray:
-    xtx, xty = _convex_statistics(arrays, design=design, mode=mode)
+    xtx, xty = _convex_statistics(
+        arrays,
+        design=design,
+        mode=mode,
+        fit_loss=fit_loss,
+    )
     if mode == "shared":
         return _solve_simplex_qp(xtx, xty)
     return np.stack(
@@ -610,6 +643,7 @@ def fit_baseline_adapters(
     refit: dict[str, np.ndarray] | None = None,
     l2_grid: Sequence[float] | float = DEFAULT_L2_GRID,
     methods: Sequence[str] | None = None,
+    fit_loss: str = "mse",
 ) -> dict[str, Any]:
     """Fit convex models directly and tune/refit ridge families via T2."""
     valid = train if valid is None else valid
@@ -621,23 +655,30 @@ def fit_baseline_adapters(
     )
     if not grid or any(value < 0 for value in grid):
         raise ValueError("l2_grid must contain non-negative values")
+    if fit_loss not in {"mse", "nmse"}:
+        raise ValueError("fit_loss must be mse or nmse")
     artifacts: dict[str, Any] = {
         "protocol": "convex_refit_on_T1_plus_T2;ridge_tune_on_T2_then_refit",
         "l2_grid": grid,
+        "fit_loss": fit_loss,
         "models": {},
     }
     selected = set(TRAINABLE_BASELINES if methods is None else methods)
     for name, design, mode in CONVEX_MODELS:
         if name not in selected:
             continue
-        train_weights = _fit_convex(train, design=design, mode=mode)
+        train_weights = _fit_convex(
+            train, design=design, mode=mode, fit_loss=fit_loss
+        )
         valid_prediction = _predict_convex(
             valid,
             design=design,
             mode=mode,
             weights=train_weights,
         )
-        final_weights = _fit_convex(refit, design=design, mode=mode)
+        final_weights = _fit_convex(
+            refit, design=design, mode=mode, fit_loss=fit_loss
+        )
         artifacts["models"][name] = {
             "kind": "convex",
             "design": design,
@@ -647,11 +688,12 @@ def fit_baseline_adapters(
             "t1_weights": train_weights,
             "t2_nmse": _normalized_mse(valid, valid_prediction),
             "constraint": "non-negative weights summing to one",
+            "fit_loss": fit_loss,
         }
     for name, design, mode in (*RIDGE_MODELS, *DELTA_RIDGE_MODELS):
         if name not in selected:
             continue
-        train_statistics = _ridge_statistics(train, design, mode)
+        train_statistics = _ridge_statistics(train, design, mode, fit_loss)
         candidates: list[tuple[float, float, np.ndarray]] = []
         for alpha in grid:
             coefficients = _solve_ridge_statistics(train_statistics, alpha)
@@ -668,7 +710,7 @@ def fit_baseline_adapters(
             candidates,
             key=lambda item: (item[1], item[0]),
         )
-        final_statistics = _ridge_statistics(refit, design, mode)
+        final_statistics = _ridge_statistics(refit, design, mode, fit_loss)
         final_coefficients = _solve_ridge_statistics(
             final_statistics,
             selected_alpha,
@@ -682,6 +724,7 @@ def fit_baseline_adapters(
             "coef": final_coefficients,
             "t1_coef": t1_coefficients,
             "t2_nmse": validation_nmse,
+            "fit_loss": fit_loss,
         }
     return artifacts
 
@@ -729,6 +772,7 @@ def run_streamed_baselines(
     selected_methods: Sequence[str],
     l2_grid: Sequence[float],
     fit_on_eval: bool,
+    fit_loss: str = "mse",
 ) -> tuple[list[dict[str, Any]], dict[str, Any], Path]:
     """Fit baseline coefficients once and persist one prediction at a time."""
     artifacts = fit_baseline_adapters(
@@ -737,6 +781,7 @@ def run_streamed_baselines(
         fit_arrays["T1+T2"],
         l2_grid,
         methods=selected_methods,
+        fit_loss=fit_loss,
     )
     eval_fit_artifacts = (
         fit_baseline_adapters(
@@ -745,6 +790,7 @@ def run_streamed_baselines(
             fit_arrays["T3_oracle"],
             l2_grid,
             methods=selected_methods,
+            fit_loss=fit_loss,
         )
         if fit_on_eval
         else None
@@ -803,6 +849,7 @@ def run_streamed_baselines(
         "format": "adaptation_baseline_models",
         "protocol": artifacts["protocol"],
         "l2_grid": list(artifacts["l2_grid"]),
+        "fit_loss": fit_loss,
         "models": artifacts["models"],
         "eval_fit_models": (
             None if eval_fit_artifacts is None else eval_fit_artifacts["models"]
@@ -1455,11 +1502,17 @@ def fit_gate(
     )
 
 
-def _fit_no_feature_gates(arrays: dict[str, np.ndarray], candidate: str) -> dict[str, Any]:
+def _fit_no_feature_gates(
+    arrays: dict[str, np.ndarray],
+    candidate: str,
+    fit_loss: str = "mse",
+) -> dict[str, Any]:
     candidate_prediction = _candidate_prediction(arrays, candidate)
     base_loss = (arrays["y"] - arrays["pred"]) ** 2
     candidate_loss = (arrays["y"] - candidate_prediction) ** 2
-    improvement = base_loss - candidate_loss
+    improvement = (base_loss - candidate_loss) / _fit_loss_scale(
+        arrays, fit_loss
+    ) ** 2
     return {
         "shared_score": float(improvement.mean()),
         "horizon_score": improvement.mean(axis=0).astype(np.float64),
@@ -1469,12 +1522,13 @@ def _fit_no_feature_gates(arrays: dict[str, np.ndarray], candidate: str) -> dict
 def _gate_targets(
     arrays: dict[str, np.ndarray],
     candidate: str,
+    fit_loss: str = "mse",
 ) -> dict[str, np.ndarray]:
     candidate_prediction = _candidate_prediction(arrays, candidate)
     improvement = (
         (arrays["y"] - arrays["pred"]) ** 2
         - (arrays["y"] - candidate_prediction) ** 2
-    )
+    ) / _fit_loss_scale(arrays, fit_loss) ** 2
     return {
         "shared": improvement.mean(axis=1, keepdims=True),
         "horizon": improvement,
@@ -1684,6 +1738,7 @@ def run_streamed_gates(
     devices: str | None,
     thread_count: int | None,
     feature_importance_top_k: int,
+    fit_loss: str = "mse",
 ) -> tuple[list[dict[str, Any]], dict[str, Any], Path]:
     """Fit and score each gate model once, releasing it immediately after use."""
     selected = set(selected_methods)
@@ -1707,6 +1762,7 @@ def run_streamed_gates(
             "horizon_fits": "serial",
             "scalar_feature_names": SCALAR_GATE_FEATURE_NAMES,
             "horizon_feature_names": HORIZON_GATE_FEATURE_NAMES,
+            "fit_loss": fit_loss,
         },
         "models": {},
         "bayes": {},
@@ -1763,7 +1819,9 @@ def run_streamed_gates(
         horizon_features: dict[str, Sequence[np.ndarray]] = {}
         if catboost_required:
             n_train = fit_arrays["T1"]["y"].shape[0]
-            refit_targets = _gate_targets(fit_arrays["T1+T2"], candidate)
+            refit_targets = _gate_targets(
+                fit_arrays["T1+T2"], candidate, fit_loss
+            )
             if contiguous_partition:
                 train_targets = {
                     name: value[:n_train]
@@ -1774,8 +1832,12 @@ def run_streamed_gates(
                     for name, value in refit_targets.items()
                 }
             else:
-                train_targets = _gate_targets(fit_arrays["T1"], candidate)
-                valid_targets = _gate_targets(fit_arrays["T2"], candidate)
+                train_targets = _gate_targets(
+                    fit_arrays["T1"], candidate, fit_loss
+                )
+                valid_targets = _gate_targets(
+                    fit_arrays["T2"], candidate, fit_loss
+                )
 
             refit_scalar = scalar_gate_features(
                 fit_arrays["T1+T2"],
@@ -1852,7 +1914,7 @@ def run_streamed_gates(
                             - candidate_prediction[start:stop]
                         )
                         ** 2
-                    )
+                    ) / _fit_loss_scale(arrays, fit_loss, start, stop) ** 2
                     shared_target[start:stop] = improvement.mean(axis=1)
                     horizon_target[start:stop] = improvement
                 shared_target.flush()
@@ -1860,7 +1922,9 @@ def run_streamed_gates(
                 del shared_target, horizon_target
 
         bayes = (
-            _fit_no_feature_gates(fit_arrays["T1+T2"], candidate)
+            _fit_no_feature_gates(
+                fit_arrays["T1+T2"], candidate, fit_loss
+            )
             if any(method.startswith("bayes_") for method in candidate_methods)
             else None
         )
@@ -1868,6 +1932,7 @@ def run_streamed_gates(
             model_manifest["bayes"][candidate] = {
                 "shared_score": float(bayes["shared_score"]),
                 "horizon_score": np.asarray(bayes["horizon_score"]).tolist(),
+                "fit_loss": fit_loss,
             }
         for shape in ("shared", "horizon"):
             method = f"bayes_{candidate}_{shape}"
@@ -2234,7 +2299,7 @@ def run_streamed_gates(
 def _metric_sums(
     arrays: dict[str, np.ndarray],
     prediction: np.ndarray,
-) -> tuple[float, float, float, int, int, int]:
+) -> tuple[float, float, float, float, int, int, int]:
     y = arrays["y"]
     scale = (
         arrays["scale"]
@@ -2244,6 +2309,7 @@ def _metric_sums(
     mse_sum = 0.0
     mae_sum = 0.0
     nmse_sum = 0.0
+    nmae_sum = 0.0
     count = int(y.size)
     positive_windows = 0
     window_count = int(y.shape[0])
@@ -2256,6 +2322,7 @@ def _metric_sums(
         mae_sum += float(np.sum(np.abs(error)))
         normalized = error / scale[start:stop]
         nmse_sum += float(np.sum(normalized * normalized))
+        nmae_sum += float(np.sum(np.abs(normalized)))
         vanilla_error = arrays["pred"][start:stop].astype(np.float64) - y[
             start:stop
         ].astype(np.float64)
@@ -2265,7 +2332,15 @@ def _metric_sums(
                 < np.mean(vanilla_error * vanilla_error, axis=1)
             )
         )
-    return mse_sum, mae_sum, nmse_sum, count, positive_windows, window_count
+    return (
+        mse_sum,
+        mae_sum,
+        nmse_sum,
+        nmae_sum,
+        count,
+        positive_windows,
+        window_count,
+    )
 
 
 def evaluate_prediction(
@@ -2280,6 +2355,7 @@ def evaluate_prediction(
         mse_sum,
         mae_sum,
         nmse_sum,
+        nmae_sum,
         count,
         positive_windows,
         window_count,
@@ -2291,6 +2367,7 @@ def evaluate_prediction(
         "mse": mse_sum / max(count, 1),
         "mae": mae_sum / max(count, 1),
         "nmse": nmse,
+        "nmae": nmae_sum / max(count, 1),
         "positive_window_pct": 100.0 * positive_windows / max(window_count, 1),
         "relative_nmse_improvement_pct": (
             100.0 * (vanilla_nmse - nmse) / max(vanilla_nmse, 1e-12)
@@ -2299,7 +2376,7 @@ def evaluate_prediction(
 
 
 def vanilla_nmse(arrays: dict[str, np.ndarray]) -> float:
-    _, _, nmse_sum, count, _, _ = _metric_sums(arrays, arrays["pred"])
+    _, _, nmse_sum, _, count, _, _ = _metric_sums(arrays, arrays["pred"])
     return nmse_sum / max(count, 1)
 
 
@@ -2383,6 +2460,12 @@ def parse_args() -> argparse.Namespace:
         "--fit-baselines-on-eval",
         action="store_true",
         help="Append explicitly optimistic T3 in-sample diagnostics",
+    )
+    parser.add_argument(
+        "--fit-loss",
+        choices=("mse", "nmse"),
+        default="mse",
+        help="Squared-error objective used to fit trainable baselines and gate advantages",
     )
     parser.add_argument("--gate-iterations", type=int, default=300)
     parser.add_argument("--gate-learning-rate", type=float, default=3e-2)
@@ -2494,6 +2577,7 @@ def main() -> dict[str, Path]:
             selected_methods=selected_baselines,
             l2_grid=l2_grid,
             fit_on_eval=args.fit_baselines_on_eval,
+            fit_loss=args.fit_loss,
         )
         LOGGER.info("baseline selection done")
     else:
@@ -2511,6 +2595,7 @@ def main() -> dict[str, Path]:
             devices=args.gate_devices,
             thread_count=args.gate_thread_count,
             feature_importance_top_k=args.feature_importance_top_k,
+            fit_loss=args.fit_loss,
         )
     frame = pd.DataFrame(rows)
     metrics_stem = "gate_metrics" if args.family == "gates" else "baseline_metrics"
@@ -2530,6 +2615,7 @@ def main() -> dict[str, Path]:
                 "elapsed_seconds": elapsed_seconds,
                 "adapt_samples": int(arrays_by_split["adapt"]["y"].shape[0]),
                 "eval_samples": int(arrays_by_split["eval"]["y"].shape[0]),
+                "fit_loss": args.fit_loss,
             },
             indent=2,
         ),
@@ -2544,6 +2630,7 @@ def main() -> dict[str, Path]:
                 "methods": list(selected_methods),
                 "split_protocol": resplit,
                 "fit_sampling": fit_sampling,
+                "fit_loss": args.fit_loss,
                 "metric_fields": list(frame.columns),
                 "files": {
                     "metrics_csv": csv_path.name,

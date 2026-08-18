@@ -1,4 +1,4 @@
-"""Check exact same-user and other-users-only neighbor scopes."""
+"""Check exact full and cardinality-matched retrieval scopes."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ if "einops" not in sys.modules:
 
 from data.neighbors import (  # noqa: E402
     search_neighbors_other_users,
+    search_neighbors_other_users_matched,
     search_neighbors_same_user,
 )
 
@@ -74,14 +75,30 @@ def main() -> None:
             metric=metric,
             chunk_size=2,
         )
+        matched_distances, matched_indices = search_neighbors_other_users_matched(
+            queries,
+            store,
+            n_users=n_users,
+            store_dates=store_dates,
+            k=2,
+            metric=metric,
+            chunk_size=2,
+        )
         assert np.isfinite(same_distances).all()
         assert np.isfinite(other_distances).all()
+        assert np.isfinite(matched_distances).all()
         expected = _pairwise(queries, store, metric)
         for user_idx in range(n_users):
             own = np.arange(user_idx * store_dates, (user_idx + 1) * store_dates)
             other = np.setdiff1d(np.arange(len(store)), own)
+            date_indices = np.arange(store_dates)
+            matched_users = (user_idx + 1 + date_indices % (n_users - 1)) % n_users
+            matched = matched_users * store_dates + date_indices
             assert all(index in own for index in same_indices[user_idx])
             assert all(index not in own for index in other_indices[user_idx])
+            assert all(index in matched for index in matched_indices[user_idx])
+            assert all(index not in own for index in matched_indices[user_idx])
+            assert len(matched) == len(own) == store_dates
             np.testing.assert_allclose(
                 same_distances[user_idx],
                 expected[user_idx, same_indices[user_idx]],
@@ -102,6 +119,11 @@ def main() -> None:
                 np.sort(expected[user_idx, other])[:2],
                 atol=1e-6,
             )
+            np.testing.assert_allclose(
+                matched_distances[user_idx],
+                np.sort(expected[user_idx, matched])[:2],
+                atol=1e-6,
+            )
 
     try:
         search_neighbors_other_users(
@@ -115,6 +137,19 @@ def main() -> None:
         assert "eligible windows" in str(error)
     else:
         raise AssertionError("single-user other-users retrieval must fail")
+
+    try:
+        search_neighbors_other_users_matched(
+            queries[:1],
+            store[:store_dates],
+            n_users=1,
+            store_dates=store_dates,
+            k=1,
+        )
+    except ValueError as error:
+        assert "eligible windows" in str(error)
+    else:
+        raise AssertionError("single-user matched retrieval must fail")
 
     print("retrieval scope checks passed")
 

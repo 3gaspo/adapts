@@ -97,6 +97,31 @@ def main() -> None:
                     dataset=dataset,
                     pipeline_config={"retrieval.scope": scope},
                 )
+            for scope, nmse in (
+                ("same_user", 0.88),
+                ("other_users_matched", 0.86),
+            ):
+                _evaluation_run(
+                    root,
+                    family="baselines",
+                    formula="y_ridge_shared",
+                    row={
+                        "split": "eval",
+                        "mse": nmse / 100,
+                        "mae": 0.01,
+                        "nmse": nmse + offset,
+                        "positive_window_pct": 70.0,
+                    },
+                    include_vanilla=True,
+                    retrieval=("raw", "cosine", 7, "online"),
+                    dataset=dataset,
+                    pipeline_config={
+                        "retrieval.scope": scope,
+                        "dependency.extraction": {
+                            "pipeline": {"data.max_store_windows": 10000}
+                        },
+                    },
+                )
 
         method = "joint_ridge_horizon_unconstrained_full"
         pipelines = [
@@ -219,13 +244,16 @@ def main() -> None:
         scope_pipelines = [
             f"baselines/raw_cosine_7_online_{scope}/y_ridge_shared"
             for scope in ("all", "same_user", "other_users")
+        ] + [
+            f"baselines/raw_cosine_7_online_{scope}_mw10000/y_ridge_shared"
+            for scope in ("same_user", "other_users_matched")
         ]
         scope_records = [
             (result.dataset, result.run, result.method, result.metric, result.value)
             for result in discover_results(root)
             if result.run.startswith("raw_cosine_7_online_")
         ]
-        assert len(scope_records) == 48, scope_records
+        assert len(scope_records) == 80, scope_records
         assert {
             (run, method)
             for _, run, method, metric, _ in scope_records
@@ -234,11 +262,20 @@ def main() -> None:
             (f"raw_cosine_7_online_{scope}", "vanilla")
             for scope in ("all", "same_user", "other_users")
         } | {
+            (f"raw_cosine_7_online_{scope}_mw10000", "vanilla")
+            for scope in ("same_user", "other_users_matched")
+        } | {
             (
                 f"raw_cosine_7_online_{scope}",
                 f"raw_cosine_7_online_{scope}/y_ridge_shared",
             )
             for scope in ("all", "same_user", "other_users")
+        } | {
+            (
+                f"raw_cosine_7_online_{scope}_mw10000",
+                f"raw_cosine_7_online_{scope}_mw10000/y_ridge_shared",
+            )
+            for scope in ("same_user", "other_users_matched")
         }, scope_records
         scope_results = [
             result
@@ -276,6 +313,8 @@ def main() -> None:
         assert r"raw\_cosine\_7\_all" in scope_table
         assert r"raw\_cosine\_7\_same" in scope_table
         assert r"raw\_cosine\_7\_other" in scope_table
+        assert r"raw\_cosine\_7\_same\_mw10000" in scope_table
+        assert r"raw\_cosine\_7\_other-matched\_mw10000" in scope_table
         y_row = next(line for line in scope_table.splitlines() if line.startswith("Y-ridge-s &"))
         assert "-- & -- & --" not in y_row
 

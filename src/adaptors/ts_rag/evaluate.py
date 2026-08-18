@@ -126,6 +126,7 @@ def _metrics(
     scale = arrays["x"].std(dim=1, keepdim=True, unbiased=False).clamp_min(1e-8)
     vanilla_nmse = (((arrays["vanilla"] - target) / scale) ** 2).mean()
     nmse = ((error / scale) ** 2).mean()
+    nmae = (error.abs() / scale).mean()
     candidate_window_mse = error.square().mean(dim=-1)
     vanilla_window_mse = (arrays["vanilla"] - target).square().mean(dim=-1)
     return [
@@ -135,6 +136,7 @@ def _metrics(
             "mse": float(error.square().mean().item()),
             "mae": float(error.abs().mean().item()),
             "nmse": float(nmse.item()),
+            "nmae": float(nmae.item()),
             "positive_window_pct": float(
                 100.0
                 * (candidate_window_mse < vanilla_window_mse).float().mean().item()
@@ -185,9 +187,15 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
     model_started = perf_counter()
     model = _load_model(base_checkpoint, checkpoint, device)
     model_load_seconds = perf_counter() - model_started
+    total_parameters = sum(parameter.numel() for parameter in model.parameters())
+    trainable_parameters = sum(
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
+    )
     quantiles = model.quantiles.detach().float().cpu()
     median_index = int(torch.abs(quantiles - 0.5).argmin().item())
     predictions: list[torch.Tensor] = []
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
     inference_started = perf_counter()
     with torch.inference_mode():
         for start in range(0, arrays["x"].shape[0], args.batch_size):
@@ -225,12 +233,17 @@ def main(argv: Sequence[str] | None = None) -> dict[str, Path]:
             {
                 "model_load_seconds": model_load_seconds,
                 "inference_seconds": inference_seconds,
+                "inference_ms_per_example": (
+                    1000.0 * inference_seconds / max(int(prediction.shape[0]), 1)
+                ),
                 "elapsed_seconds": perf_counter() - started,
                 "examples": int(prediction.shape[0]),
                 "batch_size": int(args.batch_size),
                 "lags": EXPECTED_LAGS,
                 "horizon": EXPECTED_HORIZON,
                 "neighbors": int(args.neighbors),
+                "total_parameters": int(total_parameters),
+                "trainable_parameters": int(trainable_parameters),
             },
             indent=2,
         ),

@@ -26,6 +26,7 @@ from experiment_runs import (
     select_identity_runs,
     write_report_manifest,
 )
+from .results_table import _retrieval_run_name
 
 
 RESULT_FORMAT = "adaptation_evaluation_result"
@@ -275,14 +276,7 @@ def export_baseline_coefficient_plots(
         dataset = str(identity["dataset"])
         setting = f"{identity['lookback']}_{identity['horizon']}"
         model_name = str(identity["backbone"])
-        run = "_".join(str(config[name]) for name in ("space", "metric", "k", "mode"))
-        retrieval_scope = str(
-            choice.manifest.get("config", {}).get("pipeline", {}).get(
-                "retrieval.scope", ""
-            )
-        )
-        if retrieval_scope:
-            run = f"{run}_{retrieval_scope}"
+        run, retrieval_scope = _retrieval_run_name(choice.manifest)
         if dataset not in datasets or setting not in settings or model_name not in models:
             continue
         if pipelines and (run, formula) not in allowed_pipelines:

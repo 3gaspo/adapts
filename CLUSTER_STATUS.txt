@@ -2,11 +2,40 @@ CLUSTER EXPERIMENT STATUS
 Updated: 2026-08-18
 
 CURRENT HANDOFF
+- `retrieval_scope_ablation.slurm` now sweeps global datastore caps of 10k,
+  20k, 30k, and 50k for all-user, same-user, and other-users retrieval, plus a
+  10k `other_users_matched` control with exactly one different-user candidate
+  per date and therefore the same candidate count/date grid as same-user. The
+  existing 30k identities are unchanged and should skip exactly; submit the
+  updated front to compute the new cap identities and matched control. The cap
+  changes actual store size for Electricity and Traffic across the whole grid,
+  only at 10k for Solar, and never for Exchange under the current stride-25 T0
+  protocol.
+- Cross-RAG's published TS-RAG comparator is now recorded correctly as K=5
+  (best in [1,15]), while Cross-RAG uses K=15 and the independent released
+  TS-RAG workflow retains its original K=10 default. The SOTA table now rejects
+  any local producer that cannot prove official-train per-channel
+  standardization, stride-1 evaluation, and exact test boundaries. Existing
+  SOTA producer runs already satisfy that contract, so only rerun its table
+  stage with `STAGES=tables sbatch sota_benchmark.slurm`.
+- Resubmit `tsrag.slurm`: its result signature now requires MSE, nMSE, MAE,
+  nMAE, model-only inference latency, and total ARM parameters. This forces the
+  four released-TS-RAG evaluations and eight matching baseline controls to
+  refresh; their extraction payloads remain reusable. Submit the new
+  `training_loss_ablation.slurm` after the affected selected-candidate fronts;
+  it compares MSE and per-window-nMSE fitting for all selected trainable ridge,
+  CatBoost-regressor, and Bayes gates while reusing matching extractions.
 - Jobs 44150 (corrected screen), 44137 (TS-IFA), 44138 (TS-RAG), and 44139
   (SOTA) completed with empty stderr and terminal reports. Screen reran exactly
   the 18 invalid rows, skipped 846 valid rows, and rebuilt its 864-input report.
   TS-IFA completed all 32 configurations after the neural-rooter fix. TS-RAG
   reported all 12 inputs, and SOTA reported all seven datasets.
+- Local artifact cleanup moved the 18 replaced screen rows, the replaced
+  TS-IFA neural failure, all retired Cross-RAG workflow runs, and all retired
+  K=100 extractions from active `outputs/` into documented dated batches below
+  `archive/stale_runs/`. The active manifest graph has no references to those
+  31 runs and retains no Cross-RAG, K=100, or stride-24 configuration. No
+  cluster rerun is required for this archival change.
 - The corrected screen's top five shared-ridge baselines are instance K=3 full
   (+1.951% mean nMSE), raw K=3 full (+1.875%), raw K=3 cov-avgY (+1.814%), raw
   K=1 full (+1.789%), and raw K=3 cov-Y (+1.785%). Therefore the manual

@@ -215,8 +215,10 @@ def main() -> None:
     assert 'elif [ "$EXPERIMENT_FAMILY" = offline_datastore_ablation ]; then' in profile_runner
     assert '"$family/${space}_${metric}_${neighbors}_fixed/$method"' in profile_runner
     assert 'elif [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then' in profile_runner
-    assert 'append_unique PIPELINES "$family/${run}_${scope}/$method"' in profile_runner
+    assert 'RETRIEVAL_MAX_STORE_WINDOWS_CSV="${RETRIEVAL_MAX_STORE_WINDOWS_CSV:-10000,20000,30000,50000}"' in profile_runner
     assert "for scope in all same_user other_users" in profile_runner
+    assert "scope=other_users_matched" in profile_runner
+    assert 'pipeline_run="${pipeline_run}_mw${max_store_windows}"' in profile_runner
     assert 'RETRIEVAL_SCOPE="$scope"' in profile_runner
     assert 'outside the primary K={1,3} policy' in profile_runner
     assert 'EXTRACTION_SKIP_COMPLETE="${EXTRACTION_SKIP_COMPLETE:-true}"' in profile_runner

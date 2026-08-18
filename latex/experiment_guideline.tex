@@ -1416,6 +1416,13 @@ choices. Repeated seeds, when used, are \code{seed_n} leaves. Mode is only a
 test/full/ultra path-subset selector and is never a family, phase, path field,
 or computation-signature field.
 
+Downstream allocation resolves the extraction dependency by its complete
+expected pipeline configuration and exact seed and fails unless precisely one
+run remains. Its signature embeds the upstream schema, identity, pipeline and
+experiment configuration, and seeds. The upstream path and manifest ID remain
+plain provenance and never affect reuse. Thus a smoke extraction cannot satisfy
+a publication computation merely because both occupy the same identity path.
+
 Every run uses \code{schema_version: 1}, declared configs, optional plain
 provenance, launch attempts, required artifacts, and status
 not-run/running/interrupted/completed. Run identity contains only the schema,
@@ -1452,11 +1459,11 @@ terminal state, including failure, cancellation, or timeout, the user runs
 \code{bash publish_job.sh <job-id>} from the project root. The
 script verifies \code{main}, sources \code{$HOME/codes/proxy.sh} (or
 \code{PROXY_SCRIPT_PATH}), and fast-forward pulls \code{origin/main} before
-artifact selection or staging. It then selects only the exact stdout/stderr pair and run/report roots whose
-manifests record that launch ID, excludes \code{*.pt}, \code{*.npy}, and
-\code{*.cbm}, commits only those paths on \code{main}, and pushes
-\code{origin/main} without creating a pull request. Omitting the job ID instead
-publishes the complete log and lightweight output trees. A non-fast-forward
+artifact selection or staging. With a job ID, it commits only the exact
+stdout/stderr pair. Omitting the job ID publishes the complete log and
+lightweight output trees, excluding \code{*.pt}, \code{*.npy}, and
+\code{*.cbm}. It then pushes \code{origin/main} without creating a pull request.
+A non-fast-forward
 pull stops without creating a merge commit; unrelated staged paths remain
 outside the publisher commit.
 

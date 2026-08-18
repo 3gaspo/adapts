@@ -19,6 +19,9 @@ from src.data.neighbors import neighbor_to_query_scale  # noqa: E402
 from src.adaptors.baselines.evaluate import (  # noqa: E402
     TRAINABLE_BASELINES,
     _design_chunk,
+    _gate_targets,
+    _ridge_statistics,
+    _solve_ridge_statistics,
     compact_baseline_arrays,
     compact_gate_arrays,
     fit_gate,
@@ -66,6 +69,26 @@ def main() -> None:
         chunk_rows=2,
     )
     np.testing.assert_allclose(coefficient, rescaled_coefficient)
+
+    objective_arrays = {
+        "x": np.asarray([[-1.0, 1.0], [-10.0, 10.0]], dtype=np.float64),
+        "y": np.asarray([[1.0], [10.0]], dtype=np.float64),
+        "pred": np.zeros((2, 1), dtype=np.float64),
+        "pred_c": np.ones((2, 1), dtype=np.float64),
+        "y_c": np.zeros((2, 1, 1), dtype=np.float64),
+    }
+    mse_coef = _solve_ridge_statistics(
+        _ridge_statistics(objective_arrays, "cov", "shared", "mse"), 0.0
+    )
+    nmse_coef = _solve_ridge_statistics(
+        _ridge_statistics(objective_arrays, "cov", "shared", "nmse"), 0.0
+    )
+    assert mse_coef[-1] > 5.0
+    assert 1.0 < nmse_coef[-1] < 1.2
+    mse_target = _gate_targets(objective_arrays, "cov", "mse")["horizon"]
+    nmse_target = _gate_targets(objective_arrays, "cov", "nmse")["horizon"]
+    np.testing.assert_allclose(nmse_target[0], mse_target[0])
+    np.testing.assert_allclose(nmse_target[1], mse_target[1] / 100.0)
 
     fit_arrays = {
         "y": np.arange(20, dtype=np.float32).reshape(10, 2),

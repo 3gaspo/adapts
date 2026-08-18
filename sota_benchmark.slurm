@@ -11,7 +11,8 @@
 #SBATCH --mem=80000
 
 # Evaluate one selected project method on the Cross-RAG paper's exact test
-# windows, then combine it with the paper's published TS-RAG/Cross-RAG MSEs.
+# windows after the paper's train-split per-channel standardization, then
+# combine its standardized-space MSE with the published TS-RAG/Cross-RAG MSEs.
 STAGES="${STAGES:-evaluate,tables}"
 EXPERIMENT_MODE=full
 EXPERIMENT_FAMILY=sota_benchmark

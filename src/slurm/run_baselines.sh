@@ -32,6 +32,7 @@ RETRIEVAL_MODE="${RETRIEVAL_MODE:-online}"
 L2_GRID="${L2_GRID:-0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10}"
 VALIDATION_FRACTION="${VALIDATION_FRACTION:-0.2}"
 FIT_BASELINES_ON_EVAL="${FIT_BASELINES_ON_EVAL:-false}"
+FIT_LOSS="${FIT_LOSS:-mse}"
 SEED="${SEED:-1}"
 MAX_T1_FIT_SAMPLES="${MAX_T1_FIT_SAMPLES:-}"
 MAX_T2_VALID_SAMPLES="${MAX_T2_VALID_SAMPLES:-}"
@@ -39,6 +40,7 @@ MAX_ADAPT_REFIT_SAMPLES="${MAX_ADAPT_REFIT_SAMPLES:-}"
 MAX_EVAL_FIT_SAMPLES="${MAX_EVAL_FIT_SAMPLES:-}"
 require_resolved_profile_grid
 require_profile_neighbors "$NEIGHBORS_CSV"
+case "$FIT_LOSS" in mse|nmse) ;; *) log_error "FIT_LOSS must be mse or nmse"; return 2 ;; esac
 if requires_selected_methods && [ -z "$BASELINE_METHODS_CSV" ]; then
   log_error "EXPERIMENT_MODE=$EXPERIMENT_MODE requires BASELINE_METHODS_CSV for the baseline candidate run"
   return 2
@@ -119,6 +121,12 @@ run_task() {
       "max_t2_valid_samples=${MAX_T2_VALID_SAMPLES:-none}" "max_adapt_refit_samples=${MAX_ADAPT_REFIT_SAMPLES:-none}"
       "max_eval_fit_samples=${MAX_EVAL_FIT_SAMPLES:-none}" "run_seed=$SEED"
     )
+    if [ "$FIT_LOSS" != mse ] || [ "$EXPERIMENT_FAMILY" = training_loss_ablation ]; then
+      pipeline_values+=("fit_loss=$FIT_LOSS")
+    fi
+    if [ "$EXPERIMENT_FAMILY" = tsrag ]; then
+      pipeline_values+=("metric_set=mse,mae,nmse,nmae")
+    fi
     if [ "$EXPERIMENT_FAMILY" = retrieval_scope_ablation ]; then
       pipeline_values+=("retrieval.scope=${RETRIEVAL_SCOPE:-all}")
     fi
@@ -137,7 +145,8 @@ run_task() {
     srun --ntasks=1 python -m src.adaptors.baselines.evaluate \
       --input-dir "$INPUT_DIR" --output-dir "$OUTPUT_DIR" --family baselines \
       --l2-grid "$L2_GRID" --validation-fraction "$VALIDATION_FRACTION" \
-      "${EVAL_FIT_ARGS[@]}" "${FIT_SAMPLE_ARGS[@]}" --methods "$method" --seed "$SEED"
+      --fit-loss "$FIT_LOSS" "${EVAL_FIT_ARGS[@]}" "${FIT_SAMPLE_ARGS[@]}" \
+      --methods "$method" --seed "$SEED"
     assert_files baseline-output \
       "$OUTPUT_DIR/baseline_metrics.csv" "$OUTPUT_DIR/baseline_metrics.json" \
       "$OUTPUT_DIR/baseline_artifacts.pt" "$OUTPUT_DIR/prediction_manifest.json" \
@@ -147,7 +156,7 @@ run_task() {
   done
 }
 
-log_section "job start kind=baselines family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=$BASELINE_METHODS_CSV results_root=$RESULTS_ROOT"
+log_section "job start kind=baselines family=$EXPERIMENT_FAMILY experiment_mode=$EXPERIMENT_MODE fit_loss=$FIT_LOSS skip_complete=$SKIP_COMPLETE tasks=${#TASKS[@]} datasets=$DATASETS_CSV models=$MODELS_CSV settings=$SETTINGS_CSV distance_spaces=$DISTANCE_SPACES_CSV distance_metrics=$DISTANCE_METRICS_CSV neighbors=$NEIGHBORS_CSV methods=$BASELINE_METHODS_CSV results_root=$RESULTS_ROOT"
 for ((task_id = 0; task_id < ${#TASKS[@]}; task_id++)); do
   run_task "$task_id"
 done
