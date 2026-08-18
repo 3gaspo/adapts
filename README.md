@@ -517,22 +517,26 @@ For an explicit custom backbone selection, pass `MODELS_CSV`, for example
 `MODELS_CSV=tabpfnts`. `WINNERS_CSV` remains an explicit one-launch candidate
 override. `full` and `ultra` otherwise differ only in their default model list.
 
-Selection has two immutable generations. `SWEEP_CANDIDATES.txt` records the
-screen-selected pipelines used by the formulation, retrieval, K/H/L, and mixed
-quantity studies already launched. Do not edit it after those studies begin.
-After the K ablation completes, record the promoted best-K adaptation pipelines
-in `SECOND_GENERATION_CANDIDATES.txt`; the final benchmark, TS-RAG, and SOTA
-fronts read only that file by default. Later add promoted `ts_ifa` entries to the
-same second-generation file for the TS-IFA H/L and meta follow-ups. Each
-non-comment line in either manifest is a complete `family/retrieval/method`
-pipeline. `SELECTED_CANDIDATES_FILE` selects another manifest, while the
-existing front-specific CSV variables remain explicit overrides.
+Candidate selection is manual and stage-specific. The screen only produces the
+evidence used for selection; it never writes a candidate manifest.
+`SWEEP_CANDIDATES.txt` records the current manually chosen post-screen
+pipelines, including any gates, controls, or scientifically important models
+retained beyond a mechanical ranking. The formulation, retrieval, K/H/L, and
+mixed-quantity studies read this file by default. After a screen rerun or a
+selection decision, update the file and resubmit the affected fronts: exact
+completed configurations skip, newly added pipelines run, and terminal reports
+are rebuilt for the current list.
 
-The completed K study ranks eight unique generation-2 adaptation pipelines.
-Its first record is
-`baselines/instance_euclidean_5_online/full_ridge_shared`; consequently TS-RAG
-and SOTA use instance full ridge with K=5, while the final benchmark evaluates
-all eight records in ranked order.
+After the corresponding K ablation completes, replace the adaptation entries
+in `SECOND_GENERATION_CANDIDATES.txt` with the manually promoted best-K
+variants in ranking order. The final benchmark consumes every adaptation entry,
+whereas TS-RAG and SOTA select the first shared-ridge entry. If a refreshed K
+study changes that first entry, resubmit TS-RAG and SOTA; otherwise their exact
+completed producers remain reusable. Later add promoted `ts_ifa` entries to the
+same file for the TS-IFA H/L and meta follow-ups. Each non-comment line in
+either manifest is a complete `family/retrieval/method` pipeline.
+`SELECTED_CANDIDATES_FILE` selects another manifest, while the existing
+front-specific CSV variables remain explicit overrides.
 
 The three baseline family studies currently default to the five selected
 shared-ridge pipelines in that file. Override `BASELINE_WINNERS_CSV` when a later screen
@@ -542,10 +546,10 @@ each launcher evaluates it beside exactly one transformed variant:
 | Selected design / retrieval | Ridge control | Horizon variant | Convex variant | Delta-ridge variant |
 |---|---|---|---|---|
 | `full`, instance L2, `K=3` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
-| `full`, raw L2, `K=1` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
-| `cov_y`, instance L2, `K=3` | `cov_y_ridge_shared` | `cov_y_ridge_horizon` | `cov_y_convex_shared` | `cov_y_delta_ridge_shared` |
 | `full`, raw L2, `K=3` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
-| `cov_avgy`, instance L2, `K=3` | `cov_avgy_ridge_shared` | `cov_avgy_ridge_horizon` | `cov_avgy_convex_shared` | `cov_avgy_delta_ridge_shared` |
+| `cov_avgy`, raw L2, `K=3` | `cov_avgy_ridge_shared` | `cov_avgy_ridge_horizon` | `cov_avgy_convex_shared` | `cov_avgy_delta_ridge_shared` |
+| `full`, raw L2, `K=1` | `full_ridge_shared` | `full_ridge_horizon` | `full_convex_shared` | `full_delta_ridge_shared` |
+| `cov_y`, raw L2, `K=3` | `cov_y_ridge_shared` | `cov_y_ridge_horizon` | `cov_y_convex_shared` | `cov_y_delta_ridge_shared` |
 
 ```bash
 sbatch horizon_baselines_ablation.slurm
@@ -579,10 +583,10 @@ All other publication profiles exclude the original ETTh1, ETTh2, ETTm1,
 ETTm2, and Weather panels. Benchmark and TS-IFA full/ultra runs use the four
 quantity-separated ETT panels instead.
 
-The K/H/L, mixed-quantity, and retrieval fronts read the generation-1
-adaptation entries from `SWEEP_CANDIDATES.txt` by default. The final benchmark
-instead reads generation 2. Pass `WINNERS_CSV` only for an explicit one-off
-override.
+The K/H/L, mixed-quantity, and retrieval fronts read the current adaptation
+entries from `SWEEP_CANDIDATES.txt` by default. The final benchmark instead
+reads the current post-K entries from `SECOND_GENERATION_CANDIDATES.txt`. Pass
+`WINNERS_CSV` only for an explicit one-off override.
 
 Then submit exactly one front per experiment:
 

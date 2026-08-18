@@ -1,99 +1,45 @@
 CLUSTER EXPERIMENT STATUS
-Updated: 2026-08-17
+Updated: 2026-08-18
 
 CURRENT HANDOFF
-- Jobs 43975 (K), 43976 (H), 43977 (CatBoost formulation), and 43978
-  (retrieval scope) completed with empty stderr and terminal report stages.
-  Retrieval scope contributed 96 completed restricted-scope extraction
-  manifests and 324 completed adaptation manifests to a complete 324-input
-  report. TS-IFA job
-  43980 failed at configuration 17/32 because its neural rooter referenced the
-  undefined `rooter_candidate_count`; the forward pass now derives token IDs
-  from the actual branch tensor count. Resubmitting `ts_ifa.slurm` reuses the 16
-  completed joint-ridge configurations and runs the 16 neural configurations.
-- `SECOND_GENERATION_CANDIDATES.txt` now contains the eight unique adaptation
-  pipelines in decreasing order of each pipeline's best-K held-out
-  improvement. The first record is instance-Euclidean full shared ridge at
-  K=5, so `tsrag.slurm` and `sota_benchmark.slurm` select that control; the
-  final benchmark consumes all eight records. No TS-IFA entry is selected.
-- Jobs 43582 (screen tables), 43584 (Fourier), 43585 (fixed-T0 datastore),
-  43593 (lookback), 43596 (per-horizon ridge), 43598 (mixed quantities), 43602
-  (convex), and 43603 (delta ridge) completed with empty stderr and terminal
-  report stages. Their synchronized schema-1 metrics were analyzed locally.
-- The formulation evidence consistently retains shared ridge: selected controls
-  gain 1.76--1.95% mean T3 nMSE, versus 1.33--1.52% for horizon fits,
-  -0.05--0.88% for convex fits, and 0.47--0.82% for delta-ridge fits. Fourier
-  retrieval is also weaker (1.28--1.62%) than the corresponding original
-  pipelines. Fixed-T0 retrieval matches or improves every paired ridge
-  (1.80--2.09% versus 1.79--1.95% online) and is the preferred stricter store.
-- The completed lookback and mixed-quantity reports require caution. L=168 is
-  the balanced H=24 choice; L=24 includes a Traffic vanilla nMSE of 2.07e10.
-  Mixed panels include severe Weather degradation, catastrophic ETTm1 raw-ridge
-  values, and a catastrophic ETTm2 avgY gate, supporting their ablation-only
-  status rather than a primary result.
-- TS-RAG job 43579 completed all four inference metric artifacts. Equal-dataset
-  mean nMSE improvement is +1.90% over matching Chronos-Bolt vanilla and +0.85%
-  over the selected full-ridge control, but it loses to that control on Traffic
-  and Solar. Table-only job 43756 failed because discovery incorrectly scoped
-  completed inputs to the new table launch. The reader now consumes completed
-  manifests across launches, records all 12 obtained manifests, and rebuilt the
-  complete report locally without inference.
-- SOTA job 43757 reused the five job-43580 rows and completed Electricity and
-  Exchange under the 80 GB allocation. All seven former instance-K=10 method
-  manifests are completed across jobs 43305, 43580, and 43757. That full ridge has
-  equal-dataset mean MSE 0.204286 versus 0.207888 for locally evaluated
-  Chronos-Bolt, 0.197 for published TS-RAG, and 0.191 for published Cross-RAG;
-  it improves local vanilla on six datasets and loses only on ETTm2. Its table
-  stage exposed the same cross-launch discovery bug and failed after preserving
-  every producer. The corrected reader records all seven obtained manifests and
-  rebuilt the complete report locally. This K=10 evidence remains preserved,
-  but the current final control is now instance full ridge at K=5. All seven
-  K=5 producer rows and the table must run.
-- Completed K job 43975 selects instance full ridge K=5 (+2.00% mean nMSE);
-  instance cov-Y and cov-avgY ridge both select K=20 (+1.97% and +1.96%), and
-  raw full ridge selects K=10 (+1.95%). The learned gates remain weak: raw
-  CatBoost-cov peaks at K=15 (+0.12%), instance CatBoost-avgY peaks at K=5 but
-  remains negative (-0.94%), and both Bayes gates are flat so retain K=1.
-  Completed H job 43976 shows +0.41%, +2.78%, and +2.75% for full instance
-  ridge at H=24,168,504 with L=504. Completed CatBoost job 43977 retains only a
-  tiny learned-gate gain (+0.19% for soft shared cov) despite much larger oracle
-  headroom.
-- Completed retrieval-scope job 43978 shows that the cross-user pool carries
-  nearly all selected-ridge benefit. Averaged equally over five pipelines and
-  12 primary dataset/settings, all-user, other-users-only, and same-user-only
-  retrieval improve held-out nMSE by +1.832%, +1.785%, and +1.480%; their win
-  counts are 53/60, 53/60, and 51/60. All-user retrieval remains the default,
-  but excluding the query user costs only 0.048 percentage points on average,
-  whereas same-user-only costs 0.352 points. The corresponding raw-MSE gains
-  are +2.335%, +2.275%, and +2.148%, while MAE worsens by 0.727%, 0.757%, and
-  0.910%. Gates remain uncompetitive: the best scoped gate is same-user raw-K=1
-  CatBoost cov at only +0.219%, and every scoped CatBoost avgY result is
-  negative.
-- The scope audit exposed one superseded screen lineage, not a failure of job
-  43978. All 18 job-42887 screen rows for Electricity 504:168 with raw
-  Euclidean K=3 consumed job-42822's smoke extraction (aligned stride 256,
-  2,048-window cap). The scope all-user control uses the correct publication
-  extraction (25/25/127 strides, unaligned, 30,000-window cap) and revises the
-  selected full-ridge aggregate from +1.780% to +1.875%. Rerun precisely those
-  18 screen result rows and rebuild the screen report; the other screen rows
-  and the complete scope report are not implicated.
-- A complete dependency audit subsequently confirmed that those 18 rows are
-  the only numerically corrupted runs. The same old selector also recorded the
-  job-42822 smoke vanilla manifest in all 72 job-42887 Electricity 504:168
-  screen manifests. For the other 54 rows, evaluation used the correct
-  retrieval payload's embedded vanilla arrays, so only provenance and vanilla
-  timing attribution were wrong; those references were migrated without a
-  scientific rerun. The 18 numerical runs are now `interrupted`. Equivalent
-  historical extraction manifests and 3,156 valid downstream manifests were
-  migrated to dependency-aware parameter signatures, with no result payload
-  deletion, so ordinary resubmission can skip correct work robustly.
-- Next cluster actions: submit the final benchmark, TS-RAG, and SOTA fronts
-  against generation 2; after synchronizing the dependency/status migration,
-  submit `screen.slurm` normally so its 846 valid rows skip, the 18 interrupted
-  rows rerun, and the full/average/coefficient reports rebuild; resume the
-  corrected TS-IFA pilot, then promote any selected TS-IFA records before its
-  H, L, meta-ridge, and meta-neural follow-ups. Cross-RAG has no execution
-  front.
+- Jobs 44150 (corrected screen), 44137 (TS-IFA), 44138 (TS-RAG), and 44139
+  (SOTA) completed with empty stderr and terminal reports. Screen reran exactly
+  the 18 invalid rows, skipped 846 valid rows, and rebuilt its 864-input report.
+  TS-IFA completed all 32 configurations after the neural-rooter fix. TS-RAG
+  reported all 12 inputs, and SOTA reported all seven datasets.
+- The corrected screen's top five shared-ridge baselines are instance K=3 full
+  (+1.951% mean nMSE), raw K=3 full (+1.875%), raw K=3 cov-avgY (+1.814%), raw
+  K=1 full (+1.789%), and raw K=3 cov-Y (+1.785%). Therefore the manual
+  `SWEEP_CANDIDATES.txt` replaced instance K=3 cov-Y and cov-avgY with their
+  newly superior raw K=3 counterparts. The four deliberately retained
+  CatBoost/Bayes gate controls are unchanged.
+- Screen is evidence for manual candidate selection; it does not write or
+  freeze `SWEEP_CANDIDATES.txt`. Formulation, retrieval, K/H/L, and
+  mixed-quantity fronts consume the current sweep list. Their previous results
+  remain correct for the old candidate configurations, while reports for the
+  newly selected raw cov-Y/cov-avgY baselines are incomplete until the affected
+  fronts are resubmitted. Exact completed configurations should skip.
+- Resubmit the affected fronts one at a time to avoid concurrent ownership of
+  shared extraction work: horizon, convex, delta, Fourier retrieval, fixed-T0
+  datastore, retrieval scope, mixed quantity, H, L, and finally K. The selected
+  CatBoost/Bayes gates did not change, so `catboost_ablation.slurm` needs no
+  scientific rerun. The corrected screen and independent TS-IFA pilot also need
+  no rerun.
+- After the refreshed K report, manually replace the adaptation entries in
+  `SECOND_GENERATION_CANDIDATES.txt` with the promoted best-K variants in
+  ranking order, then submit `benchmark.slurm`. If the first shared-ridge entry
+  changes, also resubmit `tsrag.slurm` and `sota_benchmark.slurm`; otherwise
+  their current exact producer artifacts remain reusable.
+- Current downstream evidence is complete for the pre-refresh second-generation
+  first entry, instance full ridge K=5. TS-RAG improves equal-dataset mean nMSE
+  by +1.90% over matching Chronos-Bolt vanilla and +0.85% over the matched ridge
+  control, but loses to that control on Traffic and Solar. SOTA reports mean MSE
+  0.204222 for the K=5 method versus 0.207888 for local Chronos-Bolt vanilla,
+  0.197 for published TS-RAG, and 0.191 for published Cross-RAG.
+- TS-IFA's completed pilot favors the consistent shared unconstrained cov ridge
+  (+0.73% mean nMSE, +0.11% MSE, +0.17% MAE). Ridge variants average +0.10%
+  nMSE, whereas the neural variants average -0.92%; no TS-IFA candidate has yet
+  been promoted to the second-generation file.
 
 PRIOR HANDOFF (SUPERSEDED BY THE CURRENT STATUS ABOVE)
 - TS-RAG job 43308 was cgroup OOM-killed while constructing the Traffic

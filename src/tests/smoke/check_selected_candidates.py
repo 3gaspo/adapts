@@ -72,10 +72,10 @@ def _selected_first(filter_name: str, candidate_file: str | None = None) -> str:
 def main() -> None:
     expected = [
         "baselines/instance_euclidean_3_online/full_ridge_shared",
-        "baselines/raw_euclidean_1_online/full_ridge_shared",
-        "baselines/instance_euclidean_3_online/cov_y_ridge_shared",
         "baselines/raw_euclidean_3_online/full_ridge_shared",
-        "baselines/instance_euclidean_3_online/cov_avgy_ridge_shared",
+        "baselines/raw_euclidean_3_online/cov_avgy_ridge_shared",
+        "baselines/raw_euclidean_1_online/full_ridge_shared",
+        "baselines/raw_euclidean_3_online/cov_y_ridge_shared",
         "gates/raw_euclidean_1_online/catboost_cov_regressor_shared",
         "gates/instance_euclidean_1_online/catboost_avgy_regressor_shared",
         "gates/raw_euclidean_1_online/bayes_cov_shared",

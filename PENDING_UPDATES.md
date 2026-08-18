@@ -4,6 +4,27 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
+- 2026-08-18: Correct the candidate-selection workflow after the repaired
+  screen. Screen reports are evidence for a manually curated
+  `SWEEP_CANDIDATES.txt`, not an immutable manifest; selection may retain gates,
+  controls, or other scientifically important pipelines. The corrected ranking
+  replaced instance K=3 cov-Y and cov-avgY shared ridge with the better raw K=3
+  versions while retaining the other three baseline entries and all four gate
+  controls. README guidance, the selector regression fixture, and the cluster
+  handoff now reflect manual post-screen selection, selective exact reuse, and
+  manual post-K promotion into `SECOND_GENERATION_CANDIDATES.txt`. Affected
+  files/contracts: README, sweep candidate manifest, selected-candidate smoke,
+  local project guidance, and cluster status. Checks passed: selected-candidate
+  contract smoke, sweep-method-profile smoke, and Git whitespace validation.
+  Required cluster reruns, submitted sequentially: horizon/convex/delta baseline
+  formulation, Fourier retrieval, fixed-T0 datastore, retrieval scope, mixed
+  quantity, H, L, and K. Exact completed configurations should skip and only
+  missing new-candidate work should compute. The unchanged CatBoost/Bayes gates,
+  corrected screen, and independent TS-IFA pilot need no rerun. After K analysis,
+  refresh the adaptation records in `SECOND_GENERATION_CANDIDATES.txt`, run the
+  final benchmark, and rerun TS-RAG/SOTA only if the first shared-ridge record
+  changes. Reconcile result documents after the refreshed reports are obtained.
+
 - 2026-08-17: Make upstream run fetching fail closed and bind downstream reuse
   to the upstream scientific computation. The shared manifest helper now has a
   single-run resolver with exact pipeline/seed filtering and can embed an
