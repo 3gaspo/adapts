@@ -1,4 +1,4 @@
-"""Smoke-test artifact loading and dashboard calculations without a notebook kernel."""
+"""Smoke-test extraction/adaptation dashboard loading and calculations."""
 
 from __future__ import annotations
 
@@ -23,7 +23,8 @@ from src.visu.dashboard import (  # noqa: E402
     gate_roc,
     gate_threshold_sweep,
     horizon_values,
-    load_dashboard_data,
+    load_adaptation_dashboard_data,
+    load_extraction_dashboard_data,
     plot_baseline_feature_importance,
     plot_gate_feature_importance,
     plot_query_example,
@@ -38,8 +39,13 @@ from src.experiments.prediction_store import PredictionStore  # noqa: E402
 
 
 def close_memmaps(value: object) -> None:
-    if isinstance(value, np.memmap):
-        value._mmap.close()
+    if isinstance(value, np.ndarray):
+        current: object | None = value
+        while current is not None:
+            if isinstance(current, np.memmap):
+                current._mmap.close()
+                break
+            current = getattr(current, "base", None)
     elif isinstance(value, dict):
         for item in value.values():
             close_memmaps(item)
@@ -243,6 +249,7 @@ def main() -> None:
                 {
                     "format": "adaptation_ts_ifa_result",
                     "variant": "joint_ridge",
+                    "method": "joint_ridge_horizon_unconstrained_full",
                     "files": {
                         "predictions": "prediction_manifest.json",
                         "rooter": "rooter.pt",
@@ -252,13 +259,61 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        data = load_dashboard_data(extraction_root, [baseline_dir, gate_dir, ts_ifa_dir])
+        second_ts_ifa_dir = result_root / "ts_ifa" / "joint_neural_shared_softmax_cov"
+        second_ts_ifa_dir.mkdir(parents=True)
+        second_ts_ifa_store = PredictionStore(second_ts_ifa_dir)
+        second_ts_ifa_store.write(
+            "eval",
+            "predictions",
+            "ts_ifa_adapted",
+            (target + 0.07).numpy(),
+        )
+        second_ts_ifa_store.write(
+            "eval",
+            "gate_diagnostics",
+            "rooter_coefficients",
+            neural_coefficients * 0.5,
+        )
+        second_ts_ifa_store.finalize(
+            metadata={"family": "ts_ifa", "candidate_names": ["cov", "memory"]}
+        )
+        torch.save(
+            {"candidate_names": ["cov", "memory"]},
+            second_ts_ifa_dir / "rooter.pt",
+        )
+        (second_ts_ifa_dir / "result_manifest.json").write_text(
+            json.dumps(
+                {
+                    "format": "adaptation_ts_ifa_result",
+                    "variant": "joint_neural",
+                    "method": "joint_neural_shared_softmax_cov",
+                    "files": {
+                        "predictions": "prediction_manifest.json",
+                        "rooter": "rooter.pt",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        extraction_data = load_extraction_dashboard_data(extraction_root)
+        assert extraction_data["result_dirs"] == []
+        assert prediction_names(extraction_data, "eval") == ["cov_forecast", "vanilla"]
+        close_memmaps(extraction_data)
+        del extraction_data
+
+        data = load_adaptation_dashboard_data(
+            extraction_root,
+            [baseline_dir, gate_dir, ts_ifa_dir, second_ts_ifa_dir],
+        )
         arrays = split_arrays(data, "eval")
         assert arrays["x"].shape == (6, 4)
         assert "avgy" in prediction_names(data, "eval")
         assert "catboost_cov_classifier_shared" in prediction_names(data, "eval")
         assert "catboost_cov_classifier_shared_soft" in prediction_names(data, "eval")
-        assert "ts_ifa_adapted" in prediction_names(data, "eval")
+        assert "joint_ridge_horizon_unconstrained_full" in prediction_names(data, "eval")
+        assert "joint_neural_shared_softmax_cov" in prediction_names(data, "eval")
+        assert "ts_ifa_adapted" not in prediction_names(data, "eval")
 
         values, _, _, window_average = horizon_values(
             data,
@@ -312,11 +367,18 @@ def main() -> None:
         assert gate_importance_options(data) == [
             "catboost_cov_classifier_shared"
         ]
-        ridge_values, candidates = ts_ifa_coefficients(data, "ridge_rooter")
+        ridge_selection = ("joint_ridge_horizon_unconstrained_full", "ridge_rooter")
+        rooter_selection = ("joint_ridge_horizon_unconstrained_full", "rooter_mean")
+        ridge_values, candidates = ts_ifa_coefficients(data, ridge_selection)
         assert candidates == ["cov", "memory"]
         assert ridge_values.shape == (2, 3)
-        rooter_values, _ = ts_ifa_coefficients(data, "rooter_mean")
+        rooter_values, _ = ts_ifa_coefficients(data, rooter_selection)
         assert rooter_values.shape == (2, 3)
+        second_rooter_values, _ = ts_ifa_coefficients(
+            data,
+            ("joint_neural_shared_softmax_cov", "rooter_mean"),
+        )
+        assert second_rooter_values.shape == (2, 3)
 
         figure = plot_query_example(
             data,
@@ -343,14 +405,14 @@ def main() -> None:
                 data,
                 "catboost_cov_classifier_shared",
             ),
-            plot_ts_ifa_coefficients(data, "ridge_rooter"),
-            plot_ts_ifa_coefficients(data, "rooter_mean"),
+            plot_ts_ifa_coefficients(data, ridge_selection),
+            plot_ts_ifa_coefficients(data, rooter_selection),
         ):
             plt.close(figure)
         close_memmaps(data)
         del data
         gc.collect()
-    print("retrieval dashboard smoke check passed")
+    print("extraction and adaptation dashboard smoke check passed")
 
 
 if __name__ == "__main__":

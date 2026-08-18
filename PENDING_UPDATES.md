@@ -4,24 +4,33 @@ Last successful maintenance: 2026-08-11 10:45 +02:00.
 
 ## Pending
 
-- 2026-08-18: Repair the retrieval dashboard notebook bootstrap for cluster
-  Jupyter sessions. The cluster branch now discovers the adaptation root from
-  the kernel directory or its parents, preserves the kernel working directory,
-  adds the project root for `src.*` imports, and resolves extraction/result
-  paths absolutely from that root. All `pip install` calls are confined to
-  explicit Colab-only switches; the cluster branch never mutates its prepared
-  environment. The workspace command codebook now requires submitting the
-  Jupyter Slurm front from the concerned project root and gives the adaptation
-  command explicitly. Affected files/contracts: retrieval dashboard notebook,
-  cluster notebook launch instructions, and activity log; artifact and
-  experiment contracts are unchanged. Checks passed in the shared notebook
-  runtime from both the adaptation root and `src/visu`: the setup cell found
-  the same project root, preserved the starting directory, exposed the `src`
-  package, constructed project-rooted artifact paths, and made no package-
-  installation call. A full dashboard import was deferred because this shared
-  runtime lacks the project dependency `einops`; exercise the notebook in the
-  prepared cluster environment during the next Jupyter session. No README or
-  LaTeX update and no experiment rerun are required.
+- 2026-08-18: Split retrieval visualization into extraction and adaptation
+  dashboards and make multi-result loading fail closed. The extraction notebook
+  builds one extraction run from editable dataset, `L_H`, model, retrieval, and
+  appended `RUN` components, and owns retrieved-example and frozen-forecast
+  widgets. The adaptation notebook accepts one explicit extraction path plus a
+  list of complete baseline, gate, or TS-IFA result paths with arbitrary path
+  layouts, and owns adaptation comparison widgets. TS-IFA predictions are
+  exposed under their manifest method IDs, per-model rooter artifacts remain
+  separate, and conflicting duplicate prediction, diagnostic, coefficient, or
+  importance names no longer silently overwrite another selected run. Both
+  notebooks discover the project root from the kernel directory or its parents,
+  resolve project-relative paths from that root, and confine all optional
+  installation to the Colab branch. The workspace command codebook separately
+  documents submission of the Jupyter Slurm front from the concerned project
+  root. Affected files/contracts: both visualization notebooks, dashboard
+  loader/helpers, focused dashboard smoke, README, cluster notebook launch
+  instructions, and activity log; experiment artifacts and metrics are
+  unchanged. Checks passed: Python compilation of the helper and smoke test;
+  JSON parsing of both notebooks; setup-cell execution from both the adaptation
+  root and `src/visu`, with package installation converted into a test failure;
+  and the focused synthetic dashboard smoke covering extraction-only loading,
+  baseline/gate loading, two simultaneous TS-IFA methods, coefficients, and
+  plots. The smoke used the shared notebook runtime's headless backend and
+  bypassed only the eager top-level `src` re-export because that runtime lacks
+  `einops`; its normal command remains deferred to the prepared project/cluster
+  environment. README now documents both path contracts. No LaTeX update or
+  experiment rerun is required.
 
 - 2026-08-18: Expand the retrieval-scope ablation to separate user-pool
   diversity from datastore cardinality. The front now evaluates the existing

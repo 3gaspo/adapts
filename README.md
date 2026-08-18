@@ -967,20 +967,28 @@ The runnable Python modules are:
 - `src.visu.sweep_results_table`: full and averaged publication tables.
 - `src.visu.results_table` and `src.visu.selected_methods`: focused table
   utilities for individual result folders and selected method subsets.
-- `src.visu.dashboard`: interactive retrieval diagnostics. Library modules such
-  as `features.py`, `runtime.py`, `models/*.py`, and `data/*.py` support these
-  entry points and are not separate jobs.
+- `src.visu.dashboard`: artifact-only helpers for the extraction and adaptation
+  dashboards. Library modules such as `features.py`, `runtime.py`, `models/*.py`,
+  and `data/*.py` support these entry points and are not separate jobs.
 
-The dashboard takes the extraction directory and the corresponding
-profile-separated result directory as distinct inputs. It loads a result family
-only when its current `result_manifest.json` is complete and points to the
-current prediction store. Configure `CLUSTER_EXPERIMENT_MODE`, dataset,
-`L_H` setting, model, and retrieval name in
-`src/visu/retrieval_dashboard.ipynb`; the notebook derives both paths from that
-single configuration. Its interactive sections cover retrieved examples,
-window and horizon errors, gate summaries and threshold curves, CatBoost gate
-importance, fitted baseline coefficient importance, and TS-IFA ridge/neural
-active-rooter coefficient heatmaps.
+The dashboards have separate path contracts and never install packages on the
+cluster. In `src/visu/extraction_dashboard.ipynb`, configure the dataset,
+`L_H` setting, model, retrieval space/metric/`K`/mode, and `RUN`; the notebook
+appends those components under `outputs/extraction/` and provides retrieved
+example, window, and horizon diagnostics for the frozen forecasts.
+
+In `src/visu/adaptation_dashboard.ipynb`, write the complete extraction run path
+and a list of complete adaptation result paths. The list may mix baseline, gate,
+and TS-IFA run directories with their different path layouts. Every listed
+prediction is available in the model selectors. TS-IFA's generic stored
+`ts_ifa_adapted` name is displayed under the manifest's method identifier, so
+several TS-IFA runs can be compared. Identically named arrays from several
+results must agree; conflicting duplicates fail instead of silently
+overwriting one run. The adaptation sections cover window and horizon errors,
+gate summaries and threshold curves, CatBoost gate importance, fitted baseline
+coefficient importance, and TS-IFA ridge/neural active-rooter coefficient
+heatmaps. Each loader accepts only current, complete manifests and prediction
+stores.
 
 Every TS-IFA output must use the current result and prediction-store contracts
 and include the active-rooter coefficient diagnostics. Its result manifest also
@@ -1034,7 +1042,7 @@ python src/tests/smoke/check_results_table.py
 python src/tests/smoke/check_sweep_results_table.py
 python src/tests/smoke/check_baseline_coefficients.py
 python src/tests/smoke/check_k_ablation_plot.py
-python src/tests/smoke/check_retrieval_dashboard.py
+python src/tests/smoke/check_dashboards.py
 ```
 
 `latex/experiment_guideline.tex` records the current notation, formulas,

@@ -1,4 +1,4 @@
-"""Artifact-only helpers for the interactive retrieval dashboard notebook."""
+"""Artifact-only helpers for the extraction and adaptation dashboards."""
 
 from __future__ import annotations
 
@@ -35,11 +35,7 @@ def _flatten_optional(payload: dict[str, Any], key: str) -> np.ndarray | None:
     return _flatten(value)
 
 
-def load_dashboard_data(
-    extraction_dir: str | Path,
-    result_dirs: Sequence[str | Path],
-) -> dict[str, Any]:
-    """Load one current extraction run and explicitly selected result runs."""
+def _load_extraction(extraction_dir: str | Path) -> tuple[Path, dict[str, dict[str, Any]]]:
     root = Path(extraction_dir).expanduser()
     extraction_complete, extraction_reason = validate_extraction(root)
     if not extraction_complete:
@@ -51,12 +47,72 @@ def load_dashboard_data(
             extracted[split] = torch_load(path)
     if not extracted:
         raise FileNotFoundError(f"No *_prediction_payload.pt files found under {root}")
+    return root, extracted
 
-    baseline: dict[str, Any] = {"splits": {}}
-    baseline_artifacts: dict[str, Any] = {"models": {}}
-    gate_importances: dict[str, dict[str, np.ndarray]] = {}
-    ts_ifa_artifacts: dict[str, Any] = {}
-    loaded_result_dirs: list[Path] = []
+
+def _empty_dashboard_data(root: Path, extracted: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "run_dir": root,
+        "result_dirs": [],
+        "extracted": extracted,
+        "baseline": {"splits": {}},
+        "baseline_artifacts": {"models": {}},
+        "gate_importances": {},
+        "ts_ifa_artifacts": {},
+        "paths": {
+            "extraction_manifest": root / "extraction_manifest.json",
+            "results": [],
+        },
+    }
+
+
+def _validate_dashboard_alignment(data: dict[str, Any]) -> dict[str, Any]:
+    for split in data["extracted"]:
+        split_arrays(data, split)
+    return data
+
+
+def load_extraction_dashboard_data(extraction_dir: str | Path) -> dict[str, Any]:
+    """Load one completed extraction run without adaptation results."""
+    root, extracted = _load_extraction(extraction_dir)
+    return _validate_dashboard_alignment(_empty_dashboard_data(root, extracted))
+
+
+def _merge_array(
+    destination: dict[str, np.ndarray],
+    owners: dict[str, Path],
+    name: str,
+    value: Any,
+    source: Path,
+) -> None:
+    array = np.asarray(value)
+    if name not in destination:
+        destination[name] = array
+        owners[name] = source
+        return
+    current = destination[name]
+    if current.shape == array.shape and np.array_equal(current, array, equal_nan=True):
+        return
+    raise ValueError(
+        f"Conflicting dashboard array {name!r} from {owners[name]} and {source}; "
+        "select result paths for the same extraction and only one run per named model"
+    )
+
+
+def load_adaptation_dashboard_data(
+    extraction_dir: str | Path,
+    result_dirs: Sequence[str | Path],
+) -> dict[str, Any]:
+    """Load one extraction and an explicit list of completed adaptation runs."""
+    root, extracted = _load_extraction(extraction_dir)
+    data = _empty_dashboard_data(root, extracted)
+    baseline = data["baseline"]
+    baseline_artifacts = data["baseline_artifacts"]
+    gate_importances = data["gate_importances"]
+    ts_ifa_artifacts = data["ts_ifa_artifacts"]
+    prediction_owners: dict[str, dict[str, Path]] = {}
+    diagnostic_owners: dict[str, dict[str, Path]] = {}
+
     for selected_dir in result_dirs:
         current_dir = Path(selected_dir).expanduser()
         result_manifest = current_dir / "result_manifest.json"
@@ -75,13 +131,43 @@ def load_dashboard_data(
         if completion.get("files", {}).get("predictions") != "prediction_manifest.json":
             raise ValueError(f"{result_manifest} does not index current predictions")
         payload = load_prediction_store(current_dir)
-        loaded_result_dirs.append(current_dir)
+        result_label = str(
+            completion.get("method")
+            or (completion.get("methods") or [None])[0]
+            or completion.get("variant")
+            or current_dir.parent.name
+        )
+        data["result_dirs"].append(current_dir)
+        data["paths"]["results"].append(current_dir / "prediction_manifest.json")
         for split, split_payload in payload["splits"].items():
             merged = baseline["splits"].setdefault(
                 split, {"predictions": {}, "gate_diagnostics": {}}
             )
-            merged["predictions"].update(split_payload.get("predictions", {}))
-            merged["gate_diagnostics"].update(split_payload.get("gate_diagnostics", {}))
+            split_prediction_owners = prediction_owners.setdefault(split, {})
+            split_diagnostic_owners = diagnostic_owners.setdefault(split, {})
+            for name, value in split_payload.get("predictions", {}).items():
+                display_name = (
+                    result_label
+                    if result_format == "adaptation_ts_ifa_result" and name == "ts_ifa_adapted"
+                    else name
+                )
+                _merge_array(
+                    merged["predictions"],
+                    split_prediction_owners,
+                    display_name,
+                    value,
+                    current_dir,
+                )
+            for name, value in split_payload.get("gate_diagnostics", {}).items():
+                if result_format == "adaptation_ts_ifa_result" and name == "rooter_coefficients":
+                    continue
+                _merge_array(
+                    merged["gate_diagnostics"],
+                    split_diagnostic_owners,
+                    name,
+                    value,
+                    current_dir,
+                )
         files = completion.get("files", {})
         if expected_family == "baselines":
             artifact_path = current_dir / str(files.get("artifacts", ""))
@@ -90,7 +176,11 @@ def load_dashboard_data(
             current_artifacts = torch_load(artifact_path)
             if current_artifacts.get("format") != "adaptation_baseline_models":
                 raise ValueError(f"{artifact_path} is not a current baseline artifact")
-            baseline_artifacts["models"].update(current_artifacts.get("models", {}))
+            current_models = current_artifacts.get("models", {})
+            overlap = set(baseline_artifacts["models"]) & set(current_models)
+            if overlap:
+                raise ValueError(f"Duplicate baseline models {sorted(overlap)} from {current_dir}")
+            baseline_artifacts["models"].update(current_models)
             baseline_artifacts.setdefault("eval_fit_models", {}).update(
                 current_artifacts.get("eval_fit_models") or {}
             )
@@ -108,19 +198,38 @@ def load_dashboard_data(
                 method_suffix = importance_path.stem.removeprefix("feature_importance_")
                 with importance_path.open(newline="", encoding="utf-8") as handle:
                     rows = list(csv.DictReader(handle))
-                gate_importances[f"catboost_{method_suffix}"] = {
+                gate_name = f"catboost_{method_suffix}"
+                current_importance = {
                     "feature": np.asarray([row["feature"] for row in rows], dtype=object),
                     "importance": np.asarray(
                         [float(row["importance"]) for row in rows],
                         dtype=np.float64,
                     ),
                 }
+                if gate_name in gate_importances:
+                    previous = gate_importances[gate_name]
+                    identical = (
+                        np.array_equal(previous["feature"], current_importance["feature"])
+                        and np.array_equal(
+                            previous["importance"],
+                            current_importance["importance"],
+                            equal_nan=True,
+                        )
+                    )
+                    if not identical:
+                        raise ValueError(
+                            f"Conflicting gate importance {gate_name!r} from {current_dir}"
+                        )
+                else:
+                    gate_importances[gate_name] = current_importance
         elif result_format == "adaptation_ts_ifa_result":
+            if result_label in ts_ifa_artifacts:
+                raise ValueError(f"Duplicate TS-IFA model label {result_label!r} from {current_dir}")
             rooter_path = current_dir / str(files.get("rooter", ""))
             if not rooter_path.is_file():
                 raise FileNotFoundError(f"Missing TS-IFA rooter: {rooter_path}")
             rooter_payload = torch_load(rooter_path)
-            ts_ifa_artifacts = {
+            current_ts_ifa = {
                 "candidate_names": list(
                     rooter_payload.get(
                         "candidate_names",
@@ -130,29 +239,17 @@ def load_dashboard_data(
                 "variant": completion.get("variant"),
             }
             if "coefficients" in rooter_payload:
-                ts_ifa_artifacts["ridge_rooter_coefficients"] = np.asarray(
+                current_ts_ifa["ridge_rooter_coefficients"] = np.asarray(
                     rooter_payload["coefficients"].detach().cpu(), dtype=np.float64
                 )
+            eval_diagnostics = payload.get("splits", {}).get("eval", {}).get("gate_diagnostics", {})
+            if "rooter_coefficients" in eval_diagnostics:
+                current_ts_ifa["active_rooter_coefficients"] = np.asarray(
+                    eval_diagnostics["rooter_coefficients"], dtype=np.float64
+                )
+            ts_ifa_artifacts[result_label] = current_ts_ifa
 
-    data = {
-        "run_dir": root,
-        "result_dirs": loaded_result_dirs,
-        "extracted": extracted,
-        "baseline": baseline,
-        "baseline_artifacts": baseline_artifacts,
-        "gate_importances": gate_importances,
-        "ts_ifa_artifacts": ts_ifa_artifacts,
-        "paths": {
-            "extraction_manifest": root / "extraction_manifest.json",
-            "results": [
-                result_dir / "prediction_manifest.json"
-                for result_dir in loaded_result_dirs
-            ],
-        },
-    }
-    for split in extracted:
-        split_arrays(data, split)  # validate alignment eagerly
-    return data
+    return _validate_dashboard_alignment(data)
 
 
 def available_splits(data: dict[str, Any]) -> list[str]:
@@ -995,31 +1092,33 @@ def plot_gate_feature_importance(
     )
 
 
-def ts_ifa_coefficient_options(data: dict[str, Any]) -> list[tuple[str, str]]:
-    artifacts = data.get("ts_ifa_artifacts", {})
-    options: list[tuple[str, str]] = []
-    if "ridge_rooter_coefficients" in artifacts:
-        options.append(("ridge rooter", "ridge_rooter"))
-    diagnostics = (
-        data.get("baseline", {})
-        .get("splits", {})
-        .get("eval", {})
-        .get("gate_diagnostics", {})
-    )
-    if "rooter_coefficients" in diagnostics:
-        options.append(("active rooter (mean over T3 windows)", "rooter_mean"))
+def ts_ifa_coefficient_options(data: dict[str, Any]) -> list[tuple[str, tuple[str, str]]]:
+    options: list[tuple[str, tuple[str, str]]] = []
+    for model_name, artifacts in sorted(data.get("ts_ifa_artifacts", {}).items()):
+        if "ridge_rooter_coefficients" in artifacts:
+            options.append((f"{model_name}: ridge rooter", (model_name, "ridge_rooter")))
+        if "active_rooter_coefficients" in artifacts:
+            options.append(
+                (
+                    f"{model_name}: active rooter (mean over T3 windows)",
+                    (model_name, "rooter_mean"),
+                )
+            )
     return options
 
 
-def ts_ifa_coefficients(data: dict[str, Any], coefficient_name: str) -> tuple[np.ndarray, list[str]]:
-    artifacts = data["ts_ifa_artifacts"]
+def ts_ifa_coefficients(
+    data: dict[str, Any],
+    coefficient_selection: tuple[str, str],
+) -> tuple[np.ndarray, list[str]]:
+    model_name, coefficient_name = coefficient_selection
+    artifacts = data["ts_ifa_artifacts"][model_name]
     names = [str(name) for name in artifacts.get("candidate_names", [])]
     if coefficient_name == "ridge_rooter":
         values = np.asarray(artifacts["ridge_rooter_coefficients"], dtype=np.float64)
     elif coefficient_name == "rooter_mean":
-        diagnostics = data["baseline"]["splits"]["eval"]["gate_diagnostics"]
         values = np.nanmean(
-            np.asarray(diagnostics["rooter_coefficients"], dtype=np.float64),
+            np.asarray(artifacts["active_rooter_coefficients"], dtype=np.float64),
             axis=0,
         )
     else:
@@ -1037,9 +1136,10 @@ def ts_ifa_coefficients(data: dict[str, Any], coefficient_name: str) -> tuple[np
 
 def plot_ts_ifa_coefficients(
     data: dict[str, Any],
-    coefficient_name: str,
+    coefficient_selection: tuple[str, str],
 ) -> plt.Figure:
-    values, names = ts_ifa_coefficients(data, coefficient_name)
+    model_name, coefficient_name = coefficient_selection
+    values, names = ts_ifa_coefficients(data, coefficient_selection)
     maximum = max(float(np.nanmax(np.abs(values))), 1e-8)
     fig, ax = plt.subplots(figsize=(max(9.0, 0.08 * values.shape[1]), max(3.5, 0.55 * len(names))))
     image = ax.imshow(
@@ -1053,7 +1153,7 @@ def plot_ts_ifa_coefficients(
     ax.set_xlabel("Forecast horizon")
     ax.set_ylabel("Candidate")
     ax.set_yticks(np.arange(len(names)), labels=names)
-    ax.set_title(f"TS-IFA {coefficient_name.replace('_', ' ')} coefficients")
+    ax.set_title(f"{model_name}: {coefficient_name.replace('_', ' ')} coefficients")
     fig.colorbar(image, ax=ax, label="Coefficient")
     fig.tight_layout()
     return fig
