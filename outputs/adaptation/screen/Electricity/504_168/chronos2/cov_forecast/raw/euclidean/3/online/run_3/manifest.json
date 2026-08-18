@@ -1,0 +1,194 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "gate_metrics.csv",
+        "size": 264
+      },
+      {
+        "path": "gate_metrics.json",
+        "size": 480
+      },
+      {
+        "path": "gate_artifacts.json",
+        "size": 2056
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 530
+      },
+      {
+        "path": "gate_timing.json",
+        "size": 154
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1150
+      }
+    ],
+    "required": [
+      "gate_metrics.csv",
+      "gate_metrics.json",
+      "gate_artifacts.json",
+      "prediction_manifest.json",
+      "gate_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "cov_forecast",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Electricity",
+          "horizon": 168,
+          "lookback": 504,
+          "model_config": {
+            "k": 3,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "raw"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 127,
+          "data.max_store_windows": 30000,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
+      "gate.depth": 4,
+      "gate.early_stopping_rounds": 50,
+      "gate.iterations": 300,
+      "gate.learning_rate": 0.03,
+      "max_adapt_refit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 44150
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Electricity",
+    "horizon": 168,
+    "lookback": 504,
+    "model_config": {
+      "formula": "cov_forecast",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "raw"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/3/online/run_2/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/none/none/0/none/run_2/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "44150",
+        "launched_at_utc": "2026-08-18T02:30:25.498509+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "44150"
+      }
+    ],
+    "finished_at_utc": "2026-08-18T02:30:36.200717+00:00",
+    "launch_id": "44150",
+    "launched_at_utc": "2026-08-18T02:30:25.498509+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-18T02:30:36.139088+00:00",
+    "started_at_utc": "2026-08-18T02:30:25.611574+00:00"
+  },
+  "manifest_id": "cfdc4485-62c6-4b19-881b-ced699b51069",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 3,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "gate_metrics.csv",
+        "gate_metrics.json",
+        "gate_artifacts.json",
+        "prediction_manifest.json",
+        "gate_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "32bd9c9aff7540b74394f53c5f8365e4ef72e7abec2894ffe0941fb2cc0817bb",
+    "path": "2dd011ee000ad235ed57279a7a9ecb48e3d6cc521f04b7e85feb34f81a2eeff2",
+    "pipeline": "3b6f427f589f96c3a0dce165c2bfc4a15c151f8b820483d808429b7509a15ef9"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "cov_forecast",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "screen",
+      "gates"
+    ]
+  }
+}

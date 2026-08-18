@@ -1,0 +1,237 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "ts_ifa.pt",
+        "size": 1756118
+      },
+      {
+        "path": "branches.pt",
+        "size": 1756446
+      },
+      {
+        "path": "rooter.pt",
+        "size": 5389
+      },
+      {
+        "path": "training_history.json",
+        "size": 4620800
+      },
+      {
+        "path": "eval_metrics.json",
+        "size": 375
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 890
+      },
+      {
+        "path": "config.json",
+        "size": 2397
+      },
+      {
+        "path": "training_nmse.pdf",
+        "size": 15201
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1324
+      }
+    ],
+    "required": [
+      "ts_ifa.pt",
+      "branches.pt",
+      "rooter.pt",
+      "training_history.json",
+      "eval_metrics.json",
+      "prediction_manifest.json",
+      "config.json",
+      "training_nmse.pdf",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "branch_set": "memory",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "routing_constraint": "softmax",
+      "routing_scope": "horizon",
+      "space": "raw",
+      "variant": "joint_ridge"
+    },
+    "pipeline": {
+      "attention_dim": 32,
+      "attention_heads": 4,
+      "batch_size": 256,
+      "branch_aux_weight": 0.1,
+      "branch_lr": 1e-05,
+      "coefficient_l2": 0.01,
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos2",
+          "dataset": "Electricity",
+          "horizon": 168,
+          "lookback": 504,
+          "model_config": {
+            "k": 3,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "raw"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 256,
+          "data.align_period": true,
+          "data.datastore_stride": 168,
+          "data.eval_query_stride": 256,
+          "data.max_store_windows": 2048,
+          "data.period": 24,
+          "data.split_bounds": "ratios",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": null,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
+      "dropout": 0.0,
+      "hidden_dim": 128,
+      "horizon_smoothness": 0.01,
+      "logging_eval_freq": 1000,
+      "max_train_samples": null,
+      "max_valid_samples": null,
+      "meta_query_fraction": 0.2,
+      "neural_first_order": true,
+      "neural_inner_lr": 0.001,
+      "neural_inner_steps": 1,
+      "ridge_rooter_alpha": 0.01,
+      "rooter_epochs": 20000,
+      "rooter_lr": 1e-05,
+      "train_epochs": 20000,
+      "valid_eval_freq": 1000,
+      "validation_fraction": 0.2,
+      "vanilla_anchor": 0.01,
+      "vanilla_anchoring_init": true,
+      "weight_decay": 0.0001
+    },
+    "runtime": {
+      "slurm.job_id": 44137
+    }
+  },
+  "identity": {
+    "backbone": "chronos2",
+    "dataset": "Electricity",
+    "horizon": 168,
+    "lookback": 504,
+    "model_config": {
+      "branch_set": "memory",
+      "k": 3,
+      "metric": "euclidean",
+      "mode": "online",
+      "routing_constraint": "softmax",
+      "routing_scope": "horizon",
+      "space": "raw",
+      "variant": "joint_ridge"
+    },
+    "model_config_order": [
+      "variant",
+      "routing_scope",
+      "routing_constraint",
+      "branch_set",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/Electricity/504_168/chronos2/raw/euclidean/3/online/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "44137",
+        "launched_at_utc": "2026-08-18T03:09:30.671419+00:00",
+        "mode": "test",
+        "purpose": "smoke",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "44137"
+      }
+    ],
+    "finished_at_utc": "2026-08-18T03:12:44.770577+00:00",
+    "launch_id": "44137",
+    "launched_at_utc": "2026-08-18T03:09:30.671419+00:00",
+    "mode": "test",
+    "ready_at_utc": "2026-08-18T03:12:44.701394+00:00",
+    "started_at_utc": "2026-08-18T03:09:30.785792+00:00"
+  },
+  "manifest_id": "05b292b2-da92-4577-b7c7-d2de5f7926d3",
+  "project": "adaptation",
+  "purposes": [
+    "smoke"
+  ],
+  "run_index": 1,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "ts_ifa.pt",
+        "branches.pt",
+        "rooter.pt",
+        "training_history.json",
+        "eval_metrics.json",
+        "prediction_manifest.json",
+        "config.json",
+        "training_nmse.pdf",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "7a73755c53b392f0e5cc9e47a7746b6aaf944fd729cba0f7c391fa38b8d1312e",
+    "path": "42495dfc79c45cf620a9e8a7b71ca9591d3107920a3aeacb31c1807737629218",
+    "pipeline": "ee02c89e929d0176f75cbaa407614ff5e4f2fb5b65763aee0344c519a7147d88"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "routing_constraint",
+      "branch_set",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "joint_ridge_horizon_softmax_memory",
+    "row_config": [
+      "variant",
+      "routing_scope"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "ts_ifa",
+      "ts_ifa"
+    ]
+  }
+}

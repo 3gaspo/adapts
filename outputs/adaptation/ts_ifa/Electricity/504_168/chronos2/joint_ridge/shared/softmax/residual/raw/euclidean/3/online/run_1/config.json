@@ -1,0 +1,72 @@
+{
+  "name": "TS-IFA",
+  "variant": "joint_ridge",
+  "method": "joint_ridge_shared_softmax_residual",
+  "rooter_form": "ridge",
+  "optimization": "joint",
+  "routing_scope": "shared",
+  "routing_constraint": "softmax",
+  "architecture": "configurable_delta_branches_routing_v4",
+  "run_signature": "architecture=configurable_delta_branches_routing_v4;variant=joint_ridge;routing_scope=shared;routing_constraint=softmax;branches=residual;train_epochs=20000;rooter_epochs=20000;batch_size=256;validation_fraction=0.2;meta_query_fraction=0.2;valid_eval_freq=1000;logging_eval_freq=1000;max_train_samples=;max_valid_samples=;branch_lr=0.00001;rooter_lr=0.00001;neural_inner_lr=0.001;neural_inner_steps=1;neural_first_order=true;weight_decay=0.0001;vanilla_anchor=0.01;coefficient_l2=0.01;horizon_smoothness=0.01;ridge_alpha=0.01;branch_aux_weight=0.1;dropout=0.0;heads=4;attention_dim=32;hidden_dim=128;vanilla_anchoring_init=true;normalization=instance;seed=1",
+  "model": {
+    "lags": 504,
+    "horizon": 168,
+    "neighbors": 3,
+    "rooter_form": "ridge",
+    "branches": [
+      "residual"
+    ],
+    "routing_scope": "shared",
+    "routing_constraint": "softmax",
+    "residual_heads": 4,
+    "memory_heads": 4,
+    "rooter_heads": 4,
+    "residual_attn_dim": 32,
+    "memory_attn_dim": 32,
+    "rooter_attn_dim": 32,
+    "residual_hidden": 128,
+    "memory_hidden": 128,
+    "rooter_hidden": 128,
+    "vanilla_anchoring_init": true,
+    "dropout": 0.0
+  },
+  "candidate_names": [
+    "vanilla",
+    "residual"
+  ],
+  "rooter_candidate_names": [
+    "vanilla",
+    "residual"
+  ],
+  "parameters": {
+    "total": 479441,
+    "branches": 479440,
+    "rooter": 1
+  },
+  "training": {
+    "pipeline": "T1_joint_gradient_updates_with_T2_checkpoint_selection",
+    "train_split": "T1",
+    "validation_or_fit_split": "T2",
+    "final_eval_split": "T3",
+    "train_epochs": 20000,
+    "rooter_epochs": 0,
+    "t1_dates": 41,
+    "t1_samples": 12792,
+    "t2_dates": 10,
+    "t2_samples": 3120,
+    "meta_query_fraction": null,
+    "branch_lr": 1e-05,
+    "rooter_lr": 1e-05,
+    "neural_inner_lr": null,
+    "neural_inner_steps": null,
+    "neural_first_order": null,
+    "regularizers": {
+      "vanilla_anchor": 0.01,
+      "coefficient_l2": 0.01,
+      "horizon_smoothness": 0.01,
+      "closed_form_ridge_alpha": null,
+      "branch_auxiliary_weight": 0.1
+    },
+    "seconds": 179.99275596812367
+  }
+}

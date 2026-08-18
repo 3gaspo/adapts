@@ -1,0 +1,273 @@
+
+2026-08-18T04:25:25+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=ETTh1 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T04:25:25+02:00 skip complete family=extraction dataset=ETTh1 model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/none/none/0/none/run_0
+
+2026-08-18T04:25:26+02:00 extraction start configuration=2/2 dataset=ETTh1 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=c62b4590253597cd789faa1122e96e4b66ee0c0cfafa4b0386d654ea8191a47a period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 04:25:28,794 INFO [__main__] ========================================================================
+2026-08-18 04:25:28,794 INFO [__main__] experiment start kind=extraction dataset=ETTh1 model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 04:25:29,059 INFO [__main__] dataset load start
+2026-08-18 04:25:29,061 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/ETTh1/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 04:25:29,135 INFO [__main__] dataset standardized train_boundary=8640
+2026-08-18 04:25:29,135 INFO [__main__] dataset load done dates=17420 users=7
+2026-08-18 04:25:29,135 INFO [__main__] model load start
+2026-08-18 04:25:46,478 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 04:25:46,491 INFO [__main__] extraction start split=adapt queries=286
+2026-08-18 04:26:14,151 INFO [__main__] extraction done split=adapt
+2026-08-18 04:26:14,151 INFO [__main__] extraction start split=eval queries=2817
+2026-08-18 04:30:09,582 INFO [__main__] extraction done split=eval
+2026-08-18 04:30:10,380 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 04:30:10,380 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 04:30:10,380 INFO [__main__] experiment done seconds=281.58
+2026-08-18 04:30:10,380 INFO [__main__] ========================================================================
+2026-08-18 04:30:13,777 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T04:30:14+02:00 extraction done configuration=2/2 dataset=ETTh1 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T04:30:14+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T04:30:14+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=ETTh1 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 04:30:16,750 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTh1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T04:30:17+02:00 baselines start configuration=1/1 dataset=ETTh1 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/ETTh1/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=227b6a29335f8e3e0c63fc764facbe0d1b99e9884158e80cc7734135d63495aa l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 04:30:20,311 INFO [__main__] ========================================================================
+2026-08-18 04:30:20,312 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 04:30:24,208 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 04:30:24,607 INFO [__main__] baseline selection done
+2026-08-18 04:30:24,635 INFO [__main__] experiment done seconds=4.32
+2026-08-18 04:30:24,635 INFO [__main__] ========================================================================
+2026-08-18T04:30:25+02:00 baselines done configuration=1/1 dataset=ETTh1 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T04:30:25+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T04:30:25+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=ETTh2 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T04:30:25+02:00 skip complete family=extraction dataset=ETTh2 model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/none/none/0/none/run_0
+
+2026-08-18T04:30:25+02:00 extraction start configuration=2/2 dataset=ETTh2 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=cbef3041ccf43032831fbddf4cad313761a1c987a9f32e477581c8a3ce9e5cb7 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 04:30:28,017 INFO [__main__] ========================================================================
+2026-08-18 04:30:28,017 INFO [__main__] experiment start kind=extraction dataset=ETTh2 model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 04:30:28,299 INFO [__main__] dataset load start
+2026-08-18 04:30:28,301 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/ETTh2/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 04:30:28,336 INFO [__main__] dataset standardized train_boundary=8640
+2026-08-18 04:30:28,336 INFO [__main__] dataset load done dates=17420 users=7
+2026-08-18 04:30:28,336 INFO [__main__] model load start
+2026-08-18 04:30:37,960 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 04:30:37,973 INFO [__main__] extraction start split=adapt queries=286
+2026-08-18 04:31:06,513 INFO [__main__] extraction done split=adapt
+2026-08-18 04:31:06,513 INFO [__main__] extraction start split=eval queries=2817
+2026-08-18 04:34:52,132 INFO [__main__] extraction done split=eval
+2026-08-18 04:34:52,872 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 04:34:52,872 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 04:34:52,872 INFO [__main__] experiment done seconds=264.85
+2026-08-18 04:34:52,872 INFO [__main__] ========================================================================
+2026-08-18 04:34:56,148 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T04:34:56+02:00 extraction done configuration=2/2 dataset=ETTh2 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T04:34:56+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T04:34:56+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=ETTh2 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 04:34:58,733 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTh2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T04:34:59+02:00 baselines start configuration=1/1 dataset=ETTh2 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/ETTh2/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=259febb53b0bc228ebc211d66e9efb420880bbfe20a96a9e3a25c46d72f37bb2 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 04:35:01,743 INFO [__main__] ========================================================================
+2026-08-18 04:35:01,743 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 04:35:05,721 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 04:35:06,174 INFO [__main__] baseline selection done
+2026-08-18 04:35:06,197 INFO [__main__] experiment done seconds=4.45
+2026-08-18 04:35:06,197 INFO [__main__] ========================================================================
+2026-08-18T04:35:06+02:00 baselines done configuration=1/1 dataset=ETTh2 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T04:35:06+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T04:35:06+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=ETTm1 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T04:35:06+02:00 skip complete family=extraction dataset=ETTm1 model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/none/none/0/none/run_0
+
+2026-08-18T04:35:06+02:00 extraction start configuration=2/2 dataset=ETTm1 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=3ae6a889b09e1ed0aa067a84d68aad864f9b5e22ce30e308b15774b67c20e270 period=96 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 04:35:09,311 INFO [__main__] ========================================================================
+2026-08-18 04:35:09,311 INFO [__main__] experiment start kind=extraction dataset=ETTm1 model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 04:35:09,533 INFO [__main__] dataset load start
+2026-08-18 04:35:09,535 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/ETTm1/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 04:35:09,635 INFO [__main__] dataset standardized train_boundary=34560
+2026-08-18 04:35:09,635 INFO [__main__] dataset load done dates=69680 users=7
+2026-08-18 04:35:09,635 INFO [__main__] model load start
+2026-08-18 04:35:21,463 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 04:35:21,523 INFO [__main__] extraction start split=adapt queries=1150
+2026-08-18 04:38:16,175 INFO [__main__] extraction done split=adapt
+2026-08-18 04:38:16,175 INFO [__main__] extraction start split=eval queries=11457
+2026-08-18 05:05:25,576 INFO [__main__] extraction done split=eval
+2026-08-18 05:05:26,326 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 05:05:26,326 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 05:05:26,326 INFO [__main__] experiment done seconds=1817.01
+2026-08-18 05:05:26,326 INFO [__main__] ========================================================================
+2026-08-18 05:05:29,576 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T05:05:29+02:00 extraction done configuration=2/2 dataset=ETTm1 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:05:29+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T05:05:29+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=ETTm1 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 05:05:32,079 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTm1/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T05:05:32+02:00 baselines start configuration=1/1 dataset=ETTm1 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/ETTm1/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=8deb397ee498c0a0e500b43c2e82d8be8f7546c4edf1c3bca3079727c30c06a5 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 05:05:34,967 INFO [__main__] ========================================================================
+2026-08-18 05:05:34,967 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 05:05:44,097 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 05:05:45,093 INFO [__main__] baseline selection done
+2026-08-18 05:05:45,117 INFO [__main__] experiment done seconds=10.15
+2026-08-18 05:05:45,117 INFO [__main__] ========================================================================
+2026-08-18T05:05:45+02:00 baselines done configuration=1/1 dataset=ETTm1 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:05:45+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T05:05:45+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=ETTm2 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T05:05:45+02:00 skip complete family=extraction dataset=ETTm2 model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/none/none/0/none/run_0
+
+2026-08-18T05:05:45+02:00 extraction start configuration=2/2 dataset=ETTm2 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=9b5a8691a80938f1e8116e838a0a4717cb639018924905c3972f7f1f093ba21c period=96 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 05:05:48,271 INFO [__main__] ========================================================================
+2026-08-18 05:05:48,271 INFO [__main__] experiment start kind=extraction dataset=ETTm2 model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 05:05:48,546 INFO [__main__] dataset load start
+2026-08-18 05:05:48,547 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/ETTm2/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 05:05:48,795 INFO [__main__] dataset standardized train_boundary=34560
+2026-08-18 05:05:48,795 INFO [__main__] dataset load done dates=69680 users=7
+2026-08-18 05:05:48,795 INFO [__main__] model load start
+2026-08-18 05:05:59,679 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 05:05:59,737 INFO [__main__] extraction start split=adapt queries=1150
+2026-08-18 05:08:52,293 INFO [__main__] extraction done split=adapt
+2026-08-18 05:08:52,293 INFO [__main__] extraction start split=eval queries=11457
+2026-08-18 05:35:48,529 INFO [__main__] extraction done split=eval
+2026-08-18 05:35:49,271 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 05:35:49,271 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 05:35:49,271 INFO [__main__] experiment done seconds=1800.99
+2026-08-18 05:35:49,271 INFO [__main__] ========================================================================
+2026-08-18 05:35:52,553 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T05:35:52+02:00 extraction done configuration=2/2 dataset=ETTm2 model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:35:52+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T05:35:52+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=ETTm2 models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 05:35:55,028 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T05:35:55+02:00 baselines start configuration=1/1 dataset=ETTm2 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/ETTm2/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=219c260da9498db4a53a86f2522e34a6d74b11bdb442c46e2c8eddb79ddc4346 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 05:35:57,931 INFO [__main__] ========================================================================
+2026-08-18 05:35:57,931 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 05:36:09,537 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 05:36:10,582 INFO [__main__] baseline selection done
+2026-08-18 05:36:10,606 INFO [__main__] experiment done seconds=12.67
+2026-08-18 05:36:10,606 INFO [__main__] ========================================================================
+2026-08-18T05:36:11+02:00 baselines done configuration=1/1 dataset=ETTm2 model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:36:11+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T05:36:11+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=Weather models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T05:36:11+02:00 skip complete family=extraction dataset=Weather model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/none/none/0/none/run_0
+
+2026-08-18T05:36:11+02:00 extraction start configuration=2/2 dataset=Weather model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=7385256315591d2a67c492bca80111163ae8dfd77b08de95d229973898f3c03c period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 05:36:13,634 INFO [__main__] ========================================================================
+2026-08-18 05:36:13,634 INFO [__main__] experiment start kind=extraction dataset=Weather model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 05:36:13,898 INFO [__main__] dataset load start
+2026-08-18 05:36:13,899 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/weather/config.json keys=['aggr', 'aggr_period', 'date_col', 'drop_users']
+2026-08-18 05:36:14,006 INFO [__main__] dataset standardized train_boundary=6148
+2026-08-18 05:36:14,006 INFO [__main__] dataset load done dates=8784 users=17
+2026-08-18 05:36:14,007 INFO [__main__] model load start
+2026-08-18 05:36:25,585 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 05:36:25,594 INFO [__main__] extraction start split=adapt queries=174
+2026-08-18 05:36:51,113 INFO [__main__] extraction done split=adapt
+2026-08-18 05:36:51,113 INFO [__main__] extraction start split=eval queries=1694
+2026-08-18 05:40:53,852 INFO [__main__] extraction done split=eval
+2026-08-18 05:40:54,419 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 05:40:54,420 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 05:40:54,420 INFO [__main__] experiment done seconds=280.78
+2026-08-18 05:40:54,420 INFO [__main__] ========================================================================
+2026-08-18 05:40:57,306 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T05:40:57+02:00 extraction done configuration=2/2 dataset=Weather model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:40:57+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T05:40:57+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=Weather models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 05:40:59,843 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Weather/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T05:41:00+02:00 baselines start configuration=1/1 dataset=Weather model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/Weather/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=59ca1d0b6f6dfe724e3c7b5385829c87d54fd31f190dc394bb801fa5aadabd4c l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 05:41:02,729 INFO [__main__] ========================================================================
+2026-08-18 05:41:02,730 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 05:41:06,791 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 05:41:07,379 INFO [__main__] baseline selection done
+2026-08-18 05:41:07,403 INFO [__main__] experiment done seconds=4.67
+2026-08-18 05:41:07,403 INFO [__main__] ========================================================================
+2026-08-18T05:41:07+02:00 baselines done configuration=1/1 dataset=Weather model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T05:41:07+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T05:41:07+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=Electricity models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T05:41:08+02:00 skip complete family=extraction dataset=Electricity model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/none/none/0/none/run_2
+
+2026-08-18T05:41:08+02:00 extraction start configuration=2/2 dataset=Electricity model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=e3c3735849ca9fb1d781564870061f427c972301272a91759344e77b91f551b3 period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 05:41:10,516 INFO [__main__] ========================================================================
+2026-08-18 05:41:10,516 INFO [__main__] experiment start kind=extraction dataset=Electricity model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 05:41:10,757 INFO [__main__] dataset load start
+2026-08-18 05:41:10,758 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/electricity/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 05:41:11,690 INFO [__main__] dataset standardized train_boundary=18412
+2026-08-18 05:41:11,690 INFO [__main__] dataset load done dates=26304 users=312
+2026-08-18 05:41:11,691 INFO [__main__] model load start
+2026-08-18 05:41:22,375 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 05:41:22,399 INFO [__main__] extraction start split=adapt queries=524
+2026-08-18 05:47:27,507 INFO [__main__] extraction done split=adapt
+2026-08-18 05:47:27,507 INFO [__main__] extraction start split=eval queries=5198
+2026-08-18 06:48:14,695 INFO [__main__] extraction done split=eval
+2026-08-18 06:48:15,564 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 06:48:15,564 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 06:48:15,564 INFO [__main__] experiment done seconds=4025.04
+2026-08-18 06:48:15,564 INFO [__main__] ========================================================================
+2026-08-18 06:48:20,137 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T06:48:20+02:00 extraction done configuration=2/2 dataset=Electricity model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T06:48:20+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T06:48:20+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=Electricity models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 06:48:22,554 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/Electricity/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T06:48:23+02:00 baselines start configuration=1/1 dataset=Electricity model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/Electricity/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=0438ccfed35b2e6e485bff151d4938e461c013091ece0fe1960fcb8b940af4b0 l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 06:48:25,520 INFO [__main__] ========================================================================
+2026-08-18 06:48:25,521 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 06:50:45,958 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 06:51:04,081 INFO [__main__] baseline selection done
+2026-08-18 06:51:04,110 INFO [__main__] experiment done seconds=158.59
+2026-08-18 06:51:04,110 INFO [__main__] ========================================================================
+2026-08-18T06:51:04+02:00 baselines done configuration=1/1 dataset=Electricity model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T06:51:04+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark
+
+2026-08-18T06:51:04+02:00 job start kind=adaptation_extraction family=sota_benchmark experiment_mode=full skip_complete=true tasks=2 datasets=exchange_rate models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5
+2026-08-18T06:51:05+02:00 skip complete family=extraction dataset=exchange_rate model=chronos-bolt lags=512 horizon=64 retrieval=vanilla run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/none/none/0/none/run_2
+
+2026-08-18T06:51:05+02:00 extraction start configuration=2/2 dataset=exchange_rate model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/5/online/run_0 computation_signature=8f9b84c38317b661b9ed6e935d97850c6ce9701e23651c4adc83731ac57f16fc period=24 align_period=false datastore_stride=25 adapt_stride=25 eval_stride=1 max_store_windows=30000 seed=1
+2026-08-18 06:51:07,948 INFO [__main__] ========================================================================
+2026-08-18 06:51:07,948 INFO [__main__] experiment start kind=extraction dataset=exchange_rate model=chronos-bolt lags=512 horizon=64 neighbors=5 distance=instance/euclidean
+2026-08-18 06:51:08,189 INFO [__main__] dataset load start
+2026-08-18 06:51:08,190 INFO [src.data.load_dataset] loaded dataset config path=/home/h61084/codes/datasets/exchange_rate/config.json keys=['aggr', 'date_col', 'drop_users']
+2026-08-18 06:51:08,207 INFO [__main__] dataset standardized train_boundary=5311
+2026-08-18 06:51:08,207 INFO [__main__] dataset load done dates=7588 users=8
+2026-08-18 06:51:08,207 INFO [__main__] model load start
+2026-08-18 06:51:19,975 INFO [__main__] model load done name=chronos-bolt device=cuda parameters_total=205,292,928 parameters_trainable=0
+2026-08-18 06:51:19,982 INFO [__main__] extraction start split=adapt queries=150
+2026-08-18 06:51:28,108 INFO [__main__] extraction done split=adapt
+2026-08-18 06:51:28,108 INFO [__main__] extraction start split=eval queries=1455
+2026-08-18 06:52:28,343 INFO [__main__] extraction done split=eval
+2026-08-18 06:52:28,879 INFO [__main__] completion marker saved path=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/5/online/run_0/extraction_manifest.json
+2026-08-18 06:52:28,879 INFO [__main__] outputs saved dir=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/5/online/run_0
+2026-08-18 06:52:28,879 INFO [__main__] experiment done seconds=80.93
+2026-08-18 06:52:28,879 INFO [__main__] ========================================================================
+2026-08-18 06:52:32,192 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+2026-08-18T06:52:32+02:00 extraction done configuration=2/2 dataset=exchange_rate model=chronos-bolt lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T06:52:32+02:00 job done kind=adaptation_extraction output=outputs/extraction
+
+2026-08-18T06:52:32+02:00 job start kind=baselines family=sota_benchmark experiment_mode=full skip_complete=true tasks=1 datasets=exchange_rate models=chronos-bolt settings=512:64 distance_spaces=instance distance_metrics=euclidean neighbors=5 methods=full_ridge_shared results_root=outputs/adaptation/sota_benchmark
+2026-08-18 06:52:34,742 INFO [__main__] extraction validation directory=/home/h61084/codes/adapts/outputs/extraction/exchange_rate/512_64/chronos-bolt/instance/euclidean/5/online/run_0 status=complete
+
+2026-08-18T06:52:35+02:00 baselines start configuration=1/1 dataset=exchange_rate model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online run=/home/h61084/codes/adapts/outputs/adaptation/sota_benchmark/exchange_rate/512_64/chronos-bolt/full_ridge_shared/instance/euclidean/5/online/run_0 computation_signature=467662714267a1f4b4c4c6af81d2c06ffce59bd6bbe046faff280b0e2dc9ec2d l2_grid=0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10 validation_fraction=0.2 fit_baselines_on_eval=false seed=1
+2026-08-18 06:52:37,570 INFO [__main__] ========================================================================
+2026-08-18 06:52:37,570 INFO [__main__] selected methods=('full_ridge_shared',)
+2026-08-18 06:52:40,502 INFO [__main__] baseline selection start l2_grid=(0.0, 1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0)
+2026-08-18 06:52:40,820 INFO [__main__] baseline selection done
+2026-08-18 06:52:40,844 INFO [__main__] experiment done seconds=3.27
+2026-08-18 06:52:40,844 INFO [__main__] ========================================================================
+2026-08-18T06:52:41+02:00 baselines done configuration=1/1 dataset=exchange_rate model=chronos-bolt formula=full_ridge_shared lags=512 horizon=64 retrieval=instance_euclidean_5_online
+
+2026-08-18T06:52:41+02:00 job done kind=baselines output=outputs/adaptation/sota_benchmark

@@ -1,0 +1,25 @@
+{
+  "format": "adaptation_ts_ifa_result",
+  "variant": "joint_neural",
+  "method": "joint_neural_shared_softmax_memory",
+  "rooter_form": "neural",
+  "optimization": "joint",
+  "routing_scope": "shared",
+  "routing_constraint": "softmax",
+  "candidate_names": [
+    "vanilla",
+    "memory"
+  ],
+  "architecture": "configurable_delta_branches_routing_v4",
+  "run_signature": "architecture=configurable_delta_branches_routing_v4;variant=joint_neural;routing_scope=shared;routing_constraint=softmax;branches=memory;train_epochs=20000;rooter_epochs=20000;batch_size=256;validation_fraction=0.2;meta_query_fraction=0.2;valid_eval_freq=1000;logging_eval_freq=1000;max_train_samples=;max_valid_samples=;branch_lr=0.00001;rooter_lr=0.00001;neural_inner_lr=0.001;neural_inner_steps=1;neural_first_order=true;weight_decay=0.0001;vanilla_anchor=0.01;coefficient_l2=0.01;horizon_smoothness=0.01;ridge_alpha=0.01;branch_aux_weight=0.1;dropout=0.0;heads=4;attention_dim=32;hidden_dim=128;vanilla_anchoring_init=true;normalization=instance;seed=1",
+  "files": {
+    "checkpoint": "ts_ifa.pt",
+    "branches": "branches.pt",
+    "rooter": "rooter.pt",
+    "history": "training_history.json",
+    "metrics": "eval_metrics.json",
+    "predictions": "prediction_manifest.json",
+    "config": "config.json",
+    "plot": "training_nmse.pdf"
+  }
+}

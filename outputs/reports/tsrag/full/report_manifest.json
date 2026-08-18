@@ -1,0 +1,696 @@
+{
+  "created_at_utc": "2026-08-18T02:34:49.437355+00:00",
+  "launch_id": "44138",
+  "obtained": {
+    "count": 12,
+    "inputs": [
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "2c88c4ad-f73a-4dda-997c-8f37fc34b9f5",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Electricity/512_64/chronos-bolt/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Electricity",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "68f547428ac3047e4c51a3ac21dca580c6c8747c8394ee6d150c22bd94917ff0",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "897a1bb9-b142-4977-94d1-c18d8e03bd64",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Electricity/512_64/chronos2/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos2",
+              "dataset": "Electricity",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "40abc95ad390f8aaef8faec2e556ab9c55a674421c36c009e24eac2e69d1cf18",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "41bf55fa-0370-4d47-892d-7579986a9483",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Solar/512_64/chronos-bolt/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Solar",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "d93142bc571cf20affc449a27e581eecc8e016c0be9505d0b3ee670b1cebc626",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "5baf6c06-bc1f-4ae9-82fa-9d1124696d64",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Solar/512_64/chronos2/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos2",
+              "dataset": "Solar",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "1159d24a5175e4e5b8968507353893c192caad4f58f79bdd70833053159c7958",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "965d216d-e1f0-490b-9771-c760e3c5b155",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Traffic/512_64/chronos-bolt/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Traffic",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "bbd9ed2034cdcfa99eb68297fd2ec5e0761e60dd6d9b6e185fdae2632414a794",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "ea290bb0-6ecc-4f13-a414-bb73f1ef9ca8",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/Traffic/512_64/chronos2/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos2",
+              "dataset": "Traffic",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "faf765cedbd183eaac49c42010343651426acc557b04496eab0105f1bb04cc33",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "3db703cb-89f7-4ed1-bae7-1b75dbc7adb4",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/exchange_rate/512_64/chronos-bolt/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "exchange_rate",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "20df7dc762ce81dc3e9c75c361a5110f866c29ecae7e1a8f4f198258d4a182ba",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "full_ridge_shared",
+        "manifest_id": "8a0fc7b7-bbdf-415f-a4d6-ae35a11ead97",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag_controls/exchange_rate/512_64/chronos2/full_ridge_shared/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos2",
+              "dataset": "exchange_rate",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "fit_baselines_on_eval": false,
+          "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+          "max_adapt_refit_samples": null,
+          "max_eval_fit_samples": null,
+          "max_t1_fit_samples": null,
+          "max_t2_valid_samples": null,
+          "run_seed": 1,
+          "validation_fraction": 0.2
+        },
+        "pipeline_signature": "2141afe5240e1e040162bed6204076e441456f7e644392eab10134fcaa2462e2",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "tsrag",
+        "manifest_id": "7548a56d-53cd-4952-848d-c27daa965470",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag/Electricity/512_64/chronos-bolt/tsrag/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "batch_size": 256,
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Electricity",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "retrieval_protocol": "tsrag_default",
+          "retrieval_scope": "same_user"
+        },
+        "pipeline_signature": "6d4be0b08c7b9370f93c08fb1feb01e493993bd3f2127260c8a1ca2134f7c0fa",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "tsrag",
+        "manifest_id": "8f358d3d-1569-4809-9881-b3e53994b2bd",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag/Solar/512_64/chronos-bolt/tsrag/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "batch_size": 256,
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Solar",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "retrieval_protocol": "tsrag_default",
+          "retrieval_scope": "same_user"
+        },
+        "pipeline_signature": "f71422b3db7902b3d71b43958809d6ea5c56d49930271cb511c10addd643c9b9",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "tsrag",
+        "manifest_id": "6341a7c0-4e2c-4fd3-833f-4ac5293c8ed4",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag/Traffic/512_64/chronos-bolt/tsrag/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "batch_size": 256,
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "Traffic",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "retrieval_protocol": "tsrag_default",
+          "retrieval_scope": "same_user"
+        },
+        "pipeline_signature": "cc69776ee150d3fc7efe5887f2fe65320381587852bddbe99f59fee1aaec24c0",
+        "purposes": [
+          "publication"
+        ]
+      },
+      {
+        "label": "tsrag",
+        "manifest_id": "ea420894-0f04-4c5c-868b-a1e43bafce37",
+        "path": "/home/h61084/codes/adapts/outputs/adaptation/tsrag/exchange_rate/512_64/chronos-bolt/tsrag/tsrag/euclidean/10/fixed/run_0/manifest.json",
+        "pipeline_config": {
+          "batch_size": 256,
+          "dependency.extraction": {
+            "experiment": {},
+            "identity": {
+              "backbone": "chronos-bolt",
+              "dataset": "exchange_rate",
+              "horizon": 64,
+              "lookback": 512,
+              "model_config": {
+                "k": 10,
+                "metric": "euclidean",
+                "mode": "fixed",
+                "space": "tsrag"
+              },
+              "model_config_order": [
+                "space",
+                "metric",
+                "k",
+                "mode"
+              ]
+            },
+            "pipeline": {
+              "data.adapt_query_stride": 25,
+              "data.align_period": false,
+              "data.datastore_stride": 1,
+              "data.eval_query_stride": 127,
+              "data.max_store_windows": null,
+              "data.period": 24,
+              "data.split_bounds": "ratios",
+              "data.splits": "0.3,0.5,0.2",
+              "data.standardize_train_boundary": null,
+              "normalization": "instance",
+              "retrieval.scope": "same_user"
+            },
+            "schema_version": 1,
+            "seeds": [
+              1
+            ]
+          },
+          "retrieval_protocol": "tsrag_default",
+          "retrieval_scope": "same_user"
+        },
+        "pipeline_signature": "d2a3f743a7024d660ee346333686497cbdf923f73d754a785ac463f8ee07572c",
+        "purposes": [
+          "publication"
+        ]
+      }
+    ]
+  },
+  "requested": {
+    "config_policy": "distinct",
+    "filters": {
+      "datasets": [
+        "Electricity",
+        "Traffic",
+        "Solar",
+        "exchange_rate"
+      ],
+      "pipeline": {},
+      "protocol": {
+        "neighbors": 10,
+        "retrieval": "chronos-t5-base/euclidean/same_user/fixed"
+      },
+      "purposes": [
+        "publication"
+      ],
+      "selected_control_method": "full_ridge_shared",
+      "setting": "512_64"
+    },
+    "repeat_policy": "selected"
+  },
+  "schema_version": 1
+}

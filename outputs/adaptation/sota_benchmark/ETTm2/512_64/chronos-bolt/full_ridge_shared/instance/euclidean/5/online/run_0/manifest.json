@@ -1,0 +1,193 @@
+{
+  "artifacts": {
+    "files": [
+      {
+        "path": "baseline_metrics.csv",
+        "size": 277
+      },
+      {
+        "path": "baseline_metrics.json",
+        "size": 493
+      },
+      {
+        "path": "baseline_artifacts.pt",
+        "size": 1932
+      },
+      {
+        "path": "prediction_manifest.json",
+        "size": 533
+      },
+      {
+        "path": "baseline_timing.json",
+        "size": 162
+      },
+      {
+        "path": "result_manifest.json",
+        "size": 1162
+      }
+    ],
+    "required": [
+      "baseline_metrics.csv",
+      "baseline_metrics.json",
+      "baseline_artifacts.pt",
+      "prediction_manifest.json",
+      "baseline_timing.json",
+      "result_manifest.json"
+    ]
+  },
+  "config": {
+    "experiment": {},
+    "model": {
+      "formula": "full_ridge_shared",
+      "k": 5,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "pipeline": {
+      "dependency.extraction": {
+        "experiment": {},
+        "identity": {
+          "backbone": "chronos-bolt",
+          "dataset": "ETTm2",
+          "horizon": 64,
+          "lookback": 512,
+          "model_config": {
+            "k": 5,
+            "metric": "euclidean",
+            "mode": "online",
+            "space": "instance"
+          },
+          "model_config_order": [
+            "space",
+            "metric",
+            "k",
+            "mode"
+          ]
+        },
+        "pipeline": {
+          "data.adapt_query_stride": 25,
+          "data.align_period": false,
+          "data.datastore_stride": 25,
+          "data.eval_query_stride": 1,
+          "data.max_store_windows": 30000,
+          "data.period": 96,
+          "data.split_bounds": "17280,46080,57600",
+          "data.splits": "0.3,0.5,0.2",
+          "data.standardize_train_boundary": 34560,
+          "normalization": "instance",
+          "retrieval.scope": "all"
+        },
+        "schema_version": 1,
+        "seeds": [
+          1
+        ]
+      },
+      "fit_baselines_on_eval": false,
+      "l2_grid": "0,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1,10",
+      "max_adapt_refit_samples": null,
+      "max_eval_fit_samples": null,
+      "max_t1_fit_samples": null,
+      "max_t2_valid_samples": null,
+      "run_seed": 1,
+      "validation_fraction": 0.2
+    },
+    "runtime": {
+      "slurm.job_id": 44139
+    }
+  },
+  "identity": {
+    "backbone": "chronos-bolt",
+    "dataset": "ETTm2",
+    "horizon": 64,
+    "lookback": 512,
+    "model_config": {
+      "formula": "full_ridge_shared",
+      "k": 5,
+      "metric": "euclidean",
+      "mode": "online",
+      "space": "instance"
+    },
+    "model_config_order": [
+      "formula",
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ]
+  },
+  "inputs": {
+    "upstream_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/instance/euclidean/5/online/run_0/manifest.json"
+    },
+    "vanilla_manifest": {
+      "path": "/home/h61084/codes/adapts/outputs/extraction/ETTm2/512_64/chronos-bolt/none/none/0/none/run_0/manifest.json"
+    }
+  },
+  "launch": {
+    "attempts": [
+      {
+        "launch_id": "44139",
+        "launched_at_utc": "2026-08-18T03:35:55.495325+00:00",
+        "mode": "full",
+        "purpose": "publication",
+        "slurm_array_task_id": null,
+        "slurm_job_id": "44139"
+      }
+    ],
+    "finished_at_utc": "2026-08-18T03:36:11.062900+00:00",
+    "launch_id": "44139",
+    "launched_at_utc": "2026-08-18T03:35:55.495325+00:00",
+    "mode": "full",
+    "ready_at_utc": "2026-08-18T03:36:11.005009+00:00",
+    "started_at_utc": "2026-08-18T03:35:55.599507+00:00"
+  },
+  "manifest_id": "b685c36b-a1aa-446b-89f0-316b39166e4a",
+  "project": "adaptation",
+  "purposes": [
+    "publication"
+  ],
+  "run_index": 0,
+  "schema_version": 1,
+  "seed_status": {
+    "1": {
+      "artifacts": [
+        "baseline_metrics.csv",
+        "baseline_metrics.json",
+        "baseline_artifacts.pt",
+        "prediction_manifest.json",
+        "baseline_timing.json",
+        "result_manifest.json"
+      ],
+      "status": "completed"
+    }
+  },
+  "seeds": [
+    1
+  ],
+  "signatures": {
+    "computation": "219c260da9498db4a53a86f2522e34a6d74b11bdb442c46e2c8eddb79ddc4346",
+    "path": "10a24ece3391f06848b60b0efc51a80d69fbf894f5447fe71693349b730c6b06",
+    "pipeline": "9ae04ec6518184815ffaf2df3b305ce7bf892eff80ec568c0fd2ab63d36134d6"
+  },
+  "status": "completed",
+  "table": {
+    "column_config": [
+      "space",
+      "metric",
+      "k",
+      "mode"
+    ],
+    "display_name": "full_ridge_shared",
+    "row_config": [
+      "formula"
+    ]
+  },
+  "workflow": {
+    "path": [
+      "adaptation",
+      "sota_benchmark",
+      "baselines"
+    ]
+  }
+}
